@@ -3,14 +3,19 @@
 
 AC_PREREQ([2.69])
 AC_INIT([libethercat], [0.0.1], [Robert Burger robert.burger@dlr.de])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([coe.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CC
+AC_PROG_LIBTOOL
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
+AC_CHECK_LIB([rt], [sem_init])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
