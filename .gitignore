@@ -35,3 +35,5 @@ m4
 .deps
 .libs
 *.*~
+
+libethercat.pc
