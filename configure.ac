@@ -7,6 +7,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
+DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg)
 
 # Checks for programs.
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
