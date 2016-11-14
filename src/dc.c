@@ -1,8 +1,7 @@
 //! ethercat distributed clocks
 /*!
- * author: Robert Burger
+ * \author Robert Burger
  *
- * $Id$
  */
 
 /*
@@ -27,70 +26,85 @@
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
 
-/** 1st sync pulse delay in ns here 100ms */
+// 1st sync pulse delay in ns here 10ms
 #define SYNC_DELAY       ((int64_t)10000000)
-//#define SYNC_DELAY       ((int64_t)100000000)
 
-//! configure slave for distributed clock sync 0 pulse
-/*/
+//! Configure EtherCAT slave for distributed clock sync0 pulse
+/*!
+ * This function writes the cycle time, calculates the DC first start time 
+ * wrt the cycle shift 
+ * and enables sync0 pulse generation on the corresponding device. It can also
+ * be use to disable DC's on the EtherCAT slave.
+ *
  * \param pec ethercat master pointer 
- * \oaran slave slave number
+ * \param slave slave number
  * \param active dc active flag
- * \param cycle_time cycle time to program to fire sync 0 in [ns]
- * \param cycle_shift shift of first sync 0 start in [ns]
+ * \param cycle_time cycle time to program to fire sync0 in [ns]
+ * \param cycle_shift shift of first sync0 start in [ns]
  */
-void ec_dc_sync0(ec_t *pec, uint16_t slave, int active, uint32_t cycle_time, int32_t cycle_shift) {
+void ec_dc_sync0(ec_t *pec, uint16_t slave, int active, 
+        uint32_t cycle_time, int32_t cycle_shift) {
     uint16_t wkc;
     ec_slave_t *slv = &pec->slaves[slave];
     if (!(slv->features & 0x04)) // dc not available
         return;
 
-    // stop cyclic operation, ready for next trigger
+    // deactivate DC's to stop cyclic operation, ready for next trigger
     uint8_t dc_active = 0;
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, 
+            sizeof(dc_active), &wkc);
 
     // set write access to ethercat
     uint8_t dc_cuc = 0;
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, 
+            sizeof(dc_cuc), &wkc);
 
-    if (active) 
+    if (active && (pec->dc.mode == dc_mode_master_clock)) 
         while (pec->dc.act_diff == 0) {
             // wait until dc's are ready
-            struct timespec ts = { 0, 1000000 };
-            nanosleep(&ts, NULL);
+            ec_sleep(1000000);
         }
 
-    /* Calculate first trigger time, always a whole multiple of CyclTime rounded up
-       plus the shifttime (can be negative)
-       This insures best sychronisation between slaves, slaves with the same CyclTime
-       will sync at the same moment (you can use CyclShift to shift the sync) */
+    // Calculate DC start time as a sum of the actual EtherCAT master time,
+    // the generic first sync delay and the cycle shift. the first sync delay 
+    // has to be a multiple of cycle time.  
     uint64_t rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
-    if (pec->dc.mode == 0) 
+    if (pec->dc.mode == dc_mode_master_clock) 
         rel_rtc_time -= pec->dc.act_diff;
     int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift;
    
     // program first trigger time and cycle time
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time, sizeof(cycle_time), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, 
+            sizeof(dc_start), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time, 
+            sizeof(cycle_time), &wkc);
 
     if (active) {
         // activate distributed clock on slave
         dc_active = 1 + 2;
-        ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
+        ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, 
+            sizeof(dc_active), &wkc);
     }
+    // if not active, the DC's stay inactive
     
-    ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start %lld, cycletime %d, dc_active %X\n", 
+    ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
+            "%lld, cycletime %d, dc_active %X\n", 
             slave, rel_rtc_time, dc_start, cycle_time, dc_active);
 }
 
-//! configure slave for distributed clock sync 0 and sync 1 pulse
-/*/
+//! Configure EtherCAT slave for distributed clock sync0 and sync1 pulse
+/*!
+ * This function writes the cycle time, calculates the DC first start time 
+ * wrt the cycle shift 
+ * and enables sync0 and sync1 pulse generation on the corresponding device. 
+ * It can also be use to disable DC's on the EtherCAT slave.
+ * 
  * \param pec ethercat master pointer 
- * \oaran slave slave number
+ * \param slave slave number
  * \param active dc active flag
- * \param cycle_time_0 cycle time to program to fire sync 0 in [ns]
- * \param cycle_time_1 cycle time to program to fire sync 1 in [ns]
- * \param cycle_shift shift of first sync 0 start in [ns]
+ * \param cycle_time_0 cycle time to program to fire sync0 in [ns]
+ * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
+ * \param cycle_shift shift of first sync0 start in [ns]
  */
 void ec_dc_sync01(ec_t *pec, uint16_t slave, int active, 
         uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift) {
@@ -99,43 +113,50 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
     if (!(slv->features & 0x04)) // dc not available
         return;
 
-    // stop cyclic operation, ready for next trigger
+    // deactivate DC's to stop cyclic operation, ready for next trigger
     uint8_t dc_active = 0;
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, 
+            sizeof(dc_active), &wkc);
 
     // set write access to ethercat
     uint8_t dc_cuc = 0;
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, 
+            sizeof(dc_cuc), &wkc);
 
-    /* Calculate first trigger time, always a whole multiple of CyclTime rounded up
-       plus the shifttime (can be negative)
-       This insures best sychronisation between slaves, slaves with the same CyclTime
-       will sync at the same moment (you can use CyclShift to shift the sync) */
+    if (active && (pec->dc.mode == dc_mode_master_clock)) 
+        while (pec->dc.act_diff == 0) {
+            // wait until dc's are ready
+            ec_sleep(1000000);
+        }
+
+    // Calculate DC start time as a sum of the actual EtherCAT master time,
+    // the generic first sync delay and the cycle shift. the first sync delay 
+    // has to be a multiple of cycle time.  
     uint64_t rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
+    if (pec->dc.mode == dc_mode_master_clock) 
+        rel_rtc_time -= pec->dc.act_diff;
     int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift;
    
     // program first trigger time and cycle time
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, 
+            sizeof(dc_start), &wkc);
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, 
+            sizeof(cycle_time_0), &wkc);    
+    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, 
+            sizeof(cycle_time_1), &wkc);
 
     if (active) {
         // activate distributed clock on slave
         dc_active = 1 + 2 + 4;
-        ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
+        ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, 
+                sizeof(dc_active), &wkc);
     }
+    // if not active, the DC's stay inactive
     
-    ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start %lld, "
-            "cycletime_0 %d, cycletime_1 %d, dc_active %X\n", 
-            slave, rel_rtc_time, dc_start, cycle_time_0, cycle_time_1, dc_active);
-}
-
-/* latched port time of slave */
-/*inline*/ int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
-    if (port < 4)
-        return pec->slaves[slave].dc.receive_times[port].time;
-
-    return 0;
+    ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
+            "%lld, cycletime_0 %d, cycletime_1 %d, dc_active %X\n", 
+            slave, rel_rtc_time, dc_start, cycle_time_0, cycle_time_1, 
+            dc_active);
 }
 
 /* calculate previous active port of a slave */
@@ -164,7 +185,7 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
 }
 
 /* search unconsumed ports in parent, consume and return first open port */
-/*inline*/ uint8_t ec_dc_parentport(ec_t *pec, uint16_t parent) {
+/*inline*/ uint8_t EC_DC_PARENTPORT(ec_t *pec, uint16_t parent) {
     /* search order is important, here 3 - 1 - 2 - 0 */
     int port_idx[] = { 3, 1, 2, 0 };
     uint8_t parentport = 0;
@@ -284,38 +305,54 @@ int ec_dc_config(ec_t *pec) {
 
             /* only calculate propagation delay if slave is not the first */
             if (parent >= 0) {
-                /* find port on parent this slave is connected to */
-                slv->parentport = ec_dc_parentport(pec, parent);
-                if (pec->slaves[parent].link_cnt == 1)
-                    slv->parentport = pec->slaves[parent].entryport;
 
-                ec_log(100, "DISTRIBUTED_CLOCK", "slave %d, port on parentport %d\n", slave, slv->parentport);
+#define EC_DC_PARENTPORT(parent) { \
+    for (int tmp_port = 1; tmp_port < 4; ++tmp_port) \
+        if (pec->slaves[parent].dc.consumedports & (1 << tmp_port)) { \
+            pec->slaves[parent].dc.consumedports &= ~(1 << tmp_port); \
+            return tmp_port; \
+        } \
+    return 0; }
+
+                // parentport -> port on parent slave we are conneccted to
+                slv->parentport = EC_DC_PARENTPORT(parent);
+
+                ec_log(100, "DISTRIBUTED_CLOCK", "slave %d, port on "
+                        "parent %d\n", slave, slv->parentport);
+
                 dt1 = 0;
                 dt2 = 0;
                 /* delta time of (parent - 1) - parent */
                 /* note: order of ports is 0 - 3 - 1 -2 */
                 /* non active ports are skipped */
-                dt3 = ec_dc_porttime(pec, parent, slv->parentport) -
-                    ec_dc_porttime(pec, parent, ec_dc_prevport(pec, parent, slv->parentport));
 
-                int p1 = ec_dc_porttime(pec, parent, slv->parentport);
-                int p2 = ec_dc_porttime(pec, parent, ec_dc_prevport(pec, parent, slv->parentport));
+#define EC_DC_PORTTIME(port) \
+                ((port) < 4 ? slv->dc.receive_times[(port)].time : 0);
+                
+                int prev_parentport = ec_dc_prevport(pec, parent, slv->parentport);
+                int prev_entryport  = ec_dc_prevport(pec, parent, slv->parentport);
+
+                int porttime_parentport = EC_DC_PORTTIME(slv->parentport);
+                int porttime_prev_parentport = EC_DC_PORTTIME(prev_parentport);
                 ec_log(100, "DISTRIBUTED_CLOCK", "ports %d, %d, times %d, %d\n", 
-                    slv->parentport, ec_dc_prevport(pec, parent, slv->parentport), p1, p2);
+                    slv->parentport, prev_parentport, porttime_parentport, 
+                    porttime_prev_parentport);
+
+                dt3 = porttime_parentport - porttime_prevport;
 
                 /* current slave has children */
                 /* those childrens delays need to be substacted */
                 if (slv->link_cnt > 1)
-                    dt1 = ec_dc_porttime(pec, slave, ec_dc_prevport(pec, slave, slv->entryport)) -
-                        ec_dc_porttime(pec, slave, slv->entryport);
+                    dt1 = EC_DC_PORTTIME(ec_dc_prevport(pec, slave, slv->entryport)) -
+                        EC_DC_PORTTIME(slv->entryport);
 
                 /* we are only interrested in positive diference */
                 if (dt1 > dt3) dt1 = -dt1;
                 /* current slave is not the first child of parent */
                 /* previous childs delays need to be added */
                 if ((child - parent) > 0)
-                    dt2 = ec_dc_porttime(pec, parent, ec_dc_prevport(pec, parent, slv->parentport)) -
-                        ec_dc_porttime(pec, parent, pec->slaves[parent].entryport);
+                    dt2 = EC_DC_PORTTIME(ec_dc_prevport(pec, parent, slv->parentport)) -
+                        EC_DC_PORTTIME(pec->slaves[parent].entryport);
 
                 if (dt2 < 0) dt2 = -dt2;
 
@@ -341,7 +378,7 @@ int ec_dc_config(ec_t *pec) {
 
             /* if branch has no DC slaves consume port on root parent */
             if ( parenthold && (slv->link_cnt == 1)) {
-                ec_dc_parentport(pec, parenthold);
+                EC_DC_PARENTPORT(pec, parenthold);
                 parenthold = 0;
             }
         }

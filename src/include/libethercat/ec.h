@@ -212,7 +212,10 @@ typedef struct PACKED ec_dc_info {
     int timer_override;
     int64_t timer_prev;
 
-    int mode;
+    enum {
+	    dc_mode_master_clock = 0,
+	    dc_mode_ref_clock
+    } mode;
 
     datagram_entry_t *p_de_dc;
     idx_entry_t *p_idx_dc;
