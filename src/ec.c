@@ -385,17 +385,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
     if (!pec)
         return ENOMEM;
 
-    pthread_mutex_init(&pec->idx_lock, NULL);
-    
-    // fill index queue
-    TAILQ_INIT(&pec->idx);
-    for (i = 0; i < 255; ++i) {
-        idx_entry_t *entry = (idx_entry_t *)malloc(sizeof(idx_entry_t));
-        entry->idx = i;
-        memset(&entry->waiter, 0, sizeof(sem_t));
-        sem_init(&entry->waiter, 0, 0);
-        ec_index_put(*ppec, entry);
-    }
+    ec_index_init(&pec->idx_q);
 
     // slaves'n groups
     pec->phw                = NULL;
@@ -424,13 +414,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
     if (hw_open(&pec->phw, ifname, prio, cpumask) == -1) {
         datagram_pool_close(pec->pool);
 
-        idx_entry_t *idx;
-        while ((idx = TAILQ_FIRST(&pec->idx)) != NULL) {
-            TAILQ_REMOVE(&pec->idx, idx, qh);
-            free(idx);
-        }
-
-        pthread_mutex_destroy(&pec->idx_lock);
+        ec_index_deinit(&pec->idx_q);
         free(pec);
         *ppec = NULL;
 
@@ -552,12 +536,7 @@ int ec_close(ec_t *pec) {
     hw_close(pec->phw);
     datagram_pool_close(pec->pool);
 
-    idx_entry_t *idx;
-    while ((idx = TAILQ_FIRST(&pec->idx)) != NULL) {
-        TAILQ_REMOVE(&pec->idx, idx, qh);
-        free(idx);
-    }
-
+    ec_index_deinit(&pec->idx_q);
     ec_destroy_pd_groups(pec);
 
     if (pec->slaves) {
@@ -597,52 +576,7 @@ int ec_close(ec_t *pec) {
         free(pec->slaves);
     }
 
-    pthread_mutex_destroy(&pec->idx_lock);
-
     free(pec);
-
-    return 0;
-}
-
-//! get next free index entry
-/*!
- * \param pec pointer to ethercat master
- * \param entry return entry of next free index 
- * \return 0 on succes, otherwise error code
- */
-int ec_index_get(ec_t *pec, struct idx_entry **entry) {
-    int ret = -1;
-
-    pthread_mutex_lock(&pec->idx_lock);
-
-    *entry = (idx_entry_t *)TAILQ_FIRST(&pec->idx);
-    if (*entry) {
-        TAILQ_REMOVE(&pec->idx, *entry, qh);
-        ret = 0;
-    
-        while (sem_trywait(&(*entry)->waiter) == 0)
-            ;
-    }
-
-    
-    pthread_mutex_unlock(&pec->idx_lock);
-
-    return ret;
-}
-
-//! returns index entry
-/*!
- * \param pec pointer to ethercat master
- * \param entry return index entry 
- * \return 0 on succes, otherwise error code
- */
-int ec_index_put(ec_t *pec, struct idx_entry *entry) {
-    if (!pec || !entry)
-        return -1;
-
-    pthread_mutex_lock(&pec->idx_lock);
-    TAILQ_INSERT_TAIL(&pec->idx, entry, qh);
-    pthread_mutex_unlock(&pec->idx_lock);
 
     return 0;
 }
@@ -668,13 +602,13 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
     datagram_entry_t *p_de;
     idx_entry_t *p_idx;
 
-    if (ec_index_get(pec, &p_idx) != 0) {
+    if (ec_index_get(&pec->idx_q, &p_idx) != 0) {
         ec_log(5, "EC_TRANSCEIVE", "error getting ethercat index\n");
         return -1;
     }
 
     if (datagram_pool_get(pec->pool, &p_de, NULL) != 0) {
-        ec_index_put(pec, p_idx);
+        ec_index_put(&pec->idx_q, p_idx);
         ec_log(5, "EC_TRANSCEIVE", "error getting datagram from pool\n");
         return -1;
     }
@@ -712,7 +646,7 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
     }
 
     datagram_pool_put(pec->pool, p_de);
-    ec_index_put(pec, p_idx);
+    ec_index_put(&pec->idx_q, p_idx);
 
     return 0;
 }
@@ -721,7 +655,7 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
 static void cb_no_reply(void *user_arg, struct datagram_entry *p) {
     idx_entry_t *entry = (idx_entry_t *)user_arg;
     datagram_pool_put(entry->pec->pool, p);
-    ec_index_put(entry->pec, entry);
+    ec_index_put(&entry->pec->idx_q, entry);
 }
 
 //! asyncronous ethercat read/write, answer don't care
@@ -738,13 +672,13 @@ int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr,
     datagram_entry_t *p_de;
     idx_entry_t *p_idx;
 
-    if (ec_index_get(pec, &p_idx) != 0) {
+    if (ec_index_get(&pec->idx_q, &p_idx) != 0) {
         ec_log(5, "EC_TRANSMIT_NO_REPLY", "error getting ethercat index\n");
         return -1;
     }
 
     if (datagram_pool_get(pec->pool, &p_de, NULL) != 0) {
-        ec_index_put(pec, p_idx);
+        ec_index_put(&pec->idx_q, p_idx);
         ec_log(5, "EC_TRANSMIT_NO_REPLY", "error getting datagram from pool\n");
         return -1;
     }
@@ -781,13 +715,13 @@ int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr,
 int ec_send_process_data_group(ec_t *pec, int group) {
     ec_pd_group_t *pd = &pec->pd_groups[group];
 
-    if (ec_index_get(pec, &pd->p_idx) != 0) {
+    if (ec_index_get(&pec->idx_q, &pd->p_idx) != 0) {
         ec_log(5, "EC_SEND_PROCESS_DATA_GROUP", "error getting ethercat index\n");
         return -1;
     }
 
     if (datagram_pool_get(pec->pool, &pd->p_de, NULL) != 0) {
-        ec_index_put(pec, pd->p_idx);
+        ec_index_put(&pec->idx_q, pd->p_idx);
         ec_log(5, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
         return -1;
     }
@@ -854,7 +788,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
     }
 
     datagram_pool_put(pec->pool, pd->p_de);
-    ec_index_put(pec, pd->p_idx);
+    ec_index_put(&pec->idx_q, pd->p_idx);
 
     return ret;
 }
@@ -893,13 +827,13 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
     pec->dc.rtc_time = act_rtc_time;
 
-    if (ec_index_get(pec, &pec->dc.p_idx_dc) != 0) {
+    if (ec_index_get(&pec->idx_q, &pec->dc.p_idx_dc) != 0) {
         ec_log(5, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
         return -1;
     }
 
     if (datagram_pool_get(pec->pool, &pec->dc.p_de_dc, NULL) != 0) {
-        ec_index_put(pec, pec->dc.p_idx_dc);
+        ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
         ec_log(5, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
         return -1;
     }
@@ -987,13 +921,13 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                     idx_entry_t *p_idx_dc_sto;
 
                     // dc system time offset frame
-                    if (ec_index_get(pec, &p_idx_dc_sto) != 0) {
+                    if (ec_index_get(&pec->idx_q, &p_idx_dc_sto) != 0) {
                         ec_log(5, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
                         goto sto_exit;
                     }
 
                     if (datagram_pool_get(pec->pool, &p_de_dc_sto, NULL) != 0) {
-                        ec_index_put(pec, p_idx_dc_sto);
+                        ec_index_put(&pec->idx_q, p_idx_dc_sto);
                         ec_log(5, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
                         goto sto_exit;
                     }
@@ -1043,7 +977,7 @@ sto_exit:
     }
 
     datagram_pool_put(pec->pool, pec->dc.p_de_dc);
-    ec_index_put(pec, pec->dc.p_idx_dc);
+    ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
 
     return 0;
 }

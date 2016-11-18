@@ -28,6 +28,7 @@
 
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
+#include "libethercat/idx.h"
 
 #include <pthread.h>
 #include <stdlib.h>

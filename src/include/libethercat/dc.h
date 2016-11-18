@@ -34,22 +34,61 @@
 #define __LIBETHERCAT_DC_H__
 
 #include "libethercat/common.h"
+#include "libethercat/idx.h"
+#include "libethercat/datagram_pool.h"
 
 typedef struct PACKED ec_dc_info_slave {
-    int use_dc;
+    int use_dc;                 //!< flag, whether to use dc
+    int next;                   //!< marker for next dc slave
+    int prev;                   //!< marker for previous dc slave
+
+    int available_ports;        //!< available ports for dc config
+    int32_t receive_times[4];   //!< latched port receive times
+            
+    int type;                   //!< dc type, 0 = sync0, 1 = sync01
+    uint32_t cycle_time_0;      //!< cycle time of sync 0 [ns]
+    uint32_t cycle_time_1;      //!< cycle time of sync 1 [ns]
+    uint32_t cycle_shift;       //!< cycle shift time [ns]
+} PACKED ec_dc_info_slave_t;
+
+typedef struct PACKED ec_dc_info {
+    uint16_t master_address;
+    int have_dc;
     int next;
     int prev;
 
-    int available_ports;
-    int32_t receive_times[4];
-            
-    int64_t system_time_offset;
-            
-    int type;              //! dc type, 0 = sync0, 1 = sync01
-    uint32_t cycle_time_0; //! cycle time of sync 0 [ns]
-    uint32_t cycle_time_1; //! cycle time of sync 1 [ns]
-    uint32_t cycle_shift;  //! cycle shift time [ns]
-} ec_dc_info_slave_t;
+    uint64_t dc_time;
+    uint64_t dc_cycle_sum;
+    uint64_t dc_cycle;
+    int32_t dc_cycle_cnt;
+    int64_t dc_sto;
+
+    uint64_t rtc_sto;
+    uint64_t rtc_time;
+    uint64_t rtc_cycle_sum;
+    uint64_t rtc_cycle;
+    int32_t rtc_count;
+
+    int32_t act_diff;
+               
+    int64_t prev_rtc;   //!< rtc value of previous cycle (truncated to 32-bit)
+    int64_t prev_dc;    //!< dc  value of previous cycle (truncated to 32-bit)
+
+    int offset_compensation;
+    int offset_compensation_cnt;
+    int offset_compensation_max;
+
+    int timer_override;
+    int64_t timer_prev;
+
+    enum {
+	    dc_mode_master_clock = 0,
+	    dc_mode_ref_clock
+    } mode;
+
+    datagram_entry_t *p_de_dc;
+    idx_entry_t *p_idx_dc;
+} PACKED ec_dc_info_t;
 
 struct ec;
 

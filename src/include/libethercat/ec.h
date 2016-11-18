@@ -33,6 +33,7 @@
 #include "libethercat/dc.h"
 #include "libethercat/hw.h"
 #include "libethercat/regs.h"
+#include "libethercat/idx.h"
 #include "libethercat/datagram.h"
 #include "libethercat/datagram_pool.h"
 #include "libethercat/message_pool.h"
@@ -49,15 +50,6 @@ typedef uint16_t ec_state_t;
 #define EC_STATE_RESET       0x10
 
 struct ec;
-
-typedef struct idx_entry {
-    uint8_t    idx;             //!< datagram index
-    sem_t      waiter;          //!< waiter semaphore for synchronous access
-    struct ec *pec;
-
-    TAILQ_ENTRY(idx_entry) qh;  //!< queue handle
-} idx_entry_t;
-TAILQ_HEAD(idx_queue, idx_entry);
     
 typedef struct ec_slave_mbx {
     uint8_t  sm_nr;
@@ -164,52 +156,12 @@ typedef struct ec_slave {
     struct ec_slave_mailbox_init_cmds init_cmds;
 } ec_slave_t;
 
-typedef struct PACKED ec_dc_info {
-    uint16_t master_address;
-    int have_dc;
-    int next;
-    int prev;
-
-    uint64_t dc_time;
-    uint64_t dc_cycle_sum;
-    uint64_t dc_cycle;
-    int32_t dc_cycle_cnt;
-    int64_t dc_sto;
-
-    uint64_t rtc_sto;
-    uint64_t rtc_time;
-    uint64_t rtc_cycle_sum;
-    uint64_t rtc_cycle;
-    int32_t rtc_count;
-
-    int32_t act_diff;
-               
-    int64_t prev_rtc;   //!< rtc value of previous cycle (truncated to 32-bit)
-    int64_t prev_dc;    //!< dc  value of previous cycle (truncated to 32-bit)
-
-    int offset_compensation;
-    int offset_compensation_cnt;
-    int offset_compensation_max;
-
-    int timer_override;
-    int64_t timer_prev;
-
-    enum {
-	    dc_mode_master_clock = 0,
-	    dc_mode_ref_clock
-    } mode;
-
-    datagram_entry_t *p_de_dc;
-    idx_entry_t *p_idx_dc;
-} PACKED ec_dc_info_t;
-
 typedef struct ec {
     hw_t *phw;
     int tx_sync;
     datagram_pool_t *pool;
 
-    pthread_mutex_t idx_lock;
-    struct idx_queue idx;
+    idx_queue_t idx_q;
 
     int slave_cnt;
     ec_slave_t *slaves;
@@ -265,22 +217,6 @@ int ec_create_pd_groups(ec_t *pec, int pd_group_cnt);
  * \return 0 on success
  */
 int ec_destroy_pd_groups(ec_t *pec);
-
-//! get next free index entry
-/*!
- * \param pec pointer to ethercat master
- * \param entry return entry of next free index 
- * \return 0 on succes, otherwise error code
- */
-int ec_index_get(ec_t *pec, struct idx_entry **entry);
-
-//! returns index entry
-/*!
- * \param pec pointer to ethercat master
- * \param entry return index entry 
- * \return 0 on succes, otherwise error code
- */
-int ec_index_put(ec_t *pec, struct idx_entry *entry);
 
 //! syncronous ethercat read/write
 /*!

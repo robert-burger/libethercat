@@ -167,7 +167,7 @@ static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
     return 0;
 }
 
-/* calculate previous active port of a slave */
+//! calculate previous active port of a slave, starting at port
 static inline uint8_t ec_dc_prevport(ec_t *pec, uint16_t slave, uint8_t port) {
     switch(port) {
 #define eval_port(...) { \
@@ -192,13 +192,14 @@ static inline uint8_t ec_dc_prevport(ec_t *pec, uint16_t slave, uint8_t port) {
     return port;
 }
 
-/* search unconsumed ports in parent, consume and return first open port */
+//! search for available port and return
 static inline uint8_t ec_dc_parentport(ec_t *pec, uint16_t parent) {
-    /* search order is important, here 3 - 1 - 2 - 0 */
+    // search order is important, here 3 - 1 - 2 - 0, read et1100 docs
     int port_idx[] = { 3, 1, 2, 0 };
     uint8_t parentport = 0;
 
-    ec_log(100, "DISTRIBUTED_CLOCK", "parent %d, available_ports 0x%X\n", parent, pec->slaves[parent].dc.available_ports);
+    ec_log(100, "DISTRIBUTED_CLOCK", "parent %d, available_ports mask 0x%X\n", 
+            parent, pec->slaves[parent].dc.available_ports);
 
     for (int i = 0; i < 4; ++i) {
         int port = port_idx[i];
@@ -209,17 +210,32 @@ static inline uint8_t ec_dc_parentport(ec_t *pec, uint16_t parent) {
             break;
         }
     }
+    
+    ec_log(100, "DISTRIBUTED_CLOCK", "parent %d, parentport %d\n", 
+            parent, parentport);
 
     return parentport;
 }
 
-/**
- * Locate DC slaves, measure propagation delays.
+//! Prepare EtherCAT master and slaves for distributed clocks
+/*!
+ * Check all slaves if they support distributed clocks and measure delays.
  *
- * @param [in] dev              ethercat device
- * return boolean if slaves are found with DC
+ * DC support can be determined from EtherCAT slave's feature register (0x08). 
+ * which is automatically read on EtherCAT master's INIT phase. On all 
+ * slaves supporting DC's the system time is read and written to
+ * the system time offset to set slave time to 0. afterwards the port times
+ * are taken and the propagation delays are calculated and written. 
+ *
+ * This function does not enable distributed clock sync0/1 pulse generation
+ * on the slaves. this has to be done with \link ec_dc_sync0 \endlink
+ * or \link ec_dc_sync01 \endlink.
+ *
+ *
+ * \param pec ethercat master pointer
+ * \return supported dc
  */
-int ec_dc_config(ec_t *pec) {
+int ec_dc_config(struct ec *pec) {
     int i, parent, child;
     int parenthold = 0;
     int32_t delay_childs, delay_previous_slaves, delay_slave_with_childs;

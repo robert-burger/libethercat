@@ -18,11 +18,12 @@ include_HEADERS = \
 				  $(srcdir)/include/libethercat/regs.h \
 				  $(srcdir)/include/libethercat/slave.h \
 				  $(srcdir)/include/libethercat/soe.h \
+				  $(srcdir)/include/libethercat/idx.h \
 				  $(srcdir)/include/libethercat/timer.h
 
 
 libethercat_la_SOURCES  = coe.c slave.c datagram.c datagram_pool.c message_pool.c ec.c \
-						  hw.c soe.c foe.c mbx.c eeprom.c dc.c timer.c
+						  hw.c soe.c foe.c mbx.c eeprom.c dc.c timer.c idx.c
 
 libethercat_la_CFLAGS   = -std=gnu99 -Wall -I$(srcdir)/include
 
