@@ -26,7 +26,28 @@
 #ifndef __LIBETHERCAT_DC_H__
 #define __LIBETHERCAT_DC_H__
 
-#include "libethercat/ec.h"
+#include "libethercat/common.h"
+
+typedef struct PACKED ec_dc_info_slave {
+    struct {
+        int32_t time;
+    } receive_times[4];
+
+    int use_dc;
+    int next;
+    int prev;
+
+    int available_ports;
+            
+    int64_t system_time_offset;
+            
+    int type;              //! dc type, 0 = sync0, 1 = sync01
+    uint32_t cycle_time_0; //! cycle time of sync 0 [ns]
+    uint32_t cycle_time_1; //! cycle time of sync 1 [ns]
+    uint32_t cycle_shift;  //! cycle shift time [ns]
+} ec_dc_info_slave_t;
+
+struct ec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +58,7 @@ extern "C" {
  * \param pec ethercat master pointer
  * return supported dc
  */
-int ec_dc_config(ec_t *pec);
+int ec_dc_config(struct ec *pec);
 
 //! configure slave for distributed clock sync 0 pulse
 /*/
@@ -47,7 +68,7 @@ int ec_dc_config(ec_t *pec);
  * \param cycle_time cycle time to program to fire sync 0 in [ns]
  * \param cycle_shift shift of first sync 0 start in [ns]
  */
-void ec_dc_sync0(ec_t *pec, uint16_t slave, int active, 
+void ec_dc_sync0(struct ec *pec, uint16_t slave, int active, 
         uint32_t cycle_time, int32_t cycle_shift);
 
 //! configure slave for distributed clock sync 0 and sync 1 pulse
@@ -59,7 +80,7 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
  * \param cycle_time_1 cycle time to program to fire sync 1 in [ns]
  * \param cycle_shift shift of first sync 0 start in [ns]
  */
-void ec_dc_sync01(ec_t *pec, uint16_t slave, int active, 
+void ec_dc_sync01(struct ec *pec, uint16_t slave, int active, 
         uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift);
 
 #ifdef __cplusplus

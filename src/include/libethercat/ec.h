@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "libethercat/common.h"
+#include "libethercat/dc.h"
 #include "libethercat/hw.h"
 #include "libethercat/regs.h"
 #include "libethercat/datagram.h"
@@ -97,25 +98,6 @@ typedef struct PACKED ec_pd_group {
     idx_entry_t *p_idx;
 } PACKED ec_pd_group_t;
 
-typedef struct PACKED ec_slave_dc_info {
-    struct {
-        int32_t time;
-    } receive_times[4];
-
-    int use_dc;
-    int next;
-    int prev;
-
-    int consumedports;
-            
-    int64_t system_time_offset;
-            
-    int type;              //! dc type, 0 = sync0, 1 = sync01
-    uint32_t cycle_time_0; //! cycle time of sync 0 [ns]
-    uint32_t cycle_time_1; //! cycle time of sync 1 [ns]
-    uint32_t cycle_shift;  //! cycle shift time [ns]
-} ec_slave_dc_info_t;
-
 typedef struct ec_pd {
     uint8_t *pd;
     size_t len;
@@ -155,7 +137,7 @@ typedef struct ec_slave {
     uint16_t    ptype;              //!< ptype
     int32_t     pdelay;
     
-    int         entryport;          //!< entry port from parent slave
+    int         entry_port;          //!< entry port from parent slave
     int         parent;             //!< parent slave number
     int         parentport;         //!< port attached on parent slave 
 
@@ -176,7 +158,7 @@ typedef struct ec_slave {
     ec_slave_subdev_t *subdevs;
 
     eeprom_info_t eeprom;
-    ec_slave_dc_info_t dc;
+    ec_dc_info_slave_t dc;
     
     ec_state_t expected_state;
     struct ec_slave_mailbox_init_cmds init_cmds;

@@ -28,3 +28,8 @@ libethercat_la_CFLAGS   = -std=gnu99 -Wall -I$(srcdir)/include
 
 libethercat_la_LDFLAGS  = -Wall -release $(PACKAGE_VERSION)
 
+bin_PROGRAMS = ethercatdiag
+ethercatdiag_SOURCES = ethercatdiag.c 
+ethercatdiag_CFLAGS = -I$(srcdir)/include
+ethercatdiag_LDADD = libethercat.la 
+
