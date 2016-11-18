@@ -489,38 +489,31 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
 
     for (int slave = 0; slave < pec->slave_cnt; ++slave) {
         ec_slave_t *slv = &pec->slaves[slave]; 
-
-        uint16_t topology = 0;
-        ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &topology, sizeof(topology), &wkc);
-
         slv->link_cnt = 0;
         slv->active_ports = 0;
 
-        if ((topology & 0x0300) == 0x0200) { // port 0 open and communication established
-            slv->link_cnt++;
-            slv->active_ports |= 0x01;
-        }
-        if ((topology & 0x0c00) == 0x0800) { // port1 open and communication established
-            slv->link_cnt++;
-            slv->active_ports |= 0x02;
-        }
-        if ((topology & 0x3000) == 0x2000) { // port2 open and communication established
-            slv->link_cnt++;
-            slv->active_ports |= 0x04;
-        }
-        if ((topology & 0xc000) == 0x8000) { // port3 open and communication established
-            slv->link_cnt++;
-            slv->active_ports |= 0x08;
-        }
+        uint16_t topology = 0;
+        ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &topology,
+                sizeof(topology), &wkc);
+
+// check if port is open and communication established
+#define active_port(port) \
+        if ( (topology & (3 << (8 + (2 * (port)))) ) == \
+                (2 << (8 + (2 * (port)))) ) { \
+            slv->link_cnt++; slv->active_ports |= 1<<(port); }
+
+        for (int port = 0; port < 4; ++port)
+            active_port(port);
 
         // read out physical type
-        ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, sizeof(slv->ptype), &wkc);
+        ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, 
+                sizeof(slv->ptype), &wkc);
 
-        // 0=no links, not possible 
-        // 1=1 link  , end of line 
-        // 2=2 links , one before and one after 
-        // 3=3 links , split point 
-        // 4=4 links , cross point 
+        // 0 = no links, not possible 
+        // 1 =  1 link , end of line 
+        // 2 =  2 links, one before and one after 
+        // 3 =  3 links, split point 
+        // 4 =  4 links, cross point 
 
         // search for parent
         slv->parent = -1; // parent is master at beginning

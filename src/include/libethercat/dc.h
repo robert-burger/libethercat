@@ -1,8 +1,15 @@
-//! ethercat distributed clocks
-/*!
- * author: Robert Burger
+/**
+ * \file dc.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 11 Nov 2016
+ *
+ * \brief ethercat distributed clocks support.
+ *
+ * These functions are used to enable distributed clocks support
+ * on the EtherCAT master and to configure one ore more EtherCAT
+ * slaves to enable the sync0 and/or sync1 pulse generation.
  */
 
 /*
@@ -29,15 +36,12 @@
 #include "libethercat/common.h"
 
 typedef struct PACKED ec_dc_info_slave {
-    struct {
-        int32_t time;
-    } receive_times[4];
-
     int use_dc;
     int next;
     int prev;
 
     int available_ports;
+    int32_t receive_times[4];
             
     int64_t system_time_offset;
             
@@ -53,32 +57,55 @@ struct ec;
 extern "C" {
 #endif
 
-//! check all slaves if they support dc and measure delays
+//! Prepare EtherCAT master and slaves for distributed clocks
 /*!
+ * Check all slaves if they support distributed clocks and measure delays.
+ *
+ * DC support can be determined from EtherCAT slave's feature register (0x08). 
+ * which is automatically read on EtherCAT master's INIT phase. On all 
+ * slaves supporting DC's the system time is read and written to
+ * the system time offset to set slave time to 0. afterwards the port times
+ * are taken and the propagation delays are calculated and written. 
+ *
+ * This function does not enable distributed clock sync0/1 pulse generation
+ * on the slaves. this has to be done with \link ec_dc_sync0 \endlink
+ * or \link ec_dc_sync01 \endlink.
+ *
+ *
  * \param pec ethercat master pointer
- * return supported dc
+ * \return supported dc
  */
 int ec_dc_config(struct ec *pec);
 
-//! configure slave for distributed clock sync 0 pulse
-/*/
+//! Configure EtherCAT slave for distributed clock sync0 pulse
+/*!
+ * This function writes the cycle time, calculates the DC first start time 
+ * wrt the cycle shift 
+ * and enables sync0 pulse generation on the corresponding device. It can also
+ * be use to disable DC's on the EtherCAT slave.
+ *
  * \param pec ethercat master pointer 
- * \oaran slave slave number
+ * \param slave slave number
  * \param active dc active flag
- * \param cycle_time cycle time to program to fire sync 0 in [ns]
- * \param cycle_shift shift of first sync 0 start in [ns]
+ * \param cycle_time cycle time to program to fire sync0 in [ns]
+ * \param cycle_shift shift of first sync0 start in [ns]
  */
 void ec_dc_sync0(struct ec *pec, uint16_t slave, int active, 
         uint32_t cycle_time, int32_t cycle_shift);
 
-//! configure slave for distributed clock sync 0 and sync 1 pulse
-/*/
+//! Configure EtherCAT slave for distributed clock sync0 and sync1 pulse
+/*!
+ * This function writes the cycle time, calculates the DC first start time 
+ * wrt the cycle shift 
+ * and enables sync0 and sync1 pulse generation on the corresponding device. 
+ * It can also be use to disable DC's on the EtherCAT slave.
+ * 
  * \param pec ethercat master pointer 
- * \oaran slave slave number
+ * \param slave slave number
  * \param active dc active flag
- * \param cycle_time_0 cycle time to program to fire sync 0 in [ns]
- * \param cycle_time_1 cycle time to program to fire sync 1 in [ns]
- * \param cycle_shift shift of first sync 0 start in [ns]
+ * \param cycle_time_0 cycle time to program to fire sync0 in [ns]
+ * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
+ * \param cycle_shift shift of first sync0 start in [ns]
  */
 void ec_dc_sync01(struct ec *pec, uint16_t slave, int active, 
         uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift);
