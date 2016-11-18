@@ -429,14 +429,14 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
     ec_bwr(pec, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
 
     // allocating slave structures
-    int ret = ec_brd(pec, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc); 
+    ec_brd(pec, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc); 
     pec->slave_cnt = wkc;
     alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * sizeof(ec_slave_t));
 
     for (i = 0; i < 65536; ++i) {
         int auto_inc = -1 * i;
 
-        ret = ec_aprd(pec, auto_inc, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc);
+        ec_aprd(pec, auto_inc, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc);
 
         if (wkc == 0)
             break;  // break here, cause there seems to be no more slave
@@ -555,11 +555,15 @@ int ec_close(ec_t *pec) {
             ec_eeprom_cat_pdo_t *pdo;
             while ((pdo = TAILQ_FIRST(&slv->eeprom.txpdos)) != NULL) {
                 TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
+                if (pdo->entries)
+                    free(pdo->entries);
                 free(pdo);
             }
            
             while ((pdo = TAILQ_FIRST(&slv->eeprom.rxpdos)) != NULL) {
                 TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
+                if (pdo->entries)
+                    free(pdo->entries);
                 free(pdo);
             }
 

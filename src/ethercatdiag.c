@@ -42,6 +42,8 @@ int main(int argc, char **argv) {
         }
     }
 
+    ec_close(pec);
+
     return 0;
 }
 

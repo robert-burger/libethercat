@@ -22,6 +22,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include "libethercat/idx.h"
 #include "libethercat/ec.h"
 

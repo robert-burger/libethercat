@@ -366,7 +366,7 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr, uint8_t *buf,
  */
 void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     int cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
-    uint16_t size, cat_len, cat_type = 0;
+    uint16_t /*size,*/ cat_len, cat_type = 0;
     uint32_t value32 = 0;
     ec_slave_t *slv = &pec->slaves[slave];
 
@@ -392,7 +392,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_OFF,  slv->eeprom.boot_mbx_send_offset);
     eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE, slv->eeprom.boot_mbx_send_size);
 
-    size = value32 & 0x0000FFFF;
+    //size = value32 & 0x0000FFFF;
 
     while (cat_type != EC_EEPROM_CAT_END) {
         int ret = eeprom(cat_offset, value32);
