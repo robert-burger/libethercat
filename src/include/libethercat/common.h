@@ -26,7 +26,8 @@
 #ifndef __LIBETHERCAT_COMMON_H__
 #define __LIBETHERCAT_COMMON_H__
 
-#include "stdint.h"
+#include <stdint.h>
+#include <pthread.h>
 
 #define PACKED __attribute__((__packed__))
 
@@ -54,6 +55,22 @@ typedef union ec_data {
     uint16_t    wdata[EC_MAX_DATA];
     uint32_t    ldata[EC_MAX_DATA];
 } ec_data_t;
+
+typedef struct ec_pd {
+    uint8_t *pd;
+    size_t len;
+} ec_pd_t;
+
+typedef uint16_t ec_state_t;
+#define EC_STATE_INIT        0x01
+#define EC_STATE_PREOP       0x02
+#define EC_STATE_BOOT        0x03
+#define EC_STATE_SAFEOP      0x04
+#define EC_STATE_OP          0x08
+#define EC_STATE_MASK        0x0F
+#define EC_STATE_ERROR       0x10
+#define EC_STATE_RESET       0x10
+
 
 #endif // __LIBETHERCAT_COMMON_H__
 

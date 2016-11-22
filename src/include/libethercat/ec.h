@@ -31,6 +31,7 @@
 
 #include "libethercat/common.h"
 #include "libethercat/dc.h"
+#include "libethercat/slave.h"
 #include "libethercat/hw.h"
 #include "libethercat/regs.h"
 #include "libethercat/idx.h"
@@ -39,43 +40,8 @@
 #include "libethercat/message_pool.h"
 #include "libethercat/eeprom.h"
 
-typedef uint16_t ec_state_t;
-#define EC_STATE_INIT        0x01
-#define EC_STATE_PREOP       0x02
-#define EC_STATE_BOOT        0x03
-#define EC_STATE_SAFEOP      0x04
-#define EC_STATE_OP          0x08
-#define EC_STATE_MASK        0x0F
-#define EC_STATE_ERROR       0x10
-#define EC_STATE_RESET       0x10
-
 struct ec;
     
-typedef struct ec_slave_mbx {
-    uint8_t  sm_nr;
-    uint8_t *sm_state;
-    uint8_t *buf;
-    uint8_t  skip_next;
-} ec_slave_mbx_t;
-
-typedef struct PACKED ec_slave_sm {
-    uint16_t adr;
-    uint16_t len;
-    uint32_t flags;
-} PACKED ec_slave_sm_t;
-
-typedef struct PACKED ec_slave_fmmu {
-    uint32_t log;
-    uint16_t log_len;
-    uint8_t  log_bit_start;
-    uint8_t  log_bit_stop;
-    uint16_t phys;
-    uint8_t  phys_bit_start;
-    uint8_t  type;
-    uint8_t  active;
-    uint8_t reserverd[3];
-} PACKED ec_slave_fmmu_t;
-
 typedef struct PACKED ec_pd_group {
     uint32_t log;
     uint32_t log_len;
@@ -90,71 +56,6 @@ typedef struct PACKED ec_pd_group {
     idx_entry_t *p_idx;
 } PACKED ec_pd_group_t;
 
-typedef struct ec_pd {
-    uint8_t *pd;
-    size_t len;
-} ec_pd_t;
-
-typedef struct ec_slave_subdev {
-    ec_pd_t pdin;
-    ec_pd_t pdout;
-} ec_slave_subdev_t;
-
-//! slave mailbox init commands
-typedef struct ec_slave_mailbox_init_cmd {
-    int type;                   //!< EC_MBX_COE, EC_MBX_SOE, ...
-    int transition;             //!< ECat transition, (0x24 -> PRE to SAFE, ...)
-    int id;                     //!< CoE dictionary identifier, SoE idn
-    int si_el;                  //!< CoE sub index, SoE element
-    int ca_atn;                 //!< CoE complete access mode, SoE atn
-    char *data;                 //!< new id data
-    size_t datalen;             //!< new id data length
-
-    LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
-} ec_slave_mailbox_init_cmd_t;
-    
-LIST_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
-
-typedef struct ec_slave {
-    int16_t     auto_inc_address;   //!< physical bus address
-    uint16_t    fixed_address;      //!< virtual bus address, programmed on start
-
-    uint8_t     sm_ch;              //!< number of sync manager channels
-    uint8_t     fmmu_ch;            //!< number of fmmu channels
-    int         ram_size;           //!< ram size in bytes
-    uint16_t    features;           //!< fmmu operation, dc available
-    uint16_t    pdi_ctrl;           //!< configuration of process data interface
-    uint8_t     link_cnt;           //!< link count
-    uint8_t     active_ports;       //!< active ports with link
-    uint16_t    ptype;              //!< ptype
-    int32_t     pdelay;
-    
-    int         entry_port;          //!< entry port from parent slave
-    int         parent;             //!< parent slave number
-    int         parentport;         //!< port attached on parent slave 
-
-    int sm_set_by_user;
-    ec_slave_sm_t *sm;
-    ec_slave_fmmu_t *fmmu;
-
-    pthread_mutex_t mbx_lock;
-    ec_slave_mbx_t mbx_read;
-    ec_slave_mbx_t mbx_write;
-
-    int assigned_pd_group;
-
-    ec_pd_t pdin;
-    ec_pd_t pdout;
-
-    size_t subdev_cnt;
-    ec_slave_subdev_t *subdevs;
-
-    eeprom_info_t eeprom;
-    ec_dc_info_slave_t dc;
-    
-    ec_state_t expected_state;
-    struct ec_slave_mailbox_init_cmds init_cmds;
-} ec_slave_t;
 
 typedef struct ec {
     hw_t *phw;
