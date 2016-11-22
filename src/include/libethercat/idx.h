@@ -38,20 +38,28 @@
 
 #include "libethercat/common.h"
 
-struct ec;
-
+//! index entry
 typedef struct idx_entry {
-    uint8_t    idx;             //!< datagram index
-    sem_t      waiter;          //!< waiter semaphore for synchronous access
-    struct ec *pec;
+    uint8_t idx;                //!< datagram index
+    sem_t waiter;               //!< waiter semaphore for synchronous access
+    struct ec *pec;             //!< pointer to ethercat master structure
 
-    TAILQ_ENTRY(idx_entry) qh;  //!< nqueue handle
+    TAILQ_ENTRY(idx_entry) qh;  //!< queue handle
 } idx_entry_t;
 TAILQ_HEAD(idx_entry_queue, idx_entry);
 
+
+//! index queue
 typedef struct idx_queue {
-    pthread_mutex_t lock;
-    struct idx_entry_queue q;
+    pthread_mutex_t lock;       //!< queue lock
+                                /*!<
+                                 * prevent concurrent queue access
+                                 */
+
+    struct idx_entry_queue q;   //!< the head of the index queue
+
+#define EC_INDICES_MAX  256
+    idx_entry_t __indices[EC_INDICES_MAX];
 } idx_queue_t;
 
 #ifdef __cplusplus

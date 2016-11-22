@@ -83,8 +83,8 @@ int ec_index_init(idx_queue_t *idx_q) {
     
     // fill index queue
     TAILQ_INIT(&idx_q->q);
-    for (i = 0; i < 255; ++i) {
-        idx_entry_t *entry = (idx_entry_t *)malloc(sizeof(idx_entry_t));
+    for (i = 0; i < EC_INDICES_MAX; ++i) {
+        idx_entry_t *entry = &idx_q->__indices[i];
         entry->idx = i;
         memset(&entry->waiter, 0, sizeof(sem_t));
         sem_init(&entry->waiter, 0, 0);
@@ -105,7 +105,7 @@ void ec_index_deinit(idx_queue_t *idx_q) {
     idx_entry_t *idx;
     while ((idx = TAILQ_FIRST(&idx_q->q)) != NULL) {
         TAILQ_REMOVE(&idx_q->q, idx, qh);
-        free(idx);
+        sem_destroy(&idx->waiter);
     }
 
     pthread_mutex_destroy(&idx_q->lock);

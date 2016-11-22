@@ -1,8 +1,13 @@
-//! ethercat master
-/*!
- * author: Robert Burger
+/**
+ * \file coe.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 22 Nov 2016
+ *
+ * \brief ethercat coe functions.
+ *
+ * Implementaion of the CanOpen over EtherCAT mailbox protocol
  */
 
 /*
@@ -26,32 +31,34 @@
 #ifndef __LIBETHERCAT_COE_H__
 #define __LIBETHERCAT_COE_H__
 
-/** CoE mailbox types */
+//! CoE mailbox types
 enum {
-    EC_COE_EMERGENCY  = 0x01,
-    EC_COE_SDOREQ,
-    EC_COE_SDORES,
-    EC_COE_TXPDO,
-    EC_COE_RXPDO,
-    EC_COE_TXPDO_RR,
-    EC_COE_RXPDO_RR,
-    EC_COE_SDOINFO
+    EC_COE_EMERGENCY  = 0x01,   //!< emergency message
+    EC_COE_SDOREQ,              //!< service data object request
+    EC_COE_SDORES,              //!< service data object response
+    EC_COE_TXPDO,               //!< transmit PDO
+    EC_COE_RXPDO,               //!< receive PDO
+    EC_COE_TXPDO_RR,            //!< transmit PDO RR
+    EC_COE_RXPDO_RR,            //!< receive PDO RR
+    EC_COE_SDOINFO              //!< service data object information
 };
 
+//! service data object command
 enum {
-    EC_COE_SDO_DOWNLOAD_SEQ_REQ = 0x00,
-    EC_COE_SDO_DOWNLOAD_REQ     = 0x01,
-    EC_COE_SDO_UPLOAD_REQ       = 0x02,
-    EC_COE_SDO_ABORT_REQ        = 0x04
+    EC_COE_SDO_DOWNLOAD_SEQ_REQ = 0x00,     //!< sdo download seq request
+    EC_COE_SDO_DOWNLOAD_REQ     = 0x01,     //!< sdo download request
+    EC_COE_SDO_UPLOAD_REQ       = 0x02,     //!< sdo upload request
+    EC_COE_SDO_ABORT_REQ        = 0x04      //!< sdo abort request
 };
 
+//! service data object information type
 enum {
-    EC_COE_SDO_INFO_ODLIST_REQ = 0x01,
-    EC_COE_SDO_INFO_ODLIST_RESP,
-    EC_COE_SDO_INFO_GET_OBJECT_DESC_REQ,
-    EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP,
-    EC_COE_SDO_INFO_GET_ENTRY_DESC_REQ,
-    EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP,
+    EC_COE_SDO_INFO_ODLIST_REQ = 0x01,      //!< object dict list request
+    EC_COE_SDO_INFO_ODLIST_RESP,            //!< object dict list response
+    EC_COE_SDO_INFO_GET_OBJECT_DESC_REQ,    //!< object description request
+    EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP,   //!< object description response
+    EC_COE_SDO_INFO_GET_ENTRY_DESC_REQ,     //!< entry description request
+    EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP,    //!< entry description response
 };
 
 #define DEFTYPE_PDOMAPPING          0x0021
