@@ -1,8 +1,13 @@
-//! ethercat master
-/*!
- * author: Robert Burger
+/**
+ * \file ec.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 22 Nov 2016
+ *
+ * \brief ethercat master functions.
+ *
+ * These are EtherCAT master specific configuration functions.
  */
 
 /*
@@ -42,39 +47,100 @@
 
 struct ec;
     
+//! process data group structure
 typedef struct PACKED ec_pd_group {
-    uint32_t log;
-    uint32_t log_len;
-    
-    uint8_t *pd;
-    size_t   pdout_len;
-    size_t   pdin_len;
+    uint32_t log;                   //!< locical address
+                                    /*!<
+                                     * This defines the logical start address
+                                     * for the process data group. It is used
+                                     * for EtherCAT logical addressing commands
+                                     * LRW, LRD, LWR, ...
+                                     */
 
-    uint16_t wkc_expected;
+    uint32_t log_len;               //!< byte length at logical address
+                                    /*!<
+                                     * This defines the byte length at logical 
+                                     * start address for the process data 
+                                     * group. It is used for EtherCAT logical 
+                                     * addressing commands LRW, LRD, LWR, ...
+                                     */
     
-    datagram_entry_t *p_de;
-    idx_entry_t *p_idx;
+    uint8_t *pd;                    //!< process data pointer
+                                    /*!< 
+                                     * This address holds the process data
+                                     * of the whole group. At offset 0 the 
+                                     * outputs should be set, at offset \link
+                                     * pdout_len \endlink, the inputs are 
+                                     * filled in by the LRW command.
+                                     */
+
+    size_t   pdout_len;             //!< length of process data outputs
+    size_t   pdin_len;              //!< length of process data inputs
+
+    uint16_t wkc_expected;          //!< expected working counter
+                                    /*!< 
+                                     * This is the expected working counter 
+                                     * for the LRW command. The working counter
+                                     * will be incremented by every slave that
+                                     * reads data by 1, by every slave that 
+                                     * writes data by 2 and by every slave that
+                                     * reads and writes data by 3.
+                                     */
+    
+    datagram_entry_t *p_de;         //!< EtherCAT datagram from pool
+    idx_entry_t *p_idx;             //!< EtherCAT datagram index from pool
 } PACKED ec_pd_group_t;
 
-
+//! ethercat master structure
 typedef struct ec {
-    hw_t *phw;
-    int tx_sync;
-    datagram_pool_t *pool;
+    hw_t *phw;                      //!< pointer to hardware interface
+    int tx_sync;                    //!< synchronous call to send frames
+                                    /*!<
+                                     * This defines if the actual call to 
+                                     * hardware interface to send a frame (
+                                     * \link hw_tx() \endlink should be done 
+                                     * synchronously by the ec_transceive 
+                                     * function.
+                                     * If not set, the hw_tx() has to be 
+                                     * called by the user (e.g. cyclical timer
+                                     * loop).
+                                     */
 
-    idx_queue_t idx_q;
+    datagram_pool_t *pool;          //!< datagram pool
+                                    /*!<
+                                     * All EtherCAT datagrams will be pre-
+                                     * allocated and available in the datagram
+                                     * pool. Theres no need to allocate 
+                                     * datagrams at runtime.
+                                     */
 
-    int slave_cnt;
-    ec_slave_t *slaves;
+    idx_queue_t idx_q;              //!< index queue
+                                    /*! 
+                                     * The index queue holds all available 
+                                     * EtherCAT datagram indices. For every
+                                     * datagram one index will be taken out of
+                                     * the queue and returned to the queue if
+                                     * the frame with the datagram is received 
+                                     * again by the master.
+                                     */
 
-    int pd_group_cnt;
-    ec_pd_group_t *pd_groups;
+    int slave_cnt;                  //!< count of found EtherCAT slaves
+    ec_slave_t *slaves;             //!< array with EtherCAT slaves
 
-    ec_dc_info_t dc;
+    int pd_group_cnt;               //!< count of process data groups
+    ec_pd_group_t *pd_groups;       //!< array with process data groups
+
+    ec_dc_info_t dc;                //!< distributed clocks master settings
     ec_async_message_loop_t *async_loop;
+                                    //!< asynchronous message loop
+                                    /*!<
+                                     * This loop receives asynchronous messages
+                                     * from the EtherCAT slave mailboxes. This 
+                                     * may be e.g. emergency messages...
+                                     */
     
-    int eeprom_log;
-    ec_state_t master_state;
+    int eeprom_log;                 //!< flag whether to log eeprom to stdout
+    ec_state_t master_state;        //!< expected EtherCAT master state
 } ec_t;
 
 #ifdef __cplusplus
@@ -95,7 +161,8 @@ void ec_log(int lvl, const char *pre, const char *format, ...);
  * \param eeprom_log log eeprom to stdout
  * \return 0 on succes, otherwise error code
  */
-int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_log);
+int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, 
+        int eeprom_log);
 
 //! closes ethercat master
 /*!
@@ -192,35 +259,38 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout);
     ((uint32_t)(adp) << 16) | ((ado) & 0xFFFF)
 
 #define ec_brd(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BRD, ((uint32_t)(ado) << 16), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_BRD, ((uint32_t)(ado) << 16), \
+            (uint8_t *)(data), (datalen), (wkc))
 #define ec_bwr(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BWR, ((uint32_t)(ado) << 16), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_BWR, ((uint32_t)(ado) << 16), \
+            (uint8_t *)(data), (datalen), (wkc))
 #define ec_brw(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BRW, ((uint32_t)(ado) << 16), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_BRW, ((uint32_t)(ado) << 16), \
+            (uint8_t *)(data), (datalen), (wkc))
 
 #define ec_aprd(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APRD, ((uint32_t)(ado) << 16) | ((adp) & 0xFFFF), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APRD, ((uint32_t)(ado) << 16) | \
+            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
 #define ec_apwr(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APWR, ((uint32_t)(ado) << 16) | ((adp) & 0xFFFF), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APWR, ((uint32_t)(ado) << 16) | \
+            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
 #define ec_aprw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APRW, ((uint32_t)(ado) << 16) | ((adp) & 0xFFFF), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APRW, ((uint32_t)(ado) << 16) | \
+            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
 
 #define ec_fprd(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPRD, ((uint32_t)(ado) << 16) | ((adp) & 0xFFFF), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPRD, ((uint32_t)(ado) << 16) | \
+            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
 #define ec_fpwr(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPWR, ((uint32_t)(ado) << 16) | ((adp) & 0xFFFF), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPWR, ((uint32_t)(ado) << 16) | \
+            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
 #define ec_fprw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPRW, ((uint32_t)(ado) << 16) | ((adp) & 0xFFFF), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPRW, ((uint32_t)(ado) << 16) | \
+            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
 
 #define ec_frmw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FRMW, ((uint32_t)(ado) << 16) | ((adp) & 0xFFFF), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FRMW, ((uint32_t)(ado) << 16) | \
+            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
 
 #endif // __LIBETHERCAT_EC_H__
 

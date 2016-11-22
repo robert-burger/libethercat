@@ -157,9 +157,10 @@ typedef struct PACKED ec_slave_fmmu {
     uint8_t reserverd[3];       //!< reserved for future use
 } PACKED ec_slave_fmmu_t;
 
+//! ethercat sub device
 typedef struct ec_slave_subdev {
-    ec_pd_t pdin;
-    ec_pd_t pdout;
+    ec_pd_t pdin;               //!< process data inputs
+    ec_pd_t pdout;              //!< process data outputs
 } ec_slave_subdev_t;
 
 //! slave mailbox init commands
@@ -326,6 +327,9 @@ extern "C" {
 
 //! set ethercat state on slave 
 /*!
+ * This call tries to set the EtherCAT slave to the requested state. If 
+ * successfull a working counter of 1 will be returned. 
+ *
  * \param pec ethercat master pointer
  * \param slave number
  * \param state new ethercat state
@@ -335,6 +339,9 @@ int ec_slave_set_state(struct ec *pec, uint16_t slave, ec_state_t state);
 
 //! get ethercat state from slave 
 /*!
+ * This call tries to read the EtherCAT slave state. If 
+ * successfull a working counter of 1 will be returned. 
+ *
  * \param pec ethercat master pointer
  * \param slave number
  * \param state return ethercat state
@@ -346,6 +353,10 @@ int ec_slave_get_state(struct ec *pec, uint16_t slave,
 
 //! generate pd mapping
 /*!
+ * This tries to generate a mapping for the process data and figures out the 
+ * settings for the sync managers. Therefor it either tries to use an 
+ * available mailbox protocol or the information stored in the EEPROM.
+ *  
  * \param pec ethercat master pointer
  * \param slave slave number
  * \return wkc
@@ -354,6 +365,10 @@ int ec_slave_generate_mapping(struct ec *pec, uint16_t slave);
 
 //! prepare state transition on ethercat slave
 /*!
+ * While prepare a state transition the master sends the init commands
+ * to the slaves. These are usually settings for the process data mapping 
+ * (e.g. PDOs, ...) or some slave specific settings.
+ *
  * \param pec ethercat master pointer
  * \param slave slave number
  * \param state switch to state
@@ -364,6 +379,8 @@ int ec_slave_prepare_state_transition(struct ec *pec, uint16_t slave,
 
 //! state transition on ethercat slave
 /*!
+ * This actually performs the state transition.
+ *
  * \param pec ethercat master pointer
  * \param slave slave number
  * \param state switch to state
