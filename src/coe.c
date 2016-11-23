@@ -197,7 +197,8 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
             (ec_sdo_abort_request_t *)(slv->mbx_read.buf); 
 
         ec_log(100, "ec_coe_sdo_write", "got sdo abort request on idx %#X, "
-                "subidx %d, abortcode %#X\n", index, sub_index, abort_buf->abort_code);
+                "subidx %d, abortcode %#X\n", index, sub_index, 
+                abort_buf->abort_code);
 
         *abort_code = abort_buf->abort_code;
         *len = 0;
@@ -456,8 +457,11 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
 
     pthread_mutex_lock(&slv->mbx_lock);
 
-    ec_sdo_odlist_req_t *write_buf = (ec_sdo_odlist_req_t *)(pec->slaves[slave].mbx_write.buf);
-    ec_sdo_odlist_resp_t *read_buf = (ec_sdo_odlist_resp_t *)(pec->slaves[slave].mbx_read.buf); 
+    ec_sdo_odlist_req_t *write_buf = 
+        (ec_sdo_odlist_req_t *)(pec->slaves[slave].mbx_write.buf);
+    ec_sdo_odlist_resp_t *read_buf = 
+        (ec_sdo_odlist_resp_t *)(pec->slaves[slave].mbx_read.buf); 
+
     ec_mbx_clear(pec, slave, 1);
     while (ec_mbx_receive(pec, slave, 0) > 0)
         ; // empty mailbox if anything pending
@@ -754,6 +758,8 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
         uint32_t abort_code = 0;
         
         // read count of mapping entries, stored in subindex 0
+        // mapped entreis are stored at 0x1c12 and 0x1c13 and should usually be
+        // written in state preop with an init command
         if (!ec_coe_sdo_read(pec, slave, idx, 0, 0, &entry_cnt, 
                 &entry_cnt_size, &abort_code)) {
             ec_log(10, "GENERATE_MAPPING COE", "slave %2d: sm%d reading "
@@ -764,9 +770,11 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
         ec_log(100, "GENERATE_MAPPING COE", "slave %2d: sm%d 0x%04X "
                 "count %d\n", slave, sm_idx, idx, entry_cnt); 
 
+        // now read all mapped pdo's to retreave the mapped object lengths
         for (int i = 1; i <= entry_cnt; ++i) {
             uint16_t entry_idx;
             size_t entry_size = sizeof(entry_idx);
+            
             // read entry subindex with mapped value
             if (!ec_coe_sdo_read(pec, slave, idx, i, 0, 
                     (uint8_t *)&entry_idx, &entry_size, &abort_code)) {
@@ -816,6 +824,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             }                        
         }
 
+        // store sync manager settings if we have at least 1 bit mapped
         if (bit_len) {
             ec_log(100, "GENERATE_MAPPING COE", 
                     "slave %2d: sm%d length bits %d, bytes %d\n", 
@@ -823,10 +832,15 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
 
             if (slv->sm && slv->sm_ch > sm_idx) {
                 slv->sm[sm_idx].len = (bit_len + 7) / 8;
+
+                // only set a new address if not previously set by
+                // user or eeprom. some slave require the sm address to be
+                // exactly the address stored in eeprom.
                 if (!slv->sm[sm_idx].adr) {
                     slv->sm[sm_idx].adr = start_adr;
                     start_adr += slv->sm[sm_idx].len * 3;
                 }
+
                 slv->sm[sm_idx].flags = sm_idx == 2 ? 0x10064 : 0x10020;
             }
         }

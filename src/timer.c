@@ -1,9 +1,15 @@
-//! ethercat master timer routines
-/*!
- * author: Robert Burger
+/**
+ * \file timer.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 23 Nov 2016
+ *
+ * \brief ethercat master timer routines
+ *
+ * 
  */
+
 
 /*
  * This file is part of libethercat.

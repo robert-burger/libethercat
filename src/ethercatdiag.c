@@ -21,6 +21,8 @@ void propagation_delays(ec_t *pec) {
 
     printf("ethercat master\n");
 
+    ec_create_pd_groups(pec, 1);
+    
     for(slave = 0; slave < pec->slave_cnt; ++slave) {
 #define print_prefix() {                                    \
         int tmp_parent = pec->slaves[slave].parent;         \
@@ -30,6 +32,7 @@ void propagation_delays(ec_t *pec) {
         } }
 
         ec_slave_t *slv = &pec->slaves[slave];
+        slv->assigned_pd_group = 0;
 
         print_prefix();
         printf("|---");
@@ -68,6 +71,10 @@ void propagation_delays(ec_t *pec) {
                 slv->auto_inc_address,
                 slv->fixed_address);      
     }
+    
+    ret = ec_set_state(pec, EC_STATE_PREOP);
+
+    ret = ec_set_state(pec, EC_STATE_SAFEOP);
 }
 
 int main(int argc, char **argv) {

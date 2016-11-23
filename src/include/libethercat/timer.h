@@ -1,9 +1,15 @@
-//! ethercat master timer routines
-/*!
- * author: Robert Burger
+/**
+ * \file timer.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 23 Nov 2016
+ *
+ * \brief ethercat master timer routines
+ *
+ * 
  */
+
 
 /*
  * This file is part of libethercat.
@@ -36,9 +42,10 @@
 #include <time.h>
 #include <sys/time.h>
 
+//! timer structure
 typedef struct ec_timer {
-    uint64_t sec;
-    uint64_t nsec;
+    uint64_t sec;       //!< seconds
+    uint64_t nsec;      //!< nanoseconds
 } ec_timer_t;
 
 # define ec_timer_add(a, b, result)                                 \

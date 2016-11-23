@@ -62,7 +62,8 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
 
     SII_REG(rd, EC_REG_EEPCFG, eepctl);
     if (cnt == 0) {
-        ec_log(10, __func__, "slave %2d: unable to get eeprom config/control\n", slave);
+        ec_log(10, __func__, "slave %2d: unable to get eeprom "
+                "config/control\n", slave);
         return -1;
     }
 
@@ -73,13 +74,15 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
     eepctl = 0;
     SII_REG(wr, EC_REG_EEPCFG, eepctl);
     if (cnt == 0) {
-        ec_log(10, __func__, "slave %2d did not accept assigning EEPROM to PDI\n", slave);
+        ec_log(10, __func__, "slave %2d did not accept assigning EEPROM "
+                "to PDI\n", slave);
         return -1;
     }
 
     SII_REG(rd, EC_REG_EEPCFG, eepctl);
     if (cnt == 0) {
-        ec_log(10, __func__, "slave %2d: unable to get eeprom config/control\n", slave);
+        ec_log(10, __func__, "slave %2d: unable to get eeprom "
+                "config/control\n", slave);
         return -1;
     }
 
@@ -418,8 +421,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                 int local_offset = 0, i;
                 slv->eeprom.strings_cnt = buf[local_offset++];
 
-                eeprom_log(100, "EEPROM_STRINGS", "slave %2d: stored strings %d\n", 
-                        slave, slv->eeprom.strings_cnt);
+                eeprom_log(100, "EEPROM_STRINGS", "slave %2d: stored strings "
+                        "%d\n", slave, slv->eeprom.strings_cnt);
 
                 if (!slv->eeprom.strings_cnt) {
                     free(buf);
