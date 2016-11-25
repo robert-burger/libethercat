@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include "libethercat/ec.h"
 
 void no_log(int lvl, void *user, const char *format, ...) 
