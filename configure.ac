@@ -9,6 +9,9 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg)
 
+RMPM_ENV
+RMPM_ARCH
+
 # Checks for programs.
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CC
@@ -16,6 +19,7 @@ AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
+m4_esyscmd([scripts/m4_deps.py])
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
@@ -43,3 +47,4 @@ AC_CHECK_FUNCS([clock_gettime memset socket strdup strerror strndup])
 
 AC_CONFIG_FILES([Makefile src/Makefile libethercat.pc])
 AC_OUTPUT
+

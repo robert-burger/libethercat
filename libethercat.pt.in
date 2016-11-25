@@ -1,0 +1,17 @@
+PTVERSION           = 2
+NAME                = @PACKAGE@
+VERSION             = @PACKAGE_VERSION@
+DESCRIPTION         = EtherCAT master library @PACKAGE@
+MAINTAINER          = @MAINTAINER@
+DEPENDS             = 
+ARCHS               = @ARCHS@
+C_INCLUDE_PATHS     = ${PKGROOT}/include/
+C_LIB_PATHS         = ${PKGROOT}/lib/${ARCH}
+C_LIBS              = ethercat
+SUPPORTED_LANGUAGES = C
+
+[install]
+build/${ARCH}/install/lib/libethercat.a => lib/${ARCH}/
+doxygen-doc/ => doc/
+src/include/ => include/
+
