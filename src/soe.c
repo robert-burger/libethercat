@@ -1,8 +1,13 @@
-//! ethercat servodrive over ethercat mailbox handling
-/*!
- * author: Robert Burger
+/**
+ * \file soe.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 25 Nov 2016
+ *
+ * \brief ethercat soe functions.
+ *
+ * Implementaion of the Servodrive over EtherCAT mailbox protocol
  */
 
 /*
@@ -46,6 +51,18 @@ enum {
     EC_SOE_EMERGENCY
 };
 
+
+//! read elements of soe id number
+/*!
+ * \param pec pointer to ethercat master
+ * \param slave ethercat slave number
+ * \param atn at number
+ * \param idn id number
+ * \param element servodrive elements
+ * \param buf buffer for answer
+ * \param len length of buffer, returns length of answer
+ * \return 0 on successs
+ */
 int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
         uint8_t elements, uint8_t *buf, size_t *len) {
     int wkc = 0;
@@ -61,9 +78,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
     // empty mailbox if anything in
     ec_mbx_clear(pec, slave, 1);
-    ec_mbx_receive(pec, slave, 0);//EC_SHORT_TIMEOUT_MBX);
-//    while (ec_mbx_receive(pec, slave, EC_SHORT_TIMEOUT_MBX) != 0)
-//        ;
+    ec_mbx_receive(pec, slave, 0);
 
     // mailbox header
     ec_mbx_clear(pec, slave, 0);
@@ -108,7 +123,8 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         }
 
         if (left_len > 0) {
-            size_t read_len = read_buf->mbx_hdr.length - sizeof(ec_soe_header_t);
+            size_t read_len = read_buf->mbx_hdr.length - 
+                sizeof(ec_soe_header_t);
             memcpy(to, &read_buf->data, min(read_len, left_len));
             to += read_len;
             left_len -= read_len;
@@ -128,6 +144,17 @@ exit:
     return wkc;
 }
 
+//! write elements of soe id number
+/*!
+ * \param pec pointer to ethercat master
+ * \param slave ethercat slave number
+ * \param atn at number
+ * \param idn id number
+ * \param element servodrive elements
+ * \param buf buffer to write
+ * \param len length of buffer
+ * \return 0 on successs
+ */
 int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
         uint8_t elements, uint8_t *buf, size_t len) {
     int wkc = 0;
@@ -167,7 +194,8 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     ec_soe_request_t *read_buf  = 
         (ec_soe_request_t *)(slv->mbx_read.buf); 
 
-    ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, len %d, left %d, mbx_len %d\n", 
+    ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, "
+            "len %d, left %d, mbx_len %d\n", 
             slave, atn, idn, elements, buf, len, left_len, mbx_len);
 
     while (1) {
@@ -194,7 +222,8 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         if (!left_len) {
             // wait for answer
             ec_mbx_clear(pec, slave, 1);
-            if (!(wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX*10))) {                
+            if (!(wkc = ec_mbx_receive(pec, slave, i
+                            EC_DEFAULT_TIMEOUT_MBX * 10))) {
                 ec_log(10, __func__, "error on reading receive mailbox\n");
                 goto exit;
             }
@@ -270,6 +299,12 @@ exit:
     return ret;
 }
 
+//! generate sync manager process data mapping via soe
+/*!
+ * \param pec pointer to ethercat master
+ * \param slave slave number
+ * \return 0 on success
+ */
 int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
     int atn;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];

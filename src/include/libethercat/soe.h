@@ -1,9 +1,15 @@
-//! ethercat master
-/*!
- * author: Robert Burger
+/**
+ * \file soe.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 25 Nov 2016
+ *
+ * \brief ethercat soe functions.
+ *
+ * Implementaion of the Servodrive over EtherCAT mailbox protocol
  */
+
 
 /*
  * This file is part of libethercat.
@@ -41,7 +47,7 @@ typedef struct PACKED ec_soe_header {
 
 //! soe idn list 
 typedef struct PACKED ec_soe_idn_list {
-    uint16_t  cur_len;              //!< currently stored length of list in bytes
+    uint16_t  cur_len;              //!< currently stored list length in bytes
     uint16_t  max_len;              //!< maximum length of list in bytes
     ec_data_t idn_list;             //!< idn list
 } PACKED ec_soe_idn_list_t;
@@ -53,7 +59,7 @@ typedef struct PACKED ec_soe_idn_attribute {
     uint32_t command     :1;        //!< idn is command
     uint32_t datatype    :3;        //!< datatype
     uint32_t reserved1   :1;
-    uint32_t decimals    :4;        //!< if float, number of decimals to display
+    uint32_t decimals    :4;        //!< if float, number of decimals 
     uint32_t wp_preop    :1;        //!< write protect in preop
     uint32_t wp_safeop   :1;        //!< write protect in safeop
     uint32_t wp_op       :1;        //!< write protect in op
