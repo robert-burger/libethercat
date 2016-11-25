@@ -77,11 +77,6 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     struct ifreq ifr;
     struct sockaddr_ll sll;
     memset(&sll, 0, sizeof(sll));
-
-    ec_log(10, __func__, "size sockaddr %d, sockaddr_ll %d\n", 
-            sizeof(struct sockaddr), sizeof(struct sockaddr_ll));
-    printf("size sockaddr %lu, sockaddr_ll %lu\n", 
-            sizeof(struct sockaddr), sizeof(struct sockaddr_ll));
 #endif
 
     (*pphw) = (hw_t *)malloc(sizeof(hw_t));

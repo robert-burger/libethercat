@@ -222,7 +222,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         if (!left_len) {
             // wait for answer
             ec_mbx_clear(pec, slave, 1);
-            if (!(wkc = ec_mbx_receive(pec, slave, i
+            if (!(wkc = ec_mbx_receive(pec, slave,
                             EC_DEFAULT_TIMEOUT_MBX * 10))) {
                 ec_log(10, __func__, "error on reading receive mailbox\n");
                 goto exit;
