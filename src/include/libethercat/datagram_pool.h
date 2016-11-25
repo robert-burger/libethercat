@@ -1,9 +1,15 @@
-//! ethercat datagram pool
-/*!
- * author: Robert Burger
+/**
+ * \file datagram_pool.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief ethercat datagram pool
+ *
+ * These are EtherCAT datagram pool specific configuration functions.
  */
+
 
 /*
  * This file is part of libethercat.
@@ -34,21 +40,26 @@
 #include "libethercat/datagram.h"
 #include "libethercat/timer.h"
 
+//! datagram queue entry
 typedef struct __attribute__((__packed__)) datagram_entry {
     void (*user_cb)(void *user_arg, struct datagram_entry *p);
-    void *user_arg;
-    TAILQ_ENTRY(datagram_entry) qh;
+                                        //!< user callback
+    void *user_arg;                     //!< user argument for user_cb
+
+    TAILQ_ENTRY(datagram_entry) qh;     //!< queue handle of pool objects
     
-    ec_datagram_t datagram;
+    ec_datagram_t datagram;             //!< the EtherCAT datagram
 } datagram_entry_t;
 
+//! queue head for pool queue
 TAILQ_HEAD(datagram_pool_queue, datagram_entry);
 
+//! the datagram pool itself
 typedef struct datagram_pool {    
-    struct datagram_pool_queue avail;
-    sem_t avail_cnt;
+    struct datagram_pool_queue avail;   //!< queue with available datagrams
+    sem_t avail_cnt;                    //!< available datagrams in pool
 
-    pthread_mutex_t _pool_lock;
+    pthread_mutex_t _pool_lock;         //!< pool lock 
 } datagram_pool_t;
 
 #ifdef __cplusplus

@@ -1,9 +1,16 @@
-//! ethercat master
-/*!
- * author: Robert Burger
+/**
+ * \file eeprom.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief ethercat eeprom access fuctions
+ *
+ * These functions are used to ensure access to the EtherCAT
+ * slaves EEPROM.
  */
+
 
 /*
  * This file is part of libethercat.
@@ -29,10 +36,10 @@
 #include <string.h>
 
 #define SII_REG(ac, adr, val)                                          \
-    cnt = 100;                                                          \
-    do { ec_fp##ac(pec, pec->slaves[slave].fixed_address, (adr),          \
-                (uint8_t *)&(val), sizeof(val), &wkc);                  \
-    } while (--cnt > 0 && wkc != 1);                                    \
+    cnt = 100;                                                         \
+    do { ec_fp##ac(pec, pec->slaves[slave].fixed_address, (adr),       \
+                (uint8_t *)&(val), sizeof(val), &wkc);                 \
+    } while (--cnt > 0 && wkc != 1);
 
 //! set eeprom control to pdi
 /*!
@@ -157,20 +164,19 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     }
     
     // 8. Check the Error bits of the EEPROM Status register. The Error bits 
-    // are cleared by clearing the command register. Retry command (back to step 5)
-    // if EEPROM acknowledge was missing. If necessary, wait some time before 
-    // retrying to allow slow EEPROMs to store the data internally
+    // are cleared by clearing the command register. Retry command 
+    // (back to step 5) if EEPROM acknowledge was missing. If necessary, 
+    // wait some time before retrying to allow slow EEPROMs to store the data 
+    // internally
     if (eepcsr & 0x0100)  
         ec_log(10, "EEPROM_WRITE", "write in progress\n");
     if (eepcsr & 0x4000)
         ec_log(10, "EEPROM_WRITE", "error write enable\n");
-    if (eepcsr & 0x2000) {
-//        ec_log(10, "EEPROM_WRITE", "error acknowledge/command\n");
+    if (eepcsr & 0x2000)
         ret = -1;
-    }
-    if (eepcsr & 0x0800) {
-        ec_log(10, "EEPROM_WRITE", "checksum error at in ESC configuration area\n");
-    }
+    if (eepcsr & 0x0800)
+        ec_log(10, "EEPROM_WRITE", 
+                "checksum error at in ESC configuration area\n");
 
 func_exit:
     ec_eeprom_to_pdi(pec, slave);
@@ -186,7 +192,8 @@ func_exit:
  * \param returns data value
  * \return 0 on success
  */
-int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
+int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, 
+        uint16_t *data) {
     ec_eeprom_to_ec(pec, slave);
     
     int ret = 0, retry_cnt = 100;
@@ -201,15 +208,18 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
         ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                 (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_WRITE", "waiting for eeprom !busy failed, wkc %d\n", wkc);
+            ec_log(10, "EEPROM_WRITE", "waiting for eeprom !busy failed, "
+                    "wkc %d\n", wkc);
             ret = -1;
             goto func_exit;
         }
     } while ((wkc == 0) || ((eepcsr & 0x8000) != 0x0000));
 
     // 2. Check if the Error bits of the EEPROM Status register are 
-    // cleared. If not, write “000” to the command register (register 0x0502 bits [10:8]).
-    while (wkc == 0 || eepcsr & 0x6000) { // we ignore crc errors on write .... 0x6800) {
+    // cleared. If not, write “000” to the command register 
+    // (register 0x0502 bits [10:8]).
+    while (wkc == 0 || eepcsr & 0x6000) { 
+        // we ignore crc errors on write .... 0x6800)
         // error bits set, clear first
         eepcsr = 0x0000;
         do {
@@ -285,18 +295,19 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
     } while (wkc == 0 || eepcsr & 0x8000);
 
     // 8. Check the Error bits of the EEPROM Status register. The Error bits 
-    // are cleared by clearing the command register. Retry command (back to step 5)
-    // if EEPROM acknowledge was missing. If necessary, wait some time before 
-    // retrying to allow slow EEPROMs to store the data internally
+    // are cleared by clearing the command register. Retry command
+    // (back to step 5) if EEPROM acknowledge was missing. If necessary, 
+    // wait some time before retrying to allow slow EEPROMs to store the 
+    // data internally
     if (eepcsr & 0x0100)  
         ec_log(10, "EEPROM_WRITE", "write in progress\n");
     if (eepcsr & 0x4000)
         ec_log(10, "EEPROM_WRITE", "error write enable\n");
-    if (eepcsr & 0x2000) {
+    if (eepcsr & 0x2000)
         ret = -1;
-    }
     if (eepcsr & 0x0800)
-        ec_log(10, "EEPROM_WRITE", "checksum error at in ESC configuration area\n");
+        ec_log(10, "EEPROM_WRITE", 
+                "checksum error at in ESC configuration area\n");
 
 func_exit:
     ec_eeprom_to_pdi(pec, slave);
@@ -313,7 +324,8 @@ func_exit:
  * \param buflen length in bytes to return
  * \return 0 on success
  */
-int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr, uint8_t *buf, size_t buflen) {
+int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
+        uint8_t *buf, size_t buflen) {
     unsigned offset = 0, i, ret;
 
     while (offset < buflen) {
@@ -341,7 +353,8 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr, uint8_t *buf, 
  * \param buflen length in bytes to return
  * \return 0 on success
  */
-int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr, uint8_t *buf, size_t buflen) {
+int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
+        uint8_t *buf, size_t buflen) {
     unsigned offset = 0, i, ret;
 
     while (offset < buflen) {
@@ -382,18 +395,30 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     if (pec->eeprom_log) ec_log(__VA_ARGS__)
 
     // read soem eeprom values
-    eeprom(EC_EEPROM_ADR_VENDOR_ID,          slv->eeprom.vendor_id);
-    eeprom(EC_EEPROM_ADR_PRODUCT_CODE,       slv->eeprom.product_code);
-    eeprom(EC_EEPROM_ADR_MBX_SUPPORTED,      slv->eeprom.mbx_supported);
-    eeprom(EC_EEPROM_ADR_SIZE,               value32);
-    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_OFF,   slv->eeprom.mbx_receive_offset);
-    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_SIZE,  slv->eeprom.mbx_receive_size);
-    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_OFF,   slv->eeprom.mbx_send_offset);
-    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_SIZE,  slv->eeprom.mbx_send_size);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_OFF,  slv->eeprom.boot_mbx_receive_offset);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_SIZE, slv->eeprom.boot_mbx_receive_size);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_OFF,  slv->eeprom.boot_mbx_send_offset);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE, slv->eeprom.boot_mbx_send_size);
+    eeprom(EC_EEPROM_ADR_VENDOR_ID,
+            slv->eeprom.vendor_id);
+    eeprom(EC_EEPROM_ADR_PRODUCT_CODE,
+            slv->eeprom.product_code);
+    eeprom(EC_EEPROM_ADR_MBX_SUPPORTED,
+            slv->eeprom.mbx_supported);
+    eeprom(EC_EEPROM_ADR_SIZE,
+            value32);
+    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_OFF,
+            slv->eeprom.mbx_receive_offset);
+    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_SIZE,
+            slv->eeprom.mbx_receive_size);
+    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_OFF,
+            slv->eeprom.mbx_send_offset);
+    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_SIZE,
+            slv->eeprom.mbx_send_size);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_OFF,  
+            slv->eeprom.boot_mbx_receive_offset);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_SIZE, 
+            slv->eeprom.boot_mbx_receive_size);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_OFF,
+            slv->eeprom.boot_mbx_send_offset);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE,
+            slv->eeprom.boot_mbx_send_size);
 
     //size = value32 & 0x0000FFFF;
 
@@ -429,21 +454,26 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                     break;
                 }
 
-                slv->eeprom.strings = (char **)malloc(sizeof(char *) * slv->eeprom.strings_cnt);
+                slv->eeprom.strings = (char **)malloc(sizeof(char *) * 
+                        slv->eeprom.strings_cnt);
 
                 for (i = 0; i < slv->eeprom.strings_cnt; ++i) {
                     uint8_t string_len = buf[local_offset++];
 
-                    slv->eeprom.strings[i] = malloc(sizeof(char) * (string_len + 1));
-                    strncpy(slv->eeprom.strings[i], (char *)&buf[local_offset], string_len);
+                    slv->eeprom.strings[i] = malloc(sizeof(char) * 
+                            (string_len + 1));
+                    strncpy(slv->eeprom.strings[i], 
+                            (char *)&buf[local_offset], string_len);
                     local_offset+=string_len;
 
                     slv->eeprom.strings[i][string_len] = '\0';
                     
-                    eeprom_log(100, "EEPROM_STRINGS", "          string %2d, length %2d : %s\n", 
+                    eeprom_log(100, "EEPROM_STRINGS", 
+                            "          string %2d, length %2d : %s\n", 
                             i, string_len, slv->eeprom.strings[i]);
                     if (local_offset > cat_len*2) {
-                        eeprom_log(5, "EEPROM_STRINGS", "          something wrong in eeprom "
+                        eeprom_log(5, "EEPROM_STRINGS", 
+                                "          something wrong in eeprom "
                                 "string section\n");
                         break;
                     }
@@ -461,7 +491,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
                 eeprom(cat_offset+2, slv->eeprom.general);
 
-                eeprom_log(100, "EEPROM_GENERAL", "          group_idx %d, img_idx %d, "
+                eeprom_log(100, "EEPROM_GENERAL", 
+                        "          group_idx %d, img_idx %d, "
                         "order_idx %d, name_idx %d\n", 
                         slave, slv->eeprom.general.group_idx,
                         slv->eeprom.general.img_idx,
@@ -480,11 +511,13 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                     eeprom(local_offset, value32);
                     uint8_t *tmp = (uint8_t *)&value32;
                     for (i = 0; i < 4 && i < (cat_len*2); ++i, ++fmmu_idx)
-                        if ((fmmu_idx < slv->fmmu_ch) && (tmp[i] >= 1) && (tmp[i] <= 3)) {
+                        if ((fmmu_idx < slv->fmmu_ch) && 
+                                (tmp[i] >= 1) && (tmp[i] <= 3)) {
                             slv->fmmu[fmmu_idx].type = tmp[i];
                 
-                            eeprom_log(100, "EEPROM_FMMU", "          fmmu%d, type %d\n", 
-                                fmmu_idx, tmp[i]);
+                            eeprom_log(100, "EEPROM_FMMU", 
+                                    "          fmmu%d, type %d\n", 
+                                    fmmu_idx, tmp[i]);
                         }
 
                     local_offset += 2;
@@ -512,7 +545,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         free(slv->sm);
 
                     slv->sm_ch = cat_len/(sizeof(ec_eeprom_cat_sm_t)/2);
-                    slv->sm = (ec_slave_sm_t *)malloc(slv->sm_ch * sizeof(ec_slave_sm_t));
+                    slv->sm = (ec_slave_sm_t *)malloc(slv->sm_ch * 
+                            sizeof(ec_slave_sm_t));
                     memset(slv->sm, 0, slv->sm_ch * sizeof(ec_slave_sm_t));
                 }
 
@@ -523,16 +557,22 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                     if (slv->sm[j].adr == 0) {
                         slv->sm[j].adr = slv->eeprom.sms[j].adr;
                         slv->sm[j].len = slv->eeprom.sms[j].len;
-                        slv->sm[j].flags = (slv->eeprom.sms[j].activate << 16) | slv->eeprom.sms[j].ctrl_reg;
+                        slv->sm[j].flags = (slv->eeprom.sms[j].activate << 16)
+                            | slv->eeprom.sms[j].ctrl_reg;
 
-                        eeprom_log(100, "EEPROM_SM", "          sm%d adr 0x%X, len %d, flags 0x%X\n", 
-                                j, slv->sm[j].adr, slv->sm[j].len, slv->sm[j].flags);
+                        eeprom_log(100, "EEPROM_SM", 
+                                "          sm%d adr 0x%X, len %d, flags "
+                                "0x%X\n", j, slv->sm[j].adr, slv->sm[j].len, 
+                                slv->sm[j].flags);
                     } else {
-                        eeprom_log(100, "EEPROM_SM", "          sm%d adr 0x%X, len %d, flags 0x%X\n", 
-                                j, slv->eeprom.sms[j].adr, slv->eeprom.sms[j].len,
-                                (slv->eeprom.sms[j].activate << 16) | slv->eeprom.sms[j].ctrl_reg);
+                        eeprom_log(100, "EEPROM_SM", "          sm%d adr "
+                                "0x%X, len %d, flags 0x%X\n", j, 
+                                slv->eeprom.sms[j].adr, slv->eeprom.sms[j].len,
+                                (slv->eeprom.sms[j].activate << 16) | 
+                                slv->eeprom.sms[j].ctrl_reg);
                                 
-                        eeprom_log(100, "EEPROM_SM", "          sm%d already set by user\n", j);
+                        eeprom_log(100, "EEPROM_SM", 
+                                "          sm%d already set by user\n", j);
                     }
 
                     j++;
@@ -571,12 +611,14 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                     for (j = 0; j < pdo->n_entry; ++j) {
                         ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
                         ec_eepromread_len(pec, slave, local_offset,
-                                (uint8_t *)entry, sizeof(ec_eeprom_cat_pdo_entry_t));
+                                (uint8_t *)entry, 
+                                sizeof(ec_eeprom_cat_pdo_entry_t));
 
                         local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2;
                 
-                        eeprom_log(100, "EEPROM_TXPDO", "          0x%04X:%2d -> 0x%04X\n",
-                            pdo->pdo_index, j, entry->entry_index);
+                        eeprom_log(100, "EEPROM_TXPDO", 
+                                "          0x%04X:%2d -> 0x%04X\n",
+                                pdo->pdo_index, j, entry->entry_index);
                     }
                 }
 
@@ -615,12 +657,14 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                     for (j = 0; j < pdo->n_entry; ++j) {
                         ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
                         ec_eepromread_len(pec, slave, local_offset,
-                                (uint8_t *)entry, sizeof(ec_eeprom_cat_pdo_entry_t));
+                                (uint8_t *)entry, 
+                                sizeof(ec_eeprom_cat_pdo_entry_t));
 
                         local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2;
                 
-                        eeprom_log(100, "EEPROM_TXPDO", "          0x%04X:%2d -> 0x%04X\n",
-                            pdo->pdo_index, j, entry->entry_index);
+                        eeprom_log(100, "EEPROM_TXPDO", 
+                                "          0x%04X:%2d -> 0x%04X\n",
+                                pdo->pdo_index, j, entry->entry_index);
                     }
                 }
 
@@ -641,7 +685,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                 
                 // allocating new dcs
                 slv->eeprom.dcs_cnt = cat_len/(EC_EEPROM_CAT_DC_LEN/2);
-                slv->eeprom.dcs = malloc(EC_EEPROM_CAT_DC_LEN * slv->eeprom.dcs_cnt);
+                slv->eeprom.dcs = malloc(EC_EEPROM_CAT_DC_LEN * 
+                        slv->eeprom.dcs_cnt);
 
                 for (j = 0; j < slv->eeprom.dcs_cnt; ++j) {
                     ec_eeprom_cat_dc_t *dc = &slv->eeprom.dcs[j];
@@ -653,9 +698,9 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                             "shift_time_0 %d, shift_time_1 %d, "
                             "sync_0_cycle_factor %d, sync_1_cycle_factor %d, "
                             "assign_active %d\n", 
-                            dc->cycle_time_0, dc->shift_time_0, dc->shift_time_1,
-                            dc->sync_0_cycle_factor, dc->sync_1_cycle_factor, 
-                            dc->assign_active);                   
+                            dc->cycle_time_0, dc->shift_time_0, 
+                            dc->shift_time_1, dc->sync_0_cycle_factor, 
+                            dc->sync_1_cycle_factor, dc->assign_active);                   
                 }
 
                 break;

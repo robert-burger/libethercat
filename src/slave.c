@@ -1,8 +1,12 @@
-//! robotkernel module ethercat slave
-/*!
- * author: Robert Burger
+/**
+ * \file slave.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief ethercat slave functions
+ *
  */
 
 /*
@@ -207,16 +211,17 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
         if (act_state & EC_STATE_ERROR) {
             ec_fprd(pec, pec->slaves[slave].fixed_address, 
                     EC_REG_ALSTATCODE, &value, sizeof(value), &wkc);
-            ec_log(10, "EC_STATE_SET", "slave %2d: state switch to %d failed, alstatcode 0x%04X\n", 
-                    slave, state, value);
+            ec_log(10, "EC_STATE_SET", "slave %2d: state switch to %d failed, "
+                    "alstatcode 0x%04X\n", slave, state, value);
 
-            ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+            ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | 
+                    EC_STATE_RESET);
             break;
         }
     
         if (ec_timer_expired(&timeout)) {
-            ec_log(10, "EC_STATE_SET", "slave %2d: did not respond on state switch to %d\n", 
-                    slave, state);
+            ec_log(10, "EC_STATE_SET", "slave %2d: did not respond on state "
+                    "switch to %d\n", slave, state);
             wkc = 0;
             break;
         }
@@ -285,9 +290,11 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
             // inputs and outputs
             TAILQ_FOREACH(pdo, &slv->eeprom.txpdos, qh) {
                 if (sm_idx == pdo->sm_nr) {
-                    for (int entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
-                        ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got txpdo bit_len %d, sm %d\n", 
-                                slave, pdo->entries[entry_idx].bit_len, pdo->sm_nr);
+                    for (int entry_idx = 0; entry_idx < pdo->n_entry; 
+                            ++entry_idx) { 
+                        ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
+                                "txpdo bit_len %d, sm %d\n", slave, 
+                                pdo->entries[entry_idx].bit_len, pdo->sm_nr);
                         bit_len += pdo->entries[entry_idx].bit_len;
                     }
 
@@ -298,9 +305,11 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
             // outputs
             TAILQ_FOREACH(pdo, &slv->eeprom.rxpdos, qh) {
                 if (sm_idx == pdo->sm_nr) {
-                    for (int entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
-                        ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got rxpdo bit_len %d, sm %d\n", 
-                                slave, pdo->entries[entry_idx].bit_len, pdo->sm_nr);
+                    for (int entry_idx = 0; entry_idx < pdo->n_entry; 
+                            ++entry_idx) { 
+                        ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
+                                "rxpdo bit_len %d, sm %d\n", slave, 
+                                pdo->entries[entry_idx].bit_len, pdo->sm_nr);
                         bit_len += pdo->entries[entry_idx].bit_len;
                     }
 
@@ -308,11 +317,13 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
                 }
             }
 
-            ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: txpdos %d, rxpdos %d, bitlen%d %d\n", 
+            ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: txpdos %d, "
+                    "rxpdos %d, bitlen%d %d\n", 
                     slave, txpdos_cnt, rxpdos_cnt, sm_idx, bit_len);
 
             if (bit_len > 0) {
-                ec_log(10, "GENERATE_MAPPING EEP", "slave %2d: sm%d length bits %d, bytes %d\n", 
+                ec_log(10, "GENERATE_MAPPING EEP", "slave %2d: sm%d length "
+                        "bits %d, bytes %d\n", 
                         slave, sm_idx, bit_len, (bit_len + 7) / 8);
 
                 slv->sm[sm_idx].len = (bit_len + 7) / 8;
@@ -330,7 +341,8 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
  * \param state switch to state
  * \return wkc
  */
-int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
+int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, 
+        ec_state_t state) {
     uint16_t wkc;
     ec_state_t act_state = 0;
     ec_slave_t *slv = &pec->slaves[slave];
@@ -343,14 +355,16 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, ec_state_t stat
     }
     
     // generate transition
-    ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8) | (state & EC_STATE_MASK); 
+    ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8) | 
+        (state & EC_STATE_MASK); 
 
     switch (transition) {
         default:
             break;
         case INIT_2_SAFEOP:
         case PREOP_2_SAFEOP:
-            ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds\n", slave);
+            ec_log(10, get_transition_string(transition), "slave %2d: "
+                    "sending init cmds\n", slave);
 
             ec_slave_mailbox_init_cmd_t *cmd;
             LIST_FOREACH(cmd, &slv->init_cmds, le) {
@@ -358,18 +372,20 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, ec_state_t stat
                     continue;
 
                 if (cmd->type == EC_MBX_COE) {
-                    ec_log(10, get_transition_string(transition), "slave %2d: sending CoE init cmd 0x%04X:%d, "
-                            "ca %d, datalen %d, datap %p\n", slave, 
-                            cmd->id, cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d: sending CoE init cmd 0x%04X:%d, "
+                            "ca %d, datalen %d, datap %p\n", slave, cmd->id, 
+                            cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
 
                     uint8_t *buf = (uint8_t *)cmd->data;
                     size_t buf_len = cmd->datalen;
                     uint32_t abort_code = 0;
 
-                    int wkc = ec_coe_sdo_write(pec, slave, cmd->id, 
-                            cmd->si_el, cmd->ca_atn, buf, &buf_len, &abort_code);
+                    int wkc = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, 
+                            cmd->ca_atn, buf, &buf_len, &abort_code);
                     if (!wkc) {
-                        ec_log(10, get_transition_string(transition), "slave %2d: writing sdo failed!\n");
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d: writing sdo failed!\n");
                     } 
                 }
             }
@@ -392,17 +408,22 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     ec_state_t act_state = 0;
     ec_slave_t *slv = &pec->slaves[slave];
 
-#define ec_reg_read(reg, buf, buflen) { uint16_t wkc; \
-    ec_fprd(pec, pec->slaves[slave].fixed_address, (reg), (buf), (buflen), &wkc); \
-    if (!wkc) ec_log(10, __func__, "reading reg 0x%X : no answer from slave %2d\n", slave); }
+#define ec_reg_read(reg, buf, buflen) {                                 \
+    uint16_t wkc;                                                       \
+    ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),               \
+            (buf), (buflen), &wkc);                                     \
+    if (!wkc) ec_log(10, __func__,                                      \
+            "reading reg 0x%X : no answer from slave %2d\n", slave); }
 
     // check error state
     wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
     if (act_state & EC_STATE_ERROR) // reset error state first
-        ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+        ec_slave_set_state(pec, slave, 
+                (act_state & EC_STATE_MASK) | EC_STATE_RESET);
 
     // generate transition
-    ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8) | (state & EC_STATE_MASK); 
+    ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8) | 
+        (state & EC_STATE_MASK); 
             
     switch (transition) {
         case INIT_2_BOOT:
@@ -410,13 +431,18 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         case INIT_2_SAFEOP:
         case INIT_2_OP: {
             // init to preop stuff
-            ec_log(10, get_transition_string(transition), "slave %2d, vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
-                    slave, slv->eeprom.vendor_id, slv->eeprom.product_code, slv->eeprom.mbx_supported);
+            ec_log(10, get_transition_string(transition), 
+                    "slave %2d, vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
+                    slave, 
+                    slv->eeprom.vendor_id, 
+                    slv->eeprom.product_code, 
+                    slv->eeprom.mbx_supported);
 
             // configure mailboxes if any supported
             if (slv->eeprom.mbx_supported) {
                 // read mailbox
-                if ((transition == INIT_2_BOOT) && slv->eeprom.boot_mbx_send_offset) {
+                if ((transition == INIT_2_BOOT) && 
+                        slv->eeprom.boot_mbx_send_offset) {
                     slv->sm[1].adr = slv->eeprom.boot_mbx_send_offset;
                     slv->sm[1].len = slv->eeprom.boot_mbx_send_size;
                 } else {
@@ -431,7 +457,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 slv->mbx_read.skip_next = 0;
 
                 // write mailbox
-                if ((transition == INIT_2_BOOT) && slv->eeprom.boot_mbx_receive_offset) {
+                if ((transition == INIT_2_BOOT) && 
+                        slv->eeprom.boot_mbx_receive_offset) {
                     slv->sm[0].adr = slv->eeprom.boot_mbx_receive_offset;
                     slv->sm[0].len = slv->eeprom.boot_mbx_receive_size;
                 } else {
@@ -447,7 +474,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 slv->mbx_read.skip_next = 0;
 
                 for (int sm_idx = 0; sm_idx < 2; ++sm_idx) {
-                    ec_log(10, get_transition_string(transition), "slave %2d: sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
+                    ec_log(10, get_transition_string(transition), "slave %2d: "
+                            "sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
                             slave, sm_idx, slv->sm[sm_idx].adr, 
                             slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
 
@@ -480,18 +508,22 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     if (slv->dc.cycle_time_1 == 0)
                         slv->dc.cycle_time_1 = pec->dc.timer_override; 
 
-                    ec_log(10, get_transition_string(transition), "slave %2d: configuring dc sync 01, "
-                            "cycle_times %d/%d, cycle_shift %d\n", slave, slv->dc.cycle_time_0, 
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d: configuring dc sync 01, "
+                            "cycle_times %d/%d, cycle_shift %d\n", 
+                            slave, slv->dc.cycle_time_0, 
                             slv->dc.cycle_time_1, slv->dc.cycle_shift);
 
                     ec_dc_sync01(pec, slave, 1, slv->dc.cycle_time_0, 
                             slv->dc.cycle_time_1, slv->dc.cycle_shift);
                 } else {
-                    ec_log(10, get_transition_string(transition), "slave %2d: configuring dc sync 0, "
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d: configuring dc sync 0, "
                             "cycle_time %d, cycle_shift %d\n", slave,
                             slv->dc.cycle_time_0, slv->dc.cycle_shift);
 
-                    ec_dc_sync0(pec, slave, 1, slv->dc.cycle_time_0, slv->dc.cycle_shift);
+                    ec_dc_sync0(pec, slave, 1, slv->dc.cycle_time_0, 
+                            slv->dc.cycle_shift);
                 }
             } else
                 ec_dc_sync0(pec, slave, 0, 0, 0);
@@ -502,7 +534,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 if (!slv->sm[sm_idx].adr)
                     continue;
 
-                ec_log(10, get_transition_string(transition), "slave %2d: sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
+                ec_log(10, get_transition_string(transition), "slave %2d: "
+                        "sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
                         slave, sm_idx, slv->sm[sm_idx].adr, 
                         slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
 
@@ -510,7 +543,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                         &slv->sm[sm_idx], sizeof(ec_slave_sm_t), &wkc);
 
                 if (!wkc)
-                    ec_log(10, get_transition_string(transition), "slave %2d: no answer on "
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d: no answer on "
                             "writing sm%d settings\n", slave, sm_idx);
             }
 
@@ -519,15 +553,21 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     continue;
 
                 // safeop to op stuff 
-                ec_log(10, get_transition_string(transition), "slave %2d: log%d 0x%08X/%d/%d, len %3d, "
-                        "pyhs 0x%04X/%d, type %d, active %d\n", slave, fmmu_idx,
-                        slv->fmmu[fmmu_idx].log, slv->fmmu[fmmu_idx].log_bit_start,
-                        slv->fmmu[fmmu_idx].log_bit_stop, slv->fmmu[fmmu_idx].log_len,
-                        slv->fmmu[fmmu_idx].phys, slv->fmmu[fmmu_idx].phys_bit_start,
-                        slv->fmmu[fmmu_idx].type, slv->fmmu[fmmu_idx].active);
+                ec_log(10, get_transition_string(transition), 
+                        "slave %2d: log%d 0x%08X/%d/%d, len %3d, pyhs "
+                        "0x%04X/%d, type %d, active %d\n", slave, fmmu_idx,
+                        slv->fmmu[fmmu_idx].log, 
+                        slv->fmmu[fmmu_idx].log_bit_start,
+                        slv->fmmu[fmmu_idx].log_bit_stop, 
+                        slv->fmmu[fmmu_idx].log_len,
+                        slv->fmmu[fmmu_idx].phys, 
+                        slv->fmmu[fmmu_idx].phys_bit_start,
+                        slv->fmmu[fmmu_idx].type, 
+                        slv->fmmu[fmmu_idx].active);
 
                 ec_fpwr(pec, slv->fixed_address, 0x600 + (16 * fmmu_idx),
-                        (uint8_t *)&slv->fmmu[fmmu_idx], sizeof(ec_slave_fmmu_t), &wkc);
+                        (uint8_t *)&slv->fmmu[fmmu_idx], 
+                        sizeof(ec_slave_fmmu_t), &wkc);
 
             }
 
@@ -564,7 +604,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         case INIT_2_INIT: {
             // rewrite fixed address
             ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
-                    (uint8_t *)&slv->fixed_address, sizeof(slv->fixed_address), &wkc); 
+                    (uint8_t *)&slv->fixed_address, 
+                    sizeof(slv->fixed_address), &wkc); 
         
             // disable ditributed clocks
             uint8_t dc_active = 0;
@@ -641,7 +682,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
             ec_log(10, get_transition_string(transition), 
                     "slave %2d: vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
-                    slave, slv->eeprom.vendor_id, slv->eeprom.product_code, slv->eeprom.mbx_supported);
+                    slave, slv->eeprom.vendor_id, slv->eeprom.product_code, 
+                    slv->eeprom.mbx_supported);
         }
         case PREOP_2_PREOP:
         case SAFEOP_2_SAFEOP:
@@ -651,7 +693,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             break;
         default:
                 wkc = ec_slave_set_state(pec, slave, EC_STATE_INIT);
-            ec_log(10, __func__, "unknown state transition for slave %2d -> %04X\n", slave, transition);
+            ec_log(10, __func__, "unknown state transition for slave "
+                    "%2d -> %04X\n", slave, transition);
             break;
     };
 

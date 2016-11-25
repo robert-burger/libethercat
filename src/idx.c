@@ -1,6 +1,11 @@
-//! ethercat index queueu
-/*!
- * \author Robert Burger
+/**
+ * \file idx.c
+ *
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 11 Nov 2016
+ *
+ * \brief ethercat index 
  *
  */
 

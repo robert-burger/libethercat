@@ -1,9 +1,15 @@
-//! ethercat master common stuff
-/*!
- * author: Robert Burger
+/**
+ * \file common.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 23 Nov 2016
+ *
+ * \brief ethercat master common stuff
+ *
+ * 
  */
+
 
 /*
  * This file is part of libethercat.
@@ -51,25 +57,26 @@
 #define EC_MAX_DATA 4096
 
 typedef union ec_data {
-    uint8_t     bdata[EC_MAX_DATA]; /* variants for easy data access */
-    uint16_t    wdata[EC_MAX_DATA];
-    uint32_t    ldata[EC_MAX_DATA];
+    uint8_t bdata[EC_MAX_DATA]; /* variants for easy data access */
+    uint16_t wdata[EC_MAX_DATA];
+    uint32_t ldata[EC_MAX_DATA];
 } ec_data_t;
 
+//! process data structure
 typedef struct ec_pd {
-    uint8_t *pd;
-    size_t len;
+    uint8_t *pd;        //!< pointer to process data
+    size_t len;         //!< process data length
 } ec_pd_t;
 
 typedef uint16_t ec_state_t;
-#define EC_STATE_INIT        0x01
-#define EC_STATE_PREOP       0x02
-#define EC_STATE_BOOT        0x03
-#define EC_STATE_SAFEOP      0x04
-#define EC_STATE_OP          0x08
-#define EC_STATE_MASK        0x0F
-#define EC_STATE_ERROR       0x10
-#define EC_STATE_RESET       0x10
+#define EC_STATE_INIT        0x01       //!< EtherCAT INIT state
+#define EC_STATE_PREOP       0x02       //!< EtherCAT PREOP state
+#define EC_STATE_BOOT        0x03       //!< EtherCAT BOOT state
+#define EC_STATE_SAFEOP      0x04       //!< EtherCAT SAFEOP state
+#define EC_STATE_OP          0x08       //!< EtherCAT OP state
+#define EC_STATE_MASK        0x0F       //!< EtherCAT state mask
+#define EC_STATE_ERROR       0x10       //!< EtherCAT ERROR
+#define EC_STATE_RESET       0x10       //!< EtherCAT ERROR reset
 
 
 #endif // __LIBETHERCAT_COMMON_H__

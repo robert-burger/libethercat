@@ -1,9 +1,14 @@
-//! ethercat hardware layer
-/*!
- * author: Robert Burger
+/**
+ * \file hw.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief hardware access functions
+ *
  */
+
 
 /*
  * This file is part of libethercat.
@@ -99,8 +104,10 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     // set timeouts
     timeout.tv_sec = 0;
     timeout.tv_usec = 10000; 
-    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, 
+            sizeof(timeout));
+    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, 
+            sizeof(timeout));
 
     // do not route our frames
     i = 1;
@@ -185,12 +192,14 @@ void *hw_rx_thread(void *arg) {
 
     // thread settings
     if (pthread_getschedparam(pthread_self(), &policy, &param) != 0)
-        ec_log(10, "RX_THREAD", "error on pthread_getschedparam %s\n", strerror(errno));
+        ec_log(10, "RX_THREAD", "error on pthread_getschedparam %s\n", 
+                strerror(errno));
     else {
         policy = SCHED_FIFO;
         param.sched_priority = phw->rxthreadprio;
         if (pthread_setschedparam(pthread_self(), policy, &param) != 0)
-            ec_log(10, "RX_THREAD", "error on pthread_setschedparam %s\n", strerror(errno));
+            ec_log(10, "RX_THREAD", "error on pthread_setschedparam %s\n", 
+                    strerror(errno));
     }
 
 #ifdef __VXWORKS__
@@ -205,7 +214,8 @@ void *hw_rx_thread(void *arg) {
             CPU_SET(i, &cpuset);
         
     if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0)
-        ec_log(10, "RX_THREAD", "error on pthread_setaffinity_np %s\n", strerror(errno));
+        ec_log(10, "RX_THREAD", "error on pthread_setaffinity_np %s\n", 
+                strerror(errno));
 #endif
 
     while (phw->rxthreadrunning) {
@@ -227,18 +237,21 @@ void *hw_rx_thread(void *arg) {
         
         /* check if it is an EtherCAT frame */
         if (pframe->ethertype != htons(ETH_P_ECAT)) {
-            ec_log(10, "RX_THREAD", "received non-ethercat frame! (bytes %d, type 0x%X)\n", 
+            ec_log(10, "RX_THREAD", 
+                    "received non-ethercat frame! (bytes %d, type 0x%X)\n", 
                     bytesrx, pframe->type);
             continue;
         }
 
         ec_datagram_t *d;
-        for (d = ec_datagram_first(pframe); (uint8_t *)d < (uint8_t *)ec_frame_end(pframe);
+        for (d = ec_datagram_first(pframe); (uint8_t *)d < 
+                (uint8_t *)ec_frame_end(pframe);
                 d = ec_datagram_next(d)) {
             datagram_entry_t *entry = phw->tx_send[d->idx];
 
             if (!entry) {
-                ec_log(10, "RX_THREAD", "received idx %d, but we did not send one?\n", d->idx);
+                ec_log(10, "RX_THREAD", 
+                        "received idx %d, but we did not send one?\n", d->idx);
                 continue;
             }
 
@@ -252,7 +265,6 @@ void *hw_rx_thread(void *arg) {
 }
 
 static const uint8_t mac_dest[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-//static const uint8_t mac_src[]  = { 0x00, 0x1B, 0x21, 0xB8, 0x77, 0xCC };
 static const uint8_t mac_src[]  = { 0x00, 0x30, 0x64, 0x0f, 0x83, 0x35 };
 
 //! start sending queued ethercat datagrams
@@ -285,7 +297,8 @@ int hw_tx(hw_t *phw) {
 
         datagram_pool_get_next_len(pools[pool_idx], &len);
 
-        if (((len == 0) && (pool_idx == 1)) || ((pframe->len + len) > phw->mtu_size)) { //ETH_FRAME_LEN)) {
+        if (((len == 0) && (pool_idx == 1)) || 
+                ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len == sizeof(ec_frame_t))
                 break; // nothing to send
 
@@ -300,8 +313,8 @@ int hw_tx(hw_t *phw) {
 #endif
 
             if (pframe->len != bytestx) {
-                ec_log(10, "TX", "got only %d bytes out of %d bytes through.\n", 
-                        bytestx, pframe->len);
+                ec_log(10, "TX", "got only %d bytes out of %d bytes "
+                        "through.\n", bytestx, pframe->len);
 
                 if (bytestx == -1)
                     ec_log(10, "TX", "error: %s\n", strerror(errno));

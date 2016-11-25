@@ -1,9 +1,15 @@
-//! ethercat datagram
-/*!
- * author: Robert Burger
+/**
+ * \file datagram.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief ethercat datagram
+ *
+ * These are EtherCAT datagram specific configuration functions.
  */
+
 
 /*
  * This file is part of libethercat.
@@ -25,6 +31,7 @@
 
 #include <string.h>
 
+#include "libethercat/regs.h"
 #include "libethercat/datagram.h"
 #include "libethercat/datagram_pool.h"
 
@@ -61,7 +68,8 @@ int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
         uint16_t adp, uint16_t ado, uint8_t *payload, size_t payload_len) {
 
     // get address to first datagram
-    ec_datagram_t *d = (ec_datagram_t *)((uint8_t *)frame + sizeof(ec_frame_t));
+    ec_datagram_t *d = (ec_datagram_t *)((uint8_t *)frame + 
+            sizeof(ec_frame_t));
 
     while (((uint8_t *)d < ((uint8_t *)frame + frame->len)) && d->next)
         d = (ec_datagram_t *)((uint8_t *)d + ec_datagram_length(d));
@@ -105,10 +113,10 @@ int ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
  * \param data pointer to data
  * \param datalen length of data
  */
-void ec_datagram_fill_aprd(ec_datagram_t *pdg, uint16_t adp, uint16_t ado, uint8_t idx, 
-        uint8_t *data, size_t datalen) {
+void ec_datagram_fill_aprd(ec_datagram_t *pdg, uint16_t adp, uint16_t ado, 
+        uint8_t idx, uint8_t *data, size_t datalen) {
     memset(pdg, 0, sizeof(ec_datagram_t));
-    pdg->cmd = 1;//EC_CMD_APRD;
+    pdg->cmd = EC_CMD_APRD;
     pdg->idx = idx;
     pdg->adp = adp;
     pdg->ado = ado;

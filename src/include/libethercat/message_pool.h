@@ -1,9 +1,14 @@
-//! ethercat message pool
-/*!
- * author: Robert Burger
+/**
+ * \file message_pool.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 11 Nov 2016
+ *
+ * \brief ethercat async message loop
+ *
  */
+
 
 /*
  * This file is part of libethercat.
@@ -36,25 +41,27 @@
 struct ec;
 
 typedef enum {
-    EC_MSG_CHECK_GROUP,
-    EC_MSG_CHECK_SLAVE
+    EC_MSG_CHECK_GROUP,             //!< message type check group
+    EC_MSG_CHECK_SLAVE              //!< message type check slave
 } ec_async_message_id_t;
     
 typedef union ec_async_message_payload {
-    void *ptr;
-    uint32_t group_id;
-    uint32_t slave_id;
+    void *ptr;                      //!< pointer to payload
+    uint32_t group_id;              //!< group index
+    uint32_t slave_id;              //!< slave index
 } ec_async_message_payload_t;
 
 typedef struct ec_message {
-    ec_async_message_id_t id;
+    ec_async_message_id_t id;       //!< index
     ec_async_message_payload_t payload;    
+                                    //!< payload
 } ec_message_t;
 
 typedef struct __attribute__((__packed__)) ec_message_entry {
     TAILQ_ENTRY(ec_message_entry) qh;
+                                    //!< handle to message entry queue
     
-    ec_message_t msg;
+    ec_message_t msg;               //!< message itself
 } ec_message_entry_t;
 
 TAILQ_HEAD(ec_message_pool_queue, ec_message_entry);
@@ -89,7 +96,8 @@ extern "C" {
  * \param pec pointer to ethercat master
  * \return 0 or error code
  */
-int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, struct ec *pec);
+int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, 
+        struct ec *pec);
 
 //! destroys async message loop
 /*!

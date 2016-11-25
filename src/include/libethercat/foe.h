@@ -1,8 +1,14 @@
-//! ethercat master
-/*!
- * author: Robert Burger
+/**
+ * \file foe.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief file over ethercat fuctions
+ *
+ * These functions are used to gain access to the File-over-EtherCAT 
+ * mailbox protocol.
  */
 
 /*
@@ -28,85 +34,94 @@
 
 #include "libethercat/mbx.h"
 
+//! FoE header
 typedef struct ec_foe_header {
-    uint8_t op_code;
-    uint8_t reserved;
+    uint8_t op_code;            //!< FoE op code
+    uint8_t reserved;           //!< FoE reserved 
 } ec_foe_header_t;
 
-#define MAX_FILE_NAME_SIZE 512
-#define MAX_ERROR_TEXT_SIZE 512
+#define MAX_FILE_NAME_SIZE 512  //!< file name max size
+#define MAX_ERROR_TEXT_SIZE 512 //!< error text max size
 
+//! read/write request
 typedef struct ec_foe_rw_request {
-    ec_mbx_header_t mbx_hdr;
-    ec_foe_header_t foe_hdr;
-    uint32_t        password;
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        password;   //!< FoE password
     char            file_name[MAX_FILE_NAME_SIZE];
+                                //!< FoE filename to read/write
 } ec_foe_rw_request_t;
 
+//! data packet
 typedef struct ec_foe_data_request {
-    ec_mbx_header_t mbx_hdr;
-    ec_foe_header_t foe_hdr;
-    uint32_t        packet_nr;
-    ec_data_t       data;
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        packet_nr;  //!< FoE segmented packet number
+    ec_data_t       data;       //!< FoE segmented packet data
 } ec_foe_data_request_t;
 
+//! acknowledge data packet
 typedef struct ec_foe_ack_request {
-    ec_mbx_header_t mbx_hdr;
-    ec_foe_header_t foe_hdr;
-    uint32_t        packet_nr;
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        packet_nr;  //!< FoE segmented packet number
 } ec_foe_ack_request_t;
 
+//! error request
 typedef struct ec_foe_error_request {
-    ec_mbx_header_t mbx_hdr;
-    ec_foe_header_t foe_hdr;
-    uint32_t        error_code;
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        error_code; //!< error code
     char            error_text[MAX_ERROR_TEXT_SIZE];
+                                //!< error text
 } ec_foe_error_request_t;
 
+//! firmware update 
 typedef struct ec_fw_update {
-    uint16_t cmd;
-    uint16_t size;
-    uint16_t address_low;
-    uint16_t address_high;
+    uint16_t cmd;               //!< firmware update command
+    uint16_t size;              //!< size of data
+    uint16_t address_low;       //!< destination/source address low WORD
+    uint16_t address_high;      //!< destination/source address high WORD
     uint16_t data[(EC_MAX_DATA-8)>>1];
+                                //!< firmware data bytes
 } ec_fw_update_t;
 
 enum {
-    EC_FOE_OP_CODE_READ_REQUEST  = 0x01,
-    EC_FOE_OP_CODE_WRITE_REQUEST = 0x02,
-    EC_FOE_OP_CODE_DATA_REQUEST  = 0x03,
-    EC_FOE_OP_CODE_ACK_REQUEST   = 0x04,
-    EC_FOE_OP_CODE_ERROR_REQUEST = 0x05,
-    EC_FOE_OP_CODE_BUSY_REQUEST  = 0x06,
+    EC_FOE_OP_CODE_READ_REQUEST  = 0x01,    //!< read request
+    EC_FOE_OP_CODE_WRITE_REQUEST = 0x02,    //!< write request
+    EC_FOE_OP_CODE_DATA_REQUEST  = 0x03,    //!< data request
+    EC_FOE_OP_CODE_ACK_REQUEST   = 0x04,    //!< acknowledge request
+    EC_FOE_OP_CODE_ERROR_REQUEST = 0x05,    //!< error request
+    EC_FOE_OP_CODE_BUSY_REQUEST  = 0x06,    //!< busy request
 };
 
 enum {
-    EC_FOE_ERROR_NOT_DEFINED         = 0x8000,
-    EC_FOE_ERROR_NOT_FOUND           = 0x8001,
-    EC_FOE_ERROR_ACCESS_DENIED       = 0x8002,
-    EC_FOE_ERROR_DISK_FULL           = 0x8003,
-    EC_FOE_ERROR_ILLEGAL             = 0x8004,
-    EC_FOE_ERROR_PACKET_NUMBER_WRONG = 0x8005,
-    EC_FOE_ERROR_ALREADY_EXISTS      = 0x8006,
-    EC_FOE_ERROR_NO_USER             = 0x8007,
-    EC_FOE_ERROR_BOOTSTRAP_ONLY      = 0x8008,
-    EC_FOE_ERROR_NOT_BOOTSTRAP       = 0x8009,
-    EC_FOE_ERROR_NO_RIGHTS           = 0x800A,
-    EC_FOE_ERROR_PROGRAM_ERROR       = 0x800B,
+    EC_FOE_ERROR_NOT_DEFINED         = 0x8000,  //!< not defined
+    EC_FOE_ERROR_NOT_FOUND           = 0x8001,  //!< not found
+    EC_FOE_ERROR_ACCESS_DENIED       = 0x8002,  //!< access denied
+    EC_FOE_ERROR_DISK_FULL           = 0x8003,  //!< disk full
+    EC_FOE_ERROR_ILLEGAL             = 0x8004,  //!< illegal
+    EC_FOE_ERROR_PACKET_NUMBER_WRONG = 0x8005,  //!< packed number wrong
+    EC_FOE_ERROR_ALREADY_EXISTS      = 0x8006,  //!< already exist
+    EC_FOE_ERROR_NO_USER             = 0x8007,  //!< no user
+    EC_FOE_ERROR_BOOTSTRAP_ONLY      = 0x8008,  //!< bootstrap access only
+    EC_FOE_ERROR_NOT_BOOTSTRAP       = 0x8009,  //!< not in bootstrap
+    EC_FOE_ERROR_NO_RIGHTS           = 0x800A,  //!< no access rights
+    EC_FOE_ERROR_PROGRAM_ERROR       = 0x800B,  //!< program error
 };
 
 enum {
-    EFW_CMD_IGNORE                  = 0,
-    EFW_CMD_MEMORY_TRANSFER         = 1,
-    EFW_CMD_WRCODE                  = 2,
-    EFW_CMD_CHK_DEVID               = 3,
-    EFW_CMD_CHK_DEVICEID            = 3,
-    EFW_CMD_CHKSUM                  = 4,
-    EFW_CMD_WRCODECHKSUM            = 5,
-    EFW_CMD_SET_DEVID               = 6,
-    EFW_CMD_CHKSUMCHKSUM            = 6,
-    EFW_CMD_BOOTCHKSUM              = 7,
-    EFW_CMD_SET_EEPROM              = 10,
+    EFW_CMD_IGNORE                  = 0,    //!< command ignore
+    EFW_CMD_MEMORY_TRANSFER         = 1,    //!< command memory transfer
+    EFW_CMD_WRCODE                  = 2,    //!< command wrcode
+    EFW_CMD_CHK_DEVID               = 3,    //!< command check device id
+    EFW_CMD_CHK_DEVICEID            = 3,    //!< command check device id
+    EFW_CMD_CHKSUM                  = 4,    //!< command checksum
+    EFW_CMD_WRCODECHKSUM            = 5,    //!< command wr code checksum
+    EFW_CMD_SET_DEVID               = 6,    //!< command set device id
+    EFW_CMD_CHKSUMCHKSUM            = 6,    //!< command checksum checksum
+    EFW_CMD_BOOTCHKSUM              = 7,    //!< command boot checksum
+    EFW_CMD_SET_EEPROM              = 10,   //!< command set eeprom
 };
 
 #ifdef __cplusplus

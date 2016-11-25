@@ -1,9 +1,14 @@
-//! ethercat master mailbox handling
-/*!
- * author: Robert Burger
+/**
+ * \file mbx.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 11 Nov 2016
+ *
+ * \brief ethercat mailbox common access functions
+ *
  */
+
 
 /*
  * This file is part of libethercat.
@@ -42,17 +47,17 @@ enum {
 
 //! ethercat mailbox header
 typedef struct PACKED ec_mbx_header {
-    uint16_t  length;
-    uint16_t  address;
-    uint8_t   priority;
-    unsigned  mbxtype : 4;
-    unsigned  counter : 4;
+    uint16_t  length;       //!< mailbox length
+    uint16_t  address;      //!< mailbox address
+    uint8_t   priority;     //!< priority
+    unsigned  mbxtype : 4;  //!< mailbox type
+    unsigned  counter : 4;  //!< counter
 } PACKED ec_mbx_header_t;
 
 //! ethercat mailbox data
 typedef struct PACKED ec_mbx {
-    ec_mbx_header_t mbx_hdr;
-    ec_data_t      mbx_data;
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_data_t      mbx_data;    //!< mailbox data
 } PACKED ec_mbx_t;
 
 #ifdef __cplusplus

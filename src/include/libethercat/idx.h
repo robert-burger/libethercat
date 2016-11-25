@@ -5,11 +5,8 @@
  *
  * \date 11 Nov 2016
  *
- * \brief ethercat distributed clocks support.
+ * \brief ethercat index
  *
- * These functions are used to enable distributed clocks support
- * on the EtherCAT master and to configure one ore more EtherCAT
- * slaves to enable the sync0 and/or sync1 pulse generation.
  */
 
 /*

@@ -1,9 +1,14 @@
-//! ethercat hardware layer
-/*!
- * author: Robert Burger
+/**
+ * \file hw.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief hardware access functions
+ *
  */
+
 
 /*
  * This file is part of libethercat.
@@ -31,18 +36,19 @@
 #include "libethercat/datagram_pool.h"
 #include "libethercat/datagram.h"
 
+//! hardware structure
 typedef struct hw {
-    int sockfd;     //!< raw socket file descriptor
-    int mtu_size;
+    int sockfd;                     //!< raw socket file descriptor
+    int mtu_size;                   //!< mtu size
 
-    //! receiver thread settings
-    pthread_t    rxthread;
-    int          rxthreadrunning;
-    int          rxthreadprio;
-    int          rxthreadcpumask;
+    // receiver thread settings
+    pthread_t rxthread;             //!< receiver thread handle
+    int rxthreadrunning;            //!< receiver thread running flag
+    int rxthreadprio;               //!< receiver thread priority
+    int rxthreadcpumask;            //!< recevied thread cpu mask
 
-    datagram_pool_t *tx_high;    //!< high priority datagrams
-    datagram_pool_t *tx_low;     //!< low priority datagrams
+    datagram_pool_t *tx_high;       //!< high priority datagrams
+    datagram_pool_t *tx_low;        //!< low priority datagrams
 
     datagram_entry_t *tx_send[256]; //!< sent datagrams
 } hw_t;   

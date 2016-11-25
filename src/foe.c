@@ -1,9 +1,16 @@
-//! ethercat file over ethercat mailbox handling
-/*!
- * author: Robert Burger
+/**
+ * \file foe.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief file over ethercat fuctions
+ *
+ * These functions are used to gain access to the File-over-EtherCAT 
+ * mailbox protocol.
  */
+
 
 /*
  * This file is part of libethercat.
@@ -114,7 +121,8 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
             ec_foe_error_request_t *read_buf_error =
                 (ec_foe_error_request_t *)(slv->mbx_read.buf);
 
-            ec_log(100, __func__, "got foe error code 0x%X\n", read_buf_error->error_code);
+            ec_log(100, __func__, "got foe error code 0x%X\n", 
+                    read_buf_error->error_code);
 
             ssize_t text_len = (read_buf_data->mbx_hdr.length - 6);
             if (text_len > 0) {
@@ -140,11 +148,13 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
 
         if (strncmp(file_name, "ECATFW__", 8) == 0) {
             *file_data = realloc(*file_data, *file_data_len + len - 8);
-            memcpy(*file_data + *file_data_len, &read_buf_data->data.bdata[8], len - 8); 
+            memcpy(*file_data + *file_data_len,
+                    &read_buf_data->data.bdata[8], len - 8); 
             *file_data_len += len - 8;
         } else {
             *file_data = realloc(*file_data, *file_data_len + len);
-            memcpy(*file_data + *file_data_len, &read_buf_data->data.bdata[0], len); 
+            memcpy(*file_data + *file_data_len, 
+                    &read_buf_data->data.bdata[0], len); 
             *file_data_len += len;
         }
 
@@ -257,7 +267,8 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
             break;
     } while (wkc != 1);
     if (!wkc) {
-        ec_log(10, __func__, "error on reading receive mailbox wating for ack\n");
+        ec_log(10, __func__, 
+                "error on reading receive mailbox wating for ack\n");
         goto exit;
     }
 
@@ -272,7 +283,8 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
             ec_foe_error_request_t *read_buf_error =
                 (ec_foe_error_request_t *)(slv->mbx_read.buf);
 
-            ec_log(10, __func__, "got foe error code 0x%X\n", read_buf_error->error_code);
+            ec_log(10, __func__, "got foe error code 0x%X\n",
+                    read_buf_error->error_code);
 
             ssize_t text_len = (read_buf_ack->mbx_hdr.length - 6);
             if (text_len > 0) {
@@ -348,7 +360,8 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
 
         wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, __func__, "error on writing send mailbox with data packet %d\n", 
+            ec_log(10, __func__,
+                    "error on writing send mailbox with data packet %d\n", 
                     write_buf_data->packet_nr);
             goto exit;
         }
@@ -357,7 +370,8 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         ec_mbx_clear(pec, slave, 1);
         wkc = ec_mbx_receive(pec, slave, 10 * EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, __func__, "error on reading receive mailbox wating for data ack\n");
+            ec_log(10, __func__,
+                    "error on reading receive mailbox wating for data ack\n");
             goto exit;
         }
 
@@ -368,12 +382,14 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         }
 
         if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
-            ec_log(10, __func__, "got no ack on foe write request, got 0x%X\n", 
+            ec_log(10, __func__,
+                    "got no ack on foe write request, got 0x%X\n", 
                     read_buf_ack->foe_hdr.op_code);
             goto exit;
         }
         
-        ec_log(10, __func__, "got ack for packet %d\n", read_buf_ack->packet_nr);
+        ec_log(10, __func__, "got ack for packet %d\n",
+                read_buf_ack->packet_nr);
 
         if (last_pkt)
             break;

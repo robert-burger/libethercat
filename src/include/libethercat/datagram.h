@@ -1,8 +1,13 @@
-//! ethercat datagram
-/*!
- * author: Robert Burger
+/**
+ * \file datagram.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Nov 2016
+ *
+ * \brief ethercat datagram
+ *
+ * These are EtherCAT datagram specific configuration functions.
  */
 
 /*
@@ -62,7 +67,8 @@ typedef struct __attribute__((__packed__)) ec_datagram {
 } ec_datagram_t;
 
 #define ec_datagram_hdr_length  (sizeof(ec_datagram_t))
-#define ec_datagram_length(pdg) (ec_datagram_hdr_length + (pdg)->len + EC_WKC_SIZE)
+#define ec_datagram_length(pdg) \
+    (ec_datagram_hdr_length + (pdg)->len + EC_WKC_SIZE)
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,8 +83,8 @@ extern "C" {
  * \param data pointer to data
  * \param datalen length of data
  */
-void ec_datagram_fill_aprd(ec_datagram_t *pdg, uint16_t adp, uint16_t ado, uint8_t idx, 
-        uint8_t *data, size_t datalen);
+void ec_datagram_fill_aprd(ec_datagram_t *pdg, uint16_t adp, uint16_t ado, 
+        uint8_t idx, uint8_t *data, size_t datalen);
 
 //! initialize empty frame
 /*/
@@ -112,10 +118,14 @@ int ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
         uint32_t adr, uint8_t *payload, size_t payload_len);
 
 #define ec_datagram_mark_next(p)  ((ec_datagram_t *)(p))->next = 1
-#define ec_datagram_first(pframe) (ec_datagram_t *)(((uint8_t *)(pframe)) + sizeof(ec_frame_t))
-#define ec_datagram_next(p)       (ec_datagram_t *)((uint8_t *)(p) + ec_datagram_length(p))
-#define ec_datagram_payload(p)    ((uint8_t *)(p) + sizeof(ec_datagram_t))
-#define ec_datagram_wkc(p)        (*(uint16_t *)((uint8_t *)(p) + ec_datagram_length(p) - 2))
+#define ec_datagram_first(pframe) \
+    (ec_datagram_t *)(((uint8_t *)(pframe)) + sizeof(ec_frame_t))
+#define ec_datagram_next(p)       \
+    (ec_datagram_t *)((uint8_t *)(p) + ec_datagram_length(p))
+#define ec_datagram_payload(p)    \
+    ((uint8_t *)(p) + sizeof(ec_datagram_t))
+#define ec_datagram_wkc(p)        \
+    (*(uint16_t *)((uint8_t *)(p) + ec_datagram_length(p) - 2))
 
 #ifdef __cplusplus
 }

@@ -1,9 +1,14 @@
-//! ethercat async message loop
-/*!
- * author: Robert Burger
+/**
+ * \file message_pool.c
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 11 Nov 2016
+ *
+ * \brief ethercat async message loop
+ *
  */
+
 
 /*
  * This file is part of libethercat.
@@ -108,12 +113,13 @@ void ec_async_checK_slave(ec_async_message_loop_t *paml, uint16_t slave) {
         ec_log(100, "ec_async_thread", "slave %2d: wkc error on "
                 "getting slave state\n", slave);
     else {
-        ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode 0x%02X\n", 
-                slave, state, alstatcode);
+        ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
+                "0x%02X\n", slave, state, alstatcode);
 
         // if state != expected_state -> repair
         if (state != paml->pec->slaves[slave].expected_state) {
-            wkc = ec_slave_state_transition(paml->pec, slave, paml->pec->slaves[slave].expected_state);
+            wkc = ec_slave_state_transition(paml->pec, slave, 
+                    paml->pec->slaves[slave].expected_state);
         }
     }
 }
@@ -137,7 +143,8 @@ void *ec_async_message_loop_thread(void *arg) {
                 // do something
                 int slave;
                 for (slave = 0; slave < paml->pec->slave_cnt; ++slave) {
-                    if (paml->pec->slaves[slave].assigned_pd_group != me->msg.payload.group_id)
+                    if (paml->pec->slaves[slave].assigned_pd_group != 
+                            me->msg.payload.group_id)
                         continue;
 
                     ec_async_checK_slave(paml, slave);
@@ -195,7 +202,8 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
     int i, ret = 0;
     
     // create memory for async message loop
-    (*ppaml) = (ec_async_message_loop_t *)malloc(sizeof(ec_async_message_loop_t));
+    (*ppaml) = (ec_async_message_loop_t *)malloc(
+            sizeof(ec_async_message_loop_t));
     if (!(*ppaml))
         return (ret = ENOMEM);
 
@@ -207,7 +215,8 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
     TAILQ_INIT(&(*ppaml)->avail.queue);
     
     for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
-        ec_message_entry_t *me = (ec_message_entry_t *)malloc(sizeof(ec_message_entry_t));
+        ec_message_entry_t *me = 
+            (ec_message_entry_t *)malloc(sizeof(ec_message_entry_t));
         memset(me, 0, sizeof(ec_message_entry_t));
         TAILQ_INSERT_TAIL(&(*ppaml)->avail.queue, me, qh);
     }
@@ -225,7 +234,8 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
     (*ppaml)->pec = pec;
     (*ppaml)->loop_running = 1;
     ec_timer_gettime(&(*ppaml)->next_check_group);
-    pthread_create(&(*ppaml)->loop_tid, NULL, ec_async_message_loop_thread, (*ppaml));
+    pthread_create(&(*ppaml)->loop_tid, NULL, 
+            ec_async_message_loop_thread, (*ppaml));
 
     return 0;
 }
