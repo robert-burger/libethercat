@@ -16,6 +16,7 @@ Makefile.in
 /install-sh
 /missing
 /stamp-h1
+/doxygen-doc
 
 *.o
 *.lo
