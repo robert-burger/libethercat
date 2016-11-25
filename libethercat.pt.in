@@ -10,8 +10,12 @@ C_LIB_PATHS         = ${PKGROOT}/lib/${ARCH}
 C_LIBS              = ethercat
 SUPPORTED_LANGUAGES = C
 
+[subpackage]
+NAME                = pic
+C_LIBS              = ethercat_pic
+
 [install]
-build/${ARCH}/install/lib/libethercat.a => lib/${ARCH}/
+build/${ARCH}/install/lib/*.a => lib/${ARCH}/
 doxygen-doc/ => doc/
 src/include/ => include/
 

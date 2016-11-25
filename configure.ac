@@ -3,6 +3,10 @@
 
 AC_PREREQ([2.69])
 AC_INIT([libethercat], [0.0.1], [Robert Burger robert.burger@dlr.de])
+
+AC_CANONICAL_TARGET
+AC_CANONICAL_SYSTEM
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
@@ -44,6 +48,20 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([clock_gettime memset socket strdup strerror strndup])
+
+# Platform specific setup
+# Check for which host we are on and setup a few things
+# specifically based on the host
+case $target in
+    *vxworks* )
+        PROGRAM_LDFLAGS+="$LDFLAGS -non-static"
+        ;;
+    *)
+        PROGRAM_LDFLAGS+="$LDFLAGS "
+        ;;
+esac
+
+AC_SUBST([PROGRAM_LDFLAGS])
 
 AC_CONFIG_FILES([Makefile src/Makefile libethercat.pc])
 AC_OUTPUT
