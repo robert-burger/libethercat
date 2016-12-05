@@ -207,10 +207,10 @@ typedef struct ec_slave_mailbox_init_cmd {
     char *data;                 //!< new id data
     size_t datalen;             //!< new id data length
 
-    LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
+    TAILQ_ENTRY(ec_slave_mailbox_init_cmd) le;
 } ec_slave_mailbox_init_cmd_t;
     
-LIST_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
+TAILQ_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
 
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
