@@ -451,7 +451,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
         pec->slaves[i].eeprom.read_eeprom = 0;
         TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
         TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
-        SIMPLEQ_INIT(&pec->slaves[i].init_cmds);
+        LIST_INIT(&pec->slaves[i].init_cmds);
         pthread_mutex_init(&pec->slaves[i].mbx_lock, NULL);
 
         ec_apwr(pec, auto_inc, EC_REG_STADR, (uint8_t *)&fixed, 
@@ -569,8 +569,8 @@ int ec_close(ec_t *pec) {
             }
 
             ec_slave_mailbox_init_cmd_t *cmd;
-            while ((cmd = SIMPLEQ_FIRST(&slv->init_cmds)) != NULL) {
-                SIMPLEQ_REMOVE_HEAD(&slv->init_cmds, le);
+            while ((cmd = LIST_FIRST(&slv->init_cmds)) != NULL) {
+                LIST_REMOVE(cmd, le);
                 ec_slave_mailbox_init_cmd_free(cmd);                
             }
 
