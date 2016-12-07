@@ -178,7 +178,7 @@ void ec_slave_add_init_cmd(ec_t *pec, uint16_t slave,
     if (!cmd)
         return;
 
-    TAILQ_INSERT_TAIL(&pec->slaves[slave].init_cmds, cmd, le);
+    SIMPLEQ_INSERT_TAIL(&pec->slaves[slave].init_cmds, cmd, le);
 }
 
 //! set ethercat state on slave 
@@ -367,7 +367,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                     "sending init cmds\n", slave);
 
             ec_slave_mailbox_init_cmd_t *cmd;
-            TAILQ_FOREACH(cmd, &slv->init_cmds, le) {
+            SIMPLEQ_FOREACH(cmd, &slv->init_cmds, le) {
                 if (cmd->transition != 0x24) 
                     continue;
 

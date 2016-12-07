@@ -207,10 +207,10 @@ typedef struct ec_slave_mailbox_init_cmd {
     char *data;                 //!< new id data
     size_t datalen;             //!< new id data length
 
-    TAILQ_ENTRY(ec_slave_mailbox_init_cmd) le;
+    SIMPLEQ_ENTRY(ec_slave_mailbox_init_cmd) le;
 } ec_slave_mailbox_init_cmd_t;
     
-TAILQ_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
+SIMPLEQ_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
 
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
@@ -405,6 +405,12 @@ int ec_slave_state_transition(struct ec *pec, uint16_t slave,
 void ec_slave_add_init_cmd(struct ec *pec, uint16_t slave,
         int type, int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen);
+
+//! freeing init command strucuture
+/*!
+ * \param cmd init command to free
+ */
+void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
 
 #ifdef __cplusplus
 }
