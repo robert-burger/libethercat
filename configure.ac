@@ -26,6 +26,7 @@ m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig'
 m4_esyscmd([scripts/m4_deps.py])
 
 # Checks for libraries.
+AX_CHECK_COMPILE_FLAG([-pthread], [AX_APPEND_FLAG([-pthread])] )
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [sem_init])
 
