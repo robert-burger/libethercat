@@ -64,6 +64,6 @@ esac
 
 AC_SUBST([PROGRAM_LDFLAGS])
 
-AC_CONFIG_FILES([Makefile src/Makefile libethercat.pc])
+AC_CONFIG_FILES([Makefile src/Makefile libethercat.pc libethercat.pt])
 AC_OUTPUT
 
