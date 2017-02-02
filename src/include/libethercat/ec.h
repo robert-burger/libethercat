@@ -76,6 +76,14 @@ typedef struct PACKED ec_pd_group {
 
     size_t   pdout_len;             //!< length of process data outputs
     size_t   pdin_len;              //!< length of process data inputs
+    size_t   pd_lrw_len;            //!< inputs and outputs length if lrw is used
+
+    int use_lrw;                    //!< LRW flag
+                                    /*!
+                                     * This flag defines if the EtherCAT master
+                                     * should use the LRW command for process
+                                     * data exchange
+                                     */
 
     uint16_t wkc_expected;          //!< expected working counter
                                     /*!< 
@@ -141,6 +149,8 @@ typedef struct ec {
     
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state
+
+    int threaded_startup;           //!< running state machine in threads for slave
 } ec_t;
 
 #ifdef __cplusplus

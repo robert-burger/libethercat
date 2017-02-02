@@ -212,6 +212,12 @@ typedef struct ec_slave_mailbox_init_cmd {
     
 LIST_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
 
+typedef struct worker_arg {
+    struct ec *pec;
+    int slave;
+    ec_state_t state;
+} worker_arg_t;
+
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
     uint16_t fixed_address;     //!< virtual bus address, programmed on start
@@ -275,6 +281,7 @@ typedef struct ec_slave {
                                  * defined by the slave (\link subdevs 
                                  * \endlink)
                                  */
+    size_t pdin_len;
 
     ec_pd_t pdout;              //!< output process data
                                 /*!<
@@ -284,6 +291,7 @@ typedef struct ec_slave {
                                  * defined by the slave (\link subdevs 
                                  * \endlink)
                                  */
+    size_t pdout_len;
 
     size_t subdev_cnt;          //!< count of sub devices
                                 /*!< 
@@ -316,6 +324,9 @@ typedef struct ec_slave {
                                  * specific settings while setting the state
                                  * machine from INIT to OP.
                                  */
+                
+    worker_arg_t worker_arg;
+    pthread_t worker_tid;
 } ec_slave_t;
 
 #ifdef __cplusplus

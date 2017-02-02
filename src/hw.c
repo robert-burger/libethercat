@@ -142,6 +142,8 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
 #error unsopported OS
 #endif
 
+    pthread_mutex_init(&(*pphw)->hw_lock, NULL);
+
     // thread settings
     (*pphw)->rxthreadprio = prio;
     (*pphw)->rxthreadcpumask = cpumask;
@@ -168,6 +170,7 @@ int hw_close(hw_t *phw) {
     phw->rxthreadrunning = 0;
     pthread_join(phw->rxthread, NULL);
     
+    pthread_mutex_destroy(&phw->hw_lock);
     datagram_pool_close(phw->tx_high);
     datagram_pool_close(phw->tx_low);
 
@@ -271,6 +274,8 @@ int hw_tx(hw_t *phw) {
     uint8_t send_frame[ETH_FRAME_LEN];
     memset(send_frame, 0, ETH_FRAME_LEN);
     ec_frame_t *pframe = (ec_frame_t *)send_frame;
+            
+    pthread_mutex_lock(&phw->hw_lock);
 
     memcpy(pframe->mac_dest, mac_dest, 6);
     memcpy(pframe->mac_src , mac_src , 6);
@@ -306,7 +311,7 @@ int hw_tx(hw_t *phw) {
 #else
 #error unsupported OS
 #endif
-
+            
             if (pframe->len != bytestx) {
                 ec_log(10, "TX", "got only %d bytes out of %d bytes "
                         "through.\n", bytestx, pframe->len);
@@ -340,6 +345,8 @@ int hw_tx(hw_t *phw) {
         // store as sent
         phw->tx_send[entry->datagram.idx] = entry;
     }
+
+    pthread_mutex_unlock(&phw->hw_lock);
 
     return 0;
 }

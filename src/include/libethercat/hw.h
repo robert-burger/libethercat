@@ -47,6 +47,8 @@ typedef struct hw {
     int rxthreadprio;               //!< receiver thread priority
     int rxthreadcpumask;            //!< recevied thread cpu mask
 
+    pthread_mutex_t hw_lock;        //!< transmit lock
+
     datagram_pool_t *tx_high;       //!< high priority datagrams
     datagram_pool_t *tx_low;        //!< low priority datagrams
 
