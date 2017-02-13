@@ -62,6 +62,31 @@
 //! receiver thread forward declaration
 void *hw_rx_thread(void *arg);
 
+#ifdef __linux__
+
+// this need the grant_cap_net_raw kernel module 
+// see https://gitlab.com/fastflo/open_ethercat
+#define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
+
+int try_grant_cap_net_raw_init() {
+    if(access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0)
+        return 0; // does probably not exist or is not readable
+
+    int fd = open(GRANT_CAP_NET_RAW_PROCFS, O_RDONLY);
+    if(fd == -1) {
+        perror("open");
+        return -1;
+    }
+    char buffer[1024];
+    int n = read(fd, buffer, 1024);
+    close(fd);
+    if(n <= 0 || strncmp(buffer, "OK", 2))
+        return -1;
+    return 0;
+}
+
+#endif
+
 //! open a new hw
 /*!
  * \param pphw return hw 
@@ -77,6 +102,11 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     struct ifreq ifr;
     struct sockaddr_ll sll;
     memset(&sll, 0, sizeof(sll));
+
+    if (try_grant_cap_net_raw_init() == -1) {
+        ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
+                "not allowed to open a raw socket\n");
+    }
 #endif
 
     (*pphw) = (hw_t *)malloc(sizeof(hw_t));
