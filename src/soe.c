@@ -68,7 +68,9 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     int wkc = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE))
+    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) ||
+            !(slv->mbx_write.buf) ||
+            !(slv->mbx_read.buf))
         return 0;
 
     pthread_mutex_lock(&slv->mbx_lock);
@@ -160,7 +162,9 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     int wkc = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE))
+    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) ||
+            !(slv->mbx_write.buf) ||
+            !(slv->mbx_read.buf))
         return 0;
 
     pthread_mutex_lock(&slv->mbx_lock);
