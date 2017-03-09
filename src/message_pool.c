@@ -105,8 +105,8 @@ int ec_async_message_loop_put(ec_message_pool_t *ppool,
  * \param slave slave number to check
  */
 void ec_async_checK_slave(ec_async_message_loop_t *paml, uint16_t slave) {
-    ec_state_t state;
-    uint16_t alstatcode;
+    ec_state_t state = 0;
+    uint16_t alstatcode = 0;
     int wkc = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
 
     if (!wkc)
