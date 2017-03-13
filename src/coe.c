@@ -26,6 +26,7 @@
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
 #include "libethercat/timer.h"
+#include "libethercat/error_codes.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -136,15 +137,20 @@ typedef struct {
  * \return working counter
  */
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t *len, 
+        uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
         uint32_t *abort_code) {
-    int wkc;
+    int wkc, ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) ||
-            !(slv->mbx_write.buf) ||
-            !(slv->mbx_read.buf))
-        return 0;
+    // default error return
+    (*abort_code) = 0;
+
+    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE))
+        return EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
+    if (!(slv->mbx_write.buf))
+        return EC_ERROR_MAILBOX_WRITE_IS_NULL;
+    if (!(slv->mbx_read.buf))
+        return EC_ERROR_MAILBOX_READ_IS_NULL;
 
     pthread_mutex_lock(&slv->mbx_lock);
 
@@ -178,6 +184,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (!wkc) {
         ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+        ret = EC_ERROR_MAILBOX_WRITE;
         goto exit;
     }
 
@@ -186,6 +193,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (!wkc) {
         ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+        ret = EC_ERROR_MAILBOX_READ;
         goto exit;
     }
 
@@ -201,29 +209,36 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
                 abort_buf->abort_code);
 
         *abort_code = abort_buf->abort_code;
-        *len = 0;
+
+        ret = EC_ERROR_MAILBOX_ABORT;
         goto exit;
     }
 
     // everthing is fine
     *abort_code = 0;
 
-    if (*len == 0) {
-        if (read_buf->sdo_hdr.transfer_type)
-            *len = 4 - read_buf->sdo_hdr.data_set_size;
+    if (read_buf->sdo_hdr.transfer_type) {
+        if (*len) 
+            (*len) = min(*len, 4 - read_buf->sdo_hdr.data_set_size);
         else 
-            *len = read_buf->complete_size;        
-    } else {
-        size_t sdo_len = min(*len, read_buf->complete_size);
-        if (read_buf->sdo_hdr.transfer_type) {
-            sdo_len = min(*len, 4 - read_buf->sdo_hdr.data_set_size);
+            (*len) = 4 - read_buf->sdo_hdr.data_set_size;
 
-            ec_sdo_expedited_upload_resp_t *exp_read_buf = 
-                (ec_sdo_expedited_upload_resp_t *)(slv->mbx_read.buf);
-            memcpy(buf, exp_read_buf->sdo_data.bdata, sdo_len);
-        } else
-            memcpy(buf, read_buf->sdo_data.bdata, sdo_len);
-        *len = sdo_len;
+        if (!(*buf))
+            (*buf) = malloc(*len);
+
+        ec_sdo_expedited_upload_resp_t *exp_read_buf = 
+            (ec_sdo_expedited_upload_resp_t *)(slv->mbx_read.buf);
+        memcpy(*buf, exp_read_buf->sdo_data.bdata, *len);
+    } else {
+        if (*len) 
+            (*len) = min(*len, read_buf->complete_size);
+        else 
+            (*len) = read_buf->complete_size;
+
+        if (!(*buf))
+            (*buf) = malloc(*len);
+
+        memcpy(*buf, read_buf->sdo_data.bdata, *len);
     }
 
 exit:
@@ -235,7 +250,7 @@ exit:
 
     pthread_mutex_unlock(&slv->mbx_lock);
 
-    return wkc;
+    return ret;
 }
 
 //! write coe sdo 
@@ -250,15 +265,20 @@ exit:
  * \return working counter
  */
 int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t *len,
+        uint8_t sub_index, int complete, uint8_t *buf, size_t len,
         uint32_t *abort_code) {
-    int wkc;
+    int wkc, ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) ||
-            !(slv->mbx_write.buf) ||
-            !(slv->mbx_read.buf))
-        return 0;
+    // default error return
+    (*abort_code) = 0;
+
+    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE))
+        return EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
+    if (!(slv->mbx_write.buf))
+        return EC_ERROR_MAILBOX_WRITE_IS_NULL;
+    if (!(slv->mbx_read.buf))
+        return EC_ERROR_MAILBOX_READ_IS_NULL;
 
     pthread_mutex_lock(&slv->mbx_lock);
 
@@ -270,7 +290,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     ec_mbx_receive(pec, slave, 0);
 
     size_t max_len = slv->sm[0].len - 0x10,
-           rest_len = *len,
+           rest_len = len,
            seg_len = rest_len > max_len ? max_len : rest_len;
 
     // mailbox header
@@ -294,19 +314,20 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->sdo_hdr.index            = index;
     write_buf->sdo_hdr.sub_index        = sub_index;
 
-    if (*len <= 4 && !complete) {
+    if (len <= 4 && !complete) {
         ec_sdo_expedited_download_req_t *exp_write_buf = 
             (ec_sdo_expedited_download_req_t *)(slv->mbx_write.buf);
 
         exp_write_buf->mbx_hdr.length        = EC_SDO_NORMAL_HDR_LEN; 
         exp_write_buf->sdo_hdr.transfer_type = 1;
-        exp_write_buf->sdo_hdr.data_set_size = 4 - *len;
-        memcpy(&exp_write_buf->sdo_data.ldata[0], buf, *len);
+        exp_write_buf->sdo_hdr.data_set_size = 4 - len;
+        memcpy(&exp_write_buf->sdo_data.ldata[0], buf, len);
 
         // send request
         wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
             ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+            ret = EC_ERROR_MAILBOX_WRITE;
             goto exit;
         }
 
@@ -315,6 +336,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
             ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ret = EC_ERROR_MAILBOX_READ;
             goto exit;
         }
 
@@ -328,7 +350,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     } 
 
     uint8_t *tmp = buf;
-    write_buf->complete_size = *len;
+    write_buf->complete_size = len;
     memcpy(&write_buf->sdo_data.ldata[0], tmp, seg_len);
     rest_len -= seg_len;
     tmp += seg_len;
@@ -337,6 +359,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (!wkc) {
         ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+        ret = EC_ERROR_MAILBOX_WRITE;
         goto exit;
     }
 
@@ -345,6 +368,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (!wkc) {
         ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+        ret = EC_ERROR_MAILBOX_READ;
         goto exit;
     }
 
@@ -390,6 +414,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
             ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+            ret = EC_ERROR_MAILBOX_WRITE;
             goto exit;
         }
 
@@ -398,6 +423,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
             ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ret = EC_ERROR_MAILBOX_READ;
             goto exit;
         }
 
@@ -414,7 +440,7 @@ exit:
     }
 
     pthread_mutex_unlock(&slv->mbx_lock);
-    return wkc;
+    return ret;
 }
 
 typedef struct PACKED ec_sdoinfoheader {
@@ -446,14 +472,16 @@ typedef struct PACKED ec_sdo_odlist_resp {
  * \param len length of buffer, outputs read length
  * \return working counter
  */
-int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
-    int wkc;
+int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
+    int wkc, ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) ||
-            !(slv->mbx_write.buf) ||
-            !(slv->mbx_read.buf))
-        return 0;
+    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE))
+        return EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
+    if (!(slv->mbx_write.buf))
+        return EC_ERROR_MAILBOX_WRITE_IS_NULL;
+    if (!(slv->mbx_read.buf))
+        return EC_ERROR_MAILBOX_READ_IS_NULL;
 
     pthread_mutex_lock(&slv->mbx_lock);
 
@@ -484,8 +512,10 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
 
     // send request
     wkc = ec_mbx_send(pec, slave, 10 * EC_DEFAULT_TIMEOUT_MBX);
-    if (wkc != 1)
+    if (wkc != 1) {
         ec_log(10, __func__, "send mailbox failed\n");
+        ret = EC_ERROR_MAILBOX_WRITE;
+    }
 
     int val = 0, errors = 0;
 
@@ -495,24 +525,44 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
         wkc = ec_mbx_receive(pec, slave, 10 * EC_DEFAULT_TIMEOUT_MBX);
         if (wkc != 1) {
             ec_log(10, __func__, "receive mailbox failed\n");
+            ret = EC_ERROR_MAILBOX_READ;
             continue;
         }
 
         if (read_buf->mbx_hdr.mbxtype != EC_MBX_COE) {
             if (++errors == 10) {
                 ec_log(10, __func__, "receive mailbox got more than 10 errors...\n");
-                return 0;
+                return EC_ERROR_MAILBOX_READ;
             }
 
             continue;
         }
 
+        if (val == 0) {
+            // first fragment, allocate buffer if not passed
+            size_t od_len = (read_buf->mbx_hdr.length - 10) +                             // first fragment
+                (read_buf->sdo_info_hdr.fragments_left * (read_buf->mbx_hdr.length - 6)); // following fragments
+
+            if (*len) 
+                (*len) = min(*len, od_len);
+            else 
+                (*len) = od_len;
+
+            if (!(*buf))
+                (*buf) = malloc(*len);
+        }
+
         uint8_t *from = val == 0 ? &read_buf->sdo_info_data.bdata[4] : 
             &read_buf->sdo_info_data.bdata[0];
-        size_t len = val == 0 ? (read_buf->mbx_hdr.length - 10) : (read_buf->mbx_hdr.length - 6);
+        size_t act_len = val == 0 ? (read_buf->mbx_hdr.length - 10) : (read_buf->mbx_hdr.length - 6);
 
-        memcpy(buf + val, from, len);
-        val += len;
+        if ((val + act_len) > (*len))
+            act_len = (*len) - val;
+
+        if (act_len) {
+            memcpy((*buf) + val, from, act_len);
+            val += act_len;
+        }
     } while (read_buf->sdo_info_hdr.fragments_left);
 
     *len = val;
@@ -524,7 +574,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
     }
 
     pthread_mutex_unlock(&slv->mbx_lock);
-    return wkc;
+    return ret;
 }
 
 typedef struct PACKED ec_sdo_desc_req {
@@ -552,13 +602,15 @@ typedef struct PACKED ec_sdo_desc_resp {
  */
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ec_coe_sdo_desc_t *desc) {
-    int wkc;
+    int wkc, ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) ||
-            !(slv->mbx_write.buf) ||
-            !(slv->mbx_read.buf))
-        return 0;
+    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE))
+        return EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
+    if (!(slv->mbx_write.buf))
+        return EC_ERROR_MAILBOX_WRITE_IS_NULL;
+    if (!(slv->mbx_read.buf))
+        return EC_ERROR_MAILBOX_READ_IS_NULL;
 
     pthread_mutex_lock(&slv->mbx_lock);
 
@@ -585,14 +637,18 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     // send request
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (wkc != 1)
+    if (wkc != 1) {
         ec_log(10, __func__, "send mailbox failed\n");
+        ret = EC_ERROR_MAILBOX_WRITE;
+    }
 
     // wait for answer
     ec_mbx_clear(pec, slave, 1);
     wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (wkc != 1)
+    if (wkc != 1) {
         ec_log(10, __func__, "receive mailbox failed\n");
+        ret = EC_ERROR_MAILBOX_READ;
+    }
 
     if (read_buf->coe_hdr.service == EC_COE_SDOINFO) {
         if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP) {
@@ -621,7 +677,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     }
 
     pthread_mutex_unlock(&slv->mbx_lock);
-    return wkc;
+    return ret;
 }
 
 typedef struct PACKED ec_sdo_entry_desc_req {
@@ -657,13 +713,15 @@ typedef struct PACKED ec_sdo_entry_desc_resp {
  */
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc) {
-    int wkc;
+    int wkc, ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     
-    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) ||
-            !(slv->mbx_write.buf) ||
-            !(slv->mbx_read.buf))
-        return 0;
+    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE))
+        return EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
+    if (!(slv->mbx_write.buf))
+        return EC_ERROR_MAILBOX_WRITE_IS_NULL;
+    if (!(slv->mbx_read.buf))
+        return EC_ERROR_MAILBOX_READ_IS_NULL;
 
     pthread_mutex_lock(&slv->mbx_lock);
 
@@ -695,14 +753,18 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     // send request
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (wkc != 1)
+    if (wkc != 1) {
         ec_log(10, __func__, "send mailbox failed\n");
+        ret = EC_ERROR_MAILBOX_WRITE;
+    }
 
     // wait for answer
     ec_mbx_clear(pec, slave, 1);
     wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (wkc != 1)
+    if (wkc != 1) {
         ec_log(10, __func__, "receive mailbox failed\n");
+        ret = EC_ERROR_MAILBOX_READ;
+    }
 
     if (read_buf->coe_hdr.service == EC_COE_SDOINFO) {
         if (read_buf->sdo_info_hdr.opcode == 
@@ -727,8 +789,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         desc->bit_length        = 0;
         desc->obj_access        = 0;
         desc->data_len          = 0;
-
-        wkc = -1;
+        ret = EC_ERROR_MAILBOX_READ;
     }
 
     // reset mailbox state 
@@ -738,11 +799,12 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     }
 
     pthread_mutex_unlock(&slv->mbx_lock);
-    return wkc;
+    return ret;
 }
 
 int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
     int ret = 0;
+    uint8_t *buf = NULL;
     uint16_t start_adr; 
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
@@ -760,8 +822,9 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
         // read count of mapping entries, stored in subindex 0
         // mapped entreis are stored at 0x1c12 and 0x1c13 and should usually be
         // written in state preop with an init command
-        if (!ec_coe_sdo_read(pec, slave, idx, 0, 0, &entry_cnt, 
-                &entry_cnt_size, &abort_code)) {
+        buf = (uint8_t *)&entry_cnt;
+        if (ec_coe_sdo_read(pec, slave, idx, 0, 0, &buf, 
+                &entry_cnt_size, &abort_code) != 0) {
             ec_log(10, "GENERATE_MAPPING COE", "slave %2d: sm%d reading "
                     "0x%04X/%d failed\n", slave, sm_idx, idx, 0);
             continue;
@@ -776,8 +839,9 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             size_t entry_size = sizeof(entry_idx);
             
             // read entry subindex with mapped value
+            buf = (uint8_t *)&entry_idx;
             if (!ec_coe_sdo_read(pec, slave, idx, i, 0, 
-                    (uint8_t *)&entry_idx, &entry_size, &abort_code)) {
+                    &buf, &entry_size, &abort_code)) {
                 ec_log(10, "GENERATE_MAPPING COE", "            "
                         "pdo: reading 0x%04X/%d failed\n", idx, i);
                 continue;
@@ -793,8 +857,9 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             entry_cnt_size = sizeof(entry_cnt_2);
 
             // read count of entries of mapped value
+            buf = (uint8_t *)&entry_cnt_2;
             if (!ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, 
-                    (uint8_t *)&entry_cnt_2, &entry_cnt_size, &abort_code)) {
+                    &buf, &entry_cnt_size, &abort_code)) {
                 ec_log(10, "GENERATE_MAPPING COE", "             "
                         "pdo: reading 0x%04X/%d failed\n", entry_idx, 0);
                 continue;
@@ -806,8 +871,9 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             for (int j = 1; j <= entry_cnt_2; ++j) {
                 uint32_t entry;
                 size_t entry_size = sizeof(entry);
-                if (!ec_coe_sdo_read(pec, slave, entry_idx, j, 0, 
-                        (uint8_t *)&entry, &entry_size, &abort_code)) {
+                buf = (uint8_t *)&entry;
+                if (!ec_coe_sdo_read(pec, slave, entry_idx, j, 0, &buf,
+                            &entry_size, &abort_code)) {
                     ec_log(10, "GENERATE_MAPPING COE", "                "
                             "reading 0x%04X/%d failed\n", 
                             entry_idx, j);

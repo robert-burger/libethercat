@@ -394,7 +394,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                     uint32_t abort_code = 0;
 
                     int wkc = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, 
-                            cmd->ca_atn, buf, &buf_len, &abort_code);
+                            cmd->ca_atn, buf, buf_len, &abort_code);
                     if (!wkc) {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d: writing sdo failed!\n");

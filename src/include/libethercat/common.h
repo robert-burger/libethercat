@@ -78,6 +78,5 @@ typedef uint16_t ec_state_t;
 #define EC_STATE_ERROR       0x10       //!< EtherCAT ERROR
 #define EC_STATE_RESET       0x10       //!< EtherCAT ERROR reset
 
-
 #endif // __LIBETHERCAT_COMMON_H__
 

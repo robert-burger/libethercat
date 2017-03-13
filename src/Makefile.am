@@ -11,6 +11,7 @@ include_HEADERS = \
 				  $(srcdir)/include/libethercat/dc.h \
 				  $(srcdir)/include/libethercat/ec.h \
 				  $(srcdir)/include/libethercat/eeprom.h \
+				  $(srcdir)/include/libethercat/error_codes.h \
 				  $(srcdir)/include/libethercat/foe.h \
 				  $(srcdir)/include/libethercat/hw.h \
 				  $(srcdir)/include/libethercat/mbx.h \

@@ -19,6 +19,7 @@ RMPM_ARCH
 # Checks for programs.
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CC
+m4_ifdef([AM_PROG_CC_C_O], [AM_PROG_CC_C_O])
 AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
