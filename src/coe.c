@@ -770,21 +770,19 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         if (read_buf->sdo_info_hdr.opcode == 
                 EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP) {
             // transfer was successfull
+            desc->value_info    = read_buf->value_info;
             desc->data_type     = read_buf->data_type;
             desc->bit_length    = read_buf->bit_length;
             desc->obj_access    = read_buf->obj_access;
             desc->data_len      = read_buf->mbx_hdr.length - 6 - 10;
 
-            if (desc->data) {
-                memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
-                //                int h;
-                //                for (h = 0; h < desc->data_len; ++h) 
-                //                    printf("%02X ", desc->data[h]);
-                //                printf("\n");
-            }
+            if (!desc->data)
+                desc->data = malloc(desc->data_len);
 
+            memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
         }
     } else if (read_buf->coe_hdr.service == EC_COE_SDOREQ) {
+        desc->value_info        = 0;
         desc->data_type         = 0;
         desc->bit_length        = 0;
         desc->obj_access        = 0;

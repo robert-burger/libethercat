@@ -76,12 +76,21 @@ typedef struct PACKED ec_coe_sdo_desc {
 } PACKED ec_coe_sdo_desc_t;
 
 typedef struct PACKED ec_coe_sdo_entry_desc {
+    uint8_t  value_info;            //!< valueinfo, how to interpret data
     uint16_t data_type;             //!< entry data type
     uint16_t bit_length;            //!< entry bit length
     uint16_t obj_access;            //!< object access
     uint8_t *data;                  //!< data pointer
     size_t   data_len;              //!< length of data
 } PACKED ec_coe_sdo_entry_desc_t;
+
+#define EC_COE_SDO_VALUE_INFO_ACCESS_RIGHTS      0x01
+#define EC_COE_SDO_VALUE_INFO_OBJECT_CATEGORY    0x02
+#define EC_COE_SDO_VALUE_INFO_MAPPABLE           0x04
+#define EC_COE_SDO_VALUE_INFO_UNIT               0x08
+#define EC_COE_SDO_VALUE_INFO_DEFAULT_VALUE      0x10
+#define EC_COE_SDO_VALUE_INFO_MIN_VALUE          0x20
+#define EC_COE_SDO_VALUE_INFO_MAX_VALUE          0x40
 
 #ifdef __cplusplus
 extern "C" {
