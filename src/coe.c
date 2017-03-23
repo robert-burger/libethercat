@@ -821,10 +821,10 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
         // mapped entreis are stored at 0x1c12 and 0x1c13 and should usually be
         // written in state preop with an init command
         buf = (uint8_t *)&entry_cnt;
-        if (ec_coe_sdo_read(pec, slave, idx, 0, 0, &buf, 
-                &entry_cnt_size, &abort_code) != 0) {
+        if ((ret = ec_coe_sdo_read(pec, slave, idx, 0, 0, &buf, 
+                &entry_cnt_size, &abort_code)) != 0) {
             ec_log(10, "GENERATE_MAPPING COE", "slave %2d: sm%d reading "
-                    "0x%04X/%d failed\n", slave, sm_idx, idx, 0);
+                    "0x%04X/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
             continue;
         }
 
@@ -838,10 +838,11 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             
             // read entry subindex with mapped value
             buf = (uint8_t *)&entry_idx;
-            if (!ec_coe_sdo_read(pec, slave, idx, i, 0, 
-                    &buf, &entry_size, &abort_code)) {
+            if ((ret = ec_coe_sdo_read(pec, slave, idx, i, 0, 
+                    &buf, &entry_size, &abort_code)) != 0) {
                 ec_log(10, "GENERATE_MAPPING COE", "            "
-                        "pdo: reading 0x%04X/%d failed\n", idx, i);
+                        "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
+                        idx, i, ret);
                 continue;
             }
             
@@ -856,10 +857,11 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
 
             // read count of entries of mapped value
             buf = (uint8_t *)&entry_cnt_2;
-            if (!ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, 
-                    &buf, &entry_cnt_size, &abort_code)) {
+            if ((ret = ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, 
+                    &buf, &entry_cnt_size, &abort_code)) != 0) {
                 ec_log(10, "GENERATE_MAPPING COE", "             "
-                        "pdo: reading 0x%04X/%d failed\n", entry_idx, 0);
+                        "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
+                        entry_idx, 0, ret);
                 continue;
             }
 
@@ -870,11 +872,11 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
                 uint32_t entry;
                 size_t entry_size = sizeof(entry);
                 buf = (uint8_t *)&entry;
-                if (!ec_coe_sdo_read(pec, slave, entry_idx, j, 0, &buf,
-                            &entry_size, &abort_code)) {
+                if ((ret = ec_coe_sdo_read(pec, slave, entry_idx, j, 0, &buf,
+                            &entry_size, &abort_code)) != 0) {
                     ec_log(10, "GENERATE_MAPPING COE", "                "
-                            "reading 0x%04X/%d failed\n", 
-                            entry_idx, j);
+                            "reading 0x%04X/%d failed, error code 0x%X\n", 
+                            entry_idx, j, ret);
                     continue;
                 }
 

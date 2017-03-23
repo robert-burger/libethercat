@@ -393,11 +393,12 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                     size_t buf_len = cmd->datalen;
                     uint32_t abort_code = 0;
 
-                    int wkc = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, 
+                    int ret = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, 
                             cmd->ca_atn, buf, buf_len, &abort_code);
-                    if (!wkc) {
+                    if (ret != 0) {
                         ec_log(10, get_transition_string(transition), 
-                                "slave %2d: writing sdo failed!\n");
+                                "slave %2d: writing sdo failed: error code 0x%X!\n", 
+                                slave, ret);
                     } 
                 }
             }
