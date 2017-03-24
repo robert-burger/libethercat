@@ -256,11 +256,11 @@ void *hw_rx_thread(void *arg) {
 #error unsupported OS
 #endif
         if (bytesrx <= 0) {
-            if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+            if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
                 continue;
 
             ec_log(10, "RX_THREAD", "recv: %s\n", strerror(errno));
-            sleep(1);
+            continue;
         }
         
         /* check if it is an EtherCAT frame */

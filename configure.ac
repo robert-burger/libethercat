@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([libethercat], [0.1.beta2], [Robert Burger robert.burger@dlr.de])
+AC_INIT([libethercat], [0.1.beta3], [Robert Burger robert.burger@dlr.de])
 
 AC_CANONICAL_TARGET
 AC_CANONICAL_SYSTEM
