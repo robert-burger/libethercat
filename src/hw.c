@@ -42,14 +42,14 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <net/if.h> 
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #ifdef __linux__
 #include <netpacket/packet.h>
 #elif defined __VXWORKS__
 #include <vxWorks.h>
 #include <taskLib.h>
-#elif define __USE_BPF__
+#include <sys/ioctl.h>
+#elif defined USE_BPF
 #include <sys/queue.h>
 #include <net/bpf.h>
 #else
@@ -88,7 +88,7 @@ int try_grant_cap_net_raw_init() {
     return 0;
 }
 
-#elif defined __USE_BPF__
+#elif defined USE_BPF
 struct bpf_insn insns[] = {                       
     BPF_STMT(BPF_LD + BPF_H + BPF_ABS, 12),
     BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, ETH_P_ECAT, 0, 1),
@@ -178,7 +178,13 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     }
 
     (*pphw)->mtu_size = 1480;
-#elif defined __USE_BPF__
+#elif defined USE_BPF
+    const unsigned int btrue = 1;
+//    const unsigned int bfalse = 0;
+
+    int n = 0;
+    struct ifreq bound_if;
+    size_t buf_size;
     const char bpf_devname[] = "/dev/bpf0";
 
     // open bpf device
@@ -226,10 +232,10 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     }
 
     // we do not want to see the sent frames
-    if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
-        perror("BIOCSSEESENT");
-        goto error_exit;
-    }
+//    if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
+//        perror("BIOCSSEESENT");
+//        goto error_exit;
+//    }
 
     /* set receive call timeout */
     static struct timeval timeout = { 0, 1000};
@@ -327,7 +333,7 @@ void *hw_rx_thread(void *arg) {
             recv(phw->sockfd, pframe, ETH_FRAME_LEN, 0);
 #elif defined __VXWORKS__
             read(phw->sockfd, pframe, ETH_FRAME_LEN);
-#elif defined __USE_BPF__
+#elif defined USE_BPF
             read(phw->sockfd, pframe, ETH_FRAME_LEN);
 #else
 #error unsupported OS
@@ -415,7 +421,7 @@ int hw_tx(hw_t *phw) {
                 send(phw->sockfd, pframe, pframe->len, 0);
 #elif defined __VXWORKS__
                 write(phw->sockfd, pframe, pframe->len);
-#elif defined __USE_BPF__
+#elif defined USE_BPF
                 write(phw->sockfd, pframe, pframe->len);
 #else
 #error unsupported OS

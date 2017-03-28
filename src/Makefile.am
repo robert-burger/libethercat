@@ -25,12 +25,12 @@ include_HEADERS = \
 
 libethercat_la_SOURCES  = coe.c slave.c datagram.c datagram_pool.c message_pool.c ec.c \
 						  hw.c soe.c foe.c mbx.c eeprom.c dc.c timer.c idx.c
-libethercat_la_CFLAGS   = -std=gnu99 -Wall -Werror -I$(srcdir)/include
+libethercat_la_CFLAGS   = @PROGRAM_CFLAGS@ -std=gnu99 -Wall -Werror -I$(srcdir)/include
 libethercat_la_LDFLAGS  = -Wall -Werror -release $(PACKAGE_VERSION) 
 
 libethercat_pic_la_SOURCES  = coe.c slave.c datagram.c datagram_pool.c message_pool.c ec.c \
 						  hw.c soe.c foe.c mbx.c eeprom.c dc.c timer.c idx.c
-libethercat_pic_la_CFLAGS   = -std=gnu99 -Wall -Werror -I$(srcdir)/include -fPIC -DPIC 
+libethercat_pic_la_CFLAGS   = @PROGRAM_CFLAGS@ -std=gnu99 -Wall -Werror -I$(srcdir)/include -fPIC -DPIC 
 libethercat_pic_la_LDFLAGS  = -Wall -Werror -release $(PACKAGE_VERSION) 
 
 bin_PROGRAMS = ethercatdiag

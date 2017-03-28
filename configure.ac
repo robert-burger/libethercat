@@ -13,9 +13,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg)
 
-RMPM_ENV
-RMPM_ARCH
-
 # Checks for programs.
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CC
@@ -59,13 +56,18 @@ case $target in
         PROGRAM_LDFLAGS+="$LDFLAGS -non-static"
         ;;
     *qnx* )
-        AC_DEFINE([__USE_BPF__], [1], [use bpf for freebsd network stack])
+        PROGRAM_CFLAGS+="-DUSE_BPF"
+        ;;
+    *rtems* )
+        PROGRAM_CFLAGS+="-DUSE_BPF -I/volume/USERSTORE/crem_ja/PUBLIC/rtems/4.12/arm/bsps/zynq/arm-rtems4.12/xilinx_zynq_zedboard/lib/include"
+        PROGRAM_LDFLAGS+="-lpthread"
         ;;
     *)
         PROGRAM_LDFLAGS+="$LDFLAGS "
         ;;
 esac
 
+AC_SUBST([PROGRAM_CFLAGS])
 AC_SUBST([PROGRAM_LDFLAGS])
 
 AC_CONFIG_FILES([Makefile src/Makefile libethercat.pc libethercat.pt])
