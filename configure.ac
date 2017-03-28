@@ -21,8 +21,6 @@ AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
-m4_esyscmd([scripts/m4_deps.py])
-
 # Checks for libraries.
 AX_CHECK_COMPILE_FLAG([-pthread], [AX_APPEND_FLAG([-pthread])] )
 AC_CHECK_LIB([pthread], [pthread_create])
@@ -46,7 +44,7 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([clock_gettime memset socket strdup strerror strndup])
+AC_CHECK_FUNCS([clock_gettime memset socket strdup strerror strndup pthread_setaffinity_np])
 
 # Platform specific setup
 # Check for which host we are on and setup a few things
@@ -59,8 +57,8 @@ case $target in
         PROGRAM_CFLAGS+="-DUSE_BPF"
         ;;
     *rtems* )
-        PROGRAM_CFLAGS+="-DUSE_BPF -I/volume/USERSTORE/crem_ja/PUBLIC/rtems/4.12/arm/bsps/zynq/arm-rtems4.12/xilinx_zynq_zedboard/lib/include"
-        PROGRAM_LDFLAGS+="-lpthread"
+        PROGRAM_CFLAGS+="-DUSE_BPF -I/volume/USERSTORE/crem_ja/PUBLIC/rtems/4.12/arm/bsps/zynq/arm-rtems4.12/xilinx_zynq_zedboard/lib/include --pipe -B/volume/USERSTORE/crem_ja/PUBLIC/rtems/4.12/arm/bsps/zynq/arm-rtems4.12/xilinx_zynq_zedboard/lib/ -specs bsp_specs -qrtems -ffunction-sections -fdata-sections -march=armv7-a -mthumb -mfpu=neon -mfloat-abi=hard -mtune=cortex-a9"
+        PROGRAM_LDFLAGS+="--pipe -B/volume/USERSTORE/crem_ja/PUBLIC/rtems/4.12/arm/bsps/zynq/arm-rtems4.12/xilinx_zynq_zedboard/lib/ -specs bsp_specs -qrtems -ffunction-sections -fdata-sections -march=armv7-a -mthumb -mfpu=neon -mfloat-abi=hard -mtune=cortex-a9 -Wl,--gc-sections -march=armv7-a -mthumb -mfpu=neon -mfloat-abi=hard -mtune=cortex-a9"
         ;;
     *)
         PROGRAM_LDFLAGS+="$LDFLAGS "

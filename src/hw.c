@@ -322,9 +322,12 @@ void *hw_rx_thread(void *arg) {
         if (phw->rxthreadcpumask & (1 << i))
             CPU_SET(i, &cpuset);
         
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
     if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0)
         ec_log(10, "RX_THREAD", "error on pthread_setaffinity_np %s\n", 
                 strerror(errno));
+#endif
+
 #endif
 
     while (phw->rxthreadrunning) {
