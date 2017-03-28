@@ -49,6 +49,9 @@
 #elif defined __VXWORKS__
 #include <vxWorks.h>
 #include <taskLib.h>
+#elif define __USE_BPF__
+#include <sys/queue.h>
+#include <net/bpf.h>
 #else
 #error unsupported OS
 #endif
@@ -85,6 +88,13 @@ int try_grant_cap_net_raw_init() {
     return 0;
 }
 
+#elif defined __USE_BPF__
+struct bpf_insn insns[] = {                       
+    BPF_STMT(BPF_LD + BPF_H + BPF_ABS, 12),
+    BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, ETH_P_ECAT, 0, 1),
+    BPF_STMT(BPF_RET + BPF_K, (u_int)-1),
+    BPF_STMT(BPF_RET + BPF_K, 0),
+};
 #endif
 
 //! open a new hw
@@ -168,6 +178,71 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     }
 
     (*pphw)->mtu_size = 1480;
+#elif defined __USE_BPF__
+    const char bpf_devname[] = "/dev/bpf0";
+
+    // open bpf device
+    (*pphw)->sockfd = open(bpf_devname, O_RDWR, 0);
+    if ((*pphw)->sockfd <= 0) {
+        perror("opening bpf device");
+        goto error_exit;
+    }
+
+    (*pphw)->mtu_size = 1480;
+
+    // connect bpf to specified network device
+    snprintf(bound_if.ifr_name, IFNAMSIZ, devname);
+    if (ioctl((*pphw)->sockfd, BIOCSETIF, &bound_if) == -1 ) {
+        perror("BIOCSETIF");
+        goto error_exit;
+    }
+
+    // make sure we are dealing with an ethernet device.
+    if (ioctl((*pphw)->sockfd, BIOCGDLT, (caddr_t)&n) == -1) {
+        perror("BIOCGDLT");
+        goto error_exit;
+    }
+
+    // activate immediate mode (therefore, buf_len is initially set to "1")
+    if (ioctl((*pphw)->sockfd, BIOCIMMEDIATE, &btrue) == -1) {
+        perror("BIOCIMMEDIATE: error activating immediate mode"); 
+        goto error_exit;
+    }
+
+    // request buffer length 
+    if (ioctl((*pphw)->sockfd, BIOCGBLEN, &buf_size) == -1) {
+        perror("BIOCGBLEN: error requesting buffer length");
+        goto error_exit;
+    }
+
+    static struct bpf_program my_bpf_program;
+    my_bpf_program.bf_len = sizeof(insns)/sizeof(insns[0]);
+    my_bpf_program.bf_insns = insns;
+
+    // setting filter to bpf
+    if (ioctl((*pphw)->sockfd, BIOCSETF, &my_bpf_program) == -1) {
+        perror("BIOCSETF");
+        goto error_exit;
+    }
+
+    // we do not want to see the sent frames
+    if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
+        perror("BIOCSSEESENT");
+        goto error_exit;
+    }
+
+    /* set receive call timeout */
+    static struct timeval timeout = { 0, 1000};
+    if (ioctl((*pphw)->sockfd, BIOCSRTIMEOUT, &timeout) == -1) {
+        perror("BIOCSRTIMEOUT");
+        goto error_exit;
+    }
+
+    if (ioctl((*pphw)->sockfd, BIOCFLUSH) == -1) {
+        perror("BIOCFLUSH");
+        goto error_exit;
+    }
+
 #else
 #error unsopported OS
 #endif
@@ -251,6 +326,8 @@ void *hw_rx_thread(void *arg) {
 #ifdef __linux__
             recv(phw->sockfd, pframe, ETH_FRAME_LEN, 0);
 #elif defined __VXWORKS__
+            read(phw->sockfd, pframe, ETH_FRAME_LEN);
+#elif defined __USE_BPF__
             read(phw->sockfd, pframe, ETH_FRAME_LEN);
 #else
 #error unsupported OS
@@ -337,6 +414,8 @@ int hw_tx(hw_t *phw) {
 #ifdef __linux__
                 send(phw->sockfd, pframe, pframe->len, 0);
 #elif defined __VXWORKS__
+                write(phw->sockfd, pframe, pframe->len);
+#elif defined __USE_BPF__
                 write(phw->sockfd, pframe, pframe->len);
 #else
 #error unsupported OS
