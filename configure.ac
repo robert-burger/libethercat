@@ -58,6 +58,9 @@ case $target in
     *vxworks* )
         PROGRAM_LDFLAGS+="$LDFLAGS -non-static"
         ;;
+    *qnx* )
+        AC_DEFINE([__USE_BPF__], [1], [use bpf for freebsd network stack])
+        ;;
     *)
         PROGRAM_LDFLAGS+="$LDFLAGS "
         ;;
