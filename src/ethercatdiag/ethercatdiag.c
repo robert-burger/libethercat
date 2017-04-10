@@ -3,16 +3,47 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#include <sys/stat.h>
+#include <sys/socket.h>
+
+#include <net/if.h>
+
+#include <assert.h>
+#include <fcntl.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sysexits.h>
+
+#include <machine/rtems-bsd-commands.h>
+
+#include <rtems.h>
+#include <rtems/printer.h>
+#include <rtems/stackchk.h>
+#include <rtems/bsd/bsd.h>
+
+#ifdef DEFAULT_NETWORK_SHELL
+#include <rtems/console.h>
+#include <rtems/shell.h>
+#endif
+
+#define RTEMS_BSD_CONFIG_NET_PF_UNIX
+#define RTEMS_BSD_CONFIG_NET_IF_LAGG
+#define RTEMS_BSD_CONFIG_NET_IF_VLAN
+#define RTEMS_BSD_CONFIG_BSP_CONFIG
+#define RTEMS_BSD_CONFIG_INIT
+#include <machine/rtems-bsd-commands.h>
+
+#include <config.h>
+
+
 #include "libethercat/ec.h"
+
 
 void no_log(int lvl, void *user, const char *format, ...) 
 {};
 
-
-int usage(int argc, char **argv) {
-    printf("%s -i|--interface <intf> [-p|--propagation-delay]\n", argv[0]);
-    return 0;
-}
 
 void propagation_delays(ec_t *pec) {
     int slave, ret = ec_set_state(pec, EC_STATE_INIT);
@@ -78,39 +109,182 @@ void propagation_delays(ec_t *pec) {
     ret = ec_set_state(pec, EC_STATE_SAFEOP);
 }
 
-int main(int argc, char **argv) {
+#include <sys/stat.h>
+
+
+static void
+default_network_set_self_prio(rtems_task_priority prio)
+{
+	rtems_status_code sc;
+
+	sc = rtems_task_set_priority(RTEMS_SELF, prio, &prio);
+	assert(sc == RTEMS_SUCCESSFUL);
+}
+
+static void
+default_network_ifconfig_hwif0(char *ifname)
+{
+	int exit_code;
+	char *ifcfg[] = {
+		"ifconfig",
+		ifname,
+		"up",
+		NULL
+	};
+
+	exit_code = rtems_bsd_command_ifconfig(RTEMS_BSD_ARGC(ifcfg), ifcfg);
+	assert(exit_code == EX_OK);
+}
+
+
+void configure_network(){
+  fprintf(stderr, "Initializing Network...");
+	rtems_status_code sc;
+	char *ifname = "cgem0";
+
+	/*
+	 * Default the syslog priority to 'debug' to aid developers.
+	 */
+	rtems_bsd_setlogpriority("debug");
+
+#ifdef DEFAULT_EARLY_INITIALIZATION
+	early_initialization();
+#endif
+
+	/* Let other tasks run to complete background work */
+	default_network_set_self_prio(RTEMS_MAXIMUM_PRIORITY - 1U);
+
+	rtems_bsd_initialize();
+
+	/* Let the callout timer allocate its resources */
+	sc = rtems_task_wake_after(2);
+	assert(sc == RTEMS_SUCCESSFUL);
+
+	default_network_ifconfig_hwif0(ifname);
+
+  rtems_bsd_setlogpriority("debug");
+  
+  /* Let other tasks run to complete background work */
+  rtems_task_priority prio = RTEMS_MAXIMUM_PRIORITY - 1U;
+  rtems_task_set_priority(RTEMS_SELF, prio, &prio);
+
+
+  fprintf(stderr, " DONE\n");
+}
+
+static void Init(rtems_task_argument arg) {
+  fprintf(stderr, "Starting ethercatdiag!\n");
+#ifdef HAVE_NET_BPF_H
+  fprintf(stderr, "Using NET_BPF!\n");
+#endif
     ec_t *pec;
     int ret, slave, i;
 
-    char *intf = NULL;
+    char *intf = "cgem0";
     int show_propagation_delays = 0;
     
-//    ec_log_func_user = NULL;
-//    ec_log_func = &no_log;
+    configure_network();
 
-    for (i = 1; i < argc; ++i) {
-        if ((strcmp(argv[i], "-i") == 0) ||
-                (strcmp(argv[i], "--interface") == 0)) {
-            if (++i < argc)
-                intf = argv[i];
-        } else if ((strcmp(argv[i], "-p") == 0) ||
-                (strcmp(argv[i], "--propagation-delays") == 0)) {
-            show_propagation_delays = 1; 
-        }
-
-    }
-    
-    if ((argc == 1) || (intf == NULL))
-        return usage(argc, argv);
-
-            
     ret = ec_open(&pec, intf, 90, 1, 1);
 
     if (show_propagation_delays)
         propagation_delays(pec);
 
     ec_close(pec);
-
-    return 0;
 }
 
+
+
+
+/*
+ * Configure LibBSD.
+ */
+
+#if defined(LIBBSP_I386_PC386_BSP_H)
+#define RTEMS_BSD_CONFIG_DOMAIN_PAGE_MBUFS_SIZE (64 * 1024 * 1024)
+#elif defined(LIBBSP_POWERPC_QORIQ_BSP_H)
+#define RTEMS_BSD_CONFIG_DOMAIN_PAGE_MBUFS_SIZE (32 * 1024 * 1024)
+#endif
+
+#define RTEMS_BSD_CONFIG_NET_PF_UNIX
+#define RTEMS_BSD_CONFIG_NET_IF_LAGG
+#define RTEMS_BSD_CONFIG_NET_IF_VLAN
+#define RTEMS_BSD_CONFIG_BSP_CONFIG
+#define RTEMS_BSD_CONFIG_INIT
+
+#include <machine/rtems-bsd-config.h>
+
+#define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_STUB_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_ZERO_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_LIBBLOCK
+
+#define CONFIGURE_USE_IMFS_AS_BASE_FILESYSTEM
+
+#define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
+
+#define CONFIGURE_MAXIMUM_USER_EXTENSIONS 1
+
+#define CONFIGURE_UNLIMITED_ALLOCATION_SIZE 32
+#define CONFIGURE_UNLIMITED_OBJECTS
+#define CONFIGURE_UNIFIED_WORK_AREAS
+
+#define CONFIGURE_STACK_CHECKER_ENABLED
+
+#define CONFIGURE_BDBUF_BUFFER_MAX_SIZE (64 * 1024)
+#define CONFIGURE_BDBUF_MAX_READ_AHEAD_BLOCKS 4
+#define CONFIGURE_BDBUF_CACHE_MEMORY_SIZE (1 * 1024 * 1024)
+
+#define CONFIGURE_RTEMS_INIT_TASKS_TABLE
+
+#define CONFIGURE_INIT_TASK_STACK_SIZE (32 * 1024)
+#define CONFIGURE_INIT_TASK_INITIAL_MODES RTEMS_DEFAULT_MODES
+#define CONFIGURE_INIT_TASK_ATTRIBUTES RTEMS_FLOATING_POINT
+
+#define CONFIGURE_INIT
+
+#include <rtems/confdefs.h>
+
+#ifdef DEFAULT_NETWORK_SHELL
+
+#define CONFIGURE_SHELL_COMMANDS_INIT
+
+#include <bsp/irq-info.h>
+
+#include <rtems/netcmds-config.h>
+
+#define CONFIGURE_SHELL_USER_COMMANDS \
+  &bsp_interrupt_shell_command, \
+  &rtems_shell_BSD_Command, \
+  &rtems_shell_HOSTNAME_Command, \
+  &rtems_shell_PING_Command, \
+  &rtems_shell_ROUTE_Command, \
+  &rtems_shell_NETSTAT_Command, \
+  &rtems_shell_IFCONFIG_Command, \
+  &rtems_shell_TCPDUMP_Command, \
+  &rtems_shell_SYSCTL_Command
+
+#define CONFIGURE_SHELL_COMMAND_CPUUSE
+#define CONFIGURE_SHELL_COMMAND_PERIODUSE
+#define CONFIGURE_SHELL_COMMAND_STACKUSE
+#define CONFIGURE_SHELL_COMMAND_PROFREPORT
+
+#define CONFIGURE_SHELL_COMMAND_CP
+#define CONFIGURE_SHELL_COMMAND_PWD
+#define CONFIGURE_SHELL_COMMAND_LS
+#define CONFIGURE_SHELL_COMMAND_LN
+#define CONFIGURE_SHELL_COMMAND_LSOF
+#define CONFIGURE_SHELL_COMMAND_CHDIR
+#define CONFIGURE_SHELL_COMMAND_CD
+#define CONFIGURE_SHELL_COMMAND_MKDIR
+#define CONFIGURE_SHELL_COMMAND_RMDIR
+#define CONFIGURE_SHELL_COMMAND_CAT
+#define CONFIGURE_SHELL_COMMAND_MV
+#define CONFIGURE_SHELL_COMMAND_RM
+#define CONFIGURE_SHELL_COMMAND_MALLOC_INFO
+#define CONFIGURE_SHELL_COMMAND_SHUTDOWN
+
+#include <rtems/shellconfig.h>
+
+#endif /* DEFAULT_NETWORK_SHELL */

@@ -68,6 +68,9 @@
 #elif defined HAVE_NET_BPF_H
 #include <sys/queue.h>
 #include <net/bpf.h>
+#include <machine/rtems-bsd-kernel-space.h>
+#include <machine/rtems-bsd-kernel-namespace.h>
+#include <net/if_types.h>
 #else
 #error unsupported OS
 #endif
@@ -76,7 +79,8 @@
 #include <unistd.h>
 
 #define ETH_P_ECAT      0x88A4
-#define ETH_FRAME_LEN   1518 
+//#define ETH_FRAME_LEN   1518 
+#define ETH_FRAME_LEN   16
 
 //! receiver thread forward declaration
 void *hw_rx_thread(void *arg);
@@ -213,7 +217,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     int n = 0;
     struct ifreq bound_if;
     size_t buf_size;
-    const char bpf_devname[] = "/dev/bpf0";
+    const char bpf_devname[] = "/dev/bpf";
 
     // open bpf device
     (*pphw)->sockfd = open(bpf_devname, O_RDWR, 0);
