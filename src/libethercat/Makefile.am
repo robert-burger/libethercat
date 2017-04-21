@@ -1,6 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
 
-libdir = $(prefix)/lib
 includedir = $(prefix)/include/libethercat
 
 lib_LTLIBRARIES = libethercat.la 
