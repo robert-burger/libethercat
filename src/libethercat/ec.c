@@ -482,203 +482,100 @@ void *set_state_wrapper(void *arg) {
     return NULL;
 }
 
-//! set state on ethercat bus
+//! loop over all slaves and prepare state transition
 /*! 
  * \param pec ethercat master pointer
- * \param state new ethercat state
- * \return 0 on success
+ * \param state new state to set
  */
-int ec_set_state(ec_t *pec, ec_state_t state) {
-    int ret = 0, i;
+void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
+    if (pec->threaded_startup) {
+        for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+            if (pec->slaves[slave].assigned_pd_group == -1)
+                continue;
 
-    ec_log(10, "SET MASTER STATE", "switch to state %s\n", 
-            get_state_string(state));
+            pec->slaves[slave].worker_arg.pec   = pec;
+            pec->slaves[slave].worker_arg.slave = slave;
+            pec->slaves[slave].worker_arg.state = state;
 
-    switch (state) {
-        case EC_STATE_BOOT:
-        case EC_STATE_INIT:
-        case EC_STATE_PREOP: {
-            if (pec->threaded_startup) {
-                for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-                    pec->slaves[slave].worker_arg.pec   = pec;
-                    pec->slaves[slave].worker_arg.slave = slave;
-                    pec->slaves[slave].worker_arg.state = state;
-
-                    pthread_create(&(pec->slaves[slave].worker_tid), NULL, 
-                            set_state_wrapper, &(pec->slaves[slave].worker_arg));
-                }
-
-                for (int slave = 0; slave < pec->slave_cnt; ++slave)
-                    pthread_join(pec->slaves[slave].worker_tid, NULL);
-            } else {
-                for (i = 0; i < pec->slave_cnt; ++i) {
-                    ec_log(100, get_state_string(state),
-                            "setting state for slave %d\n", i);
-
-                    ec_slave_state_transition(pec, i, state); 
-                }
-            }
-
-            if (state != EC_STATE_PREOP)
-                break;
-            
-            ec_dc_config(pec);
-            break;
+            pthread_create(&(pec->slaves[slave].worker_tid), NULL, 
+                    prepare_state_transition_wrapper, 
+                    &(pec->slaves[slave].worker_arg));
         }
-        case EC_STATE_SAFEOP: {
-            if (pec->threaded_startup) {
-                for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-                    if (pec->slaves[slave].assigned_pd_group == -1)
-                        continue;
 
-                    pec->slaves[slave].worker_arg.pec   = pec;
-                    pec->slaves[slave].worker_arg.slave = slave;
-                    pec->slaves[slave].worker_arg.state = state;
+        for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+            if (pec->slaves[slave].assigned_pd_group == -1)
+                continue;
 
-                    pthread_create(&(pec->slaves[slave].worker_tid), NULL, 
-                            prepare_state_transition_wrapper, 
-                            &(pec->slaves[slave].worker_arg));
-                }
-
-                for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-                    if (pec->slaves[slave].assigned_pd_group == -1)
-                        continue;
-
-                    pthread_join(pec->slaves[slave].worker_tid, NULL);
-                }
-            } else {
-                for (int slave = 0; slave < pec->slave_cnt; ++slave) {                  
-                    if (pec->slaves[slave].assigned_pd_group != -1) {       
-                        ec_log(100, get_state_string(state), 
-                                "prepare state transition for slave %d\n", slave);
-                        ec_slave_prepare_state_transition(pec, slave, state);
-
-                        ec_log(100, get_state_string(state), 
-                                "generate mapping for slave %d\n", slave);
-                        ec_slave_generate_mapping(pec, slave);
-                    }
-                }
-            }
-
-            for (int group = 0; group < pec->pd_group_cnt; ++group) {
-                if (pec->pd_groups[group].use_lrw)
-                    ec_create_logical_mapping_lrw(pec, group);
-                else
-                    ec_create_logical_mapping(pec, group);
-            }
-            // no break here, we use the same set_state as EC_STATE_OP
-        }                   
-        case EC_STATE_OP: {
-            if (pec->threaded_startup) {
-                for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-                    if (pec->slaves[slave].assigned_pd_group == -1)
-                        continue;
-
-                    pec->slaves[slave].worker_arg.pec   = pec;
-                    pec->slaves[slave].worker_arg.slave = slave;
-                    pec->slaves[slave].worker_arg.state = state;
-
-                    pthread_create(&(pec->slaves[slave].worker_tid), NULL, 
-                            set_state_wrapper, 
-                            &(pec->slaves[slave].worker_arg));
-                }
-
-                for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-                    if (pec->slaves[slave].assigned_pd_group == -1)
-                        continue;
-
-                    pthread_join(pec->slaves[slave].worker_tid, NULL);
-                }
-            } else {
-                for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-                    if (pec->slaves[slave].assigned_pd_group != -1) {
-                        ec_log(100, get_state_string(state),      
-                                "setting state for slave %d\n", slave);
-                        ec_slave_state_transition(pec, slave, state); 
-                    } 
-                }
-            }
-            break;
+            pthread_join(pec->slaves[slave].worker_tid, NULL);
         }
-        default:
-            break;
-    }
 
-    if (ret == 0)
-        pec->master_state = state;
-
-    return ret;
-}
-
-pthread_t ec_tx;
-void *ec_tx_thread(void *arg) {
-    ec_t *pec = (ec_t *)arg;
-
-    while (1) {
-        hw_tx(pec->phw);
-        ec_sleep(1000000);
-    }
-
-    return 0;
-}
-
-//! open ethercat master
-/*!
- * \param ppec return value for ethercat master pointer
- * \param ifname ethercat master interface name
- * \param prio receive thread priority
- * \param cpumask receive thread cpumask
- * \param eeprom_log log eeprom to stdout
- * \return 0 on succes, otherwise error code
- */
-int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
-        int eeprom_log) {
-    int i;
-    ec_t *pec = malloc(sizeof(ec_t)); 
-    (*ppec) = pec;
-    if (!pec)
-        return ENOMEM;
-
-    ec_index_init(&pec->idx_q);
-
-    // slaves'n groups
-    pec->phw                = NULL;
-    pec->slave_cnt          = 0;
-    pec->pd_group_cnt       = 0;
-    pec->slaves             = NULL;
-    pec->pd_groups          = NULL;
-    pec->tx_sync            = 1;
-    pec->threaded_startup   = 1;
-
-    // init values for distributed clocks
-    pec->dc.have_dc         = 0;
-    pec->dc.dc_time         = 0;
-    pec->dc.dc_cycle_sum    = 0;
-    pec->dc.dc_cycle_cnt    = 0;
-    pec->dc.rtc_time        = 0;
-    pec->dc.rtc_cycle_sum   = 0;
-    pec->dc.rtc_cycle       = 0;
-    pec->dc.rtc_count       = 0;
-    pec->dc.act_diff        = 0;
-
-    // eeprom logging level
-    pec->eeprom_log         = eeprom_log;
-
-    datagram_pool_open(&pec->pool, 1000);
+        return;        
+    } 
         
-    if (hw_open(&pec->phw, ifname, prio, cpumask) == -1) {
-        datagram_pool_close(pec->pool);
+    for (int slave = 0; slave < pec->slave_cnt; ++slave) {                  
+        if (pec->slaves[slave].assigned_pd_group == -1)
+            continue;
 
-        ec_index_deinit(&pec->idx_q);
-        free(pec);
-        *ppec = NULL;
+        ec_log(100, get_state_string(state), 
+                "prepare state transition for slave %d\n", slave);
+        ec_slave_prepare_state_transition(pec, slave, state);
 
-        return -1;
+        ec_log(10, get_state_string(state), 
+                "generate mapping for slave %d\n", slave);
+        ec_slave_generate_mapping(pec, slave);
     }
+}
 
-    ec_async_message_loop_create(&pec->async_loop, pec);
+//! loop over all slaves and set state
+/*! 
+ * \param pec ethercat master pointer
+ * \param state new state to set
+ * \param with_group if set, only slaves with assigned group are processed
+ */
+void ec_state_transition_loop(ec_t *pec, ec_state_t state, uint8_t with_group) {
+    if (pec->threaded_startup) {
+        for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+            if (with_group && (pec->slaves[slave].assigned_pd_group == -1))
+                continue;
 
-    uint16_t fixed = 1000, wkc = 0, val = 0;
+            pec->slaves[slave].worker_arg.pec   = pec;
+            pec->slaves[slave].worker_arg.slave = slave;
+            pec->slaves[slave].worker_arg.state = state;
+
+            pthread_create(&(pec->slaves[slave].worker_tid), NULL, 
+                    set_state_wrapper, 
+                    &(pec->slaves[slave].worker_arg));
+        }
+
+        for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+            if (with_group && (pec->slaves[slave].assigned_pd_group == -1))
+                continue;
+
+            pthread_join(pec->slaves[slave].worker_tid, NULL);
+        }
+
+        return;
+    } 
+    
+    for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+        ec_log(10, get_state_string(state),      
+            "slave %d, with_group %d, assigned %d\n", 
+            slave, with_group, pec->slaves[slave].assigned_pd_group);
+        if (with_group && (pec->slaves[slave].assigned_pd_group == -1))
+            continue;
+
+        ec_log(10, get_state_string(state),      
+                "setting state for slave %d\n", slave);
+        ec_slave_state_transition(pec, slave, state); 
+    }
+}
+
+//! scan ethercat bus for slaves and create strucutres
+/*! 
+ * \param pec ethercat master pointer
+ */
+void ec_scan(ec_t *pec) {
+    uint16_t fixed = 1000, wkc = 0, val = 0, i;
 
     ec_state_t init_state = EC_STATE_INIT | EC_STATE_RESET;
     ec_bwr(pec, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
@@ -740,7 +637,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
         ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &topology,
                 sizeof(topology), &wkc);
 
-// check if port is open and communication established
+        // check if port is open and communication established
 #define active_port(port) \
         if ( (topology & (3 << (8 + (2 * (port)))) ) == \
                 (2 << (8 + (2 * (port)))) ) { \
@@ -783,6 +680,175 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
         ec_log(100, "EC_OPEN", "slave %2d has parent %d\n", 
                 slave, slv->parent);
     }
+}
+
+//! set state on ethercat bus
+/*! 
+ * \param pec ethercat master pointer
+ * \param state new ethercat state
+ * \return 0 on success
+ */
+int ec_set_state(ec_t *pec, ec_state_t state) {
+    ec_log(10, "SET MASTER STATE", "switch to from %s to %s\n", 
+            get_state_string(pec->master_state), get_state_string(state));
+
+    // generate transition
+    ec_state_transition_t transition = ((pec->master_state & EC_STATE_MASK) << 8) | 
+        (state & EC_STATE_MASK); 
+            
+    switch (transition) {
+        case BOOT_2_INIT:
+        case BOOT_2_PREOP:
+        case BOOT_2_SAFEOP:
+        case BOOT_2_OP: 
+        case INIT_2_INIT:
+            // ====> switch to INIT stuff
+            ec_scan(pec);
+            ec_state_transition_loop(pec, EC_STATE_INIT, 0);
+
+            if (state == EC_STATE_INIT)
+                break;
+
+        case INIT_2_OP: 
+        case INIT_2_SAFEOP:
+        case INIT_2_PREOP:
+        case PREOP_2_PREOP:
+            ec_log(10, "HERE", "got %d slaves here\n", pec->slave_cnt);
+            // ====> switch to PREOP stuff
+            ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
+            ec_dc_config(pec);
+
+            if (state == EC_STATE_PREOP)
+                break;
+
+        case PREOP_2_SAFEOP:
+        case PREOP_2_OP: 
+        case SAFEOP_2_SAFEOP:
+            // ====> switch to SAFEOP stuff
+            ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
+
+            // ====> create logical mapping for cyclic operation
+            for (int group = 0; group < pec->pd_group_cnt; ++group) {
+                if (pec->pd_groups[group].use_lrw)
+                    ec_create_logical_mapping_lrw(pec, group);
+                else
+                    ec_create_logical_mapping(pec, group);
+            }
+            
+            ec_state_transition_loop(pec, EC_STATE_SAFEOP, 1);
+
+            if (state == EC_STATE_SAFEOP)
+                break;
+        
+        case SAFEOP_2_OP: 
+        case OP_2_OP: 
+            // ====> switch to OP stuff
+            ec_state_transition_loop(pec, EC_STATE_OP, 1);
+            break;
+            
+        case OP_2_BOOT:
+        case OP_2_INIT:
+        case OP_2_PREOP:
+        case OP_2_SAFEOP:
+            ec_state_transition_loop(pec, EC_STATE_SAFEOP, 0);
+
+            if (state == EC_STATE_SAFEOP)
+                break;
+        case SAFEOP_2_BOOT:
+        case SAFEOP_2_INIT:
+        case SAFEOP_2_PREOP:
+            ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
+
+            if (state == EC_STATE_PREOP)
+                break;
+        case PREOP_2_BOOT:
+        case PREOP_2_INIT:
+            ec_state_transition_loop(pec, EC_STATE_INIT, 0);
+            ec_scan(pec);
+            ec_state_transition_loop(pec, EC_STATE_INIT, 0);
+
+            if (state == EC_STATE_INIT)
+                break;
+        case INIT_2_BOOT:
+        case BOOT_2_BOOT:
+            ec_state_transition_loop(pec, EC_STATE_BOOT, 0);
+            break;
+        default:
+            break;
+    };
+        
+    return (pec->master_state = state);
+}
+
+pthread_t ec_tx;
+void *ec_tx_thread(void *arg) {
+    ec_t *pec = (ec_t *)arg;
+
+    while (1) {
+        hw_tx(pec->phw);
+        ec_sleep(1000000);
+    }
+
+    return 0;
+}
+
+//! open ethercat master
+/*!
+ * \param ppec return value for ethercat master pointer
+ * \param ifname ethercat master interface name
+ * \param prio receive thread priority
+ * \param cpumask receive thread cpumask
+ * \param eeprom_log log eeprom to stdout
+ * \return 0 on succes, otherwise error code
+ */
+int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
+        int eeprom_log) {
+    //int i;
+    ec_t *pec = malloc(sizeof(ec_t)); 
+    (*ppec) = pec;
+    if (!pec)
+        return ENOMEM;
+
+    ec_index_init(&pec->idx_q);
+    pec->master_state       = EC_STATE_INIT;
+
+    // slaves'n groups
+    pec->phw                = NULL;
+    pec->slave_cnt          = 0;
+    pec->pd_group_cnt       = 0;
+    pec->slaves             = NULL;
+    pec->pd_groups          = NULL;
+    pec->tx_sync            = 1;
+    pec->threaded_startup   = 1;
+
+    // init values for distributed clocks
+    pec->dc.have_dc         = 0;
+    pec->dc.dc_time         = 0;
+    pec->dc.dc_cycle_sum    = 0;
+    pec->dc.dc_cycle_cnt    = 0;
+    pec->dc.rtc_time        = 0;
+    pec->dc.rtc_cycle_sum   = 0;
+    pec->dc.rtc_cycle       = 0;
+    pec->dc.rtc_count       = 0;
+    pec->dc.act_diff        = 0;
+
+    // eeprom logging level
+    pec->eeprom_log         = eeprom_log;
+
+    datagram_pool_open(&pec->pool, 1000);
+        
+    if (hw_open(&pec->phw, ifname, prio, cpumask) == -1) {
+        datagram_pool_close(pec->pool);
+
+        ec_index_deinit(&pec->idx_q);
+        free(pec);
+        *ppec = NULL;
+
+        return -1;
+    }
+
+    ec_async_message_loop_create(&pec->async_loop, pec);
+    ec_set_state(pec, EC_STATE_INIT);
 
     return 0;
 }

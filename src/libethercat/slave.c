@@ -58,6 +58,8 @@ const char transition_string_unknown[]          = "UNKNOWN";
 
 const char *get_transition_string(ec_state_transition_t transition) {
     switch (transition) {
+        default:
+            return transition_string_unknown;
         case BOOT_2_INIT:
             return transition_string_boot_to_init;
         case INIT_2_BOOT:

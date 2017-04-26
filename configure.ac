@@ -27,7 +27,8 @@ AX_CHECK_COMPILE_FLAG([-pthread], [AX_APPEND_FLAG([-pthread])] )
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [sem_init])
 
-AX_GCC_ARCHFLAG([PORTABLE?], [], [])
+# indead a good option, checks for processor features like avx, but then we get sigill on older machines
+# AX_GCC_ARCHFLAG([PORTABLE?], [], [])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h net/if.h net/bpf.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
