@@ -516,12 +516,10 @@ void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
         if (pec->slaves[slave].assigned_pd_group == -1)
             continue;
 
-        ec_log(100, get_state_string(state), 
-                "prepare state transition for slave %d\n", slave);
+        ec_log(100, get_state_string(state), "prepare state transition for slave %d\n", slave);
         ec_slave_prepare_state_transition(pec, slave, state);
 
-        ec_log(10, get_state_string(state), 
-                "generate mapping for slave %d\n", slave);
+        ec_log(100, get_state_string(state), "generate mapping for slave %d\n", slave);
         ec_slave_generate_mapping(pec, slave);
     }
 }
@@ -558,14 +556,12 @@ void ec_state_transition_loop(ec_t *pec, ec_state_t state, uint8_t with_group) {
     } 
     
     for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-        ec_log(10, get_state_string(state),      
-            "slave %d, with_group %d, assigned %d\n", 
+        ec_log(100, get_state_string(state), "slave %d, with_group %d, assigned %d\n", 
             slave, with_group, pec->slaves[slave].assigned_pd_group);
         if (with_group && (pec->slaves[slave].assigned_pd_group == -1))
             continue;
 
-        ec_log(10, get_state_string(state),      
-                "setting state for slave %d\n", slave);
+        ec_log(100, get_state_string(state), "setting state for slave %d\n", slave);
         ec_slave_state_transition(pec, slave, state); 
     }
 }
@@ -713,7 +709,6 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case INIT_2_SAFEOP:
         case INIT_2_PREOP:
         case PREOP_2_PREOP:
-            ec_log(10, "HERE", "got %d slaves here\n", pec->slave_cnt);
             // ====> switch to PREOP stuff
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
             ec_dc_config(pec);
@@ -970,7 +965,7 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
 
     // wait for completion
     ec_timer_t timeout;
-    ec_timer_init(&timeout, 1000000000);
+    ec_timer_init(&timeout, 1000000);   // roundtrip on bus should be shorter than 1ms
     struct timespec ts = { timeout.sec, timeout.nsec };
     int ret = sem_timedwait(&p_idx->waiter, &ts);
     if (ret == -1) {
