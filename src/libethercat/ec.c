@@ -965,7 +965,7 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
 
     // wait for completion
     ec_timer_t timeout;
-    ec_timer_init(&timeout, 1000000);   // roundtrip on bus should be shorter than 1ms
+    ec_timer_init(&timeout, 100000000);   // roundtrip on bus should be shorter than 100ms
     struct timespec ts = { timeout.sec, timeout.nsec };
     int ret = sem_timedwait(&p_idx->waiter, &ts);
     if (ret == -1) {
