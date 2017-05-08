@@ -39,20 +39,27 @@
 
 //! EtherCAT slave state transitions
 typedef enum ec_state_transition {
+    BOOT_2_BOOT      = 0x0303,  //!< BOOT to BOOT state transition
     BOOT_2_INIT      = 0x0301,  //!< BOOT to INIT state transition
+    BOOT_2_PREOP     = 0x0302,  //!< BOOT to PREOP state transitio,
+    BOOT_2_SAFEOP    = 0x0304,  //!< BOOT to SAFEOP state transitio,
+    BOOT_2_OP        = 0x0308,  //!< BOOT to OP state transitio,
     INIT_2_BOOT      = 0x0103,  //!< INIT to BOOT state transition
     INIT_2_INIT      = 0x0101,  //!< INIT to INIT state transitio,
     INIT_2_PREOP     = 0x0102,  //!< INIT to PREOP state transitio,
     INIT_2_SAFEOP    = 0x0104,  //!< INIT to SAFEOP state transitio,
     INIT_2_OP        = 0x0108,  //!< INIT to OP state transitio,
+    PREOP_2_BOOT     = 0x0203,  //!< PREOP to BOOT state transitio,
     PREOP_2_INIT     = 0x0201,  //!< PREOP to INIT state transitio,
     PREOP_2_PREOP    = 0x0202,  //!< PREOP to PREOP state transitio,
     PREOP_2_SAFEOP   = 0x0204,  //!< PREOP to SAFEOP state transitio,
     PREOP_2_OP       = 0x0208,  //!< PREOP to OP state transitio,
+    SAFEOP_2_BOOT    = 0x0403,  //!< SAFEOP to BOOT state transitio,
     SAFEOP_2_INIT    = 0x0401,  //!< SAFEOP to INIT state transitio,
     SAFEOP_2_PREOP   = 0x0402,  //!< SAFEOP to PREOP state transitio,
     SAFEOP_2_SAFEOP  = 0x0404,  //!< SAFEOP to SAFEOP state transitio,
     SAFEOP_2_OP      = 0x0408,  //!< SAFEOP to OP state transitio,
+    OP_2_BOOT        = 0x0803,  //!< OP to BOOT state transitio,
     OP_2_INIT        = 0x0801,  //!< OP to INIT state transitio,
     OP_2_PREOP       = 0x0802,  //!< OP to PREOP state transitio,
     OP_2_SAFEOP      = 0x0804,  //!< OP to SAFEOP state transitio,

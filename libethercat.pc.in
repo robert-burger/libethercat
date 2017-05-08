@@ -8,3 +8,4 @@ Description: ethercat master library
 URL: https://rmc-github.robotic.dlr.de/burger-r/libethercat.git
 Version: @VERSION@
 Cflags: -I@includedir@
+Libs: -L${libdir} -lethercat

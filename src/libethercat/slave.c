@@ -58,6 +58,8 @@ const char transition_string_unknown[]          = "UNKNOWN";
 
 const char *get_transition_string(ec_state_transition_t transition) {
     switch (transition) {
+        default:
+            return transition_string_unknown;
         case BOOT_2_INIT:
             return transition_string_boot_to_init;
         case INIT_2_BOOT:
@@ -430,6 +432,11 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
     // check error state
     wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
+    if (!wkc) {
+        ec_log(10, "ERROR", "could not get state of slave %d\n", slave);
+        return 0;
+    }
+
     if (act_state & EC_STATE_ERROR) // reset error state first
         ec_slave_set_state(pec, slave, 
                 (act_state & EC_STATE_MASK) | EC_STATE_RESET);
@@ -439,6 +446,10 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         (state & EC_STATE_MASK); 
             
     switch (transition) {
+        case BOOT_2_PREOP:
+        case BOOT_2_SAFEOP:
+        case BOOT_2_OP: 
+            break;
         case INIT_2_BOOT:
         case INIT_2_PREOP:
         case INIT_2_SAFEOP:
@@ -598,7 +609,10 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
             break;
         }
+        case OP_2_PREOP:
+        case OP_2_SAFEOP:
         case OP_2_INIT:
+        case SAFEOP_2_PREOP:
         case SAFEOP_2_INIT:
         case PREOP_2_INIT: {
             uint8_t dc_active = 0;
@@ -700,7 +714,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             wkc = ec_slave_set_state(pec, slave, state);
             break;
         default:
-                wkc = ec_slave_set_state(pec, slave, EC_STATE_INIT);
+            wkc = ec_slave_set_state(pec, slave, EC_STATE_INIT);
             ec_log(10, __func__, "unknown state transition for slave "
                     "%2d -> %04X\n", slave, transition);
             break;

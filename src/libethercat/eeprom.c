@@ -108,11 +108,12 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
  * \return 0 on success
  */
 int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
-    ec_eeprom_to_ec(pec, slave);
-    
     int ret = 0, retry_cnt = 100;
     uint16_t wkc = 0, eepcsr = 0x0100; // read access
    
+    if ((ret = ec_eeprom_to_ec(pec, slave)) != 0)
+        return ret;
+
     do {
         eepcsr = 0;
         ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
@@ -331,11 +332,11 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     while (offset < buflen) {
         uint32_t val;
 
-        do {
+//        do {
             ret = ec_eepromread(pec, slave, eepadr+(offset/2), &val);
-            if (ret == -2)
+            if (ret != 0)
                 return ret;
-        } while (ret != 0);
+//        } while (ret != 0);
 
         for (i = 0; (offset < buflen) && (i < 4); ++i, ++offset)
             buf[offset] = ((uint8_t *)&val)[i];
