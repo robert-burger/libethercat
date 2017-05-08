@@ -28,17 +28,16 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
+#include "config.h"
 
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
 #define _GNU_SOURCE
 #include <sched.h>
 #endif
 
-#include "config.h"
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
