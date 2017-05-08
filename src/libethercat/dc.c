@@ -36,7 +36,7 @@
 #include "libethercat/ec.h"
 
 // 1st sync pulse delay in ns here 10ms
-#define SYNC_DELAY       ((int64_t)10000000)
+#define SYNC_DELAY       ((int64_t)1000000000)
 
 //! Configure EtherCAT slave for distributed clock sync0 pulse
 /*!
@@ -78,6 +78,7 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
     // the generic first sync delay and the cycle shift. the first sync delay 
     // has to be a multiple of cycle time.  
     uint64_t rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
+    ec_log(100, "DISTRIBUTED_CLOCK", "timer prev %lld, rtc_sto %lld\n", pec->dc.timer_prev, pec->dc.rtc_sto);
     if (pec->dc.mode == dc_mode_master_clock) 
         rel_rtc_time -= pec->dc.act_diff;
     int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift;

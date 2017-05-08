@@ -52,8 +52,8 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
     if (ec_log_func == NULL) {
         va_list ap;
         va_start(ap, format);
-        printf("[%-20.20s] ", pre);
-        vprintf(format, ap);
+        fprintf(stderr, "[%-20.20s] ", pre);
+        vfprintf(stderr, format, ap);
         va_end(ap);
     } else {
         char buf[512];
@@ -1201,6 +1201,12 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
             int64_t dc_temp  = act_dc_time%UINT_MAX;
 
             pec->dc.act_diff = rtc_temp - dc_temp;
+            
+            static int N = 0;
+            if(N++%300 == 0) {
+                fprintf(stderr, "pec->dc.act_diff: %ld\n", pec->dc.act_diff);
+            }
+             
             if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp))
                 pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
             else if ((pec->dc.prev_rtc > rtc_temp) && 
