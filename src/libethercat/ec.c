@@ -1156,9 +1156,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     if (!pec->dc.have_dc)
         return 0;
 
-    ec_timer_t timer;
-    ec_timer_gettime(&timer);
-    uint64_t act_rtc_time = (timer.sec * 1000000000) + timer.nsec;
+    uint64_t act_rtc_time = ec_timer_gettime_nsec();
 
     if (pec->dc.rtc_time != 0) {
         pec->dc.rtc_cycle_sum += abs(act_rtc_time - pec->dc.rtc_time);
@@ -1244,30 +1242,21 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
             pec->dc.offset_compensation_cnt = 0;
 
             // doing offset compensation in dc master clock
-            // getting current system time first
-            uint64_t act_time;
+            // getting current system time first relative to ecat start
+            uint64_t act_rtc_time = ((pec->dc.timer_override > 0) ?
+                pec->dc.timer_prev : ec_timer_gettime_nsec()) - pec->dc.rtc_sto;
 
-            if (pec->dc.timer_override > 0)
-                act_time = pec->dc.timer_prev;
-            else {
-                ec_timer_t tmr;
-                ec_timer_gettime(&tmr);
+            int64_t rtc_temp = act_rtc_time%UINT_MAX;
+            int64_t dc_temp  = act_dc_time %UINT_MAX;
 
-                act_time = tmr.sec * 1E9 + tmr.nsec;
-            }
-
-            uint64_t diff_time = act_time - pec->dc.rtc_sto;
-
-            int64_t rtc_temp = diff_time%UINT_MAX;
-            int64_t dc_temp  = act_dc_time%UINT_MAX;
-
+            // fix datatype wrap around
             pec->dc.act_diff = rtc_temp - dc_temp;
             if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp))
                 pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
-            else if ((pec->dc.prev_rtc > rtc_temp) && 
-                    (pec->dc.prev_dc < dc_temp))
+            else if ((pec->dc.prev_rtc > rtc_temp) && (pec->dc.prev_dc < dc_temp))
                 pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
 
+            // clamp to maximum compensation value per tick
             if (pec->dc.act_diff > pec->dc.offset_compensation_max)
                 pec->dc.act_diff = pec->dc.offset_compensation_max;
             else if (pec->dc.act_diff < (-1 * pec->dc.offset_compensation_max))

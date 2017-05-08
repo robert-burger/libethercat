@@ -80,7 +80,7 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
     uint64_t rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
     if (pec->dc.mode == dc_mode_master_clock) 
         rel_rtc_time -= pec->dc.act_diff;
-    int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift;
+    int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift - slv->pdelay;
    
     // program first trigger time and cycle time
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, 
@@ -144,7 +144,7 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
     uint64_t rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
     if (pec->dc.mode == dc_mode_master_clock) 
         rel_rtc_time -= pec->dc.act_diff;
-    int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift;
+    int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift - slv->pdelay;
    
     // program first trigger time and cycle time
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, 

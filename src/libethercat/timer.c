@@ -83,6 +83,18 @@ int ec_timer_gettime(ec_timer_t *timer) {
     return 0;
 }
 
+//! gets timer in nanoseconds
+/*!
+ * \param timer pointer to timer struct
+ * \return 0 on success, -1 on error and errno set
+ */
+uint64_t ec_timer_gettime_nsec() {
+    ec_timer_t tmr;
+    ec_timer_gettime(&tmr);
+
+    return (tmr.sec * 1E9 + tmr.nsec);
+}
+
 //! initialize timer with timeout 
 /*!
  * \parma timer pointer to timer to initialize
