@@ -55,13 +55,13 @@ void propagation_delays(ec_t *pec) {
     pec->dc.act_diff = 1;
 //    ec_dc_config(pec);
 
-    pec->dc.timer_override = 333200;
+    pec->dc.timer_override = 333333;
     
     ret = ec_set_state(pec, EC_STATE_PREOP);
 
-    pec->dc.offset_compensation = 5;
-    pec->dc.offset_compensation_max = 4000000;
-    pec->dc.timer_override = 333200;
+    pec->dc.offset_compensation = 2;
+    pec->dc.offset_compensation_max = 10000000;
+    pec->dc.timer_override = 333333;
     
 
     
@@ -273,7 +273,7 @@ rtems_task Periodic_task(rtems_task_argument arg) {
     int lastPrint = 0;
     uint64_t loopCnt = 0;
     while (1) {
-        if (rtems_rate_monotonic_period(period, 9) == RTEMS_TIMEOUT) {
+        if (rtems_rate_monotonic_period(period, loopCnt%111==0 ? 10 : 9) == RTEMS_TIMEOUT) {
             brCount++;
         }
         if(loopCnt++%15000 == 0 && lastPrint != brCount) {

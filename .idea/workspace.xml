@@ -17,7 +17,6 @@
     <list default="true" id="7a20c17a-af0b-4907-89ee-517ffd84ab6f" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/CMakeLists.txt" afterPath="$PROJECT_DIR$/CMakeLists.txt" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/ethercatdiag/ethercatdiag.c" afterPath="$PROJECT_DIR$/src/ethercatdiag/ethercatdiag.c" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/ethercatdiag/rtems_config.h" afterPath="$PROJECT_DIR$/src/ethercatdiag/rtems_config.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/libethercat/ec.c" afterPath="$PROJECT_DIR$/src/libethercat/ec.c" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/libethercat/hw.c" afterPath="$PROJECT_DIR$/src/libethercat/hw.c" />
     </list>
@@ -35,11 +34,11 @@
       <file leaf-file-name="ethercatdiag.c" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/ethercatdiag/ethercatdiag.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="201">
-              <caret line="306" column="54" lean-forward="true" selection-start-line="306" selection-start-column="54" selection-end-line="306" selection-end-column="54" />
+            <state relative-caret-position="-92">
+              <caret line="63" column="35" lean-forward="false" selection-start-line="63" selection-start-column="35" selection-end-line="63" selection-end-column="35" />
               <folding>
                 <element signature="e#1#19#0" expanded="true" />
-                <element signature="e#3399#3420#0" expanded="true" />
+                <element signature="e#3400#3421#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -48,7 +47,7 @@
       <file leaf-file-name="ec.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/libethercat/ec.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1273">
+            <state relative-caret-position="1705">
               <caret line="137" column="27" lean-forward="false" selection-start-line="137" selection-start-column="27" selection-end-line="137" selection-end-column="27" />
               <folding />
             </state>
@@ -58,8 +57,8 @@
       <file leaf-file-name="ec.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/libethercat/ec.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="375">
-              <caret line="1260" column="0" lean-forward="false" selection-start-line="1260" selection-start-column="0" selection-end-line="1260" selection-end-column="0" />
+            <state relative-caret-position="407">
+              <caret line="1256" column="53" lean-forward="false" selection-start-line="1256" selection-start-column="53" selection-end-line="1256" selection-end-column="53" />
               <folding />
             </state>
           </provider>
@@ -68,8 +67,8 @@
       <file leaf-file-name="limits.h" pinned="false" current-in-tab="false">
         <entry file="file:///usr/lib64/gcc/x86_64-suse-linux/4.8/include-fixed/limits.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="290">
-              <caret line="123" column="8" lean-forward="false" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
+            <state relative-caret-position="194">
+              <caret line="123" column="21" lean-forward="true" selection-start-line="123" selection-start-column="21" selection-end-line="123" selection-end-column="21" />
               <folding />
             </state>
           </provider>
@@ -78,8 +77,8 @@
       <file leaf-file-name="slave.c" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/libethercat/slave.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="370">
-              <caret line="528" column="51" lean-forward="false" selection-start-line="528" selection-start-column="51" selection-end-line="528" selection-end-column="51" />
+            <state relative-caret-position="-142">
+              <caret line="520" column="63" lean-forward="false" selection-start-line="520" selection-start-column="63" selection-end-line="520" selection-end-column="63" />
               <folding />
             </state>
           </provider>
@@ -99,7 +98,7 @@
         <entry file="file://$PROJECT_DIR$/src/ethercatdiag/rtems_config.h">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="432">
-              <caret line="28" column="32" lean-forward="false" selection-start-line="28" selection-start-column="32" selection-end-line="28" selection-end-column="42" />
+              <caret line="28" column="42" lean-forward="false" selection-start-line="28" selection-start-column="42" selection-end-line="28" selection-end-column="42" />
               <folding>
                 <element signature="e#1933#1958#0" expanded="true" />
               </folding>
@@ -154,8 +153,8 @@
       <find>fprint</find>
       <find>ec_timer_gettime_nsec</find>
       <find>333</find>
-      <find>gett</find>
       <find>act_diff</find>
+      <find>gett</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -435,12 +434,12 @@
       <option name="presentableId" value="Default" />
       <updated>1491899049178</updated>
       <workItem from="1491899051193" duration="23101000" />
-      <workItem from="1493967467881" duration="32217000" />
+      <workItem from="1493967467881" duration="36746000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="55318000" />
+    <option name="totallyTimeSpent" value="59847000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1920" y="0" width="1922" height="1055" extended-state="0" />
@@ -481,7 +480,7 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#1#19#0" expanded="true" />
-            <element signature="e#3399#3420#0" expanded="true" />
+            <element signature="e#3400#3421#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -700,56 +699,11 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/libethercat/slave.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="370">
-          <caret line="528" column="51" lean-forward="false" selection-start-line="528" selection-start-column="51" selection-end-line="528" selection-end-column="51" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/libethercat/datagram.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="311">
           <caret line="124" column="8" lean-forward="false" selection-start-line="124" selection-start-column="8" selection-end-line="124" selection-end-column="8" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/ethercatdiag/rtems_config.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="432">
-          <caret line="28" column="32" lean-forward="false" selection-start-line="28" selection-start-column="32" selection-end-line="28" selection-end-column="42" />
-          <folding>
-            <element signature="e#1933#1958#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/lib64/gcc/x86_64-suse-linux/4.8/include-fixed/limits.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="290">
-          <caret line="123" column="8" lean-forward="false" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/libethercat/ec.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1273">
-          <caret line="137" column="27" lean-forward="false" selection-start-line="137" selection-start-column="27" selection-end-line="137" selection-end-column="27" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/ethercatdiag/ethercatdiag.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="201">
-          <caret line="306" column="54" lean-forward="true" selection-start-line="306" selection-start-column="54" selection-end-line="306" selection-end-column="54" />
-          <folding>
-            <element signature="e#1#19#0" expanded="true" />
-            <element signature="e#3399#3420#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -761,10 +715,55 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/ethercatdiag/rtems_config.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="432">
+          <caret line="28" column="42" lean-forward="false" selection-start-line="28" selection-start-column="42" selection-end-line="28" selection-end-column="42" />
+          <folding>
+            <element signature="e#1933#1958#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/ethercatdiag/ethercatdiag.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-92">
+          <caret line="63" column="35" lean-forward="false" selection-start-line="63" selection-start-column="35" selection-end-line="63" selection-end-column="35" />
+          <folding>
+            <element signature="e#1#19#0" expanded="true" />
+            <element signature="e#3400#3421#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/libethercat/ec.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1705">
+          <caret line="137" column="27" lean-forward="false" selection-start-line="137" selection-start-column="27" selection-end-line="137" selection-end-column="27" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib64/gcc/x86_64-suse-linux/4.8/include-fixed/limits.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="194">
+          <caret line="123" column="21" lean-forward="true" selection-start-line="123" selection-start-column="21" selection-end-line="123" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/libethercat/slave.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-142">
+          <caret line="520" column="63" lean-forward="false" selection-start-line="520" selection-start-column="63" selection-end-line="520" selection-end-column="63" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/libethercat/ec.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="1260" column="0" lean-forward="false" selection-start-line="1260" selection-start-column="0" selection-end-line="1260" selection-end-column="0" />
+        <state relative-caret-position="407">
+          <caret line="1256" column="53" lean-forward="false" selection-start-line="1256" selection-start-column="53" selection-end-line="1256" selection-end-column="53" />
           <folding />
         </state>
       </provider>
