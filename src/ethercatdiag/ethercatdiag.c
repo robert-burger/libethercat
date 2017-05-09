@@ -27,11 +27,13 @@
 #include <rtems/console.h>
 #include <rtems/shell.h>
 #include <time.h>
+#include <libethercat/dc.h>
 
 #include "rtems_config.h"
 
 
 #include "libethercat/ec.h"
+#include "libethercat/dc.h"
 
 
 void no_log(int lvl, void *user, const char *format, ...) {};
@@ -53,13 +55,14 @@ void propagation_delays(ec_t *pec) {
     pec->dc.act_diff = 1;
 //    ec_dc_config(pec);
 
-    pec->dc.timer_override = 333000;
+    pec->dc.timer_override = 333200;
     
     ret = ec_set_state(pec, EC_STATE_PREOP);
 
-    pec->dc.offset_compensation = 10;
-    pec->dc.offset_compensation_max = 100000000;
-    pec->dc.timer_override = 333000;
+    pec->dc.offset_compensation = 5;
+    pec->dc.offset_compensation_max = 4000000;
+    pec->dc.timer_override = 333200;
+    
 
     
     printf("propagation delays for distributed clocks: \n\n");
@@ -248,8 +251,6 @@ struct timespec timespec_sub(struct timespec a, struct timespec b) {
     return ret;
 }
 
-static double interval = 0.001;
-
 
 rtems_task Periodic_task(rtems_task_argument arg) {
     ec_t* pEc = (ec_t *) arg;
@@ -266,35 +267,20 @@ rtems_task Periodic_task(rtems_task_argument arg) {
         fprintf(stderr, "rtems_monotonic_create failed with status of %d.\n", status);
         exit(1);
     }
-
-    rtems_interval tps = rtems_clock_get_ticks_per_second();
-    uint tickTimeout = 1;//tps / 10;
-    fprintf(stderr, "set tickTiemout to %d\n", tickTimeout);
-     
-/*
-    struct timespec ts_now;
-    clock_gettime(CLOCK_REALTIME, &ts_now);
-
-    while (1) {
-        struct timespec ts = { 1, 0 }, ts_diff;
-        timespec_add(&ts_now, (int)(interval), (interval - (int)interval)*1E9);
-        clock_gettime(CLOCK_REALTIME, &ts);
-        ts_diff = timespec_sub(ts_now, ts);
-
-        nanosleep(&ts_diff, NULL);
-
-        handleEC(pEc);
-    }
-*/
+    
     sem_post(&startupTrig);
     int brCount = 0;
+    int lastPrint = 0;
+    uint64_t loopCnt = 0;
     while (1) {
-        if (rtems_rate_monotonic_period(period, tickTimeout) == RTEMS_TIMEOUT) {
-            if(brCount++%3000 == 0) {
-                fprintf(stderr, "ESCAPED ENDLESS LOOP!\n");
-            }
-            //break;
+        if (rtems_rate_monotonic_period(period, 9) == RTEMS_TIMEOUT) {
+            brCount++;
         }
+        if(loopCnt++%15000 == 0 && lastPrint != brCount) {
+            fprintf(stderr, "REALTIME VIOLATIONS: %d\n", brCount);
+            lastPrint = brCount;
+        }
+         
         handleEC(pEc);
     }
 

@@ -43,7 +43,8 @@ set(SOURCE_FILES
         src/libethercat/soe.c
         src/libethercat/soe.h
         src/libethercat/timer.c
-        src/libethercat/timer.h src/ethercatdiag/rtems_config.h)
+        src/libethercat/timer.h 
+        src/ethercatdiag/rtems_config.h)
 
 add_definitions(-DHAVE_NET_BPF_H)
 
