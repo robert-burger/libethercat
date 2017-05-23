@@ -86,7 +86,7 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
             rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
             break;
         case dc_mode_master_as_ref_clock:
-            rel_rtc_time = ec_timer_gettime_nsec() - pec->dc.rtc_sto;
+            rel_rtc_time = pec->dc.timer_prev;
             break;
     }
 
@@ -166,7 +166,7 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
             rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
             break;
         case dc_mode_master_as_ref_clock:
-            rel_rtc_time = ec_timer_gettime_nsec() - pec->dc.rtc_sto;
+            rel_rtc_time = pec->dc.timer_prev; 
             break;
     }
     
