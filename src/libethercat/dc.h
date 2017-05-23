@@ -82,8 +82,8 @@ typedef struct PACKED ec_dc_info {
     int64_t timer_prev;
 
     enum {
-	    dc_mode_master_clock = 0,
-	    dc_mode_ref_clock,
+        dc_mode_master_clock = 0,
+        dc_mode_ref_clock,
         dc_mode_master_as_ref_clock
     } mode;
 
