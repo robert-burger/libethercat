@@ -54,6 +54,7 @@
 void ec_dc_sync0(ec_t *pec, uint16_t slave, int active, 
         uint32_t cycle_time, int32_t cycle_shift) {
     uint16_t wkc;
+    uint64_t rel_rtc_time = 0;
     ec_slave_t *slv = &pec->slaves[slave];
     if (!(slv->features & 0x04)) // dc not available
         return;
@@ -68,18 +69,27 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, 
             sizeof(dc_cuc), &wkc);
 
-    if (active && (pec->dc.mode == dc_mode_master_clock)) 
-        while (pec->dc.act_diff == 0) {
-            // wait until dc's are ready
-            ec_sleep(1000000);
-        }
-
     // Calculate DC start time as a sum of the actual EtherCAT master time,
     // the generic first sync delay and the cycle shift. the first sync delay 
     // has to be a multiple of cycle time.  
-    uint64_t rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
-    if (pec->dc.mode == dc_mode_master_clock) 
-        rel_rtc_time -= pec->dc.act_diff;
+    switch (pec->dc.mode) {
+        case dc_mode_master_clock:
+            if (active) 
+                while (pec->dc.act_diff == 0) {
+                    // wait until dc's are ready
+                    ec_sleep(1000000);
+                }
+
+            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) - pec->dc.act_diff;
+            break;
+        case dc_mode_ref_clock:
+            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
+            break;
+        case dc_mode_master_as_ref_clock:
+            rel_rtc_time = ec_timer_gettime_nsec() - pec->dc.rtc_sto;
+            break;
+    }
+
     int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift - slv->pdelay;
    
     // program first trigger time and cycle time
@@ -118,6 +128,7 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
 void ec_dc_sync01(ec_t *pec, uint16_t slave, int active, 
         uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift) {
     uint16_t wkc;
+    uint64_t rel_rtc_time = 0;
     ec_slave_t *slv = &pec->slaves[slave];
     if (!(slv->features & 0x04)) // dc not available
         return;
@@ -141,9 +152,24 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
     // Calculate DC start time as a sum of the actual EtherCAT master time,
     // the generic first sync delay and the cycle shift. the first sync delay 
     // has to be a multiple of cycle time.  
-    uint64_t rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
-    if (pec->dc.mode == dc_mode_master_clock) 
-        rel_rtc_time -= pec->dc.act_diff;
+    switch (pec->dc.mode) {
+        case dc_mode_master_clock:
+            if (active) 
+                while (pec->dc.act_diff == 0) {
+                    // wait until dc's are ready
+                    ec_sleep(1000000);
+                }
+
+            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) - pec->dc.act_diff;
+            break;
+        case dc_mode_ref_clock:
+            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
+            break;
+        case dc_mode_master_as_ref_clock:
+            rel_rtc_time = ec_timer_gettime_nsec() - pec->dc.rtc_sto;
+            break;
+    }
+    
     int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift - slv->pdelay;
    
     // program first trigger time and cycle time
@@ -341,9 +367,7 @@ int ec_dc_config(struct ec *pec) {
 
         if (pec->dc.master_address == slv->fixed_address) {
             pec->dc.dc_sto = dcsof;
-            ec_timer_t tmr;
-            ec_timer_gettime(&tmr);
-            pec->dc.rtc_sto = tmr.sec * 1E9 + tmr.nsec;
+            pec->dc.rtc_sto = ec_timer_gettime_nsec();
         }
 
         // remove entry_port from available ports

@@ -1111,36 +1111,38 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
     if (ret == -1) {
         ec_log(5, "EC_RECEIVE_PROCESS_DATA_GROUP", 
                 "sem_timedwait group id %d: %s\n", group, strerror(errno));
-    } else {
-        wkc = ec_datagram_wkc(&pd->p_de->datagram);
-        if (pd->pd) {
-            if (pd->use_lrw)
-               memcpy(pd->pd + pd->pdout_len, ec_datagram_payload(&pd->p_de->datagram),
-                       pd->pdin_len);
-            else
-               memcpy(pd->pd + pd->pdout_len, 
-                        ec_datagram_payload(&pd->p_de->datagram) + 
-                        pd->pdout_len, pd->pdin_len);
-        }
+        goto local_exit;
+    }
         
-        if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
-                    (pec->master_state == EC_STATE_OP)  ) && 
-                (wkc != pd->wkc_expected)) {
-            if ((wkc_mismatch_cnt++%1000) == 0) {
-                ec_log(10, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                        "group %2d: working counter mismatch got %u, "
-                        "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
-                        group, wkc, pd->wkc_expected, 
-                        pec->slave_cnt, wkc_mismatch_cnt);
-            }
-            
-            ec_async_check_group(pec->async_loop, group);
-            ret = -1;
-        } else {
-            wkc_mismatch_cnt = 0;
-        }
+    wkc = ec_datagram_wkc(&pd->p_de->datagram);
+    if (pd->pd) {
+        if (pd->use_lrw)
+            memcpy(pd->pd + pd->pdout_len, ec_datagram_payload(&pd->p_de->datagram),
+                    pd->pdin_len);
+        else
+            memcpy(pd->pd + pd->pdout_len, 
+                    ec_datagram_payload(&pd->p_de->datagram) + 
+                    pd->pdout_len, pd->pdin_len);
     }
 
+    if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+                (pec->master_state == EC_STATE_OP)  ) && 
+            (wkc != pd->wkc_expected)) {
+        if ((wkc_mismatch_cnt++%1000) == 0) {
+            ec_log(10, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+                    "group %2d: working counter mismatch got %u, "
+                    "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
+                    group, wkc, pd->wkc_expected, 
+                    pec->slave_cnt, wkc_mismatch_cnt);
+        }
+
+        ec_async_check_group(pec->async_loop, group);
+        ret = -1;
+    } else {
+        wkc_mismatch_cnt = 0;
+    }
+
+local_exit:
     datagram_pool_put(pec->pool, pd->p_de);
     ec_index_put(&pec->idx_q, pd->p_idx);
 
@@ -1170,9 +1172,13 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     }
 
     if (pec->dc.timer_override > 0) {
-        if (pec->dc.timer_prev == 0)
-            pec->dc.timer_prev = act_rtc_time;
-        else
+        if (pec->dc.timer_prev == 0) {
+            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                pec->dc.timer_prev = act_rtc_time - pec->dc.rtc_sto;
+                ec_log(10, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "sending first dc time %llu\n", pec->dc.timer_prev);
+            } else
+                pec->dc.timer_prev = act_rtc_time;
+        } else
             pec->dc.timer_prev += 
                 (pec->dc.timer_override);// * pec->dc.offset_compensation);
     }
@@ -1193,12 +1199,24 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     }
 
     memset(&pec->dc.p_de_dc->datagram, 0, sizeof(ec_datagram_t) + 8 + 2);
-    pec->dc.p_de_dc->datagram.cmd = EC_CMD_FRMW;
-    pec->dc.p_de_dc->datagram.idx = pec->dc.p_idx_dc->idx;
-    pec->dc.p_de_dc->datagram.adr = (EC_REG_DCSYSTIME << 16) | 
-        pec->dc.master_address;
-    pec->dc.p_de_dc->datagram.len = 8;
-    pec->dc.p_de_dc->datagram.irq = 0;
+
+    if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+        pec->dc.p_de_dc->datagram.cmd = EC_CMD_BWR;
+        pec->dc.p_de_dc->datagram.idx = pec->dc.p_idx_dc->idx;
+        pec->dc.p_de_dc->datagram.adr = (EC_REG_DCSYSTIME << 16);
+        pec->dc.p_de_dc->datagram.len = 8;
+        pec->dc.p_de_dc->datagram.irq = 0;
+            
+        memcpy(ec_datagram_payload(&pec->dc.p_de_dc->datagram),
+                &pec->dc.timer_prev, sizeof(pec->dc.timer_prev));
+    } else {
+        pec->dc.p_de_dc->datagram.cmd = EC_CMD_FRMW;
+        pec->dc.p_de_dc->datagram.idx = pec->dc.p_idx_dc->idx;
+        pec->dc.p_de_dc->datagram.adr = (EC_REG_DCSYSTIME << 16) | 
+            pec->dc.master_address;
+        pec->dc.p_de_dc->datagram.len = 8;
+        pec->dc.p_de_dc->datagram.irq = 0;
+    }
 
     pec->dc.p_de_dc->user_cb = cb_block;
     pec->dc.p_de_dc->user_arg = pec->dc.p_idx_dc;
@@ -1231,6 +1249,9 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
     }
 
     wkc = ec_datagram_wkc(&pec->dc.p_de_dc->datagram);
+
+    if (pec->dc.mode == dc_mode_master_as_ref_clock)
+        goto dc_exit;
 
     if (wkc) {
         uint64_t act_dc_time; 
