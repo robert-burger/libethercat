@@ -165,18 +165,10 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         }
 
         size_t len = read_buf_data->mbx_hdr.length - 6;
-
-        if (strncmp(file_name, "ECATFW__", 8) == 0) {
-            *file_data = realloc(*file_data, *file_data_len + len - 8);
-            memcpy(*file_data + *file_data_len,
-                    &read_buf_data->data.bdata[8], len - 8); 
-            *file_data_len += len - 8;
-        } else {
-            *file_data = realloc(*file_data, *file_data_len + len);
-            memcpy(*file_data + *file_data_len, 
-                    &read_buf_data->data.bdata[0], len); 
-            *file_data_len += len;
-        }
+        *file_data = realloc(*file_data, *file_data_len + len);
+        memcpy(*file_data + *file_data_len, 
+                &read_buf_data->data.bdata[0], len); 
+        *file_data_len += len;
 
         // everthing is fine, send ack 
         // mailbox header
@@ -201,7 +193,6 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         if ((read_buf_data->mbx_hdr.length + 6) < slv->sm[1].len)
             break;
     }
-
 
 exit:
     ec_log(10, __func__, "reading file \"%s\" finished\n", file_name);
@@ -321,14 +312,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
 
     // mailbox len - mailbox hdr (6) - foe header (6)
     size_t data_len = slv->sm[1].len - 6 - 6;
-    off_t offset = 0, file_offset = 0;
-
-    if (strcmp(file_name, "ECATFW__bootstrap.bin") == 0)
-        offset = 0x400000;
-    else if (strcmp(file_name, "ECATFW__bootloader.bin") == 0)
-        offset = 0x408000;
-    else if (strcmp(file_name, "ECATFW__slave.bin") == 0)
-        offset = 0x410000;
+    off_t file_offset = 0;
 
     while (1) {
         int last_pkt = 0;
@@ -336,39 +320,15 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         // everthing is fine, send data 
         ec_mbx_clear(pec, slave, 0);
     
-        if (strncmp(file_name, "ECATFW__", 8) == 0) {
-            size_t fw_len = data_len - 8; // firmware update header (8)
-            ec_fw_update_t *fw = (ec_fw_update_t *)write_buf_data->data.bdata;
+        int bytes_read = min(file_data_len - file_offset, data_len);
+        memcpy(&write_buf_data->data.bdata[0], file_data + file_offset, bytes_read);
+        if (bytes_read < data_len)
+            last_pkt = 1;
 
-            int bytes_read = min(file_data_len - file_offset, fw_len);
-            memcpy(fw->data, file_data + file_offset, bytes_read);
-            if (bytes_read < fw_len)
-                last_pkt = 1;
-            
-            fw->cmd = EFW_CMD_WRCODE;
-            fw->size = bytes_read;
-            fw->address_low = offset & 0xFFFF;
-            fw->address_high = (offset>>16) & 0xFFFF;
-
-            offset += bytes_read;
-            file_offset += bytes_read;
-
-            // mailbox header
-            write_buf_data->mbx_hdr.length    = 6 + 8 + bytes_read; 
-        } else {
-            int bytes_read = min(file_data_len - file_offset, data_len);
-            memcpy(write_buf_data, file_data + file_offset, bytes_read);
-            if (bytes_read < data_len)
-                last_pkt = 1;
-
-            offset += bytes_read;
-            file_offset += bytes_read;
-
-            // mailbox header
-            write_buf_data->mbx_hdr.length    = 6 + bytes_read; 
-        }
+        file_offset += bytes_read;
 
         // mailbox header
+        write_buf_data->mbx_hdr.length    = 6 + bytes_read; 
         write_buf_data->mbx_hdr.address   = 0x0000;
         write_buf_data->mbx_hdr.priority  = 0x00;
         write_buf_data->mbx_hdr.mbxtype   = EC_MBX_FOE;

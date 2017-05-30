@@ -731,7 +731,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             }
             
             ec_state_transition_loop(pec, EC_STATE_SAFEOP, 1);
-
+    
             if (state == EC_STATE_SAFEOP)
                 break;
         

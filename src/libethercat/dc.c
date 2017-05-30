@@ -180,8 +180,6 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, 
             sizeof(cycle_time_1), &wkc);
 
-    uint16_t tmp = 0xffff;
-    ec_fpwr(pec, slv->fixed_address, 0x930, &tmp, 2, &wkc);
     if (active) {
         // activate distributed clock on slave
         dc_active = 1 + 2 + 4;
