@@ -124,18 +124,7 @@ typedef struct {
     uint32_t abort_code;
 } PACKED ec_sdo_abort_request_t;
 
-//! read coe sdo 
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param sub_index sdo sub index
- * \param complete complete access (only if sub_index == 0)
- * \param buf buffer to store answer
- * \param len length of buffer, outputs read length
- * \param abort_code abort_code if we got abort request
- * \return working counter
- */
+// read coe sdo 
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
         uint32_t *abort_code) {
@@ -253,17 +242,7 @@ exit:
     return ret;
 }
 
-//! write coe sdo 
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param sub_index sdo sub index
- * \param complete complete access (only if sub_index == 0)
- * \param buf buffer to write to sdo
- * \param len length of buffer, outputs written length
- * \return working counter
- */
+// write coe sdo 
 int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t *buf, size_t len,
         uint32_t *abort_code) {
@@ -464,14 +443,7 @@ typedef struct PACKED ec_sdo_odlist_resp {
     ec_data_t           sdo_info_data;
 } PACKED ec_sdo_odlist_resp_t;
 
-//! read coe object dictionary list
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param buf buffer to store answer
- * \param len length of buffer, outputs read length
- * \return working counter
- */
+// read coe object dictionary list
 int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
     int wkc, ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
@@ -591,15 +563,7 @@ typedef struct PACKED ec_sdo_desc_resp {
     ec_data_t           sdo_info_data;
 } PACKED ec_sdo_desc_resp_t;
 
-//! read coe sdo description
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param buf buffer to store answer
- * \param len length of buffer, outputs read length
- * \return working counter
- */
+// read coe sdo description
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ec_coe_sdo_desc_t *desc) {
     int wkc, ret = 0;
@@ -702,15 +666,7 @@ typedef struct PACKED ec_sdo_entry_desc_resp {
     ec_data_t           desc_data;
 } PACKED ec_sdo_entry_desc_resp_t;
 
-//! read coe sdo entry description
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param buf buffer to store answer
- * \param len length of buffer, outputs read length
- * \return working counter
- */
+// read coe sdo entry description
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc) {
     int wkc, ret = 0;

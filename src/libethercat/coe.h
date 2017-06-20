@@ -5,7 +5,7 @@
  *
  * \date 22 Nov 2016
  *
- * \brief ethercat coe functions.
+ * \brief EtherCAT coe functions.
  *
  * Implementaion of the CanOpen over EtherCAT mailbox protocol
  */
@@ -99,77 +99,106 @@ extern "C" {
 }
 #endif
 
-//! read coe sdo 
+//! Read CoE service data object (SDO) 
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param sub_index sdo sub index
- * \param complete complete access (only if sub_index == 0)
- * \param buf buffer to store answer
- * \param len length of buffer, outputs read length
- * \param abort_code abort_code if we got abort request
- * \return working counter
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] index         CoE SDO index number.
+ * \param[in] sub_index     CoE SDO sub index number.
+ * \param[in] complete      SDO Complete access (only if \p sub_index == 0)
+ * \param[out] buf          Buffer where to store the answer. Either a user supplied
+ *                          pointer to a buffer or the call to \link ec_coe_sdo_read 
+ *                          \endlink will allocate a big enough buffer. In last case
+ *                          the buffer has to be freed by the user.
+ * \param[in,out] len       Length of buffer, outputs read length.
+ * \param[out] abort_code   Returns the abort code if we got abort request
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
         uint32_t *abort_code);
 
-//! write coe sdo 
+//! Write CoE service data object (SDO)
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param sub_index sdo sub index
- * \param complete complete access (only if sub_index == 0)
- * \param buf buffer to write to sdo
- * \param len length of buffer
- * \param abort_code abort_code if we got abort request
- * \return working counter
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] index         CoE SDO index number.
+ * \param[in] sub_index     CoE SDO sub index number.
+ * \param[in] complete      SDO Complete access (only if \p sub_index == 0)
+ * \param[in] buf           Buffer with data which will be written.
+ * \param[in] len           Length of buffer.
+ * \param[out] abort_code   Returns the abort code if we got abort request
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t *buf, size_t len,
         uint32_t *abort_code);
 
-//! read coe sdo description
+//! Read CoE SDO description
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param desc buffer to store answer
- * \return working counter
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] index         CoE SDO index number.
+ * \param[out] desc         Returns CoE SDO description.
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
         ec_coe_sdo_desc_t *desc);
 
-//! read coe sdo entry description
+//! Read CoE SDO entry description
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param index sdo index
- * \param sub_index sub index
- * \param buf buffer to store answer
- * \param len length of buffer, outputs read length
- * \return working counter
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] index         CoE SDO index number.
+ * \param[in] sub_index     CoE SDO sub index number.
+ * \param[in] value_info    Bitset which description values you want to get
+ * \param[in] desc          Return CoE entry description.
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc);
 
-//! read coe object dictionary list
+//! Read CoE object dictionary list
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param buf buffer to store answer
- * \param len length of buffer, outputs read length
- * \return working counter
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[out] buf          Pointer to either a preallocated buffer or the buffer 
+ *                          will be allocated by the \link ec_coe_sdo_entry_desc_t \endlink
+ *                          call. In second case it has to be freed by caller.
+ * \param[in,out] len       Length of buffer, outputs read length.
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len);
 
 //! generate sync manager process data mapping via coe
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \return 0 on success
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ *
+ * \retval 0 on success
  */
 int ec_coe_generate_mapping(ec_t *pec, uint16_t slave);
 
