@@ -86,7 +86,7 @@ typedef struct ec_fw_update {
                                 //!< firmware data bytes
 } ec_fw_update_t;
 
-enum {
+enum ec_foe_op_code {
     EC_FOE_OP_CODE_READ_REQUEST  = 0x01,    //!< read request
     EC_FOE_OP_CODE_WRITE_REQUEST = 0x02,    //!< write request
     EC_FOE_OP_CODE_DATA_REQUEST  = 0x03,    //!< data request
@@ -95,7 +95,7 @@ enum {
     EC_FOE_OP_CODE_BUSY_REQUEST  = 0x06,    //!< busy request
 };
 
-enum {
+enum ec_foe_error {
     EC_FOE_ERROR_NOT_DEFINED         = 0x8000,  //!< not defined
     EC_FOE_ERROR_NOT_FOUND           = 0x8001,  //!< not found
     EC_FOE_ERROR_ACCESS_DENIED       = 0x8002,  //!< access denied
@@ -110,7 +110,7 @@ enum {
     EC_FOE_ERROR_PROGRAM_ERROR       = 0x800B,  //!< program error
 };
 
-enum {
+enum efw_cmd {
     EFW_CMD_IGNORE                  = 0,    //!< command ignore
     EFW_CMD_MEMORY_TRANSFER         = 1,    //!< command memory transfer
     EFW_CMD_WRCODE                  = 2,    //!< command wrcode
@@ -131,27 +131,49 @@ extern "C" {
 }
 #endif
 
-//! read file over foe
+//! Read file over FoE.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param password foe password
- * \param remote_file_name file_name to read from
- * \param local_file_name file_name to store file to
- * \return working counter
+ * \param[in] pec               Pointer to ethercat master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of ethercat slave. this depends on 
+ *                              the physical order of the ethercat slaves 
+ *                              (usually the n'th slave attached).
+ * \param[in] password          FoE password for file to read.
+ * \param[in] file_name         File name on EtherCAT slave to read from.
+ * \param[out] file_data        This will be allocated by the \link ec_foe_read 
+ *                              \endlink call and return the content of the EtherCAT
+ *                              slaves file. The caller must ensure to free the
+ *                              allocated memory.
+ * \param[out] file_data_len    The length of the file and the allocated buffer 
+ *                              \p file_data
+ * \param[out] error_message    In error cases this will return the error message
+ *                              set by the EtherCAT slave. If any error has occured,
+ *                              this has to be freed by the caller.
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t **file_data, 
         ssize_t *file_data_len, char **error_message);
 
-//! write file over foe
+//! Write file over FoE.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param password foe password
- * \param remote_file_name file_name to read from
- * \param local_file_name file_name to store file to
- * \return working counter
+ * \param[in] pec               Pointer to ethercat master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of ethercat slave. this depends on 
+ *                              the physical order of the ethercat slaves 
+ *                              (usually the n'th slave attached).
+ * \param[in] password          FoE password for file to write.
+ * \param[in] file_name         File name on EtherCAT slave to write to.
+ * \param[out] file_data        The caller has to provide the data which will 
+ *                              be written as content of the file to the EtherCAT
+ *                              slave.
+ * \param[out] file_data_len    The length of the \p file_data.
+ * \param[out] error_message    In error cases this will return the error message
+ *                              set by the EtherCAT slave. If any error has occured,
+ *                              this has to be freed by the caller.
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t *file_data, 

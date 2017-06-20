@@ -39,7 +39,7 @@
 
 
 #ifdef __VXWORKS__ 
-char *strndup(const char *s, size_t n) {
+static char *strndup(const char *s, size_t n) {
     const char* cp = s;
     size_t i = 0;
     while(*cp) {
@@ -57,15 +57,7 @@ char *strndup(const char *s, size_t n) {
 #endif
 
 
-//! read file over foe
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param password foe password
- * \param file_name file_name to read from
- * \param local_file_name file_name to store file to
- * \return working counter
- */
+// read file over foe
 int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t **file_data, 
         ssize_t *file_data_len, char **error_message) {
@@ -207,15 +199,7 @@ exit:
     return wkc;
 }
 
-//! write file over foe
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param password foe password
- * \param file_name file_name to store to
- * \param local_file_name file_name to read file from
- * \return working counter
- */
+// write file over foe
 int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t *file_data, 
         ssize_t file_data_len, char **error_message) {

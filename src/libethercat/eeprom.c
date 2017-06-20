@@ -41,12 +41,7 @@
                 (uint8_t *)&(val), sizeof(val), &wkc);                 \
     } while (--cnt > 0 && wkc != 1);
 
-//! set eeprom control to pdi
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \return 0 on success
- */
+// set eeprom control to pdi
 int ec_eeprom_to_pdi(ec_t *pec, uint16_t slave) {
     uint16_t wkc, cnt = 10;
     uint8_t eepctl = 2;
@@ -57,12 +52,7 @@ int ec_eeprom_to_pdi(ec_t *pec, uint16_t slave) {
     return 0;
 }
 
-//! set eeprom control to ec
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \return 0 on success
- */
+// set eeprom control to ec
 int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
     uint16_t wkc, cnt = 10;
     uint8_t eepctl = 2;
@@ -99,14 +89,7 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
     return -1;
 }
 
-//! read 32-bit word of eeprom
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param returns data value
- * \return 0 on success
- */
+// read 32-bit word of eeprom
 int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     int ret = 0, retry_cnt = 100;
     uint16_t wkc = 0, eepcsr = 0x0100; // read access
@@ -185,14 +168,7 @@ func_exit:
     return ret;
 }
 
-//! write 32-bit word of eeprom
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param returns data value
- * \return 0 on success
- */
+// write 32-bit word of eeprom
 int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, 
         uint16_t *data) {
     ec_eeprom_to_ec(pec, slave);
@@ -316,15 +292,7 @@ func_exit:
     return ret;
 }
 
-//! read a burst of eeprom
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param buf return buffer
- * \param buflen length in bytes to return
- * \return 0 on success
- */
+// read a burst of eeprom
 int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
         uint8_t *buf, size_t buflen) {
     unsigned offset = 0, i, ret;
@@ -332,11 +300,9 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     while (offset < buflen) {
         uint32_t val;
 
-//        do {
-            ret = ec_eepromread(pec, slave, eepadr+(offset/2), &val);
-            if (ret != 0)
-                return ret;
-//        } while (ret != 0);
+        ret = ec_eepromread(pec, slave, eepadr+(offset/2), &val);
+        if (ret != 0)
+            return ret;
 
         for (i = 0; (offset < buflen) && (i < 4); ++i, ++offset)
             buf[offset] = ((uint8_t *)&val)[i];
@@ -345,15 +311,7 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     return 0;
 };
 
-//! write a burst of eeprom
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param buf return buffer
- * \param buflen length in bytes to return
- * \return 0 on success
- */
+// write a burst of eeprom
 int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
         uint8_t *buf, size_t buflen) {
     unsigned offset = 0, i, ret;
@@ -376,11 +334,7 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     return 0;
 };
 
-//! read out whole eeprom and categories
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- */
+// read out whole eeprom and categories
 void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     int cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
     uint16_t /*size,*/ cat_len, cat_type = 0;

@@ -5,7 +5,7 @@
  *
  * \date 24 Nov 2016
  *
- * \brief ethercat eeprom access fuctions
+ * \brief EtherCAT eeprom access fuctions
  *
  * These functions are used to ensure access to the EtherCAT
  * slaves EEPROM.
@@ -156,7 +156,7 @@ typedef struct eeprom_info {
     ec_eeprom_cat_dc_t *dcs;        //!< array of distributed clocks settings
 } eeprom_info_t;
 
-enum {
+enum ec_eeprom_mbx {
     EC_EEPROM_MBX_AOE = 0x01,       //! AoE mailbox support
     EC_EEPROM_MBX_EOE = 0x02,       //! EoE mailbox support
     EC_EEPROM_MBX_COE = 0x04,       //! CoE mailbox support
@@ -165,7 +165,7 @@ enum {
     EC_EEPROM_MBX_VOE = 0x20,       //! VoE mailbox support
 };
 
-enum {
+enum ec_eeprom_address {
     EC_EEPROM_ADR_VENDOR_ID          = 0x0008,  //!< offset vendor id
     EC_EEPROM_ADR_PRODUCT_CODE       = 0x000A,  //!< offset product code
     EC_EEPROM_ADR_BOOT_MBX_RECV_OFF  = 0x0014,  //!< offset mbx receive off
@@ -181,7 +181,7 @@ enum {
     EC_EEPROM_ADR_CAT_OFFSET         = 0x0040,  //!< offset start of categories
 };
 
-enum {
+enum ec_eeprom_category {
     EC_EEPROM_CAT_NOP       = 0,            //!< category do nothing
     EC_EEPROM_CAT_STRINGS   = 10,           //!< category strings
     EC_EEPROM_CAT_DATATYPES = 20,           //!< category datatypes
@@ -203,72 +203,100 @@ extern "C" {
 // forward decl
 struct ec;
 
-//! set eeprom control to pdi
+//! Set eeprom control to pdi.
 /*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \return 0 on success
+ * \param[in] pec               Pointer to EtherCAT master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of EtherCAT slave. this depends on 
+ *                              the physical order of the EtherCAT slaves 
+ *                              (usually the n'th slave attached).
+ *
+ * \retval 0    On success
  */
 int ec_eeprom_to_pdi(struct ec *pec, uint16_t slave);
 
-//! set eeprom control to ec
+//! Set eeprom control to ec.
 /*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \return 0 on success
+ * \param[in] pec               Pointer to EtherCAT master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of EtherCAT slave. this depends on 
+ *                              the physical order of the EtherCAT slaves 
+ *                              (usually the n'th slave attached).
+ *
+ * \retval 0    On success
  */
 int ec_eeprom_to_ec(struct ec *pec, uint16_t slave);
 
-//! read 32-bit word of eeprom
+//! Read 32-bit word of eeprom.
 /*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param returns data value
- * \return 0 on success
+ * \param[in] pec               Pointer to EtherCAT master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of EtherCAT slave. this depends on 
+ *                              the physical order of the EtherCAT slaves 
+ *                              (usually the n'th slave attached).
+ * \param[in] eepadr            Address in eeprom where to read data.
+ * \param[out] data             Returns read 32-bit data value.
+ *
+ * \retval 0    On success
  */
 int ec_eepromread(struct ec *pec, uint16_t slave, 
         uint32_t eepadr, uint32_t *data);
 
-//! write 32-bit word to eeprom
+//! Write 32-bit word to eeprom
 /*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param data data to write
- * \return 0 on success
+ * \param[in] pec               Pointer to EtherCAT master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of EtherCAT slave. this depends on 
+ *                              the physical order of the EtherCAT slaves 
+ *                              (usually the n'th slave attached).
+ * \param[in] eepadr            Address in eeprom where to write data.
+ * \param[out] data             32-bit data value which will be written.
+ *
+ * \retval 0    On success
  */
 int ec_eepromwrite(struct ec *pec, uint16_t slave, 
         uint32_t eepadr, uint16_t *data);
 
-//! read a burst of eeprom
+//! Read a burst of eeprom data
 /*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param buf return buffer
- * \param buflen length in bytes to return
- * \return 0 on success
+ * \param[in] pec               Pointer to EtherCAT master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of EtherCAT slave. this depends on 
+ *                              the physical order of the EtherCAT slaves 
+ *                              (usually the n'th slave attached).
+ * \param[in] eepadr            Address in eeprom from where to read the data.
+ * \param[out] buf              Data buffer where the read data will be copied.
+ * \param[in] buflen            Length of data buffer provided by user.
+ *
+ * \retval 0    On success
  */
 int ec_eepromread_len(struct ec *pec, uint16_t slave, 
         uint32_t eepadr, uint8_t *buf, size_t buflen);
 
-//! write a burst of eeprom
+//! Write a burst of eeprom data.
 /*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param eepadr address in eeprom
- * \param buf return buffer
- * \param buflen length in bytes to return
- * \return 0 on success
+ * \param[in] pec               Pointer to EtherCAT master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of EtherCAT slave. this depends on 
+ *                              the physical order of the EtherCAT slaves 
+ *                              (usually the n'th slave attached).
+ * \param[in] eepadr            Address in eeprom from where to read the data.
+ * \param[in] buf               Data buffer with provided data to write to 
+ *                              EtherCAT slave's eeprom.
+ * \param[in] buflen            Length of data buffer provided by user.
+ *
+ * \retval 0    On success
  */
 int ec_eepromwrite_len(struct ec *pec, uint16_t slave, 
         uint32_t eepadr, uint8_t *buf, size_t buflen);
 
-//! read out whole eeprom and categories
+//! Read out whole eeprom and categories and store in EtherCAT master structure.
 /*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
+ * \param[in] pec               Pointer to EtherCAT master structure, 
+ *                              which you got from \link ec_open \endlink.
+ * \param[in] slave             Number of EtherCAT slave. this depends on 
+ *                              the physical order of the EtherCAT slaves 
+ *                              (usually the n'th slave attached).
  */
 void ec_eeprom_dump(struct ec *pec, uint16_t slave);
 
