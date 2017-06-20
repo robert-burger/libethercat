@@ -52,8 +52,8 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
     if (ec_log_func == NULL) {
         va_list ap;
         va_start(ap, format);
-        printf("[%-20.20s] ", pre);
-        vprintf(format, ap);
+        fprintf(stderr, "[%-20.20s] ", pre);
+        vfprintf(stderr, format, ap);
         va_end(ap);
     } else {
         char buf[512];
@@ -1248,6 +1248,8 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
         goto dc_exit;
     }
 
+    uint64_t rtc = ec_timer_gettime_nsec();
+    
     wkc = ec_datagram_wkc(&pec->dc.p_de_dc->datagram);
 
     if (pec->dc.mode == dc_mode_master_as_ref_clock)
@@ -1255,9 +1257,8 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
 
     if (wkc) {
         uint64_t act_dc_time; 
-        memcpy(&act_dc_time, 
-                ec_datagram_payload(&pec->dc.p_de_dc->datagram), 8);
-
+        memcpy(&act_dc_time, ec_datagram_payload(&pec->dc.p_de_dc->datagram), 8);
+        
         if (((++pec->dc.offset_compensation_cnt) 
                     % pec->dc.offset_compensation) == 0) {
             pec->dc.offset_compensation_cnt = 0;
@@ -1265,24 +1266,57 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
             // doing offset compensation in dc master clock
             // getting current system time first relative to ecat start
             uint64_t act_rtc_time = ((pec->dc.timer_override > 0) ?
-                pec->dc.timer_prev : ec_timer_gettime_nsec()) - pec->dc.rtc_sto;
+                                     pec->dc.timer_prev : rtc) - pec->dc.rtc_sto;
 
-            int64_t rtc_temp = act_rtc_time%UINT_MAX;
-            int64_t dc_temp  = act_dc_time %UINT_MAX;
+            int64_t rtc_temp = (int64_t) act_rtc_time & 0x00000000FFFFFFFF;
+            int64_t dc_temp  = (int64_t) act_dc_time  & 0x00000000FFFFFFFF;
 
-            // fix datatype wrap around
-            pec->dc.act_diff = rtc_temp - dc_temp;
-            if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp))
-                pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
-            else if ((pec->dc.prev_rtc > rtc_temp) && (pec->dc.prev_dc < dc_temp))
-                pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
-
+            int64_t diff1 = (rtc_temp - dc_temp);
+            int64_t diff2 = -(dc_temp - rtc_temp);
+            pec->dc.act_diff = (int32_t) (abs(diff1) < abs(diff2) ? diff1 : diff2);
+            pec->dc.act_diff = pec->dc.act_diff * 1.5;
+            
             // clamp to maximum compensation value per tick
             if (pec->dc.act_diff > pec->dc.offset_compensation_max)
                 pec->dc.act_diff = pec->dc.offset_compensation_max;
             else if (pec->dc.act_diff < (-1 * pec->dc.offset_compensation_max))
                 pec->dc.act_diff = -1 * pec->dc.offset_compensation_max;
 
+/*            
+#define N 1500
+            static int c = 0;
+            static int64_t diff_times[N];
+
+            diff_times[c] = pec->dc.act_diff;
+            if(c==N-1) {
+                c = 0;
+                int64_t min = 0, max = 0, sum = 0, avg = 0;
+                for (int i = 0; i <N; ++i) {
+                    int64_t d = diff_times[i];
+                    if(d < min)
+                        min = d;
+                    if(d > max)
+                        max = d;
+                    sum += d;
+                }
+                avg = sum / N;
+                fprintf(stderr, "     min: %lld\n"
+                                "     max: %lld\n"
+                                "     avg: %lld\n"
+                                "     sum: %lld\n" 
+                                "act_diff: %ld    (%lld   %lld)\n"
+                                "rtc_temp: %lld\n"
+                                " dc_temp: %lld\n",
+                        min, max, avg, sum,
+                        pec->dc.act_diff, diff1, diff2,
+                        rtc_temp,
+                        dc_temp
+                );
+                
+            } else {
+                c++;
+            }
+            */
             pec->dc.prev_rtc = rtc_temp;
             pec->dc.prev_dc  = dc_temp;
 
@@ -1317,7 +1351,6 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                 p_de_dc_sto->datagram.irq = 0;
                 memcpy(ec_datagram_payload(&p_de_dc_sto->datagram), 
                         &pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
-
                 // we don't care about the answer, cb_no_reply frees datagram 
                 // and index
                 p_idx_dc_sto->pec = pec;

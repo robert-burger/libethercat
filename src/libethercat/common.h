@@ -40,7 +40,6 @@
 #ifdef min
 #undef min
 #endif
-
 #define min(a, b)  ((a) < (b) ? (a) : (b))
 
 #define free_resource(a) {  \

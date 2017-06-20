@@ -40,5 +40,7 @@ m4/libtool.m4
 .deps
 .libs
 *.*~
+.idea
 
 libethercat.pc
+/build/
