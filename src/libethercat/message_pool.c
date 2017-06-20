@@ -109,10 +109,12 @@ void ec_async_checK_slave(ec_async_message_loop_t *paml, uint16_t slave) {
     uint16_t alstatcode = 0;
     int wkc = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
 
-    if (!wkc)
-        ec_log(100, "ec_async_thread", "slave %2d: wkc error on "
-                "getting slave state\n", slave);
-    else {
+    if (!wkc) {
+        ec_log(10, "ec_async_thread", "slave %2d: wkc error on "
+                "getting slave state, possible slave lost, try to reconfigure\n", slave);
+        
+        ec_set_state(paml->pec, EC_STATE_INIT);
+    } else {
         ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
                 "0x%02X\n", slave, state, alstatcode);
 

@@ -3,7 +3,11 @@
 
 AC_PREREQ([2.69])
 AC_INIT([libethercat], [0.1.beta3], [Robert Burger robert.burger@dlr.de])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+
+# Automake initialization
+AM_INIT_AUTOMAKE([-Wall -Werror foreign silent-rules])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
@@ -11,10 +15,9 @@ AC_CONFIG_MACRO_DIR([m4])
 DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg)
 
 # Checks for programs.
-m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CC
-AC_PROG_CC_STDC
 m4_ifdef([AM_PROG_CC_C_O], [AM_PROG_CC_C_O])
+AC_PROG_CC_STDC
 AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
@@ -24,7 +27,8 @@ AX_CHECK_COMPILE_FLAG([-pthread], [AX_APPEND_FLAG([-pthread])] )
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [sem_init])
 
-AX_GCC_ARCHFLAG([PORTABLE?], [], [])
+# indead a good option, checks for processor features like avx, but then we get sigill on older machines
+# AX_GCC_ARCHFLAG([PORTABLE?], [], [])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h net/if.h net/bpf.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
