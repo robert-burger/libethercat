@@ -36,27 +36,27 @@
 #include <string.h>
 #include <errno.h>
 
-const char transition_string_boot_to_init[]     = "BOOT_2_INIT";
-const char transition_string_init_to_boot[]     = "INIT_2_BOOT";
-const char transition_string_init_to_init[]     = "INIT_2_INIT";
-const char transition_string_init_to_preop[]    = "INIT_2_PREOP";
-const char transition_string_init_to_safeop[]   = "INIT_2_SAFEOP";
-const char transition_string_init_to_op[]       = "INIT_2_OP";
-const char transition_string_preop_to_init[]    = "PREOP_2_INIT";
-const char transition_string_preop_to_preop[]   = "PREOP_2_PREOP";
-const char transition_string_preop_to_safeop[]  = "PREOP_2_SAFEOP";
-const char transition_string_preop_to_op[]      = "PREOP_2_OP";
-const char transition_string_safeop_to_init[]   = "SAFEOP_2_INIT";
-const char transition_string_safeop_to_preop[]  = "SAFEOP_2_PREOP";
-const char transition_string_safeop_to_safeop[] = "SAFEOP_2_SAFEOP";
-const char transition_string_safeop_to_op[]     = "SAFEOP_2_OP";
-const char transition_string_op_to_init[]       = "OP_2_INIT";
-const char transition_string_op_to_preop[]      = "OP_2_PREOP";
-const char transition_string_op_to_safeop[]     = "OP_2_SAFEOP";
-const char transition_string_op_to_op[]         = "OP_2_OP";
-const char transition_string_unknown[]          = "UNKNOWN";
+static const char transition_string_boot_to_init[]     = "BOOT_2_INIT";
+static const char transition_string_init_to_boot[]     = "INIT_2_BOOT";
+static const char transition_string_init_to_init[]     = "INIT_2_INIT";
+static const char transition_string_init_to_preop[]    = "INIT_2_PREOP";
+static const char transition_string_init_to_safeop[]   = "INIT_2_SAFEOP";
+static const char transition_string_init_to_op[]       = "INIT_2_OP";
+static const char transition_string_preop_to_init[]    = "PREOP_2_INIT";
+static const char transition_string_preop_to_preop[]   = "PREOP_2_PREOP";
+static const char transition_string_preop_to_safeop[]  = "PREOP_2_SAFEOP";
+static const char transition_string_preop_to_op[]      = "PREOP_2_OP";
+static const char transition_string_safeop_to_init[]   = "SAFEOP_2_INIT";
+static const char transition_string_safeop_to_preop[]  = "SAFEOP_2_PREOP";
+static const char transition_string_safeop_to_safeop[] = "SAFEOP_2_SAFEOP";
+static const char transition_string_safeop_to_op[]     = "SAFEOP_2_OP";
+static const char transition_string_op_to_init[]       = "OP_2_INIT";
+static const char transition_string_op_to_preop[]      = "OP_2_PREOP";
+static const char transition_string_op_to_safeop[]     = "OP_2_SAFEOP";
+static const char transition_string_op_to_op[]         = "OP_2_OP";
+static const char transition_string_unknown[]          = "UNKNOWN";
 
-const char *get_transition_string(ec_state_transition_t transition) {
+static const char *get_transition_string(ec_state_transition_t transition) {
     switch (transition) {
         default:
             return transition_string_unknown;
@@ -101,20 +101,8 @@ const char *get_transition_string(ec_state_transition_t transition) {
     return transition_string_unknown;
 }
 
-extern const char *get_state_string(ec_state_t state);
-
-//! allocate init command structure
-/*!
- * \param type EC_MBX_COE, EC_MBX_SOE, ...
- * \param transition ECat transition, (0x24 -> PRE to SAFE, ...)
- * \param id CoE dictionary identifier, SoE idn
- * \param si_el CoE sub index, SoE element
- * \param ca_atn CoE complete access mode, SoE atn
- * \param data new id data
- * \param datalen new id data length
- * \return NULL or newly created init command
- */
-ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_init_cmd_alloc(
+// allocate init command structure
+static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_init_cmd_alloc(
         int type, int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen) {
     ec_slave_mailbox_init_cmd_t *cmd = (ec_slave_mailbox_init_cmd_t *)malloc(
@@ -146,10 +134,7 @@ ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_init_cmd_alloc(
     return cmd;
 }
 
-//! freeing init command strucuture
-/*!
- * \param cmd init command to free
- */
+// freeing init command strucuture
 void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
     if (cmd) {
         if (cmd->data)
@@ -159,17 +144,7 @@ void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
     }
 }
 
-//! add master init command
-/*!
- * \param ring master ring structure
- * \param atn drive atn
- * \param direction service direction
- * \param element service element
- * \param idn id number
- * \param value pointer to values
- * \param vallen legnth of values
- * \param desc null-terminated description (maybe NULL)
- */
+// add master init command
 void ec_slave_add_init_cmd(ec_t *pec, uint16_t slave,
         int type, int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen) {
@@ -195,13 +170,7 @@ void ec_slave_add_init_cmd(ec_t *pec, uint16_t slave,
         LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
 }
 
-//! set ethercat state on slave 
-/*!
- * \param pec ethercat master pointer
- * \param slave number
- * \param state new ethercat state
- * \return wkc
- */
+// Set EtherCAT state on slave 
 int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc = 0, act_state, value;
     ec_fpwr(pec, pec->slaves[slave].fixed_address, 
@@ -249,14 +218,7 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     return wkc;
 }
 
-//! get ethercat state from slave 
-/*!
- * \param pec ethercat master pointer
- * \param slave number
- * \param state return ethercat state
- * \param alstatcode return alstatcode (maybe NULL)
- * \return wkc
- */
+// get ethercat state from slave 
 int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, 
         uint16_t *alstatcode) {
     uint16_t wkc = 0, value = 0;
@@ -277,12 +239,7 @@ int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state,
     return wkc;
 }
 
-//! generate pd mapping
-/*!
- * \param pec ethercat master pointer
- * \param slave slave number
- * \return wkc
- */
+// generate pd mapping
 int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
@@ -348,13 +305,7 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
     return 1;
 }
 
-//! prepare state transition on ethercat slave
-/*!
- * \param pec ethercat master pointer
- * \param slave slave number
- * \param state switch to state
- * \return wkc
- */
+// prepare state transition on ethercat slave
 int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, 
         ec_state_t state) {
     uint16_t wkc;
@@ -411,13 +362,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
     return 0;
 }
 
-//! state transition on ethercat slave
-/*!
- * \param pec ethercat master pointer
- * \param slave slave number
- * \param state switch to state
- * \return wkc
- */
+// state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc;
     ec_state_t act_state = 0;

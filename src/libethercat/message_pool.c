@@ -39,14 +39,8 @@
 #include <pthread.h>
 
 
-//! get a message from a message pool
-/*!
- * \param ppool pointer to message pool
- * \param message ec message pointer
- * \param ts timeout waiting for packet
- * \return 0 or error code
- */
-int ec_async_message_loop_get(ec_message_pool_t *ppool,
+// get a message from a message pool
+static int ec_async_message_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, ec_timer_t *timeout) {
     int ret = ENODATA;
     if (!ppool || !msg)
@@ -76,13 +70,8 @@ int ec_async_message_loop_get(ec_message_pool_t *ppool,
     return ret;
 }
 
-//! return a message to message pool
-/*!
- * \param ppool pointer to message pool
- * \param message ec message pointer
- * \return 0 or error code
- */
-int ec_async_message_loop_put(ec_message_pool_t *ppool, 
+// return a message to message pool
+static int ec_async_message_loop_put(ec_message_pool_t *ppool, 
         ec_message_entry_t *msg) {
     int ret = 0;
 
@@ -99,12 +88,8 @@ int ec_async_message_loop_put(ec_message_pool_t *ppool,
     return 0;
 }
 
-//! check slave expected state 
-/*/
- * \param paml pointer to async message loop struct
- * \param slave slave number to check
- */
-void ec_async_checK_slave(ec_async_message_loop_t *paml, uint16_t slave) {
+// check slave expected state 
+static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) {
     ec_state_t state = 0;
     uint16_t alstatcode = 0;
     int wkc = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
@@ -126,7 +111,8 @@ void ec_async_checK_slave(ec_async_message_loop_t *paml, uint16_t slave) {
     }
 }
 
-void *ec_async_message_loop_thread(void *arg) {
+// async loop thread
+static void *ec_async_message_loop_thread(void *arg) {
     ec_async_message_loop_t *paml = (ec_async_message_loop_t *)arg;
 
     while (paml->loop_running) {
@@ -149,12 +135,12 @@ void *ec_async_message_loop_thread(void *arg) {
                             me->msg.payload.group_id)
                         continue;
 
-                    ec_async_checK_slave(paml, slave);
+                    ec_async_check_slave(paml, slave);
                 }
                 break;
             }
             case EC_MSG_CHECK_SLAVE:
-                ec_async_checK_slave(paml, me->msg.payload.slave_id);
+                ec_async_check_slave(paml, me->msg.payload.slave_id);
                 break;
         };
 
@@ -165,11 +151,7 @@ void *ec_async_message_loop_thread(void *arg) {
     return NULL;
 }
 
-//! execute asynchronous check group
-/*!
- * \param paml handle to async message loop
- * \param gid group id to check
- */
+// execute asynchronous check group
 void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
     ec_timer_t act;
     ec_timer_gettime(&act);
@@ -242,11 +224,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
     return 0;
 }
 
-//! destroys async message loop
-/*!
- * \param paml handle to async message loop
- * \return 0 or error code
- */
+// destroys async message loop
 int ec_async_message_pool_destroy(ec_async_message_loop_t *paml) {
     if (!paml)
         return EINVAL;

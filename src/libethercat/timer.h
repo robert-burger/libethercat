@@ -5,7 +5,7 @@
  *
  * \date 23 Nov 2016
  *
- * \brief ethercat master timer routines
+ * \brief EtherCAT master timer routines
  *
  * 
  */
@@ -68,37 +68,43 @@ typedef struct ec_timer {
 extern "C" {
 #endif
 
-//! sleep in nanoseconds
+//! Sleep in nanoseconds
 /*!
- * \param nsec time to sleep in nanoseconds
+ * \param[in] nsec      Time to sleep in nanoseconds.
  */
 void ec_sleep(uint64_t nsec);
 
-//! gets timer 
+//! Gets filled timer struct with current time.
 /*!
- * \param timer pointer to timer struct
- * \return 0 on success, -1 on error and errno set
+ * \param[out] timer    Pointer to timer struct which will be initialized
+ *                      with current time.
+ *
+ * \retval 0            On success.
+ * \retval -1           On error and errno set.
  */
 int ec_timer_gettime(ec_timer_t *timer);
 
-//! gets timer in nanoseconds
+//! Gets time in nanoseconds.
 /*!
- * \param timer pointer to timer struct
- * \return 0 on success, -1 on error and errno set
+ * \return              Current timer in nanosecond.
  */
 uint64_t ec_timer_gettime_nsec();
 
-//! initialize timer with timeout 
+//! Initialize timer with timeout.
 /*!
- * \parma timer pointer to timer to initialize
- * \param timeout in nanoseconds
+ * \param[out] timer    Pointer to timer struct which will be initialized
+ *                      with current time plus an optional \p timeout.
+ * \param[in] timeout   Timeout in nanoseconds. If set to 0, then this function
+ *                      will do the same as \link ec_timer_gettime \endlink.
  */
 void ec_timer_init(ec_timer_t *timer, uint64_t timeout);
 
-//! checks if timer is expired
+//! Checks if timer is expired.
 /*!
- * \param timer timer to check 
- * \return 1 if expired, 0 if not
+ * \param[out] timer    Timer to check if it is expired.
+ *
+ * \retval 1            If \p timer is expired
+ * \retval 0            If \p timer is not expired
  */
 int ec_timer_expired(ec_timer_t *timer);
 

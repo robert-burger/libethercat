@@ -48,10 +48,7 @@
       }                                         \
   } while (0)
 
-//! sleep in nanoseconds
-/*!
- * \param nsec time to sleep in nanoseconds
- */
+// sleep in nanoseconds
 void ec_sleep(uint64_t nsec) {
     struct timespec ts = { 
         (nsec / NSEC_PER_SEC), (nsec % NSEC_PER_SEC) }, rest;
@@ -66,10 +63,6 @@ void ec_sleep(uint64_t nsec) {
 }
 
 //! gets timer 
-/*!
- * \param timer pointer to timer struct
- * \return 0 on success, -1 on error and errno set
- */
 int ec_timer_gettime(ec_timer_t *timer) {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
@@ -83,11 +76,7 @@ int ec_timer_gettime(ec_timer_t *timer) {
     return 0;
 }
 
-//! gets timer in nanoseconds
-/*!
- * \param timer pointer to timer struct
- * \return 0 on success, -1 on error and errno set
- */
+// gets time in nanoseconds
 uint64_t ec_timer_gettime_nsec() {
     ec_timer_t tmr;
     ec_timer_gettime(&tmr);
@@ -95,11 +84,7 @@ uint64_t ec_timer_gettime_nsec() {
     return (tmr.sec * 1E9 + tmr.nsec);
 }
 
-//! initialize timer with timeout 
-/*!
- * \parma timer pointer to timer to initialize
- * \param timeout in nanoseconds
- */
+// initialize timer with timeout 
 void ec_timer_init(ec_timer_t *timer, uint64_t timeout) {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
@@ -115,11 +100,7 @@ void ec_timer_init(ec_timer_t *timer, uint64_t timeout) {
     timer_add(&a, &b, timer);
 }
 
-//! checks if timer is expired
-/*!
- * \param timer timer to check 
- * \return 1 if expired, 0 if not
- */
+// checks if timer is expired
 int ec_timer_expired(ec_timer_t *timer) {
     ec_timer_t act;
     ec_timer_gettime(&act);    
