@@ -59,7 +59,9 @@
 #endif
 
 #ifdef __linux__
+
 #include <netpacket/packet.h>
+
 #elif defined __VXWORKS__
 #include <vxWorks.h>
 #include <taskLib.h>
@@ -67,15 +69,24 @@
 #elif defined HAVE_NET_BPF_H
 #include <sys/queue.h>
 #include <net/bpf.h>
+#include <machine/rtems-bsd-kernel-space.h>
+#include <machine/rtems-bsd-kernel-namespace.h>
+#include <net/if_types.h>
 #else
 #error unsupported OS
 #endif
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 #define ETH_P_ECAT      0x88A4
-#define ETH_FRAME_LEN   1518 
+
+#if defined HAVE_NET_BPF_H
+static int ETH_FRAME_LEN = 4096;
+#else
+static int ETH_FRAME_LEN = 1518;
+#endif
 
 //! receiver thread forward declaration
 void *hw_rx_thread(void *arg);
@@ -89,18 +100,18 @@ void *hw_rx_thread(void *arg);
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
 
 int try_grant_cap_net_raw_init() {
-    if(access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0)
+    if (access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0)
         return 0; // does probably not exist or is not readable
 
     int fd = open(GRANT_CAP_NET_RAW_PROCFS, O_RDONLY);
-    if(fd == -1) {
+    if (fd == -1) {
         perror("open");
         return -1;
     }
     char buffer[1024];
     int n = read(fd, buffer, 1024);
     close(fd);
-    if(n <= 0 || strncmp(buffer, "OK", 2))
+    if (n <= 0 || strncmp(buffer, "OK", 2))
         return -1;
     return 0;
 }
@@ -146,7 +157,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     }
 #endif
 
-    (*pphw) = (hw_t *)malloc(sizeof(hw_t));
+    (*pphw) = (hw_t *) malloc(sizeof(hw_t));
     if (!(*pphw))
         return -ENOMEM;
 
@@ -154,7 +165,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
 
     datagram_pool_open(&(*pphw)->tx_high, 0);
     datagram_pool_open(&(*pphw)->tx_low, 0);
-    
+
 #ifdef __linux__
     // create raw socket connection
     (*pphw)->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
@@ -162,14 +173,14 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
         perror("socket error on opening SOCK_RAW");
         goto error_exit;
     }
-   
+
     // set timeouts
     timeout.tv_sec = 0;
-    timeout.tv_usec = 10000; 
-    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, 
-            sizeof(timeout));
-    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, 
-            sizeof(timeout));
+    timeout.tv_usec = 10000;
+    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+               sizeof(timeout));
+    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+               sizeof(timeout));
 
     // do not route our frames
     i = 1;
@@ -184,18 +195,18 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     ioctl((*pphw)->sockfd, SIOCGIFFLAGS, &ifr);
     ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
     ioctl((*pphw)->sockfd, SIOCSIFFLAGS, &ifr);
-    
+
     memset(&ifr, 0, sizeof(ifr));
     strncpy(ifr.ifr_name, devname, sizeof(ifr.ifr_name));
     ioctl((*pphw)->sockfd, SIOCGIFMTU, &ifr);
-    (*pphw)->mtu_size   = ifr.ifr_mtu;
+    (*pphw)->mtu_size = ifr.ifr_mtu;
     ec_log(10, "hw_open", "got mtu size %d\n", (*pphw)->mtu_size);
 
     // bind socket to protocol, in this case RAW EtherCAT */
-    sll.sll_family      = AF_PACKET;
-    sll.sll_ifindex     = ifindex;
-    sll.sll_protocol    = htons(ETH_P_ECAT);
-    bind((*pphw)->sockfd, (struct sockaddr *)&sll, sizeof(sll));
+    sll.sll_family = AF_PACKET;
+    sll.sll_ifindex = ifindex;
+    sll.sll_protocol = htons(ETH_P_ECAT);
+    bind((*pphw)->sockfd, (struct sockaddr *) &sll, sizeof(sll));
 #elif defined __VXWORKS__
     /* we use snarf link layer device driver */
     (*pphw)->sockfd = open(devname, O_RDWR, 0644);
@@ -207,12 +218,13 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     (*pphw)->mtu_size = 1480;
 #elif defined HAVE_NET_BPF_H
     const unsigned int btrue = 1;
-//    const unsigned int bfalse = 0;
+    const unsigned int bfalse = 0;
 
     int n = 0;
     struct ifreq bound_if;
-    size_t buf_size;
-    const char bpf_devname[] = "/dev/bpf0";
+    const char bpf_devname[] = "/dev/bpf";
+
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
 
     // open bpf device
     (*pphw)->sockfd = open(bpf_devname, O_RDWR, 0);
@@ -220,7 +232,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
         perror("opening bpf device");
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
     (*pphw)->mtu_size = 1480;
 
     // connect bpf to specified network device
@@ -229,25 +241,25 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
         perror("BIOCSETIF");
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
     // make sure we are dealing with an ethernet device.
     if (ioctl((*pphw)->sockfd, BIOCGDLT, (caddr_t)&n) == -1) {
         perror("BIOCGDLT");
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
     // activate immediate mode (therefore, buf_len is initially set to "1")
     if (ioctl((*pphw)->sockfd, BIOCIMMEDIATE, &btrue) == -1) {
         perror("BIOCIMMEDIATE: error activating immediate mode"); 
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
     // request buffer length 
-    if (ioctl((*pphw)->sockfd, BIOCGBLEN, &buf_size) == -1) {
+    if (ioctl((*pphw)->sockfd, BIOCGBLEN, &ETH_FRAME_LEN) == -1) {
         perror("BIOCGBLEN: error requesting buffer length");
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d, buf_isze is %d\n", __LINE__, ETH_FRAME_LEN);
     static struct bpf_program my_bpf_program;
     my_bpf_program.bf_len = sizeof(insns)/sizeof(insns[0]);
     my_bpf_program.bf_insns = insns;
@@ -257,25 +269,25 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
         perror("BIOCSETF");
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
     // we do not want to see the sent frames
-//    if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
-//        perror("BIOCSSEESENT");
-//        goto error_exit;
-//    }
-
+    if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
+        perror("BIOCSSEESENT");
+        goto error_exit;
+    }
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
     /* set receive call timeout */
     static struct timeval timeout = { 0, 1000};
     if (ioctl((*pphw)->sockfd, BIOCSRTIMEOUT, &timeout) == -1) {
         perror("BIOCSRTIMEOUT");
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
     if (ioctl((*pphw)->sockfd, BIOCFLUSH) == -1) {
         perror("BIOCFLUSH");
         goto error_exit;
     }
-
+    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
 #else
 #error unsopported OS
 #endif
@@ -290,7 +302,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
 
     return 0;
 
-error_exit:
+    error_exit:
 
     if (*pphw)
         free(*pphw);
@@ -307,7 +319,7 @@ int hw_close(hw_t *phw) {
     // stop receiver thread
     phw->rxthreadrunning = 0;
     pthread_join(phw->rxthread, NULL);
-    
+
     pthread_mutex_destroy(&phw->hw_lock);
     datagram_pool_close(phw->tx_high);
     datagram_pool_close(phw->tx_low);
@@ -320,22 +332,22 @@ int hw_close(hw_t *phw) {
 
 //! receiver thread
 void *hw_rx_thread(void *arg) {
-    hw_t *phw = (hw_t *)arg;
+    hw_t *phw = (hw_t *) arg;
     uint8_t recv_frame[ETH_FRAME_LEN];
-    ec_frame_t *pframe = (ec_frame_t *)recv_frame;
+    ec_frame_t *pframe = (ec_frame_t *) recv_frame;
     struct sched_param param;
     int policy;
 
     // thread settings
     if (pthread_getschedparam(pthread_self(), &policy, &param) != 0)
-        ec_log(10, "RX_THREAD", "error on pthread_getschedparam %s\n", 
-                strerror(errno));
+        ec_log(10, "RX_THREAD", "error on pthread_getschedparam %s\n",
+               strerror(errno));
     else {
         policy = SCHED_FIFO;
         param.sched_priority = phw->rxthreadprio;
         if (pthread_setschedparam(pthread_self(), policy, &param) != 0)
-            ec_log(10, "RX_THREAD", "error on pthread_setschedparam %s\n", 
-                    strerror(errno));
+            ec_log(10, "RX_THREAD", "error on pthread_setschedparam %s\n",
+                   strerror(errno));
     }
 
 #ifdef __VXWORKS__
@@ -345,10 +357,10 @@ void *hw_rx_thread(void *arg) {
 #else
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    for (unsigned i = 0; i < (sizeof(phw->rxthreadcpumask)*8); ++i) 
+    for (unsigned i = 0; i < (sizeof(phw->rxthreadcpumask) * 8); ++i)
         if (phw->rxthreadcpumask & (1 << i))
             CPU_SET(i, &cpuset);
-        
+
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
     if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0)
         ec_log(10, "RX_THREAD", "error on pthread_setaffinity_np %s\n", 
@@ -358,33 +370,83 @@ void *hw_rx_thread(void *arg) {
 #endif
 
     while (phw->rxthreadrunning) {
+#ifdef HAVE_NET_BPF_H
+        ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
+        
+        if (bytesrx == -1) {
+            if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+                continue;
+
+            ec_log(10, "RX_THREAD", "recv: %s\n", strerror(errno));
+            sleep(1);
+            continue;
+        }
+        
+        /* pointer to temporary bpf_frame if we have received more than one */
+        uint8_t *tmpframe2 = (uint8_t *)pframe;
+
+        while (bytesrx > 0) {
+            /* calculate frame size, has to be aligned to word boundaries,
+             * copy frame data to frame data buffer */
+            size_t bpf_frame_size = BPF_WORDALIGN(
+                    ((struct bpf_hdr *) tmpframe2)->bh_hdrlen +
+                    ((struct bpf_hdr *) tmpframe2)->bh_datalen);
+            
+            ec_frame_t *real_frame = (ec_frame_t *)(tmpframe2 + ((struct bpf_hdr *)tmpframe2)->bh_hdrlen);
+            /*size_t real_frame_size = ((struct bpf_hdr *)tmpframe2)->bh_datalen;*/
+
+            ec_datagram_t *d;
+            for (d = ec_datagram_first(real_frame); (uint8_t *) d <
+                                                (uint8_t *) ec_frame_end(real_frame);
+                 d = ec_datagram_next(d)) {
+                datagram_entry_t *entry = phw->tx_send[d->idx];
+
+                if (!entry) {
+                    ec_log(10, "RX_THREAD",
+                           "received idx %d, but we did not send one?\n", d->idx);
+                    continue;
+                }
+
+                memcpy(&entry->datagram, d, ec_datagram_length(d));
+                if (entry->user_cb)
+                    (*entry->user_cb)(entry->user_arg, entry);
+            }
+
+            /* values for next frame */
+            bytesrx -= bpf_frame_size;
+            tmpframe2 += bpf_frame_size;
+        }
+#else
         ssize_t bytesrx = RECEIVE(phw->sockfd, pframe, ETH_FRAME_LEN);
 
         if (bytesrx <= 0) {
             if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
                 continue;
 
-            ec_log(10, "RX_THREAD", "recv: %s\n", strerror(errno));
+            ec_log(10, "RX_THREAD", "recv1111: %s\n", strerror(errno));
+            //struct timespec ts = {1,0};
+            //nanosleep(&ts, NULL);
+            sleep(1);
             continue;
         }
-        
+
         /* check if it is an EtherCAT frame */
         if (pframe->ethertype != htons(ETH_P_ECAT)) {
-            ec_log(10, "RX_THREAD", 
-                    "received non-ethercat frame! (bytes %d, type 0x%X)\n", 
-                    bytesrx, pframe->type);
+            ec_log(10, "RX_THREAD",
+                   "received non-ethercat frame! (bytes %d, type 0x%X)\n",
+                   bytesrx, pframe->type);
             continue;
         }
 
         ec_datagram_t *d;
-        for (d = ec_datagram_first(pframe); (uint8_t *)d < 
-                (uint8_t *)ec_frame_end(pframe);
-                d = ec_datagram_next(d)) {
+        for (d = ec_datagram_first(pframe); (uint8_t *) d <
+                                            (uint8_t *) ec_frame_end(pframe);
+             d = ec_datagram_next(d)) {
             datagram_entry_t *entry = phw->tx_send[d->idx];
 
             if (!entry) {
-                ec_log(10, "RX_THREAD", 
-                        "received idx %d, but we did not send one?\n", d->idx);
+                ec_log(10, "RX_THREAD",
+                       "received idx %d, but we did not send one?\n", d->idx);
                 continue;
             }
 
@@ -392,13 +454,15 @@ void *hw_rx_thread(void *arg) {
             if (entry->user_cb)
                 (*entry->user_cb)(entry->user_arg, entry);
         }
+#endif
+        
     }
 
     return NULL;
 }
 
-static const uint8_t mac_dest[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-static const uint8_t mac_src[]  = { 0x00, 0x30, 0x64, 0x0f, 0x83, 0x35 };
+static const uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+static const uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
 //! start sending queued ethercat datagrams
 /*!
@@ -408,12 +472,12 @@ static const uint8_t mac_src[]  = { 0x00, 0x30, 0x64, 0x0f, 0x83, 0x35 };
 int hw_tx(hw_t *phw) {
     uint8_t send_frame[ETH_FRAME_LEN];
     memset(send_frame, 0, ETH_FRAME_LEN);
-    ec_frame_t *pframe = (ec_frame_t *)send_frame;
-            
+    ec_frame_t *pframe = (ec_frame_t *) send_frame;
+
     pthread_mutex_lock(&phw->hw_lock);
 
     memcpy(pframe->mac_dest, mac_dest, 6);
-    memcpy(pframe->mac_src , mac_src , 6);
+    memcpy(pframe->mac_src, mac_src, 6);
     pframe->ethertype = htons(ETH_P_ECAT);
     pframe->type = 0x01;
     pframe->len = sizeof(ec_frame_t);
@@ -422,7 +486,7 @@ int hw_tx(hw_t *phw) {
     size_t len;
 
     datagram_pool_t *pools[] = {
-        phw->tx_high, phw->tx_low };
+            phw->tx_high, phw->tx_low};
     int pool_idx = 0;
 
     // send high priority cyclic frames
@@ -432,15 +496,15 @@ int hw_tx(hw_t *phw) {
 
         datagram_pool_get_next_len(pools[pool_idx], &len);
 
-        if (((len == 0) && (pool_idx == 1)) || 
-                ((pframe->len + len) > phw->mtu_size)) {
+        if (((len == 0) && (pool_idx == 1)) ||
+            ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len == sizeof(ec_frame_t))
                 break; // nothing to send
 
             // no more datagrams need to be sent or no more space in frame
-            size_t bytestx = 
-                SEND(phw->sockfd, pframe, pframe->len);
-            
+            size_t bytestx =
+                    SEND(phw->sockfd, pframe, pframe->len);
+
             if (pframe->len != bytestx) {
                 ec_log(10, "TX", "got only %d bytes out of %d bytes "
                         "through.\n", bytestx, pframe->len);
@@ -466,7 +530,7 @@ int hw_tx(hw_t *phw) {
 
         if (pdg_prev)
             ec_datagram_mark_next(pdg_prev);
-        memcpy(pdg, &entry->datagram, ec_datagram_length(&entry->datagram));    
+        memcpy(pdg, &entry->datagram, ec_datagram_length(&entry->datagram));
         pframe->len += ec_datagram_length(&entry->datagram);
         pdg_prev = pdg;
         pdg = ec_datagram_next(pdg);

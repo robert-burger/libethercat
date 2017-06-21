@@ -358,13 +358,13 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
         uint8_t *buf, size_t buflen) {
     unsigned offset = 0, i, ret;
 
-    while (offset < buflen) {
+    while (offset < buflen/2) {
         uint16_t val;
         for (i = 0; (offset < buflen/2) && (i < 2); ++i)
             ((uint8_t *)&val)[i] = buf[(offset*2)+i];
                 
-        ec_log(100, __func__, "slave %2d, writing adr %d\n", 
-                        slave, eepadr+offset);
+        ec_log(100, __func__, "slave %2d, writing adr %d : 0x%04X\n", 
+                        slave, eepadr+offset, val);
 
         do {
             ret = ec_eepromwrite(pec, slave, eepadr+offset, &val);

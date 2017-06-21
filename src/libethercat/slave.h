@@ -5,7 +5,7 @@
  *
  * \date 21 Nov 2016
  *
- * \brief ethercat slave functions.
+ * \brief EtherCAT slave functions.
  *
  * These are EtherCAT slave specific configuration functions.
  */
@@ -66,7 +66,7 @@ typedef enum ec_state_transition {
     OP_2_OP          = 0x0808,  //!< OP to OP state transitio,
 } ec_state_transition_t;
 
-//! ethercat slave mailbox settings
+//! EtherCAT slave mailbox settings
 typedef struct ec_slave_mbx {
     uint8_t  sm_nr;             //!< mailbox sync manager numer
                                 /*!<
@@ -164,7 +164,7 @@ typedef struct PACKED ec_slave_fmmu {
     uint8_t reserverd[3];       //!< reserved for future use
 } PACKED ec_slave_fmmu_t;
 
-//! ethercat sub device
+//! EtherCAT sub device
 typedef struct ec_slave_subdev {
     ec_pd_t pdin;               //!< process data inputs
     ec_pd_t pdout;              //!< process data outputs
@@ -343,90 +343,122 @@ extern "C" {
 }
 #endif
 
-//! set ethercat state on slave 
+//! Set EtherCAT state on slave.
 /*!
  * This call tries to set the EtherCAT slave to the requested state. If 
  * successfull a working counter of 1 will be returned. 
  *
- * \param pec ethercat master pointer
- * \param slave number
- * \param state new ethercat state
- * \return wkc
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] state     New EtherCAT state which will be set on specified slave.
+ *
+ * \return Working counter of the set state command, should be 1 if it was successfull.
  */
 int ec_slave_set_state(struct ec *pec, uint16_t slave, ec_state_t state);
 
-//! get ethercat state from slave 
+//! Get EtherCAT state from slave.
 /*!
  * This call tries to read the EtherCAT slave state. If 
  * successfull a working counter of 1 will be returned. 
  *
- * \param pec ethercat master pointer
- * \param slave number
- * \param state return ethercat state
- * \param alstatcode return alstatcode (maybe NULL)
- * \return wkc
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[out] state        Returns current EtherCAT state.
+ * \param[out] alstatcode   Return current AL StatusCode of specified
+ *                          EtherCAT slave. (maybe NULL if you are not
+ *                          interested in)
+ *
+ * \return Working counter of the get state command, should be 1 if it was successfull.
  */
 int ec_slave_get_state(struct ec *pec, uint16_t slave, 
         ec_state_t *state, uint16_t *alstatcode);
 
-//! generate pd mapping
+//! Generate process data mapping.
 /*!
  * This tries to generate a mapping for the process data and figures out the 
  * settings for the sync managers. Therefor it either tries to use an 
  * available mailbox protocol or the information stored in the EEPROM.
  *  
- * \param pec ethercat master pointer
- * \param slave slave number
- * \return wkc
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ *
+ * \return Working counter of the generate mapping commands, should be 1 if it was successfull.
  */
 int ec_slave_generate_mapping(struct ec *pec, uint16_t slave);
 
-//! prepare state transition on ethercat slave
+//! Prepare state transition on EtherCAT slave.
 /*!
  * While prepare a state transition the master sends the init commands
  * to the slaves. These are usually settings for the process data mapping 
  * (e.g. PDOs, ...) or some slave specific settings.
  *
- * \param pec ethercat master pointer
- * \param slave slave number
- * \param state switch to state
- * \return wkc
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] state         Prepare the EtherCAT slave for a switch to 
+ *                          the specified EtherCAT state.
+ *
+ * \return Working counter of the used commands, should be 1 if it was successfull.
  */
 int ec_slave_prepare_state_transition(struct ec *pec, uint16_t slave, 
         ec_state_t state);
 
-//! state transition on ethercat slave
+//! Execute state transition on EtherCAT slave
 /*!
  * This actually performs the state transition.
  *
- * \param pec ethercat master pointer
- * \param slave slave number
- * \param state switch to state
- * \return wkc
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] state         Switch the EtherCAT slave to the specified 
+ *                          EtherCAT state.
+ *
+ * \return Working counter of the used commands, should be 1 if it was successfull.
  */
 int ec_slave_state_transition(struct ec *pec, uint16_t slave, 
         ec_state_t state);
 
-//! add master init command
+//! Add master init command.
 /*!
  * This adds an EtherCAT slave init command. 
  *
- * \param ring master ring structure
- * \param atn drive atn
- * \param direction service direction
- * \param element service element
- * \param idn id number
- * \param value pointer to values
- * \param vallen legnth of values
- * \param desc null-terminated description (maybe NULL)
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] type          Type of init command. This should be one of 
+ *                          \p EC_MBX_COE, \p EC_MBX_SOE, ...
+ * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
+ *                          the state we are coming from and 'b' is the state 
+ *                          we want to get.
+ * \param[in] id            Either CoE Index number or the ServoDrive IDN.
+ * \param[in] si_el         Either CoE SubIndex or ServoDrive element number.
+ * \param[in] ca_atn        Either CoE complete access or ServoDrive ATN.
+ * \param[in] data          Pointer to memory buffer with data which should 
+ *                          be transfered.
+ * \param[in] datalen       Length of \p data
  */
 void ec_slave_add_init_cmd(struct ec *pec, uint16_t slave,
         int type, int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen);
 
-//! freeing init command strucuture
+//! Freeing init command structure.
 /*!
- * \param cmd init command to free
+ * \param[in] cmd           Pointer to init command which willed be freed.
  */
 void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
 

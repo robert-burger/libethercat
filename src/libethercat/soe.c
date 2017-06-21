@@ -35,6 +35,19 @@
 #include <stdio.h>
 #include <string.h>
 
+//! SoE mailbox structure
+typedef struct PACKED ec_soe_header {
+    uint8_t op_code    : 3;         //!< op code
+    uint8_t incomplete : 1;         //!< incompletion flag
+    uint8_t error      : 1;         //!< error flag
+    uint8_t atn        : 3;         //!< at number
+    uint8_t elements;               //!< servodrive element mask
+    union {
+        uint16_t idn;               //!< id number
+        uint16_t fragments_left;    //!< fragments left
+    };
+} PACKED ec_soe_header_t;
+
 typedef struct PACKED ec_soe_request {
     ec_mbx_header_t mbx_hdr;
     ec_soe_header_t soe_hdr;
@@ -51,18 +64,6 @@ enum {
     EC_SOE_EMERGENCY
 };
 
-
-//! read elements of soe id number
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param atn at number
- * \param idn id number
- * \param element servodrive elements
- * \param buf buffer for answer
- * \param len length of buffer, returns length of answer
- * \return 0 on successs
- */
 int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
         uint8_t elements, uint8_t *buf, size_t *len) {
     int wkc = 0;
@@ -146,17 +147,6 @@ exit:
     return wkc;
 }
 
-//! write elements of soe id number
-/*!
- * \param pec pointer to ethercat master
- * \param slave ethercat slave number
- * \param atn at number
- * \param idn id number
- * \param element servodrive elements
- * \param buf buffer to write
- * \param len length of buffer
- * \return 0 on successs
- */
 int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
         uint8_t elements, uint8_t *buf, size_t len) {
     int wkc = 0;
@@ -253,7 +243,7 @@ exit:
     return wkc;
 }
 
-int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn, 
+static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn, 
         uint16_t idn, int *bitsize) {
     int ret = 0, i;
     uint16_t *idn_value = NULL;
@@ -303,12 +293,6 @@ exit:
     return ret;
 }
 
-//! generate sync manager process data mapping via soe
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \return 0 on success
- */
 int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
     int atn;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
