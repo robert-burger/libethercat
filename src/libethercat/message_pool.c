@@ -176,12 +176,7 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
     ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);
 }
 
-//! creates a new async message loop
-/*!
- * \param ppaml return newly created handle to async message loop
- * \param pec pointer to ethercat master
- * \return 0 or error code
- */
+// creates a new async message loop
 int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
     int i, ret = 0;
     
