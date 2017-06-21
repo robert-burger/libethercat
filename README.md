@@ -17,4 +17,4 @@ This library provides all functionality to communicate with EtherCAT slaves atta
     * configure slave's for distributed clocks
     * cyclically provide meassurement of process data
 * a SAFEOP-to-OP transition additionally sends command to the attached slaves in every group cycle.
-
+* efficient frame scheduling: EtherCAT datagrams are only queued in state SAFEOP and OP. They will be put in one ore many Ethernet frames and sent all cyclically with one call to hw_tx()
