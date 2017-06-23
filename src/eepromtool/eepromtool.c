@@ -15,12 +15,12 @@ int usage(int argc, char **argv) {
 
 // only log level <= 10 
 void no_verbose_log(int lvl, void *user, const char *format, ...) {
-    if (lvl > 5)
+    if (lvl > 10)
         return;
 
     va_list ap;
     va_start(ap, format);
-    vprintf(format, ap);
+    vfprintf(stderr, format, ap);
     va_end(ap);
 };
 
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
             mode = mode_read; 
         } else if ((strcmp(argv[i], "-w") == 0) ||
                 (strcmp(argv[i], "--write") == 0)) {
-            mode = mode_read; 
+            mode = mode_write; 
         } else if ((strcmp(argv[i], "-f") == 0) ||
                 (strcmp(argv[i], "--file") == 0)) {
             if (++i < argc)
