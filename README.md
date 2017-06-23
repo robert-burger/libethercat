@@ -18,3 +18,34 @@ This library provides all functionality to communicate with EtherCAT slaves atta
     * cyclically provide meassurement of process data
 * a SAFEOP-to-OP transition additionally sends command to the attached slaves in every group cycle.
 * efficient frame scheduling: EtherCAT datagrams are only queued in state SAFEOP and OP. They will be put in one ore many Ethernet frames and sent all cyclically with one call to hw_tx()
+
+
+# Tools
+
+libethercat also provides some small helper programs for the EtherCAT bus.
+
+## eepromtool
+
+With eepromtool you can read and write EtherCAT slave's eeprom. 
+
+### read eeprom
+
+To do a read operation simply run:
+
+ eepromtool -i eth1 -s 0 -r -f eeprom.bin
+
+If no filename if specified, eepromtool will print the contents to stdout, which you can pipe to hexdump for example.
+
+ eepromtool -i eth1 -s 0 -r | hexdump -v -C | less -S
+
+### write
+
+To do a write operation simply run:
+
+ eepromtool -i eth1 -s 0 -w -f eeprom.bin
+
+If no filename if specified, eepromtool will read from stdin.
+
+ cat eeprom.bin | eepromtool -i eth1 -s 0 -w
+
+
