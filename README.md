@@ -32,20 +32,20 @@ With eepromtool you can read and write EtherCAT slave's eeprom.
 
 To do a read operation simply run:
 
- eepromtool -i eth1 -s 0 -r -f eeprom.bin
+    eepromtool -i eth1 -s 0 -r -f eeprom.bin
 
 If no filename if specified, eepromtool will print the contents to stdout, which you can pipe to hexdump for example.
 
- eepromtool -i eth1 -s 0 -r | hexdump -v -C | less -S
+    eepromtool -i eth1 -s 0 -r | hexdump -v -C | less -S
 
 ### write
 
 To do a write operation simply run:
 
- eepromtool -i eth1 -s 0 -w -f eeprom.bin
+    eepromtool -i eth1 -s 0 -w -f eeprom.bin
 
 If no filename if specified, eepromtool will read from stdin.
 
- cat eeprom.bin | eepromtool -i eth1 -s 0 -w
+    cat eeprom.bin | eepromtool -i eth1 -s 0 -w
 
 
