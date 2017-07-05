@@ -362,6 +362,50 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
     return 0;
 }
 
+// free slave resources
+void ec_slave_free(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = &pec->slaves[slave];
+
+    // free resources
+    if (slv->eeprom.strings) {
+        int string;
+        for (string = 0; string < slv->eeprom.strings_cnt; ++string)
+            free(slv->eeprom.strings[string]);
+
+        free(slv->eeprom.strings);
+    }
+
+    ec_eeprom_cat_pdo_t *pdo;
+    while ((pdo = TAILQ_FIRST(&slv->eeprom.txpdos)) != NULL) {
+        TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
+        if (pdo->entries)
+            free(pdo->entries);
+        free(pdo);
+    }
+
+    while ((pdo = TAILQ_FIRST(&slv->eeprom.rxpdos)) != NULL) {
+        TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
+        if (pdo->entries)
+            free(pdo->entries);
+        free(pdo);
+    }
+
+    ec_slave_mailbox_init_cmd_t *cmd;
+    while ((cmd = LIST_FIRST(&slv->init_cmds)) != NULL) {
+        LIST_REMOVE(cmd, le);
+        ec_slave_mailbox_init_cmd_free(cmd);                
+    }
+
+    free_resource(slv->eeprom.sms);
+    free_resource(slv->eeprom.fmmus);
+    free_resource(slv->sm);
+    free_resource(slv->fmmu);
+    free_resource(slv->mbx_read.buf);
+    free_resource(slv->mbx_write.buf);
+
+    pthread_mutex_destroy(&slv->mbx_lock);
+}
+
 // state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc;
@@ -569,7 +613,6 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         }
         case BOOT_2_INIT:
         case INIT_2_INIT: {
-            printf("-----------------> init 2 inti\n");
             // rewrite fixed address
             ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                     (uint8_t *)&slv->fixed_address, 
@@ -581,11 +624,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     &dc_active, sizeof(dc_active), &wkc);
 
             // free resources
-            free_resource(slv->mbx_read.buf);
-            free_resource(slv->mbx_write.buf);
-            free_resource(slv->sm);
-            free_resource(slv->fmmu);
-            free_resource(slv->subdevs);
+            ec_slave_free(pec, slave);
 
             // get number of sync managers
             ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);

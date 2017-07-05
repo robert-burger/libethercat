@@ -565,7 +565,6 @@ void ec_state_transition_loop(ec_t *pec, ec_state_t state, uint8_t with_group) {
         ec_slave_state_transition(pec, slave, state); 
     }
 }
-
 //! scan ethercat bus for slaves and create strucutres
 /*! 
  * \param pec ethercat master pointer
@@ -576,10 +575,18 @@ void ec_scan(ec_t *pec) {
     ec_state_t init_state = EC_STATE_INIT | EC_STATE_RESET;
     ec_bwr(pec, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
 
+    if (pec->slaves) {
+        // free resources
+        for (i = 0; i < pec->slave_cnt; ++i)
+            ec_slave_free(pec, i);
+
+        free_resource(pec->slaves);
+    }
+    
     // allocating slave structures
     ec_brd(pec, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc); 
     pec->slave_cnt = wkc;
-    free_resource(pec->slaves);
+    
     alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * 
             sizeof(ec_slave_t));
 
@@ -700,6 +707,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case BOOT_2_OP: 
         case INIT_2_INIT:
             // ====> switch to INIT stuff
+            ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             ec_scan(pec);
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
 
@@ -864,47 +872,8 @@ int ec_close(ec_t *pec) {
 
     if (pec->slaves) {
         int slave;
-        for (slave = 0; slave < pec->slave_cnt; ++slave) {
-            ec_slave_t *slv = &pec->slaves[slave];
-
-            if (slv->eeprom.strings) {
-                int string;
-                for (string = 0; string < slv->eeprom.strings_cnt; ++string)
-                    free(slv->eeprom.strings[string]);
-
-                free(slv->eeprom.strings);
-            }
-            
-            ec_eeprom_cat_pdo_t *pdo;
-            while ((pdo = TAILQ_FIRST(&slv->eeprom.txpdos)) != NULL) {
-                TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
-                if (pdo->entries)
-                    free(pdo->entries);
-                free(pdo);
-            }
-           
-            while ((pdo = TAILQ_FIRST(&slv->eeprom.rxpdos)) != NULL) {
-                TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
-                if (pdo->entries)
-                    free(pdo->entries);
-                free(pdo);
-            }
-
-            ec_slave_mailbox_init_cmd_t *cmd;
-            while ((cmd = LIST_FIRST(&slv->init_cmds)) != NULL) {
-                LIST_REMOVE(cmd, le);
-                ec_slave_mailbox_init_cmd_free(cmd);                
-            }
-
-            free_resource(slv->eeprom.sms);
-            free_resource(slv->eeprom.fmmus);
-            free_resource(slv->sm);
-            free_resource(slv->fmmu);
-            free_resource(slv->mbx_read.buf);
-            free_resource(slv->mbx_write.buf);
-
-            pthread_mutex_destroy(&slv->mbx_lock);
-        }
+        for (slave = 0; slave < pec->slave_cnt; ++slave)
+            ec_slave_free(pec, slave);
 
         free(pec->slaves);
     }
