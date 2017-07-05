@@ -579,6 +579,7 @@ void ec_scan(ec_t *pec) {
     // allocating slave structures
     ec_brd(pec, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc); 
     pec->slave_cnt = wkc;
+    free_resource(pec->slaves);
     alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * 
             sizeof(ec_slave_t));
 
