@@ -569,6 +569,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         }
         case BOOT_2_INIT:
         case INIT_2_INIT: {
+            printf("-----------------> init 2 inti\n");
             // rewrite fixed address
             ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                     (uint8_t *)&slv->fixed_address, 
