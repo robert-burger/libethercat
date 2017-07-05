@@ -53,7 +53,7 @@
  */
 void ec_dc_sync0(ec_t *pec, uint16_t slave, int active, 
         uint32_t cycle_time, int32_t cycle_shift) {
-    uint16_t wkc;
+    uint16_t wkc = 0;
     uint64_t rel_rtc_time = 0;
     ec_slave_t *slv = &pec->slaves[slave];
     if (!(slv->features & 0x04)) // dc not available
@@ -103,12 +103,14 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
         dc_active = 1 + 2;
         ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, 
             sizeof(dc_active), &wkc);
-    }
-    // if not active, the DC's stay inactive
     
-    ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
-            "%lld, cycletime %d, dc_active %X\n", 
-            slave, rel_rtc_time, dc_start, cycle_time, dc_active);
+        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2hu: dc_systime %llu, dc_start "
+                "%lld, cycletime %u, dc_active %hhX\n", 
+                slave, rel_rtc_time, dc_start, cycle_time, dc_active);
+    } else
+        // if not active, the DC's stay inactive
+        ec_log(100, "DISTRIBUTED_CLOCK", 
+                "slave %2hu: disabled distributed clocks\n", slave);
 }
 
 //! Configure EtherCAT slave for distributed clock sync0 and sync1 pulse
