@@ -71,6 +71,16 @@ enum {
     EC_REG_EEPSTAT      = 0x0502,
     EC_REG_EEPADR       = 0x0504,
     EC_REG_EEPDAT       = 0x0508,
+    EC_REG_MII_CTRLSTAT = 0x0510,
+    EC_REG_MII_PHY_ADR  = 0x0512,
+    EC_REG_MII_PHY_REG  = 0x0513,
+    EC_REG_MII_PHY_DATA = 0x0514,
+    EC_REG_MII_ECAT_ACC = 0x0516,
+    EC_REG_MII_PDI_ACC  = 0x0517,
+    EC_REG_MII_PHY0_ST  = 0x0518,
+    EC_REG_MII_PHY1_ST  = 0x0519,
+    EC_REG_MII_PHY2_ST  = 0x051A,
+    EC_REG_MII_PHY3_ST  = 0x051B,
     EC_REG_FMMU0        = 0x0600,
     EC_REG_FMMU1        = EC_REG_FMMU0 + 0x10,
     EC_REG_FMMU2        = EC_REG_FMMU1 + 0x10,
@@ -102,6 +112,7 @@ enum {
     EC_REG_DCCYCLE0     = 0x09A0,
     EC_REG_DCCYCLE1     = 0x09A4
 };
+
 
 #endif // __LIBETHERCAT_REGS_H__
 
