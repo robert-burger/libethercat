@@ -352,9 +352,6 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
             goto exit;
         }
         
-        ec_log(10, __func__, "got ack for packet %d\n",
-                read_buf_ack->packet_nr);
-
         if (last_pkt)
             break;
     }
