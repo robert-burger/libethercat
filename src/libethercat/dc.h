@@ -74,9 +74,8 @@ typedef struct PACKED ec_dc_info {
     int64_t prev_rtc;   //!< rtc value of previous cycle (truncated to 32-bit)
     int64_t prev_dc;    //!< dc  value of previous cycle (truncated to 32-bit)
 
-    int offset_compensation;
-    int offset_compensation_cnt;
-    int offset_compensation_max;
+    int offset_compensation_cycles;     //!< Number of cycles offset compensation takes place.
+    int offset_compensation_cnt;        //!< Current counter of offset compensation cycles.
 
     int timer_override;
     int64_t timer_prev;

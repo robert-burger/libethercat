@@ -823,7 +823,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     pec->slaves             = NULL;
     pec->pd_groups          = NULL;
     pec->tx_sync            = 1;
-    pec->threaded_startup   = 1;
+    pec->threaded_startup   = 0;
 
     // init values for distributed clocks
     pec->dc.have_dc         = 0;
@@ -1230,7 +1230,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
         memcpy(&act_dc_time, ec_datagram_payload(&pec->dc.p_de_dc->datagram), 8);
         
         if (((++pec->dc.offset_compensation_cnt) 
-                    % pec->dc.offset_compensation) == 0) {
+                    % pec->dc.offset_compensation_cycles) == 0) {
             pec->dc.offset_compensation_cnt = 0;
 
             // doing offset compensation in dc master clock
@@ -1238,55 +1238,26 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
             uint64_t act_rtc_time = ((pec->dc.timer_override > 0) ?
                                      pec->dc.timer_prev : rtc) - pec->dc.rtc_sto;
 
-            int64_t rtc_temp = (int64_t) act_rtc_time & 0x00000000FFFFFFFF;
-            int64_t dc_temp  = (int64_t) act_dc_time  & 0x00000000FFFFFFFF;
+            // clamp every value to 32-bit, so we do not need to care 
+            // about wheter dc is 32-bit or 64-bit.
+            int64_t rtc_temp = act_rtc_time % UINT_MAX;
+            int64_t dc_temp  = act_dc_time  % UINT_MAX;
 
-            int64_t diff1 = (rtc_temp - dc_temp);
-            int64_t diff2 = -(dc_temp - rtc_temp);
-            pec->dc.act_diff = (int32_t) (abs(diff1) < abs(diff2) ? diff1 : diff2);
-            pec->dc.act_diff = pec->dc.act_diff * 1.5;
+            pec->dc.act_diff = rtc_temp - dc_temp;
+            if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp))
+                pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
+            else if ((pec->dc.prev_rtc > rtc_temp) && 
+                    (pec->dc.prev_dc < dc_temp))
+                pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
+
+            // only compensate within one cycle, add rest to system time offset
+            if (pec->dc.timer_override > 0) {
+                int ticks_off = pec->dc.act_diff / pec->dc.timer_override;
             
-            // clamp to maximum compensation value per tick
-            if (pec->dc.act_diff > pec->dc.offset_compensation_max)
-                pec->dc.act_diff = pec->dc.offset_compensation_max;
-            else if (pec->dc.act_diff < (-1 * pec->dc.offset_compensation_max))
-                pec->dc.act_diff = -1 * pec->dc.offset_compensation_max;
-
-/*            
-#define N 1500
-            static int c = 0;
-            static int64_t diff_times[N];
-
-            diff_times[c] = pec->dc.act_diff;
-            if(c==N-1) {
-                c = 0;
-                int64_t min = 0, max = 0, sum = 0, avg = 0;
-                for (int i = 0; i <N; ++i) {
-                    int64_t d = diff_times[i];
-                    if(d < min)
-                        min = d;
-                    if(d > max)
-                        max = d;
-                    sum += d;
-                }
-                avg = sum / N;
-                fprintf(stderr, "     min: %lld\n"
-                                "     max: %lld\n"
-                                "     avg: %lld\n"
-                                "     sum: %lld\n" 
-                                "act_diff: %ld    (%lld   %lld)\n"
-                                "rtc_temp: %lld\n"
-                                " dc_temp: %lld\n",
-                        min, max, avg, sum,
-                        pec->dc.act_diff, diff1, diff2,
-                        rtc_temp,
-                        dc_temp
-                );
-                
-            } else {
-                c++;
+                pec->dc.rtc_sto  += ticks_off * pec->dc.timer_override;                
+                pec->dc.act_diff  = pec->dc.act_diff % pec->dc.timer_override;
             }
-            */
+
             pec->dc.prev_rtc = rtc_temp;
             pec->dc.prev_dc  = dc_temp;
 
