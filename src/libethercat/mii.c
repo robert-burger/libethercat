@@ -34,6 +34,7 @@
 #include "libethercat/ec.h"
 
 #include <string.h>
+#include <stdio.h>
 
 #define fp_check(op, reg, buf, buf_len) {                                           \
     ec_fp ## op(pec, pec->slaves[slave].fixed_address, reg, buf, buf_len, &wkc);    \
@@ -71,7 +72,7 @@ int ec_miiread(struct ec *pec, uint16_t slave,
 
     // set up timeout 100 ms
     ec_timer_t timeout;
-    ec_timer_init(&timeout, 100000000);
+    ec_timer_init(&timeout, 10000000000);
 
     do {
         fp_check(rd, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
@@ -112,7 +113,7 @@ int ec_miiwrite(struct ec *pec, uint16_t slave,
 
     // execute write command
     fp_check(rd, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
-    ctrl_stat = (ctrl_stat & ~0x0300) | 0x0200;
+    ctrl_stat = (ctrl_stat & ~0x0300) | 0x0201;
     fp_check(wr, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
 
     // set up timeout 100 ms
