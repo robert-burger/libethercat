@@ -2,7 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([libethercat], [0.1.beta3], [Robert Burger robert.burger@dlr.de])
+AC_INIT([libethercat], 
+	m4_esyscmd_s([cat project.properties | grep VERSION    | cut -d'=' -f2 | xargs printf "%s"]),
+	m4_esyscmd_s([cat project.properties | grep MAINTAINER | cut -d'=' -f2 | xargs printf "%s"]))
 
 # Automake initialization
 AM_INIT_AUTOMAKE([-Wall -Werror foreign silent-rules])
