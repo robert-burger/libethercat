@@ -9,7 +9,7 @@
 #include <stdarg.h>
 
 int usage(int argc, char **argv) {
-    printf("%s -i|--interface <intf> [-p|--propagation-delay]\n", argv[0]);
+    printf("%s -i|--interface <intf> -s|--slave <nr> [-r|--read] [-w|--write] [-f|--file <filename>]\n", argv[0]);
     return 0;
 }
 
