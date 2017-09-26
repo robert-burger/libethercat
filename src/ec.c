@@ -590,7 +590,7 @@ void ec_scan(ec_t *pec) {
     alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * 
             sizeof(ec_slave_t));
 
-    for (i = 0; i < 65536; ++i) {
+    for (i = 0; i < 65535; ++i) {
         int auto_inc = -1 * i;
 
         ec_aprd(pec, auto_inc, EC_REG_TYPE, (uint8_t *)&val, 

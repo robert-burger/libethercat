@@ -37,26 +37,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-
-#ifdef __VXWORKS__ 
-static char *strndup(const char *s, size_t n) {
-    const char* cp = s;
-    size_t i = 0;
-    while(*cp) {
-        i++;
-        if(i >= n)
-            break; // enough chars
-        cp++;
-    }
-    i ++;
-    char* result = (char*)malloc(i);
-    memcpy(result, s, i);
-    result[i - 1] = 0;
-    return result;
-}
-#endif
-
-
 // read file over foe
 int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t **file_data, 

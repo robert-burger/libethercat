@@ -77,5 +77,9 @@ typedef uint16_t ec_state_t;
 #define EC_STATE_ERROR       0x10       //!< EtherCAT ERROR
 #define EC_STATE_RESET       0x10       //!< EtherCAT ERROR reset
 
+#ifdef __VXWORKS__ 
+char *strndup(const char *s, size_t n);
+#endif
+
 #endif // __LIBETHERCAT_COMMON_H__
 

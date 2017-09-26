@@ -38,23 +38,6 @@
 #define EC_DEFAULT_TIMEOUT_MBX      100000000
 #define EC_DEFAULT_DELAY            2000000
 
-#ifdef __VXWORKS__
-//#include "arch/i86/x86_64/regsX86_64.h"
-#include <types/vxCpu.h>
-#include <regs.h>
-#include <vxWorks.h>
-#include <sysLib.h>
-#include <sockLib.h>
-#endif
-
-// #if     _VX_CPU_FAMILY==_VX_I80X86
-// #ifndef _WRS_CONFIG_LP64
-// #error <arch/i86/regsI86.h>
-// #else
-// #error "arch/i86/x86_64/regsX86_64.h"
-// #endif  /* LP64 */
-// #endif	/* _VX_CPU_FAMILY==_VX_I80X86 */
-
 #include <stdint.h>
 #include <time.h>
 #include <sys/time.h>

@@ -24,9 +24,12 @@ AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
+# Checks for pthread support
+ACX_PTHREAD
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+
 # Checks for libraries.
-AX_CHECK_COMPILE_FLAG([-pthread], [AX_APPEND_FLAG([-pthread])] )
-AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [sem_init])
 
 # indead a good option, checks for processor features like avx, but then we get sigill on older machines
