@@ -334,6 +334,8 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     return 0;
 };
 
+#include <stdio.h>
+
 // read out whole eeprom and categories
 void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     int cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
@@ -549,35 +551,38 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                     free(pdo);
                 }
 
-                // read pdo
-                pdo = malloc(sizeof(ec_eeprom_cat_pdo_t));
-                ec_eepromread_len(pec, slave, local_offset, 
-                        (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
-                local_offset += EC_EEPROM_CAT_PDO_LEN / 2;
-                        
-                eeprom_log(100, "EEPROM_TXPDO", "          0x%04X\n",
-                        pdo->pdo_index);
-               
-                if (pdo->n_entry) {
-                    // alloc entries
-                    pdo->entries = malloc(pdo->n_entry * 
-                            sizeof(ec_eeprom_cat_pdo_entry_t));
+                do {
+                    // read pdo
+                    pdo = malloc(sizeof(ec_eeprom_cat_pdo_t));
+                    ec_eepromread_len(pec, slave, local_offset, 
+                            (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
+                    local_offset += EC_EEPROM_CAT_PDO_LEN / 2;
 
-                    for (j = 0; j < pdo->n_entry; ++j) {
-                        ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
-                        ec_eepromread_len(pec, slave, local_offset,
-                                (uint8_t *)entry, 
+                    eeprom_log(100, "EEPROM_TXPDO", "          0x%04X, entries %d\n",
+                            pdo->pdo_index, pdo->n_entry);
+
+                    if (pdo->n_entry) {
+                        // alloc entries
+                        pdo->entries = malloc(pdo->n_entry * 
                                 sizeof(ec_eeprom_cat_pdo_entry_t));
 
-                        local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2;
-                
-                        eeprom_log(100, "EEPROM_TXPDO", 
-                                "          0x%04X:%2d -> 0x%04X\n",
-                                pdo->pdo_index, j, entry->entry_index);
-                    }
-                }
+                        for (j = 0; j < pdo->n_entry; ++j) {
+                            ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
+                            ec_eepromread_len(pec, slave, local_offset,
+                                    (uint8_t *)entry, 
+                                    sizeof(ec_eeprom_cat_pdo_entry_t));
 
-                TAILQ_INSERT_TAIL(&slv->eeprom.txpdos, pdo, qh);
+                            local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2;
+
+                            eeprom_log(100, "EEPROM_TXPDO", 
+                                    "          0x%04X:%2d -> 0x%04X\n",
+                                    pdo->pdo_index, j, entry->entry_index);
+                        }
+                    }
+
+                    TAILQ_INSERT_TAIL(&slv->eeprom.txpdos, pdo, qh);
+                } while (local_offset < (cat_offset + cat_len + 2)); 
+
                 break;
             }
             case EC_EEPROM_CAT_RXPDO: {
@@ -595,35 +600,38 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                     free(pdo);
                 }
 
-                // read pdo
-                pdo = malloc(sizeof(ec_eeprom_cat_pdo_t));
-                ec_eepromread_len(pec, slave, local_offset, 
-                        (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
-                local_offset += EC_EEPROM_CAT_PDO_LEN / 2;
-                        
-                eeprom_log(100, "EEPROM_RXPDO", "          0x%04X\n",
-                        pdo->pdo_index);
-               
-                if (pdo->n_entry) {
-                    // alloc entries
-                    pdo->entries = malloc(pdo->n_entry * 
-                            sizeof(ec_eeprom_cat_pdo_entry_t));
+                do {
+                    // read pdo
+                    pdo = malloc(sizeof(ec_eeprom_cat_pdo_t));
+                    ec_eepromread_len(pec, slave, local_offset, 
+                            (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
+                    local_offset += EC_EEPROM_CAT_PDO_LEN / 2;
 
-                    for (j = 0; j < pdo->n_entry; ++j) {
-                        ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
-                        ec_eepromread_len(pec, slave, local_offset,
-                                (uint8_t *)entry, 
+                    eeprom_log(100, "EEPROM_RXPDO", "          0x%04X, entries %d\n",
+                            pdo->pdo_index, pdo->n_entry);
+
+                    if (pdo->n_entry) {
+                        // alloc entries
+                        pdo->entries = malloc(pdo->n_entry * 
                                 sizeof(ec_eeprom_cat_pdo_entry_t));
 
-                        local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2;
-                
-                        eeprom_log(100, "EEPROM_TXPDO", 
-                                "          0x%04X:%2d -> 0x%04X\n",
-                                pdo->pdo_index, j, entry->entry_index);
-                    }
-                }
+                        for (j = 0; j < pdo->n_entry; ++j) {
+                            ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
+                            ec_eepromread_len(pec, slave, local_offset,
+                                    (uint8_t *)entry, 
+                                    sizeof(ec_eeprom_cat_pdo_entry_t));
 
-                TAILQ_INSERT_TAIL(&slv->eeprom.rxpdos, pdo, qh);
+                            local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2;
+
+                            eeprom_log(100, "EEPROM_RXPDO", 
+                                    "          0x%04X:%2d -> 0x%04X\n",
+                                    pdo->pdo_index, j, entry->entry_index);
+                        }
+                    }
+
+                    TAILQ_INSERT_TAIL(&slv->eeprom.rxpdos, pdo, qh);
+                } while (local_offset < (cat_offset + cat_len + 2)); 
+
                 break;
             }
             case EC_EEPROM_CAT_DC: {
