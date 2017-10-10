@@ -334,8 +334,6 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     return 0;
 };
 
-#include <stdio.h>
-
 // read out whole eeprom and categories
 void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     int cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
