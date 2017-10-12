@@ -116,7 +116,7 @@ extern "C" {
  * \param[in,out] len       Length of buffer, outputs read length.
  * \param[out] abort_code   Returns the abort code if we got abort request
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
@@ -136,7 +136,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
  * \param[in] len           Length of buffer.
  * \param[out] abort_code   Returns the abort code if we got abort request
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t *buf, size_t len,
@@ -152,7 +152,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
  * \param[in] index         CoE SDO index number.
  * \param[out] desc         Returns CoE SDO description.
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
         ec_coe_sdo_desc_t *desc);
@@ -169,7 +169,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
  * \param[in] value_info    Bitset which description values you want to get
  * \param[in] desc          Return CoE entry description.
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc);
@@ -182,11 +182,11 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  * \param[out] buf          Pointer to either a preallocated buffer or the buffer 
- *                          will be allocated by the \link ec_coe_sdo_entry_desc_t \endlink
+ *                          will be allocated by the \link ec_coe_odlist_read \endlink
  *                          call. In second case it has to be freed by caller.
  * \param[in,out] len       Length of buffer, outputs read length.
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \return 0 on success, otherwise error code.
  */
 int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len);
 
