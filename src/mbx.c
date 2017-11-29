@@ -228,3 +228,11 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec) {
     return 0;
 }
 
+//! push current received mailbox to received queue
+/*!
+ * \param[in] pec pointer to ethercat master
+ * \param[in] slave slave number
+ */
+void ec_mbx_push(ec_t *pec, uint16_t slave) {
+}
+
