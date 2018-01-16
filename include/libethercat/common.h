@@ -68,6 +68,7 @@ typedef struct ec_pd {
 } ec_pd_t;
 
 typedef uint16_t ec_state_t;
+#define EC_STATE_UNKNOWN     0x00       //!< unknown state
 #define EC_STATE_INIT        0x01       //!< EtherCAT INIT state
 #define EC_STATE_PREOP       0x02       //!< EtherCAT PREOP state
 #define EC_STATE_BOOT        0x03       //!< EtherCAT BOOT state

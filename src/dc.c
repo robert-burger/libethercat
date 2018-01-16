@@ -166,7 +166,7 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
             break;
     }
     
-    int64_t dc_start = rel_rtc_time + /*SYNC_DELAY +*/ cycle_time_0 + pec->dc.timer_override*1000 + cycle_shift - slv->pdelay;
+    int64_t dc_start = rel_rtc_time + /*SYNC_DELAY + cycle_time_0 */ + pec->dc.timer_override*1000 + cycle_shift - slv->pdelay;
    
     // program first trigger time and cycle time
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, 

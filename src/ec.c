@@ -706,6 +706,10 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case BOOT_2_SAFEOP:
         case BOOT_2_OP: 
         case INIT_2_INIT:
+        case UNKNOWN_2_INIT:
+        case UNKNOWN_2_PREOP:
+        case UNKNOWN_2_SAFEOP:
+        case UNKNOWN_2_OP:
             // ====> switch to INIT stuff
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             ec_scan(pec);
@@ -814,7 +818,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
         return ENOMEM;
 
     ec_index_init(&pec->idx_q);
-    pec->master_state       = EC_STATE_INIT;
+    pec->master_state       = EC_STATE_UNKNOWN;
 
     // slaves'n groups
     pec->phw                = NULL;
@@ -852,7 +856,6 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     }
 
     ec_async_message_loop_create(&pec->async_loop, pec);
-    ec_set_state(pec, EC_STATE_INIT);
 
     return 0;
 }

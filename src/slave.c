@@ -592,7 +592,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         }
         case SAFEOP_2_OP: {
             ec_log(10, get_transition_string(transition), 
-                    "slave %2d setting to operational\n", slave);
+                    "slave %2d: setting to operational\n", slave);
 
             // write state to slave
             wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
