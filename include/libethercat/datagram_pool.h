@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <semaphore.h>
 
+#include "libethercat/common.h"
 #include "libethercat/datagram.h"
 #include "libethercat/timer.h"
 

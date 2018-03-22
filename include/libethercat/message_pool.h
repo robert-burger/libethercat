@@ -36,6 +36,7 @@
 #include <stdint.h>
 #include <semaphore.h>
 
+#include "libethercat/common.h"
 #include "libethercat/timer.h"
 
 struct ec;

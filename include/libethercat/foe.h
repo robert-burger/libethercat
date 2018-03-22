@@ -32,6 +32,7 @@
 #ifndef __LIBETHERCAT_FOE_H__
 #define __LIBETHERCAT_FOE_H__
 
+#include "libethercat/common.h"
 #include "libethercat/mbx.h"
 
 //! FoE header

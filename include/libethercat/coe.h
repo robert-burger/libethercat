@@ -31,6 +31,9 @@
 #ifndef __LIBETHERCAT_COE_H__
 #define __LIBETHERCAT_COE_H__
 
+#include "libethercat/common.h"
+#include "libethercat/ec.h"
+
 //! CoE mailbox types
 enum {
     EC_COE_EMERGENCY  = 0x01,   //!< emergency message
