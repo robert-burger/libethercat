@@ -49,7 +49,7 @@
     } }
 
 #define alloc_resource(a, type, len) {      \
-    if (len) {                              \
+    if ((len) > 0) {                        \
         (a) = (type *)malloc((len));        \
         memset((a), 0, (len)); } }
 
