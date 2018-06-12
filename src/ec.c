@@ -1022,6 +1022,7 @@ int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr,
  */
 int ec_send_process_data_group(ec_t *pec, int group) {
     ec_pd_group_t *pd = &pec->pd_groups[group];
+    unsigned pd_len = 0;
 
     if (ec_index_get(&pec->idx_q, &pd->p_idx) != 0) {
         ec_log(5, "EC_SEND_PROCESS_DATA_GROUP", 
@@ -1036,16 +1037,17 @@ int ec_send_process_data_group(ec_t *pec, int group) {
         return -1;
     }
 
-    memset(&pd->p_de->datagram, 0, sizeof(ec_datagram_t) + pd->log_len + 2);
+    if (pd->use_lrw) {
+        pd_len = max(pd->pdout_len, pd->pdin_len);
+    } else {
+        pd_len = pd->log_len;
+    }
+    
+    memset(&pd->p_de->datagram, 0, sizeof(ec_datagram_t) + pd_len + 2);
     pd->p_de->datagram.cmd = EC_CMD_LRW;
     pd->p_de->datagram.idx = pd->p_idx->idx;
     pd->p_de->datagram.adr = pd->log;
-    
-    if (pd->use_lrw) {
-        pd->p_de->datagram.len = pd->pdout_len;
-    } else {
-        pd->p_de->datagram.len = pd->log_len;
-    }
+    pd->p_de->datagram.len = pd_len;
 
     pd->p_de->datagram.irq = 0;
     if (pd->pd) {

@@ -230,6 +230,16 @@ typedef struct worker_arg {
     ec_state_t state;
 } worker_arg_t;
 
+//! Message queue qentry
+typedef struct ec_queued_mailbox_message_entry {
+    TAILQ_ENTRY(ec_queued_mailbox_message_entry) qh;
+                                //!< handle to message entry queue
+    uint8_t msg[1];             //!< message itself
+} ec_queued_mailbox_message_entry_t;
+
+TAILQ_HEAD(ec_queued_mailbox_message_queue, ec_queued_mailbox_message_entry);
+typedef struct ec_queued_mailbox_message_queue ec_queued_mailbox_message_queue_t;
+
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
     uint16_t fixed_address;     //!< virtual bus address, programmed on start
@@ -283,6 +293,8 @@ typedef struct ec_slave {
 
     ec_slave_mbx_t mbx_read;    //!< read mailbox 
     ec_slave_mbx_t mbx_write;   //!< write mailbox
+    ec_queued_mailbox_message_queue_t mbx_queue;
+                                //!< message pool queue
 
     int assigned_pd_group;
     ec_pd_t pdin;               //!< input process data 

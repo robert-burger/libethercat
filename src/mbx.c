@@ -228,3 +228,20 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec) {
     return 0;
 }
 
+//! queue read mailbox content
+/*!
+ * \param pec pointer to ethercat master
+ * \param slave slave number
+ */
+void ec_mbx_queue(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+
+    // get length and queue this message    
+    ec_mbx_header_t *hdr = (ec_mbx_header_t *)slv->mbx_read.buf;
+    size_t read_len = 6 + hdr->length;
+    ec_queued_mailbox_message_entry_t *qmsg = (ec_queued_mailbox_message_entry_t *)
+        malloc(sizeof(ec_queued_mailbox_message_entry_t) + read_len);
+    memcpy(qmsg->msg, slv->mbx_read.buf, read_len);
+    TAILQ_INSERT_TAIL(&slv->mbx_queue, qmsg, qh);
+}
+
