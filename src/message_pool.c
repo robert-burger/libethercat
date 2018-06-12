@@ -135,7 +135,7 @@ static void *ec_async_message_loop_thread(void *arg) {
     while (paml->loop_running) {
         ec_timer_t timeout;
         ec_timer_init(&timeout, 100000000 );
-        ec_message_entry_t *me;
+        ec_message_entry_t *me = NULL;
 
         int ret = ec_async_message_loop_get(&paml->exec, &me, &timeout);
         if (ret != 0)
@@ -181,7 +181,7 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
 
     ec_timer_t timeout;
     ec_timer_init(&timeout, 1000);
-    ec_message_entry_t *me;
+    ec_message_entry_t *me = NULL;
     int ret = ec_async_message_loop_get(&paml->avail, &me, &timeout);
     if (ret == -1)
         return; // got no message buffer
