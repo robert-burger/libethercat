@@ -468,7 +468,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 alloc_resource(slv->mbx_read.buf, uint8_t, slv->sm[1].len);
                 slv->mbx_read.sm_state = NULL;
                 slv->mbx_read.skip_next = 0;
-                TAILQ_INIT(&slv->mbx_queue);
+                TAILQ_INIT(&slv->mbx_coe_emergencies);
 
                 // write mailbox
                 if ((transition == INIT_2_BOOT) && 

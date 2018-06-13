@@ -205,6 +205,13 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len);
  */
 int ec_coe_generate_mapping(ec_t *pec, uint16_t slave);
 
+//! queue read mailbox content
+/*!
+ * \param pec pointer to ethercat master
+ * \param slave slave number
+ */
+void ec_coe_queue_emergency(ec_t *pec, uint16_t slave);
+
 #ifdef __cplusplus
 }
 #endif

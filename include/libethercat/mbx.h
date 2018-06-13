@@ -113,13 +113,6 @@ int ec_mbx_send(ec_t *pec, uint16_t slave, uint32_t nsec);
  */
 int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec);
 
-//! queue read mailbox content
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- */
-void ec_mbx_queue(ec_t *pec, uint16_t slave);
-
 #ifdef __cplusplus
 }
 #endif

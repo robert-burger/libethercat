@@ -231,14 +231,15 @@ typedef struct worker_arg {
 } worker_arg_t;
 
 //! Message queue qentry
-typedef struct ec_queued_mailbox_message_entry {
-    TAILQ_ENTRY(ec_queued_mailbox_message_entry) qh;
+typedef struct ec_emergency_message_entry {
+    TAILQ_ENTRY(ec_emergency_message_entry) qh;
                                 //!< handle to message entry queue
+    ec_timer_t timestamp;       //!< timestamp, when emergency was received
     uint8_t msg[1];             //!< message itself
-} ec_queued_mailbox_message_entry_t;
+} ec_emergency_message_entry_t;
 
-TAILQ_HEAD(ec_queued_mailbox_message_queue, ec_queued_mailbox_message_entry);
-typedef struct ec_queued_mailbox_message_queue ec_queued_mailbox_message_queue_t;
+TAILQ_HEAD(ec_emergency_message_queue, ec_emergency_message_entry);
+typedef struct ec_emergency_message_queue ec_emergency_message_queue_t;
 
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
@@ -293,8 +294,8 @@ typedef struct ec_slave {
 
     ec_slave_mbx_t mbx_read;    //!< read mailbox 
     ec_slave_mbx_t mbx_write;   //!< write mailbox
-    ec_queued_mailbox_message_queue_t mbx_queue;
-                                //!< message pool queue
+    ec_emergency_message_queue_t 
+        mbx_coe_emergencies;    //!< message pool queue
 
     int assigned_pd_group;
     ec_pd_t pdin;               //!< input process data 
