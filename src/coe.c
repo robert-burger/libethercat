@@ -935,10 +935,11 @@ void ec_coe_queue_emergency(ec_t *pec, uint16_t slave) {
 
     // get length and queue this message    
     ec_mbx_header_t *hdr = (ec_mbx_header_t *)slv->mbx_read.buf;
-    size_t read_len = 6 + hdr->length;
+    size_t msg_len = 6 + hdr->length;
     ec_emergency_message_entry_t *qmsg = (ec_emergency_message_entry_t *)
-        malloc(sizeof(ec_emergency_message_entry_t) + read_len);
-    memcpy(qmsg->msg, slv->mbx_read.buf, read_len);
+        malloc(sizeof(ec_emergency_message_entry_t) + msg_len);
+    memcpy(qmsg->msg, slv->mbx_read.buf, msg_len);
+    qmsg->msg_len = msg_len;
     ec_timer_gettime(&qmsg->timestamp);
     TAILQ_INSERT_TAIL(&slv->mbx_coe_emergencies, qmsg, qh);
 }
