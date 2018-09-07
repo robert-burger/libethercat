@@ -29,7 +29,7 @@
 #include <math.h>
 #include <stdarg.h>
 #include <limits.h>
-
+//#include <cctype>
 
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"

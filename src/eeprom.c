@@ -337,7 +337,7 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
 // read out whole eeprom and categories
 void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     int cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
-    uint16_t /*size,*/ cat_len, cat_type = 0;
+    uint16_t size, cat_len, cat_type = 0;
     uint32_t value32 = 0;
     ec_slave_t *slv = &pec->slaves[slave];
 
@@ -375,7 +375,11 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE,
             slv->eeprom.boot_mbx_send_size);
 
-    //size = value32 & 0x0000FFFF;
+    slv->eeprom.read_eeprom = 1;
+    
+    size = value32 & 0x0000FFFF;
+    if (size <= 128)
+        return;
 
     while (cat_type != EC_EEPROM_CAT_END) {
         int ret = eeprom(cat_offset, value32);
@@ -439,7 +443,6 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
             }
             case EC_EEPROM_CAT_DATATYPES:
                 eeprom_log(100, "EEPROM_DATATYPES", "slave %2d:\n", slave);
-
                 break;
             case EC_EEPROM_CAT_GENERAL: {
                 eeprom_log(100, "EEPROM_GENERAL", "slave %2d:\n", slave);
