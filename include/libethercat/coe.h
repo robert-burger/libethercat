@@ -212,6 +212,9 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave);
  */
 void ec_coe_queue_emergency(ec_t *pec, uint16_t slave);
 
+#if 0 
+{
+#endif
 #ifdef __cplusplus
 }
 #endif

@@ -491,6 +491,9 @@ void ec_slave_add_init_cmd(struct ec *pec, uint16_t slave,
  */
 void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
 
+#if 0 
+{
+#endif
 #ifdef __cplusplus
 }
 #endif

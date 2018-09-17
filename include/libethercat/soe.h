@@ -136,6 +136,9 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
  */
 int ec_soe_generate_mapping(ec_t *pec, uint16_t slave);
 
+#if 0 
+{
+#endif
 #ifdef __cplusplus
 }
 #endif
