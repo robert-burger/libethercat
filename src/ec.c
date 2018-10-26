@@ -724,7 +724,6 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case PREOP_2_PREOP:
             // ====> switch to PREOP stuff
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
-            ec_dc_config(pec);
 
             if (state == EC_STATE_PREOP)
                 break;
@@ -733,6 +732,14 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case PREOP_2_OP: 
         case SAFEOP_2_SAFEOP:
             // ====> switch to SAFEOP stuff
+            ec_dc_config(pec);
+
+            // sending first time dc
+            ec_send_distributed_clocks_sync(pec);
+            ec_timer_t dc_timeout;
+            ec_timer_init(&dc_timeout, 10000000);
+            ec_receive_distributed_clocks_sync(pec, &dc_timeout);
+
             ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
 
             // ====> create logical mapping for cyclic operation
@@ -766,6 +773,18 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case SAFEOP_2_INIT:
         case SAFEOP_2_PREOP:
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
+
+            // reset dc
+            pec->dc.act_diff        = 0;
+            pec->dc.timer_prev      = 0;
+            pec->dc.dc_time         = 0;
+            pec->dc.dc_cycle_sum    = 0;
+            pec->dc.dc_cycle_cnt    = 0;
+            pec->dc.rtc_time        = 0;
+            pec->dc.rtc_cycle_sum   = 0;
+            pec->dc.rtc_cycle       = 0;
+            pec->dc.rtc_count       = 0;
+            pec->dc.act_diff        = 0;
 
             if (state == EC_STATE_PREOP)
                 break;
@@ -1130,7 +1149,7 @@ local_exit:
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
-    if (!pec->dc.have_dc)
+    if (!pec->dc.have_dc || !pec->dc.rtc_sto)
         return 0;
 
     uint64_t act_rtc_time = ec_timer_gettime_nsec();
@@ -1148,14 +1167,12 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
     if (pec->dc.timer_override > 0) {
         if (pec->dc.timer_prev == 0) {
-            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+            if (pec->dc.mode == dc_mode_master_as_ref_clock)
                 pec->dc.timer_prev = act_rtc_time - pec->dc.rtc_sto;
-                ec_log(10, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "sending first dc time %llu\n", pec->dc.timer_prev);
-            } else
+            else
                 pec->dc.timer_prev = act_rtc_time;
         } else
-            pec->dc.timer_prev += 
-                (pec->dc.timer_override);// * pec->dc.offset_compensation);
+            pec->dc.timer_prev += (pec->dc.timer_override);
     }
 
     pec->dc.rtc_time = act_rtc_time;
@@ -1210,7 +1227,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
     uint16_t wkc; 
 
-    if (!pec->dc.have_dc)
+    if (!pec->dc.have_dc || !pec->dc.p_de_dc)
         return 0;
             
     // wait for completion
