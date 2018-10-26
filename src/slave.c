@@ -599,8 +599,13 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
             break;
         }
-        case OP_2_PREOP:
         case OP_2_SAFEOP:
+        case OP_2_PREOP:
+            // write state to slave
+            wkc = ec_slave_set_state(pec, slave, state);
+
+            if (transition == OP_2_SAFEOP)
+                break;
         case OP_2_INIT:
         case SAFEOP_2_PREOP:
         case SAFEOP_2_INIT:
@@ -611,6 +616,10 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
             // write state to slave
             wkc = ec_slave_set_state(pec, slave, state);
+
+            if (    transition == OP_2_PREOP || 
+                    transition == SAFEOP_2_PREOP)
+                break;
         }
         case BOOT_2_INIT:
         case INIT_2_INIT: {
