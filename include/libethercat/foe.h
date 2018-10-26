@@ -180,6 +180,9 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t *file_data, 
         ssize_t file_data_len, char **error_message);
 
+#if 0 
+{
+#endif
 #ifdef __cplusplus
 }
 #endif
