@@ -245,7 +245,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
         size_t pos = 0;
         for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
             pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
-        ec_log(10, __func__, "got unexpected mailbox message on slave %d: %s\n", index, msg_buf);
+        ec_log(10, __func__, "got unexpected mailbox message on slave %d: %s\n", slave, msg_buf);
             
         ret = EC_ERROR_MAILBOX_READ;
         goto exit;
@@ -673,7 +673,7 @@ exit:
         desc->data_type         = 0;
         desc->obj_code          = 0;
         desc->max_subindices    = 0;
-        desc->name[0] = '\0';
+        desc->name = strdup("");
 
         wkc = -1;
     }
