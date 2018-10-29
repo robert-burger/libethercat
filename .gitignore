@@ -22,7 +22,6 @@ Makefile.in
 *.lo
 *.la
 COPYING
-INSTALL
 Makefile
 config.h
 config.guess
