@@ -485,6 +485,23 @@ void ec_slave_add_init_cmd(struct ec *pec, uint16_t slave,
         int type, int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen);
 
+//! Set Distributed Clocks config to slave
+/*! 
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] use_dc        Whether to en-/disable dc on slave.
+ * \param[in] type          DC type, 0 = sync0, 1 = sync01.
+ * \param[in] cycle_time_0  Cycle time of sync 0 [ns].
+ * \param[in] cycle_time_1  Cycle time of sync 1 [ns].
+ * \param[in] cycle_shift   Cycle shift time [ns].
+ */
+void ec_slave_set_dc_config(struct ec *pec, uint16_t slave, 
+        int use_dc, int type, uint32_t cycle_time_0, 
+        uint32_t cycle_time_1, uint32_t cycle_shift);
+
 //! Freeing init command structure.
 /*!
  * \param[in] cmd           Pointer to init command which willed be freed.

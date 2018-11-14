@@ -170,6 +170,17 @@ void ec_slave_add_init_cmd(ec_t *pec, uint16_t slave,
         LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
 }
 
+// Set Distributed Clocks config to slave
+void ec_slave_set_dc_config(struct ec *pec, uint16_t slave, 
+        int use_dc, int type, uint32_t cycle_time_0, 
+        uint32_t cycle_time_1, uint32_t cycle_shift) {
+    pec->slaves[slave].dc.use_dc        = use_dc;
+    pec->slaves[slave].dc.type          = type;
+    pec->slaves[slave].dc.cycle_time_0  = cycle_time_0;
+    pec->slaves[slave].dc.cycle_time_1  = cycle_time_1;
+    pec->slaves[slave].dc.cycle_shift   = cycle_shift;
+}
+
 // Set EtherCAT state on slave 
 int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc = 0, act_state, value;
