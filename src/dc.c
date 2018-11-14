@@ -345,7 +345,7 @@ int ec_dc_config(struct ec *pec) {
                     slv->entry_port = i; 
 
                 ec_log(100, "DISTRIBUTED_CLOCK", 
-                        "slave %2d: receive time port %d - %lld\n", 
+                        "slave %2d: receive time port %d - %d\n", 
                         slave, i, slv->dc.receive_times[i]);
             }
         }
