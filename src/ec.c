@@ -45,17 +45,20 @@
     ((a) > (b) ? (a) : (b))
 #endif
 
+void default_log_func(int lvl, void* user, const char *format, ...){
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
+
 void *ec_log_func_user = NULL;
-void (*ec_log_func)(int lvl, void *user, const char *format, ...) = NULL;
+void (*ec_log_func)(int lvl, void *user, const char *format, ...) = default_log_func;
+
+
 
 void ec_log(int lvl, const char *pre, const char *format, ...) {
-    if (ec_log_func == NULL) {
-        va_list ap;
-        va_start(ap, format);
-        fprintf(stderr, "[%-20.20s] ", pre);
-        vfprintf(stderr, format, ap);
-        va_end(ap);
-    } else {
+    if (ec_log_func != NULL) {
         char buf[512];
         char *tmp = &buf[0];
 

@@ -69,9 +69,11 @@
 #elif defined HAVE_NET_BPF_H
 #include <sys/queue.h>
 #include <net/bpf.h>
+#include <net/if_types.h>
+#ifdef __RTEMS__
 #include <machine/rtems-bsd-kernel-space.h>
 #include <machine/rtems-bsd-kernel-namespace.h>
-#include <net/if_types.h>
+#endif // __RTEMS__
 #else
 #error unsupported OS
 #endif
