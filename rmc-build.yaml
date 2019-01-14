@@ -1,0 +1,11 @@
+context: conan
+configurations:
+- any:
+    build_type: Release
+    shared: [True, False]
+- osl42-x86_64:
+    build_type: [Debug, Release]
+- sled11-x86-gcc4.8:
+- sled11-x86_64-gcc4.8:
+- ubuntu12.04-armhf-gcc4.7:
+- ubuntu14.04-armhf-gcc4.9:
