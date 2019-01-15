@@ -7,6 +7,8 @@ class MainProject(ConanFile):
     url = f"https://rmc-github.robotic.dlr.de/common/{name}"
     description = "This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface"
     settings = "os", "compiler", "build_type", "arch"
+    options = {"shared": [True, False]}
+    default_options = {"shared": True}
     scm = {
         "type": "git",
         "url": "auto",
@@ -34,6 +36,12 @@ class MainProject(ConanFile):
             autotools.flags = ["-O0", "-g"]
         else:
             autotools.flags = ["-O2"]
+
+        if self.options.shared:
+            args = ["--enable-shared", "--disable-static"]
+        else:
+            args = ["--disable-shared", "--enable-static"]
+
         autotools.configure(configure_dir=".")
         autotools.make()
 
