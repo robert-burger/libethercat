@@ -1158,7 +1158,11 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     uint64_t act_rtc_time = ec_timer_gettime_nsec();
 
     if (pec->dc.rtc_time != 0) {
-        pec->dc.rtc_cycle_sum += abs(act_rtc_time - pec->dc.rtc_time);
+        if (act_rtc_time > pec->dc.rtc_time)
+            pec->dc.rtc_cycle_sum += act_rtc_time - pec->dc.rtc_time;
+        else
+            pec->dc.rtc_cycle_sum -= pec->dc.rtc_time - act_rtc_time;
+
         pec->dc.rtc_count++;
 
         if (pec->dc.rtc_count == DC_DCSOFF_SAMPLES) {

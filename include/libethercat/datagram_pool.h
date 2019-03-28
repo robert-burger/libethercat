@@ -42,7 +42,7 @@
 #include "libethercat/timer.h"
 
 //! datagram queue entry
-typedef struct __attribute__((__packed__)) datagram_entry {
+typedef struct datagram_entry {
     void (*user_cb)(void *user_arg, struct datagram_entry *p);
                                         //!< user callback
     void *user_arg;                     //!< user argument for user_cb
