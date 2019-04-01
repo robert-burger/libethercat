@@ -495,6 +495,12 @@ void *hw_rx_thread(void *arg) {
                 (TPACKET_ALIGN(sizeof(struct tpacket_hdr)) + \
                  TPACKET_ALIGN(sizeof(struct sockaddr_ll)))
 
+        char buf[512];
+        int pos = 0;
+        for (int i = 0; i < 512; ++i)
+            pos += snprintf(&buf[pos], 512 - pos, "%02X", ((uint8_t *)header)[i]);
+        ec_log(10, "RX_THREAD", "%s\n", buf);
+
                 ec_frame_t *off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
                 hw_process_rx_frame(phw, off);//(ec_frame_t *)((void *)header + PKT_OFFSET));
 
