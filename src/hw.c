@@ -495,7 +495,7 @@ void *hw_rx_thread(void *arg) {
                 (TPACKET_ALIGN(sizeof(struct tpacket_hdr)) + \
                  TPACKET_ALIGN(sizeof(struct sockaddr_ll)))
 
-                ec_frame_t *off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+                ec_frame_t *off = ((void *) header) + (TPACKET_HDRLEN);// - sizeof(struct sockaddr_ll));
                 hw_process_rx_frame(phw, off);//(ec_frame_t *)((void *)header + PKT_OFFSET));
 
                 header->tp_status = 0;
@@ -586,7 +586,7 @@ int hw_tx(hw_t *phw) {
                 }
 
                 // fill data
-                off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+                off = ((void *) header) + (TPACKET_HDRLEN);// - sizeof(struct sockaddr_ll));
                 memcpy(off, pframe, pframe->len);
 
                 // fill header
