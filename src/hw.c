@@ -369,11 +369,6 @@ int hw_close(hw_t *phw) {
 void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
-        char buf[512];
-        int pos = 0;
-        for (int i = 0; i < 512; ++i)
-            pos += snprintf(&buf[pos], 512 - pos, "%02X", ((uint8_t *)pframe)[i]);
-        ec_log(10, "RX_THREAD", "%s\n", buf);
         ec_log(10, "RX_THREAD",
                 "received non-ethercat frame! (type 0x%X)\n",
                 pframe->type);
@@ -464,8 +459,6 @@ void *hw_rx_thread(void *arg) {
                     ((struct bpf_hdr *) tmpframe2)->bh_datalen);
             
             ec_frame_t *real_frame = (ec_frame_t *)(tmpframe2 + ((struct bpf_hdr *)tmpframe2)->bh_hdrlen);
-            /*size_t real_frame_size = ((struct bpf_hdr *)tmpframe2)->bh_datalen;*/
-
             hw_process_rx_frame(phw, real_frame);
 
             /* values for next frame */
@@ -489,24 +482,8 @@ void *hw_rx_thread(void *arg) {
                     header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize);
                     header->tp_status & TP_STATUS_USER; 
                     header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize)) {
-
-                /// Offset of data from start of frame
-#define PKT_OFFSET      \
-                (TPACKET_ALIGN(sizeof(struct tpacket_hdr)) + \
-                 TPACKET_ALIGN(sizeof(struct sockaddr_ll)))
-
-        char buf[512];
-        int pos = 0;
-        for (int i = 0; i < 512; ++i)
-            pos += snprintf(&buf[pos], 512 - pos, "%02X", ((uint8_t *)header)[i]);
-        ec_log(10, "RX_THREAD", "%s\n", buf);
-
-//                ec_frame_t *off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
-//                struct sockaddr_ll* addr = (struct sockaddr_ll*)(header + TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
-                char* l2content = (void *)header + header->tp_mac;
-//                char* l3content = frame_ptr + tphdr->tp_net;
-//handle_frame(tphdr, addr, l2content, l3content);
-                hw_process_rx_frame(phw, (ec_frame_t *)l2content);//off);//(ec_frame_t *)((void *)header + PKT_OFFSET));
+                ec_frame_t *real_frame = (ec_frame_t *)((void *)header + header->tp_mac);
+                hw_process_rx_frame(phw, real_frame);
 
                 header->tp_status = 0;
                 phw->rx_ring_offset = (phw->rx_ring_offset + 1) % phw->mmap_packets;
