@@ -586,7 +586,7 @@ int hw_tx(hw_t *phw) {
                 }
 
                 // fill data
-                off = ((void *) header) + (TPACKET_HDRLEN);// - sizeof(struct sockaddr_ll));
+                off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
                 memcpy(off, pframe, pframe->len);
 
                 // fill header
