@@ -501,9 +501,9 @@ void *hw_rx_thread(void *arg) {
             pos += snprintf(&buf[pos], 512 - pos, "%02X", ((uint8_t *)header)[i]);
         ec_log(10, "RX_THREAD", "%s\n", buf);
 
-                ec_frame_t *off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+//                ec_frame_t *off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
 //                struct sockaddr_ll* addr = (struct sockaddr_ll*)(header + TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
-                char* l2content = header + header->tp_mac;
+                char* l2content = (void *)header + header->tp_mac;
 //                char* l3content = frame_ptr + tphdr->tp_net;
 //handle_frame(tphdr, addr, l2content, l3content);
                 hw_process_rx_frame(phw, (ec_frame_t *)l2content);//off);//(ec_frame_t *)((void *)header + PKT_OFFSET));
