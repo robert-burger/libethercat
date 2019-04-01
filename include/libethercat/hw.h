@@ -47,6 +47,12 @@ typedef struct hw {
     int rxthreadprio;               //!< receiver thread priority
     int rxthreadcpumask;            //!< recevied thread cpu mask
 
+    int mmap_packets;
+    char *rx_ring;                  //!< kernel mmap receive buffers
+    char *tx_ring;                  //!< kernel mmap send buffers
+
+    off_t rx_ring_offset;
+
     pthread_mutex_t hw_lock;        //!< transmit lock
 
     datagram_pool_t *tx_high;       //!< high priority datagrams
@@ -65,9 +71,10 @@ extern "C" {
  * \param devname ethernet device name
  * \param prio receive thread prio
  * \param cpumask receive thread cpumask
+ * \param mmap_packets  0 - using traditional send/recv, 1...n number of mmaped kernel packet buffers
  * \return 0 or negative error code
  */
-int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask);
+int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_packets);
 
 //! destroys a hw
 /*!

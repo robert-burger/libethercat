@@ -867,7 +867,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
 
     datagram_pool_open(&pec->pool, 1000);
         
-    if (hw_open(&pec->phw, ifname, prio, cpumask) == -1) {
+    if (hw_open(&pec->phw, ifname, prio, cpumask, 1000) == -1) {
         datagram_pool_close(pec->pool);
 
         ec_index_deinit(&pec->idx_q);
