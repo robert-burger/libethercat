@@ -375,7 +375,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
         return;
     }
 
-    ec_datagram_t *d;
+    ec_datagram_t *d, *tmp;
     for (d = ec_datagram_first(pframe); (uint8_t *) d <
             (uint8_t *) ec_frame_end(pframe);
             d = ec_datagram_next(d)) {
@@ -387,9 +387,15 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             continue;
         }
 
-        memcpy(&entry->datagram, d, ec_datagram_length(d));
-        if (entry->user_cb)
+        if (entry->user_cb) {
+            tmp = entry->datagram;
+            entry->datagram = d;
             (*entry->user_cb)(entry->user_arg, entry);
+
+            entry->datagram = tmp;
+        } else {
+            memcpy(entry->datagram, d, ec_datagram_length(d));
+        }
     }
 }
 
