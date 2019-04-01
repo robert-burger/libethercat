@@ -369,6 +369,11 @@ int hw_close(hw_t *phw) {
 void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
+        char buf[512];
+        int pos = 0;
+        for (int i = 0; i < 512; ++i)
+            pos += snprintf(&buf[pos], 512 - pos, "%02X", ((uint8_t *)pframe)[i]);
+        ec_log(10, "RX_THREAD", "%s\n", buf);
         ec_log(10, "RX_THREAD",
                 "received non-ethercat frame! (type 0x%X)\n",
                 pframe->type);
