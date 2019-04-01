@@ -52,6 +52,7 @@ typedef struct hw {
     char *tx_ring;                  //!< kernel mmap send buffers
 
     off_t rx_ring_offset;
+    off_t tx_ring_offset;
 
     pthread_mutex_t hw_lock;        //!< transmit lock
 

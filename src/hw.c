@@ -207,6 +207,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
         (*pphw)->tx_ring = (*pphw)->rx_ring + (mmap_packets * pagesize);
 
         (*pphw)->rx_ring_offset = 0;
+        (*pphw)->tx_ring_offset = 0;
     }
 
     // set timeouts
@@ -557,16 +558,55 @@ int hw_tx(hw_t *phw) {
             if (pframe->len == sizeof(ec_frame_t))
                 break; // nothing to send
 
-            // no more datagrams need to be sent or no more space in frame
-            size_t bytestx =
+            if (phw->mmap_packets > 0) {
+                struct tpacket_hdr *header;
+                struct pollfd pollset;
+                char *off;
+                int ret;
+
+                header = (void *)phw->tx_ring + (phw->tx_ring_offset * getpagesize());
+
+                while (header->tp_status != TP_STATUS_AVAILABLE) {
+
+                    // if none available: wait on more data
+                    pollset.fd = phw->sockfd;
+                    pollset.events = POLLOUT;
+                    pollset.revents = 0;
+                    ret = poll(&pollset, 1, 1000 /* don't hang */);
+                    if (ret < 0) {
+                        perror("poll");
+                        continue;
+                    }
+                }
+
+                // fill data
+                off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+                memcpy(off, pframe, pframe->len);
+
+                // fill header
+                header->tp_len = pframe->len;
+                header->tp_status = TP_STATUS_SEND_REQUEST;
+
+                // increase consumer ring pointer
+                phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
+
+                // notify kernel
+                if (send(phw->sockfd, NULL, 0, 0) < 0) {
+                //if (sendto(fd, NULL, 0, 0, (void *) &txring_daddr, sizeof(txring_daddr)) < 0) {
+                    perror("sendto");
+                }
+            } else {
+                // no more datagrams need to be sent or no more space in frame
+                size_t bytestx =
                     SEND(phw->sockfd, pframe, pframe->len);
 
-            if (pframe->len != bytestx) {
-                ec_log(10, "TX", "got only %d bytes out of %d bytes "
-                        "through.\n", bytestx, pframe->len);
+                if (pframe->len != bytestx) {
+                    ec_log(10, "TX", "got only %d bytes out of %d bytes "
+                            "through.\n", bytestx, pframe->len);
 
-                if (bytestx == -1)
-                    ec_log(10, "TX", "error: %s\n", strerror(errno));
+                    if (bytestx == -1)
+                        ec_log(10, "TX", "error: %s\n", strerror(errno));
+                }
             }
 
             // reset length to send new frame
