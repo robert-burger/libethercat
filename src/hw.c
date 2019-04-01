@@ -84,6 +84,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 
 #define ETH_P_ECAT      0x88A4
 
@@ -231,7 +232,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     ioctl((*pphw)->sockfd, SIOCSIFFLAGS, &ifr);
 
     memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, devname, sizeof(ifr.ifr_name));
+    strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
     ioctl((*pphw)->sockfd, SIOCGIFMTU, &ifr);
     (*pphw)->mtu_size = ifr.ifr_mtu;
     ec_log(10, "hw_open", "got mtu size %d\n", (*pphw)->mtu_size);
