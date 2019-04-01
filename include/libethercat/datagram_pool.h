@@ -49,7 +49,7 @@ typedef struct datagram_entry {
 
     TAILQ_ENTRY(datagram_entry) qh;     //!< queue handle of pool objects
     
-    ec_datagram_t datagram;             //!< the EtherCAT datagram
+    ec_datagram_t *datagram;             //!< the EtherCAT datagram
 } datagram_entry_t;
 
 //! queue head for pool queue

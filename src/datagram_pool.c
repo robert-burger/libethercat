@@ -59,8 +59,11 @@ int datagram_pool_open(datagram_pool_t **pp, size_t cnt) {
     int i;
     for (i = 0; i < cnt; ++i) {
         datagram_entry_t *datagram = 
-            (datagram_entry_t *)malloc(sizeof(datagram_entry_t) + 1500);
-        memset(datagram, 0, sizeof(datagram_entry_t) + 1500);
+            (datagram_entry_t *)malloc(sizeof(datagram_entry_t));// + 1500);
+        memset(datagram, 0, sizeof(datagram_entry_t));// + 1500);
+
+        datagram->datagram = (ec_datagram_t *)malloc(sizeof(ec_datagram_t) + 1500);
+        memset(datagram->datagram, 0, sizeof(ec_datagram_t) + 1500);
         TAILQ_INSERT_TAIL(&(*pp)->avail, datagram, qh);
     }
     
@@ -145,7 +148,7 @@ int datagram_pool_get_next_len(datagram_pool_t *pp, size_t *len) {
 
     datagram_entry_t *entry = (datagram_entry_t *)TAILQ_FIRST(&pp->avail);
     if (entry)
-        *len = ec_datagram_length(&entry->datagram);
+        *len = ec_datagram_length(entry->datagram);
     else
         *len = 0;
     

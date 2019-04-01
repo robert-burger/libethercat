@@ -471,7 +471,7 @@ void *hw_rx_thread(void *arg) {
             pollset.fd = phw->sockfd;
             pollset.events = POLLIN;
             pollset.revents = 0;
-            int ret = poll(&pollset, 1, -1 /* negative means infinite */);
+            int ret = poll(&pollset, 1, -1);
             if (ret < 0) {
                 continue;
             }
@@ -495,9 +495,7 @@ void *hw_rx_thread(void *arg) {
                 if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
                     continue;
 
-                ec_log(10, "RX_THREAD", "recv1111: %s\n", strerror(errno));
-                //struct timespec ts = {1,0};
-                //nanosleep(&ts, NULL);
+                ec_log(10, "RX_THREAD", "recv: %s\n", strerror(errno));
                 sleep(1);
                 continue;
             }
@@ -585,7 +583,6 @@ int hw_tx(hw_t *phw) {
 
                 // notify kernel
                 if (send(phw->sockfd, NULL, 0, 0) < 0) {
-                //if (sendto(fd, NULL, 0, 0, (void *) &txring_daddr, sizeof(txring_daddr)) < 0) {
                     perror("sendto");
                 }
             } else {
@@ -619,13 +616,13 @@ int hw_tx(hw_t *phw) {
 
         if (pdg_prev)
             ec_datagram_mark_next(pdg_prev);
-        memcpy(pdg, &entry->datagram, ec_datagram_length(&entry->datagram));
-        pframe->len += ec_datagram_length(&entry->datagram);
+        memcpy(pdg, entry->datagram, ec_datagram_length(entry->datagram));
+        pframe->len += ec_datagram_length(entry->datagram);
         pdg_prev = pdg;
         pdg = ec_datagram_next(pdg);
 
         // store as sent
-        phw->tx_send[entry->datagram.idx] = entry;
+        phw->tx_send[entry->datagram->idx] = entry;
     }
 
     pthread_mutex_unlock(&phw->hw_lock);
