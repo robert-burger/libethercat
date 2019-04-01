@@ -647,6 +647,11 @@ struct tpacket_hdr *hw_ring_get_next_tx_buffer(hw_t *phw) {
     header = (void *)phw->tx_ring + (phw->tx_ring_offset * getpagesize());
 
     while (header->tp_status != TP_STATUS_AVAILABLE) {
+        // notify kernel
+        if (send(phw->sockfd, NULL, 0, 0) < 0) {
+            perror("sendto");
+        }
+
         // buffer not available, wait here...
         pollset.fd = phw->sockfd;
         pollset.events = POLLOUT;
@@ -738,11 +743,6 @@ int hw_tx(hw_t *phw) {
 
                 // increase consumer ring pointer
                 phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
-
-                // notify kernel
-                if (send(phw->sockfd, NULL, 0, 0) < 0) {
-                    perror("sendto");
-                }
                 
                 // reset length to send new frame
                 header = hw_ring_get_next_tx_buffer(phw);
@@ -789,6 +789,13 @@ int hw_tx(hw_t *phw) {
 
         // store as sent
         phw->tx_send[entry->datagram->idx] = entry;
+    }
+
+    if (phw->mmap_packets > 0) {
+        // notify kernel
+        if (send(phw->sockfd, NULL, 0, 0) < 0) {
+            perror("sendto");
+        }
     }
 
     pthread_mutex_unlock(&phw->hw_lock);
