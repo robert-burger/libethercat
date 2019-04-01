@@ -502,7 +502,11 @@ void *hw_rx_thread(void *arg) {
         ec_log(10, "RX_THREAD", "%s\n", buf);
 
                 ec_frame_t *off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
-                hw_process_rx_frame(phw, off);//(ec_frame_t *)((void *)header + PKT_OFFSET));
+//                struct sockaddr_ll* addr = (struct sockaddr_ll*)(header + TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+                char* l2content = header->tp_mac;
+//                char* l3content = frame_ptr + tphdr->tp_net;
+//handle_frame(tphdr, addr, l2content, l3content);
+                hw_process_rx_frame(phw, (ec_frame_t *)l2content);//off);//(ec_frame_t *)((void *)header + PKT_OFFSET));
 
                 header->tp_status = 0;
                 phw->rx_ring_offset = (phw->rx_ring_offset + 1) % phw->mmap_packets;
