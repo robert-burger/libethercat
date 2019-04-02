@@ -48,7 +48,7 @@
 struct ec;
     
 //! process data group structure
-typedef struct PACKED ec_pd_group {
+typedef struct ec_pd_group {
     uint32_t log;                   //!< locical address
                                     /*!<
                                      * This defines the logical start address
@@ -97,7 +97,7 @@ typedef struct PACKED ec_pd_group {
     
     datagram_entry_t *p_de;         //!< EtherCAT datagram from pool
     idx_entry_t *p_idx;             //!< EtherCAT datagram index from pool
-} PACKED ec_pd_group_t;
+} ec_pd_group_t;
 
 //! ethercat master structure
 typedef struct ec {

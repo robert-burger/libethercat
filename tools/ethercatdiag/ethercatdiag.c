@@ -53,7 +53,7 @@ void propagation_delays(ec_t *pec) {
 
         print_prefix();
         printf("|   ");
-        printf("|         dc support %X, propagation delay %lld [ns]\n", 
+        printf("|         dc support %X, propagation delay %d [ns]\n", 
                 (slv->features & 0x04) == 0x04, 
                 slv->pdelay);
 

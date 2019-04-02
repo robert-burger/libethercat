@@ -60,7 +60,10 @@
 
 #ifdef __linux__
 
-#include <netpacket/packet.h>
+//#include <netpacket/packet.h>
+#include <linux/if_packet.h>
+#include <sys/mman.h>
+#include <poll.h>
 
 #elif defined __VXWORKS__
 #include <vxWorks.h>
@@ -81,6 +84,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 
 #define ETH_P_ECAT      0x88A4
 
@@ -143,9 +147,10 @@ struct bpf_insn insns[] = {
  * \param devname ethernet device name
  * \param prio receive thread prio
  * \param cpumask receive thread cpumask
+ * \param mmap_packets  0 - using traditional send/recv, 1...n number of mmaped kernel packet buffers
  * \return 0 or negative error code
  */
-int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
+int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_packets) {
 #ifdef __linux__
     struct timeval timeout;
     int i, ifindex;
@@ -176,6 +181,35 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
         goto error_exit;
     }
 
+    (*pphw)->mmap_packets = mmap_packets;
+    if (mmap_packets > 0) {
+        int pagesize = getpagesize();
+        struct tpacket_req tp;
+
+        // tell kernel to export data through mmap()ped ring
+        tp.tp_block_size = mmap_packets * pagesize;
+        tp.tp_block_nr   = 1;
+        tp.tp_frame_size = pagesize;
+        tp.tp_frame_nr   = mmap_packets;
+        if (setsockopt((*pphw)->sockfd, SOL_PACKET, 
+                    PACKET_RX_RING, (void*)&tp, sizeof(tp))) {
+            perror("setsockopt() rx ring");
+            goto error_exit;
+        }
+        if (setsockopt((*pphw)->sockfd, SOL_PACKET, 
+                    PACKET_TX_RING, (void*)&tp, sizeof(tp))) {
+            perror("setsockopt() tx ring");
+            goto error_exit;
+        }
+
+        (*pphw)->rx_ring = mmap(0, mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, 
+                MAP_SHARED, (*pphw)->sockfd, 0);
+        (*pphw)->tx_ring = (*pphw)->rx_ring + (mmap_packets * pagesize);
+
+        (*pphw)->rx_ring_offset = 0;
+        (*pphw)->tx_ring_offset = 0;
+    }
+
     // set timeouts
     timeout.tv_sec = 0;
     timeout.tv_usec = 10000;
@@ -199,7 +233,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask) {
     ioctl((*pphw)->sockfd, SIOCSIFFLAGS, &ifr);
 
     memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, devname, sizeof(ifr.ifr_name));
+    strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
     ioctl((*pphw)->sockfd, SIOCGIFMTU, &ifr);
     (*pphw)->mtu_size = ifr.ifr_mtu;
     ec_log(10, "hw_open", "got mtu size %d\n", (*pphw)->mtu_size);
@@ -332,6 +366,41 @@ int hw_close(hw_t *phw) {
     return 0;
 }
 
+void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
+    /* check if it is an EtherCAT frame */
+    if (pframe->ethertype != htons(ETH_P_ECAT)) {
+        ec_log(10, "RX_THREAD",
+                "received non-ethercat frame! (type 0x%X)\n",
+                pframe->type);
+        return;
+    }
+
+    ec_datagram_t *d, *tmp;
+    for (d = ec_datagram_first(pframe); (uint8_t *) d <
+            (uint8_t *) ec_frame_end(pframe);
+            d = ec_datagram_next(d)) {
+        datagram_entry_t *entry = phw->tx_send[d->idx];
+
+        if (!entry) {
+            ec_log(10, "RX_THREAD",
+                    "received idx %d, but we did not send one?\n", d->idx);
+            continue;
+        }
+
+        if (entry->user_cb) {
+            // no copy here, just rotate pointer to datagram
+            tmp = entry->datagram;
+            entry->datagram = d;
+
+            (*entry->user_cb)(entry->user_arg, entry);
+
+            entry->datagram = tmp;
+        } else {
+            memcpy(entry->datagram, d, ec_datagram_length(d));
+        }
+    }
+}
+
 //! receiver thread
 void *hw_rx_thread(void *arg) {
     hw_t *phw = (hw_t *) arg;
@@ -357,6 +426,9 @@ void *hw_rx_thread(void *arg) {
 #elif defined __QNX__
     ThreadCtl(_NTO_TCTL_RUNMASK, (void *)phw->rxthreadcpumask);
 #else
+    struct tpacket_hdr *header;
+    struct pollfd pollset;
+
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     for (unsigned i = 0; i < (sizeof(phw->rxthreadcpumask) * 8); ++i)
@@ -395,66 +467,50 @@ void *hw_rx_thread(void *arg) {
                     ((struct bpf_hdr *) tmpframe2)->bh_datalen);
             
             ec_frame_t *real_frame = (ec_frame_t *)(tmpframe2 + ((struct bpf_hdr *)tmpframe2)->bh_hdrlen);
-            /*size_t real_frame_size = ((struct bpf_hdr *)tmpframe2)->bh_datalen;*/
-
-            ec_datagram_t *d;
-            for (d = ec_datagram_first(real_frame); (uint8_t *) d <
-                                                (uint8_t *) ec_frame_end(real_frame);
-                 d = ec_datagram_next(d)) {
-                datagram_entry_t *entry = phw->tx_send[d->idx];
-
-                if (!entry) {
-                    ec_log(10, "RX_THREAD",
-                           "received idx %d, but we did not send one?\n", d->idx);
-                    continue;
-                }
-
-                memcpy(&entry->datagram, d, ec_datagram_length(d));
-                if (entry->user_cb)
-                    (*entry->user_cb)(entry->user_arg, entry);
-            }
+            hw_process_rx_frame(phw, real_frame);
 
             /* values for next frame */
             bytesrx -= bpf_frame_size;
             tmpframe2 += bpf_frame_size;
         }
 #else
-        ssize_t bytesrx = RECEIVE(phw->sockfd, pframe, ETH_FRAME_LEN);
-
-        if (bytesrx <= 0) {
-            if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+        if (phw->mmap_packets > 0) {
+            // using kernel mapped receive buffers
+            // wait for received, non-processed packet
+            pollset.fd = phw->sockfd;
+            pollset.events = POLLIN;
+            pollset.revents = 0;
+            int ret = poll(&pollset, 1, -1);
+            if (ret < 0) {
                 continue;
+            }
+            
+            int pagesize = getpagesize();
 
-            ec_log(10, "RX_THREAD", "recv1111: %s\n", strerror(errno));
-            //struct timespec ts = {1,0};
-            //nanosleep(&ts, NULL);
-            sleep(1);
-            continue;
-        }
+            for (
+                    header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize);
+                    header->tp_status & TP_STATUS_USER; 
+                    header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize)) {
+                ec_frame_t *real_frame = (ec_frame_t *)((void *)header + header->tp_mac);
+                hw_process_rx_frame(phw, real_frame);
 
-        /* check if it is an EtherCAT frame */
-        if (pframe->ethertype != htons(ETH_P_ECAT)) {
-            ec_log(10, "RX_THREAD",
-                   "received non-ethercat frame! (bytes %d, type 0x%X)\n",
-                   bytesrx, pframe->type);
-            continue;
-        }
+                header->tp_status = 0;
+                phw->rx_ring_offset = (phw->rx_ring_offset + 1) % phw->mmap_packets;
+            }
+        } else {
+            // using tradional recv function
+            ssize_t bytesrx = RECEIVE(phw->sockfd, pframe, ETH_FRAME_LEN);
 
-        ec_datagram_t *d;
-        for (d = ec_datagram_first(pframe); (uint8_t *) d <
-                                            (uint8_t *) ec_frame_end(pframe);
-             d = ec_datagram_next(d)) {
-            datagram_entry_t *entry = phw->tx_send[d->idx];
+            if (bytesrx <= 0) {
+                if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+                    continue;
 
-            if (!entry) {
-                ec_log(10, "RX_THREAD",
-                       "received idx %d, but we did not send one?\n", d->idx);
+                ec_log(10, "RX_THREAD", "recv: %s\n", strerror(errno));
+                sleep(1);
                 continue;
             }
 
-            memcpy(&entry->datagram, d, ec_datagram_length(d));
-            if (entry->user_cb)
-                (*entry->user_cb)(entry->user_arg, entry);
+            hw_process_rx_frame(phw, pframe);
         }
 #endif
         
@@ -471,7 +527,7 @@ static const uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx(hw_t *phw) {
+int hw_tx2(hw_t *phw) {
     uint8_t send_frame[ETH_FRAME_LEN];
     memset(send_frame, 0, ETH_FRAME_LEN);
     ec_frame_t *pframe = (ec_frame_t *) send_frame;
@@ -503,16 +559,54 @@ int hw_tx(hw_t *phw) {
             if (pframe->len == sizeof(ec_frame_t))
                 break; // nothing to send
 
-            // no more datagrams need to be sent or no more space in frame
-            size_t bytestx =
+            if (phw->mmap_packets > 0) {
+                struct tpacket_hdr *header;
+                struct pollfd pollset;
+                char *off;
+                int ret;
+
+                header = (void *)phw->tx_ring + (phw->tx_ring_offset * getpagesize());
+
+                while (header->tp_status != TP_STATUS_AVAILABLE) {
+
+                    // if none available: wait on more data
+                    pollset.fd = phw->sockfd;
+                    pollset.events = POLLOUT;
+                    pollset.revents = 0;
+                    ret = poll(&pollset, 1, 1000 /* don't hang */);
+                    if (ret < 0) {
+                        perror("poll");
+                        continue;
+                    }
+                }
+
+                // fill data
+                off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+                memcpy(off, pframe, pframe->len);
+
+                // fill header
+                header->tp_len = pframe->len;
+                header->tp_status = TP_STATUS_SEND_REQUEST;
+
+                // increase consumer ring pointer
+                phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
+
+                // notify kernel
+                if (send(phw->sockfd, NULL, 0, 0) < 0) {
+                    perror("sendto");
+                }
+            } else {
+                // no more datagrams need to be sent or no more space in frame
+                size_t bytestx =
                     SEND(phw->sockfd, pframe, pframe->len);
 
-            if (pframe->len != bytestx) {
-                ec_log(10, "TX", "got only %d bytes out of %d bytes "
-                        "through.\n", bytestx, pframe->len);
+                if (pframe->len != bytestx) {
+                    ec_log(10, "TX", "got only %d bytes out of %d bytes "
+                            "through.\n", bytestx, pframe->len);
 
-                if (bytestx == -1)
-                    ec_log(10, "TX", "error: %s\n", strerror(errno));
+                    if (bytestx == -1)
+                        ec_log(10, "TX", "error: %s\n", strerror(errno));
+                }
             }
 
             // reset length to send new frame
@@ -532,13 +626,176 @@ int hw_tx(hw_t *phw) {
 
         if (pdg_prev)
             ec_datagram_mark_next(pdg_prev);
-        memcpy(pdg, &entry->datagram, ec_datagram_length(&entry->datagram));
-        pframe->len += ec_datagram_length(&entry->datagram);
+        memcpy(pdg, entry->datagram, ec_datagram_length(entry->datagram));
+        pframe->len += ec_datagram_length(entry->datagram);
         pdg_prev = pdg;
         pdg = ec_datagram_next(pdg);
 
         // store as sent
-        phw->tx_send[entry->datagram.idx] = entry;
+        phw->tx_send[entry->datagram->idx] = entry;
+    }
+
+    pthread_mutex_unlock(&phw->hw_lock);
+
+    return 0;
+}
+
+struct tpacket_hdr *hw_ring_get_next_tx_buffer(hw_t *phw) {
+    struct tpacket_hdr *header;
+    struct pollfd pollset;
+
+    header = (void *)phw->tx_ring + (phw->tx_ring_offset * getpagesize());
+
+    while (header->tp_status != TP_STATUS_AVAILABLE) {
+        // notify kernel
+        if (send(phw->sockfd, NULL, 0, 0) < 0) {
+            perror("sendto");
+        }
+
+        // buffer not available, wait here...
+        pollset.fd = phw->sockfd;
+        pollset.events = POLLOUT;
+        pollset.revents = 0;
+        int ret = poll(&pollset, 1, 1000);
+        if (ret < 0) {
+            perror("poll");
+            continue;
+        }
+    }
+
+    return header;
+}
+
+//! start sending queued ethercat datagrams
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_tx(hw_t *phw) {
+    struct tpacket_hdr *header = NULL;
+    uint8_t send_frame[ETH_FRAME_LEN];
+    ec_frame_t *pframe;
+
+    if (phw->mmap_packets > 0) {
+        header = hw_ring_get_next_tx_buffer(phw);
+        pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+    } else {
+        memset(send_frame, 0, ETH_FRAME_LEN);
+        pframe = (ec_frame_t *) send_frame;
+    }
+
+    pthread_mutex_lock(&phw->hw_lock);
+
+    memcpy(pframe->mac_dest, mac_dest, 6);
+    memcpy(pframe->mac_src, mac_src, 6);
+    pframe->ethertype = htons(ETH_P_ECAT);
+    pframe->type = 0x01;
+    pframe->len = sizeof(ec_frame_t);
+
+    ec_datagram_t *pdg = ec_datagram_first(pframe), *pdg_prev = NULL;
+    size_t len;
+
+    datagram_pool_t *pools[] = {
+            phw->tx_high, phw->tx_low};
+    int pool_idx = 0;
+
+    // send high priority cyclic frames
+    while (1) {
+        if (pool_idx == 2)
+            break;
+
+        datagram_pool_get_next_len(pools[pool_idx], &len);
+
+        if (((len == 0) && (pool_idx == 1)) ||
+            ((pframe->len + len) > phw->mtu_size)) {
+            if (pframe->len == sizeof(ec_frame_t))
+                break; // nothing to send
+
+            if (phw->mmap_packets > 0) {
+#if 0
+                struct tpacket_hdr *header;
+                struct pollfd pollset;
+                char *off;
+                int ret;
+
+                header = (void *)phw->tx_ring + (phw->tx_ring_offset * getpagesize());
+
+                while (header->tp_status != TP_STATUS_AVAILABLE) {
+
+                    // if none available: wait on more data
+                    pollset.fd = phw->sockfd;
+                    pollset.events = POLLOUT;
+                    pollset.revents = 0;
+                    ret = poll(&pollset, 1, 1000 /* don't hang */);
+                    if (ret < 0) {
+                        perror("poll");
+                        continue;
+                    }
+                }
+
+                // fill data
+                off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+                memcpy(off, pframe, pframe->len);
+#endif                
+                // fill header
+                header->tp_len = pframe->len;
+                header->tp_status = TP_STATUS_SEND_REQUEST;
+
+                // increase consumer ring pointer
+                phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
+                
+                // reset length to send new frame
+                header = hw_ring_get_next_tx_buffer(phw);
+                pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+
+                pdg = ec_datagram_first(pframe);
+                pframe->len = sizeof(ec_frame_t);
+                continue;
+            } else {
+                // no more datagrams need to be sent or no more space in frame
+                size_t bytestx =
+                    SEND(phw->sockfd, pframe, pframe->len);
+
+                if (pframe->len != bytestx) {
+                    ec_log(10, "TX", "got only %d bytes out of %d bytes "
+                            "through.\n", bytestx, pframe->len);
+
+                    if (bytestx == -1)
+                        ec_log(10, "TX", "error: %s\n", strerror(errno));
+                }
+
+                // reset length to send new frame
+                pframe->len = sizeof(ec_frame_t);
+                pdg = ec_datagram_first(pframe);
+                continue;
+            }
+        }
+
+        if (len == 0) {
+            pool_idx++;
+            continue;
+        }
+
+        datagram_entry_t *entry;
+        if (datagram_pool_get(pools[pool_idx], &entry, NULL) != 0)
+            break;  // no more frames
+
+        if (pdg_prev)
+            ec_datagram_mark_next(pdg_prev);
+        memcpy(pdg, entry->datagram, ec_datagram_length(entry->datagram));
+        pframe->len += ec_datagram_length(entry->datagram);
+        pdg_prev = pdg;
+        pdg = ec_datagram_next(pdg);
+
+        // store as sent
+        phw->tx_send[entry->datagram->idx] = entry;
+    }
+
+    if (phw->mmap_packets > 0) {
+        // notify kernel
+        if (send(phw->sockfd, NULL, 0, 0) < 0) {
+            perror("sendto");
+        }
     }
 
     pthread_mutex_unlock(&phw->hw_lock);
