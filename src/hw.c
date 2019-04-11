@@ -444,6 +444,8 @@ void *hw_rx_thread(void *arg) {
 
 #endif
 
+    ec_log(10, __func__, "running\n");
+
     while (phw->rxthreadrunning) {
 #ifdef HAVE_NET_BPF_H
         ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
@@ -486,6 +488,7 @@ void *hw_rx_thread(void *arg) {
                 continue;
             }
             
+            ec_log(10, __func__, "kernel ring buffer, received sth\n");
             int pagesize = getpagesize();
 
             for (
@@ -516,6 +519,8 @@ void *hw_rx_thread(void *arg) {
 #endif
         
     }
+    
+    ec_log(10, __func__, "exiting\n");
 
     return NULL;
 }
