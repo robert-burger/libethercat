@@ -1361,4 +1361,90 @@ dc_exit:
     return 0;
 }
 
+//! send broadcast read to ec state
+/*!
+ * \param pec ethercat master pointer
+ * \return 0 on success
+ */
+int ec_send_brd_ec_state(ec_t *pec) {
+    if (ec_index_get(&pec->idx_q, &pec->p_idx_state) != 0) {
+        ec_log(5, __func__, "error getting ethercat index\n");
+        return -1;
+    }
+
+    if (datagram_pool_get(pec->pool, &pec->p_de_state, NULL) != 0) {
+        ec_index_put(&pec->idx_q, pec->p_idx_state);
+        ec_log(5, __func__, "error getting datagram from pool\n");
+        return -1;
+    }
+    
+    memset(pec->p_de_state->datagram, 0, sizeof(ec_datagram_t) + 4 + 2);
+    pec->p_de_state->datagram->cmd = EC_CMD_BRD;
+    pec->p_de_state->datagram->idx = pec->p_idx_state->idx;
+    pec->p_de_state->datagram->adr = EC_REG_ALSTAT << 16;
+    pec->p_de_state->datagram->len = 2;
+    pec->p_de_state->datagram->irq = 0;
+
+    pec->p_de_state->user_cb = cb_block;
+    pec->p_de_state->user_arg = pec->p_idx_state;
+
+    // queue frame and trigger tx
+    datagram_pool_put(pec->phw->tx_high, pec->p_de_state);
+
+    return 0;
+}
+
+//! receive broadcast read to ec_state
+/*!
+ * \param pec ethercat master pointer
+ * \param timeout for waiting for packet
+ * \return 0 on success
+ */
+int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
+    static int wkc_mismatch_cnt_ec_state = 0;
+    int ret = 0;
+    uint16_t al_status;
+
+    uint16_t wkc = 0;
+    if (!pec->p_idx_state)
+        return ret;
+    
+    // wait for completion
+    struct timespec ts = { timeout->sec, timeout->nsec };
+    ret = sem_timedwait(&pec->p_idx_state->waiter, &ts);
+    if (ret == -1) {
+        ec_log(5, __func__, "sem_timedwait ec_state: %s\n", strerror(errno));
+        goto local_exit;
+    }
+        
+    wkc = ec_datagram_wkc(pec->p_de_state->datagram);
+    memcpy(&al_status, ec_datagram_payload(pec->p_de_state->datagram), 2);
+
+    if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+                (pec->master_state == EC_STATE_OP)  ) && 
+            (wkc != pec->slave_cnt)) {
+        if ((wkc_mismatch_cnt_ec_state++%1000) == 0) {
+            ec_log(10, __func__, 
+                    "brd ec_state: working counter mismatch got %u, "
+                    "slave_cnt %d, mismatch_cnt %d\n", 
+                    wkc, pec->slave_cnt, wkc_mismatch_cnt_ec_state);
+        }
+
+//        ec_async_check_group(pec->async_loop, group);
+        ret = -1;
+    } else {
+        wkc_mismatch_cnt_ec_state = 0;
+    }
+
+    if (al_status != pec->master_state)
+        ec_log(10, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
+                al_status, pec->master_state);
+
+local_exit:
+    datagram_pool_put(pec->pool, pec->p_de_state);
+    ec_index_put(&pec->idx_q, pec->p_idx_state);
+
+    return ret;
+}
+
 

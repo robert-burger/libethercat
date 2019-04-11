@@ -151,6 +151,9 @@ typedef struct ec {
     ec_state_t master_state;        //!< expected EtherCAT master state
 
     int threaded_startup;           //!< running state machine in threads for slave
+    
+    datagram_entry_t *p_de_state;   //!< EtherCAT datagram from pool for ec_state read
+    idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
 } ec_t;
 
 #ifdef __cplusplus
@@ -260,6 +263,21 @@ int ec_send_distributed_clocks_sync(ec_t *pec);
  * \return 0 on success
  */
 int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout);
+
+//! send broadcast read to ec state
+/*!
+ * \param pec ethercat master pointer
+ * \return 0 on success
+ */
+int ec_send_brd_ec_state(ec_t *pec);
+
+//! receive broadcast read to ec_state
+/*!
+ * \param pec ethercat master pointer
+ * \param timeout for waiting for packet
+ * \return 0 on success
+ */
+int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout);
 
 #ifdef __cplusplus
 };

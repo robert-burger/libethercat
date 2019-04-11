@@ -89,9 +89,9 @@
 #define ETH_P_ECAT      0x88A4
 
 #if defined HAVE_NET_BPF_H
-static int ETH_FRAME_LEN = 4096;
+#define ETH_FRAME_LEN 4096
 #else
-static int ETH_FRAME_LEN = 1518;
+#define ETH_FRAME_LEN 1518
 #endif
 
 //! receiver thread forward declaration
@@ -639,8 +639,10 @@ int hw_tx2(hw_t *phw) {
 
     return 0;
 }
+    
+static uint8_t send_frame[ETH_FRAME_LEN];
 
-struct tpacket_hdr *hw_ring_get_next_tx_buffer(hw_t *phw) {
+struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
     struct tpacket_hdr *header;
     struct pollfd pollset;
 
@@ -673,11 +675,10 @@ struct tpacket_hdr *hw_ring_get_next_tx_buffer(hw_t *phw) {
  */
 int hw_tx(hw_t *phw) {
     struct tpacket_hdr *header = NULL;
-    uint8_t send_frame[ETH_FRAME_LEN];
     ec_frame_t *pframe;
 
     if (phw->mmap_packets > 0) {
-        header = hw_ring_get_next_tx_buffer(phw);
+        header = hw_get_next_tx_buffer(phw);
         pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
     } else {
         memset(send_frame, 0, ETH_FRAME_LEN);
@@ -712,31 +713,6 @@ int hw_tx(hw_t *phw) {
                 break; // nothing to send
 
             if (phw->mmap_packets > 0) {
-#if 0
-                struct tpacket_hdr *header;
-                struct pollfd pollset;
-                char *off;
-                int ret;
-
-                header = (void *)phw->tx_ring + (phw->tx_ring_offset * getpagesize());
-
-                while (header->tp_status != TP_STATUS_AVAILABLE) {
-
-                    // if none available: wait on more data
-                    pollset.fd = phw->sockfd;
-                    pollset.events = POLLOUT;
-                    pollset.revents = 0;
-                    ret = poll(&pollset, 1, 1000 /* don't hang */);
-                    if (ret < 0) {
-                        perror("poll");
-                        continue;
-                    }
-                }
-
-                // fill data
-                off = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
-                memcpy(off, pframe, pframe->len);
-#endif                
                 // fill header
                 header->tp_len = pframe->len;
                 header->tp_status = TP_STATUS_SEND_REQUEST;
@@ -745,7 +721,7 @@ int hw_tx(hw_t *phw) {
                 phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
                 
                 // reset length to send new frame
-                header = hw_ring_get_next_tx_buffer(phw);
+                header = hw_get_next_tx_buffer(phw);
                 pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
 
                 pdg = ec_datagram_first(pframe);
