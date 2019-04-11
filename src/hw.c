@@ -202,6 +202,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
             goto error_exit;
         }
 
+        // TODO unmap anywhere
         (*pphw)->rx_ring = mmap(0, mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, 
                 MAP_SHARED, (*pphw)->sockfd, 0);
         (*pphw)->tx_ring = (*pphw)->rx_ring + (mmap_packets * pagesize);
