@@ -498,6 +498,11 @@ void *hw_rx_thread(void *arg) {
                 ec_log(10, __func__, "processing one frame ... rx_ring_offset %d\n", phw->rx_ring_offset);
 
                 ec_frame_t *real_frame = (ec_frame_t *)((void *)header + header->tp_mac);
+                char tmp[256], *ptmp = &tmp[0]; int pos = 0;
+                for (int u = 0; u < 64; ++u)
+                    pos += snprintf(ptmp + pos, 256 - pos ,"%02X", ((uint8_t *)real_frame)[u]);
+
+                ec_log(10, __func__, "got %s\n", tmp);
                 hw_process_rx_frame(phw, real_frame);
 
                 header->tp_status = 0;
