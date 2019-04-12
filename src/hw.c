@@ -389,14 +389,15 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             continue;
         }
 
+            memcpy(entry->datagram, d, ec_datagram_length(d));
         if (entry->user_cb) {
             // no copy here, just rotate pointer to datagram
-            tmp = entry->datagram;
-            entry->datagram = d;
+            //tmp = entry->datagram;
+            //entry->datagram = d;
 
             (*entry->user_cb)(entry->user_arg, entry);
 
-            entry->datagram = tmp;
+            //entry->datagram = tmp;
         } else {
             memcpy(entry->datagram, d, ec_datagram_length(d));
         }
