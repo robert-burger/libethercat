@@ -675,6 +675,8 @@ int hw_tx(hw_t *phw) {
     struct tpacket_hdr *header = NULL;
     ec_frame_t *pframe;
 
+    pthread_mutex_lock(&phw->hw_lock);
+
     if (phw->mmap_packets > 0) {
         header = hw_get_next_tx_buffer(phw);
         pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
@@ -682,8 +684,6 @@ int hw_tx(hw_t *phw) {
         memset(send_frame, 0, ETH_FRAME_LEN);
         pframe = (ec_frame_t *) send_frame;
     }
-
-    pthread_mutex_lock(&phw->hw_lock);
 
     memcpy(pframe->mac_dest, mac_dest, 6);
     memcpy(pframe->mac_src, mac_src, 6);
