@@ -727,8 +727,9 @@ int hw_tx(hw_t *phw) {
                 header = hw_get_next_tx_buffer(phw);
                 pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
 
-                pdg = ec_datagram_first(pframe);
+                // reset length to send new frame
                 pframe->len = sizeof(ec_frame_t);
+                pdg = ec_datagram_first(pframe);
                 continue;
             } else {
                 // no more datagrams need to be sent or no more space in frame
