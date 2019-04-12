@@ -728,6 +728,10 @@ int hw_tx(hw_t *phw) {
                 pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
 
                 // reset length to send new frame
+                memcpy(pframe->mac_dest, mac_dest, 6);
+                memcpy(pframe->mac_src, mac_src, 6);
+                pframe->ethertype = htons(ETH_P_ECAT);
+                pframe->type = 0x01;
                 pframe->len = sizeof(ec_frame_t);
                 pdg = ec_datagram_first(pframe);
                 continue;
