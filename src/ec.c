@@ -1444,7 +1444,7 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
         wkc_mismatch_cnt_ec_state = 0;
     }
 
-    if (al_status != pec->master_state) {
+    if (!pec->state_transition_pending && (al_status != pec->master_state)) {
         if ((ec_state_mismatch_cnt++%1000) == 0)
             ec_log(10, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
                     al_status, pec->master_state);
