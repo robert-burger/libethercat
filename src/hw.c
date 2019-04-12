@@ -376,7 +376,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
         return;
     }
 
-    ec_datagram_t *d, *tmp;
+    ec_datagram_t *d;//, *tmp;
     for (d = ec_datagram_first(pframe); (uint8_t *) d <
             (uint8_t *) ec_frame_end(pframe);
             d = ec_datagram_next(d)) {
