@@ -495,6 +495,8 @@ void *hw_rx_thread(void *arg) {
                     header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize);
                     header->tp_status & TP_STATUS_USER; 
                     header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize)) {
+                ec_log(10, __func__, "processing one frame ... rx_ring_offset %d\n", phw->rx_ring_offset);
+
                 ec_frame_t *real_frame = (ec_frame_t *)((void *)header + header->tp_mac);
                 hw_process_rx_frame(phw, real_frame);
 
