@@ -149,6 +149,7 @@ typedef struct ec {
     
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state
+    int state_transition_pending;   //!< state transition is currently pending
 
     int threaded_startup;           //!< running state machine in threads for slave
     

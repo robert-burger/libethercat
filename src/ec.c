@@ -698,6 +698,8 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
     ec_log(10, "SET MASTER STATE", "switch to from %s to %s\n", 
             get_state_string(pec->master_state), get_state_string(state));
 
+    pec->state_transition_pending = 1;
+
     // generate transition
     ec_state_transition_t transition = ((pec->master_state & EC_STATE_MASK) << 8) | 
         (state & EC_STATE_MASK); 
@@ -806,7 +808,10 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             break;
     };
         
-    return (pec->master_state = state);
+    pec->master_state = state;
+    pec->state_transition_pending = 1;
+
+    return pec->master_state;
 }
 
 pthread_t ec_tx;
@@ -849,6 +854,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     pec->pd_groups          = NULL;
     pec->tx_sync            = 1;
     pec->threaded_startup   = 0;
+    pec->state_transition_pending = 0;
 
     // init values for distributed clocks
     pec->dc.have_dc         = 0;
