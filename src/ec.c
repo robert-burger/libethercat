@@ -1408,6 +1408,8 @@ int ec_send_brd_ec_state(ec_t *pec) {
  */
 int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
     static int wkc_mismatch_cnt_ec_state = 0;
+    static int ec_state_mismatch_cnt = 0;
+
     int ret = 0;
     uint16_t al_status;
 
@@ -1442,9 +1444,11 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
         wkc_mismatch_cnt_ec_state = 0;
     }
 
-    if (al_status != pec->master_state)
-        ec_log(10, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
-                al_status, pec->master_state);
+    if (al_status != pec->master_state) {
+        if ((ec_state_mismatch_cnt++%1000) == 0)
+            ec_log(10, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
+                    al_status, pec->master_state);
+    }
 
 local_exit:
     datagram_pool_put(pec->pool, pec->p_de_state);
