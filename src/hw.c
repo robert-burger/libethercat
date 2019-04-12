@@ -713,6 +713,11 @@ int hw_tx(hw_t *phw) {
                 header->tp_len = pframe->len;
                 header->tp_status = TP_STATUS_SEND_REQUEST;
 
+                // notify kernel
+                if (send(phw->sockfd, NULL, 0, 0) < 0) {
+                    perror("sendto");
+                }
+
                 // increase consumer ring pointer
                 phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
                 
@@ -761,13 +766,6 @@ int hw_tx(hw_t *phw) {
 
         // store as sent
         phw->tx_send[entry->datagram->idx] = entry;
-    }
-
-    if (phw->mmap_packets > 0) {
-        // notify kernel
-        if (send(phw->sockfd, NULL, 0, 0) < 0) {
-            perror("sendto");
-        }
     }
 
     pthread_mutex_unlock(&phw->hw_lock);
