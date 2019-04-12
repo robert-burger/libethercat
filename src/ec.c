@@ -913,6 +913,8 @@ static void cb_block(void *user_arg, struct datagram_entry *p) {
     sem_post(&entry->waiter);
 }
 
+pthread_mutex_t _sync_tx_lock = PTHREAD_MUTEX_INITIALIZER;
+
 //! syncronous ethercat read/write
 /*!
  * \param pec pointer to ethercat master
@@ -954,8 +956,11 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
     datagram_pool_put(pec->phw->tx_low, p_de);
 
     // send frame immediately if in sync mode
-    if (pec->tx_sync)
+    if (pec->tx_sync) {
+        pthread_mutex_lock(&_sync_tx_lock);
         hw_tx(pec->phw);
+        pthread_mutex_unlock(&_sync_tx_lock);
+    }
 
     // wait for completion
     ec_timer_t timeout;
