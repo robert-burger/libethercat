@@ -184,6 +184,8 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     (*pphw)->mmap_packets = mmap_packets;
     if (mmap_packets > 0) {
         int pagesize = getpagesize();
+        ec_log(10, __func__, "got page size %d bytes\n", pagesize);
+
         struct tpacket_req tp;
 
         // tell kernel to export data through mmap()ped ring
