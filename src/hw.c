@@ -382,6 +382,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             d = ec_datagram_next(d)) {
         datagram_entry_t *entry = phw->tx_send[d->idx];
 
+        ec_log(10, __func__, "processing datagram...\n");
         if (!entry) {
             ec_log(10, "RX_THREAD",
                     "received idx %d, but we did not send one?\n", d->idx);
