@@ -809,7 +809,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
     };
         
     pec->master_state = state;
-    pec->state_transition_pending = 1;
+    pec->state_transition_pending = 0;
 
     return pec->master_state;
 }
