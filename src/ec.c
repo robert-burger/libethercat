@@ -1012,7 +1012,7 @@ int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr,
         return -1;
     }
 
-    memset(&p_de->datagram, 0, sizeof(ec_datagram_t) + datalen + 2);
+    memset(p_de->datagram, 0, sizeof(ec_datagram_t) + datalen + 2);
     p_de->datagram->cmd = cmd;
     p_de->datagram->idx = p_idx->idx;
     p_de->datagram->adr = adr;
