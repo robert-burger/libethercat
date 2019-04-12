@@ -382,24 +382,16 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             d = ec_datagram_next(d)) {
         datagram_entry_t *entry = phw->tx_send[d->idx];
 
-        ec_log(10, __func__, "processing datagram...\n");
         if (!entry) {
             ec_log(10, "RX_THREAD",
                     "received idx %d, but we did not send one?\n", d->idx);
             continue;
         }
 
-            memcpy(entry->datagram, d, ec_datagram_length(d));
+        memcpy(entry->datagram, d, ec_datagram_length(d));
+        
         if (entry->user_cb) {
-            // no copy here, just rotate pointer to datagram
-            //tmp = entry->datagram;
-            //entry->datagram = d;
-
             (*entry->user_cb)(entry->user_arg, entry);
-
-            //entry->datagram = tmp;
-        } else {
-            memcpy(entry->datagram, d, ec_datagram_length(d));
         }
     }
 }
@@ -446,8 +438,6 @@ void *hw_rx_thread(void *arg) {
 
 #endif
 
-    ec_log(10, __func__, "running\n");
-
     while (phw->rxthreadrunning) {
 #ifdef HAVE_NET_BPF_H
         ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
@@ -490,21 +480,14 @@ void *hw_rx_thread(void *arg) {
                 continue;
             }
             
-            ec_log(10, __func__, "kernel ring buffer, received sth\n");
             int pagesize = getpagesize();
 
             for (
                     header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize);
                     header->tp_status & TP_STATUS_USER; 
                     header = (void *)phw->rx_ring + (phw->rx_ring_offset * pagesize)) {
-                ec_log(10, __func__, "processing one frame ... rx_ring_offset %d\n", phw->rx_ring_offset);
 
                 ec_frame_t *real_frame = (ec_frame_t *)((void *)header + header->tp_mac);
-                char tmp[256], *ptmp = &tmp[0]; int pos = 0;
-                for (int u = 0; u < 64; ++u)
-                    pos += snprintf(ptmp + pos, 256 - pos ,"%02X", ((uint8_t *)real_frame)[u]);
-
-                ec_log(10, __func__, "got %s\n", tmp);
                 hw_process_rx_frame(phw, real_frame);
 
                 header->tp_status = 0;
@@ -529,8 +512,6 @@ void *hw_rx_thread(void *arg) {
         
     }
     
-    ec_log(10, __func__, "exiting\n");
-
     return NULL;
 }
 
