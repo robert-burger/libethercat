@@ -464,6 +464,15 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
                 // skip cat type and len
                 int local_offset = cat_offset + 2;
+                slv->eeprom.fmmus_cnt = cat_len * 2;
+
+                if (!slv->eeprom.fmmus_cnt)
+                    break;
+
+                // alloc fmmus
+                slv->eeprom.fmmus = (ec_eeprom_cat_fmmu_t *)malloc(
+                        sizeof(ec_eeprom_cat_fmmu_t) * slv->eeprom.fmmus_cnt);
+
                 unsigned i, fmmu_idx = 0;
                 while (local_offset < (cat_offset + cat_len + 2)) {
                     eeprom(local_offset, value32);
@@ -472,6 +481,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         if ((fmmu_idx < slv->fmmu_ch) && 
                                 (tmp[i] >= 1) && (tmp[i] <= 3)) {
                             slv->fmmu[fmmu_idx].type = tmp[i];
+
+                            slv->eeprom.fmmus[fmmu_idx].type = tmp[i];
                 
                             eeprom_log(100, "EEPROM_FMMU", 
                                     "          fmmu%d, type %d\n", 
