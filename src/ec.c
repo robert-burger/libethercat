@@ -739,10 +739,13 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             ec_dc_config(pec);
 
             // sending first time dc
-            ec_send_distributed_clocks_sync(pec);
-            ec_timer_t dc_timeout;
-            ec_timer_init(&dc_timeout, 10000000);
-            ec_receive_distributed_clocks_sync(pec, &dc_timeout);
+            if (ec_send_distributed_clocks_sync(pec) == 0) {
+                ec_timer_t dc_timeout;
+                ec_timer_init(&dc_timeout, 10000000);
+                ec_receive_distributed_clocks_sync(pec, &dc_timeout);
+            } else {
+                ec_log(10, __func__, "was not able to send first dc frame\n");
+            }
 
             ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
 
@@ -1051,6 +1054,12 @@ int ec_send_process_data_group(ec_t *pec, int group) {
     ec_pd_group_t *pd = &pec->pd_groups[group];
     unsigned pd_len = 0;
 
+    if ((pd->p_de != NULL) || (pd->p_idx != NULL)) {
+        ec_log(5, __func__, "already sent group frame, will not send until it "
+                "has returned...\n");
+        return -1;
+    }
+
     if (ec_index_get(&pec->idx_q, &pd->p_idx) != 0) {
         ec_log(5, "EC_SEND_PROCESS_DATA_GROUP", 
                 "error getting ethercat index\n");
@@ -1107,6 +1116,11 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
     if (!pd->p_idx)
         return ret;
     
+    if ((pd->p_de == NULL) || (pd->p_idx == NULL)) {
+        ec_log(5, __func__, "did not sent group frame\n");
+        return -1;
+    }
+    
     // wait for completion
     struct timespec ts = { timeout->sec, timeout->nsec };
     ret = sem_timedwait(&pd->p_idx->waiter, &ts);
@@ -1148,6 +1162,9 @@ local_exit:
     datagram_pool_put(pec->pool, pd->p_de);
     ec_index_put(&pec->idx_q, pd->p_idx);
 
+    pd->p_de = NULL;
+    pd->p_idx = NULL;
+
     return ret;
 }
 
@@ -1159,6 +1176,12 @@ local_exit:
 int ec_send_distributed_clocks_sync(ec_t *pec) {
     if (!pec->dc.have_dc || !pec->dc.rtc_sto)
         return 0;
+
+    if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
+        ec_log(5, __func__, "already sent dc frame, will not send until it "
+                "has returned...\n");
+        return -1;
+    }
 
     uint64_t act_rtc_time = ec_timer_gettime_nsec();
 
@@ -1241,6 +1264,11 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
 
     if (!pec->dc.have_dc || !pec->dc.p_de_dc)
         return 0;
+    
+    if ((pec->dc.p_de_dc == NULL) || (pec->dc.p_idx_dc == NULL)) {
+        ec_log(5, __func__, "no dc frame was sent!\n");
+        return -1;
+    }
             
     // wait for completion
     struct timespec ts = { timeout->sec, timeout->nsec };
@@ -1363,6 +1391,9 @@ sto_exit:
 dc_exit:
     datagram_pool_put(pec->pool, pec->dc.p_de_dc);
     ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
+
+    pec->dc.p_de_dc = NULL;
+    pec->dc.p_idx_dc = NULL;
 
     return 0;
 }
