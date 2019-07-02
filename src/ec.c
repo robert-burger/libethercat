@@ -869,6 +869,9 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     pec->dc.rtc_cycle       = 0;
     pec->dc.rtc_count       = 0;
     pec->dc.act_diff        = 0;
+    
+    pec->dc.p_de_dc         = NULL;
+    pec->dc.p_idx_dc        = NULL;
 
     // eeprom logging level
     pec->eeprom_log         = eeprom_log;
@@ -1168,6 +1171,8 @@ local_exit:
     return ret;
 }
 
+pthread_mutex_t send_dc_lock = PTHREAD_MUTEX_INITIALIZER;
+
 //! send distributed clock sync datagram
 /*!
  * \param pec ethercat master pointer
@@ -1175,11 +1180,15 @@ local_exit:
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
     if (!pec->dc.have_dc || !pec->dc.rtc_sto)
-        return 0;
+        return -1;
+
+    pthread_mutex_lock(&send_dc_lock);
 
     if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
         ec_log(5, __func__, "already sent dc frame, will not send until it "
                 "has returned...\n");
+
+        pthread_mutex_unlock(&send_dc_lock);
         return -1;
     }
 
@@ -1215,6 +1224,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     if (ec_index_get(&pec->idx_q, &pec->dc.p_idx_dc) != 0) {
         ec_log(5, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", 
                 "error getting ethercat index\n");
+        pthread_mutex_unlock(&send_dc_lock);
         return -1;
     }
 
@@ -1222,6 +1232,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
         ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
         ec_log(5, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", 
                 "error getting datagram from pool\n");
+        pthread_mutex_unlock(&send_dc_lock);
         return -1;
     }
 
@@ -1250,6 +1261,9 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
     // queue frame and trigger tx
     datagram_pool_put(pec->phw->tx_high, pec->dc.p_de_dc);
+      
+    pthread_mutex_unlock(&send_dc_lock);
+
     return 0;
 }
 
