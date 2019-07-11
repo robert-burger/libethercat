@@ -766,6 +766,7 @@ int hw_tx(hw_t *phw) {
 
         if (pdg_prev)
             ec_datagram_mark_next(pdg_prev);
+        
         memcpy(pdg, entry->datagram, ec_datagram_length(entry->datagram));
         pframe->len += ec_datagram_length(entry->datagram);
         pdg_prev = pdg;
