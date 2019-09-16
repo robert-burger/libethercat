@@ -191,7 +191,8 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
         }
 
         if (read_buf->mbx_hdr.mbxtype == EC_MBX_COE) {
-            if (read_buf->coe_hdr.service == EC_COE_SDORES) {
+            if (    read_buf->coe_hdr.service == EC_COE_SDOREQ || 
+                    read_buf->coe_hdr.service == EC_COE_SDORES) {
                 if (read_buf->sdo_hdr.command == EC_COE_SDO_ABORT_REQ) {
                     ec_sdo_abort_request_t *abort_buf = 
                         (ec_sdo_abort_request_t *)(slv->mbx_read.buf); 
@@ -205,6 +206,9 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
                     ret = EC_ERROR_MAILBOX_ABORT;
                     goto exit;
                 }
+
+                if (read_buf->coe_hdr.service == EC_COE_SDOREQ)
+                    goto local_exit;
 
                 // everthing is fine
                 *abort_code = 0;
@@ -239,16 +243,20 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
             }
         }
 
-        // not our answer, print out this message
-        char msg_buf[64];
-        char *tmp = msg_buf;
-        size_t pos = 0;
-        for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
-            pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
-        ec_log(10, __func__, "got unexpected mailbox message on slave %d: %s\n", slave, msg_buf);
-            
-        ret = EC_ERROR_MAILBOX_READ;
-        goto exit;
+local_exit:
+
+        {
+            // not our answer, print out this message
+            char msg_buf[64];
+            char *tmp = msg_buf;
+            size_t pos = 0;
+            for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
+                pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
+            ec_log(10, __func__, "got unexpected mailbox message on slave %d: %s\n", slave, msg_buf);
+
+            ret = EC_ERROR_MAILBOX_READ;
+            goto exit;
+        }
     } while (1); 
 
 exit:
