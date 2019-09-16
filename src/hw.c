@@ -235,6 +235,8 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
     ioctl((*pphw)->sockfd, SIOCSIFFLAGS, &ifr);
 
+    ec_log(10, __func__, "binding raw socket to %s\n", devname);
+
     memset(&ifr, 0, sizeof(ifr));
     strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
     ioctl((*pphw)->sockfd, SIOCGIFMTU, &ifr);
@@ -389,6 +391,8 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
                     "received idx %d, but we did not send one?\n", d->idx);
             continue;
         }
+
+        ec_log(100, __func__, "received idx %d\n", d->idx);
 
         memcpy(entry->datagram, d, ec_datagram_length(d));
         
@@ -652,6 +656,8 @@ int hw_tx(hw_t *phw) {
         pframe->len += ec_datagram_length(entry->datagram);
         pdg_prev = pdg;
         pdg = ec_datagram_next(pdg);
+
+        ec_log(100, __func__, "sending idx %d\n", entry->datagram->idx);
 
         // store as sent
         phw->tx_send[entry->datagram->idx] = entry;
