@@ -197,7 +197,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
                     ec_sdo_abort_request_t *abort_buf = 
                         (ec_sdo_abort_request_t *)(slv->mbx_read.buf); 
 
-                    ec_log(10, "ec_coe_sdo_write", "got sdo abort request on idx %#X, "
+                    ec_log(100, "ec_coe_sdo_write", "got sdo abort request on idx %#X, "
                             "subidx %d, abortcode %#X\n", index, sub_index, 
                             abort_buf->abort_code);
 
