@@ -377,7 +377,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
     slv->eeprom.read_eeprom = 1;
     
-    size = (value32 & 0x0000FFFF) * 125; // convert kbit to byte
+    size = ((value32 & 0x0000FFFF) + 1) * 125; // convert kbit to byte
     if (size <= 128)
         return;
 
@@ -683,6 +683,9 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
         }
 
         cat_offset += cat_len + 2; 
+
+        if ((cat_offset * 2) >= size)
+            break;
     }
     
     slv->eeprom.read_eeprom = 1;
