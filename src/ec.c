@@ -1328,10 +1328,12 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
 
             // only compensate within one cycle, add rest to system time offset
             if (pec->dc.timer_override > 0) {
-                int ticks_off = pec->dc.act_diff / pec->dc.timer_override;
-            
-                pec->dc.rtc_sto  += ticks_off * pec->dc.timer_override;                
-                pec->dc.act_diff  = pec->dc.act_diff % pec->dc.timer_override;
+                // for example with a cycle of 1 ms we want to control between
+                // -0.5 ms to +0.5 ms.
+                int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
+                pec->dc.rtc_sto  += ticks_off * (pec->dc.timer_override / 2);             
+
+                pec->dc.act_diff  = pec->dc.act_diff % (pec->dc.timer_override / 2);
             }
 
             pec->dc.prev_rtc = rtc_temp;
