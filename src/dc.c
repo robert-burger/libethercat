@@ -159,16 +159,13 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
             rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) - pec->dc.act_diff;
             break;
         case dc_mode_ref_clock:
-            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
+            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) + 10000;
             break;
         case dc_mode_master_as_ref_clock:
             rel_rtc_time = pec->dc.timer_prev; 
             break;
     }
     
-    int64_t dc_time;
-    ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
-
     int64_t dc_start = rel_rtc_time + pec->dc.timer_override * 1000 + cycle_shift;
    
     // program first trigger time and cycle time
@@ -178,6 +175,9 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
             sizeof(cycle_time_0), &wkc);    
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, 
             sizeof(cycle_time_1), &wkc);
+    
+    int64_t dc_time;
+    ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
 
     if (active) {
         // activate distributed clock on slave
