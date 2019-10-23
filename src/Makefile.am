@@ -28,3 +28,6 @@ libethercat_la_SOURCES  = coe.c common.c slave.c datagram.c datagram_pool.c mess
 libethercat_la_CFLAGS   = -std=gnu99 -Wall -Werror -I$(top_srcdir)/include
 libethercat_la_LDFLAGS  = -Wall -Werror -release $(PACKAGE_VERSION) 
 
+install-exec-hook: 
+	find $(DESTDIR)$(libdir) -type f -name \*.la -delete
+

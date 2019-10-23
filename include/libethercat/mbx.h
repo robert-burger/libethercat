@@ -120,6 +120,9 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec);
  */
 void ec_mbx_push(ec_t *pec, uint16_t slave);
 
+#if 0 
+{
+#endif
 #ifdef __cplusplus
 }
 #endif

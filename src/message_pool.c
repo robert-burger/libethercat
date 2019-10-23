@@ -100,11 +100,28 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
         
         ec_set_state(paml->pec, EC_STATE_INIT);
     } else {
-        ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
-                "0x%02X\n", slave, state, alstatcode);
-
         // if state != expected_state -> repair
         if (state != paml->pec->slaves[slave].expected_state) {
+            ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
+                    "0x%02X\n", slave, state, alstatcode);
+            
+            uint16_t wkc2;
+            uint8_t rx_error_counters[16];
+            ec_fprd(paml->pec, paml->pec->slaves[slave].fixed_address, 
+                0x300, &rx_error_counters[0], 16, &wkc2);
+
+            if (wkc2) {
+                int i, pos = 0;
+                char msg[128];
+                char *buf = msg;
+
+                for (i = 0; i < 16; ++i)
+                    pos += snprintf(buf + pos, 128 - pos, "%02X ", rx_error_counters[i]);
+
+                ec_log(10, "ec_async_thread", "slave %2d: error counters %s\n", 
+                        slave, msg);
+            }
+
             wkc = ec_slave_state_transition(paml->pec, slave, 
                     paml->pec->slaves[slave].expected_state);
         }
@@ -118,7 +135,7 @@ static void *ec_async_message_loop_thread(void *arg) {
     while (paml->loop_running) {
         ec_timer_t timeout;
         ec_timer_init(&timeout, 100000000 );
-        ec_message_entry_t *me;
+        ec_message_entry_t *me = NULL;
 
         int ret = ec_async_message_loop_get(&paml->exec, &me, &timeout);
         if (ret != 0)
@@ -164,7 +181,7 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
 
     ec_timer_t timeout;
     ec_timer_init(&timeout, 1000);
-    ec_message_entry_t *me;
+    ec_message_entry_t *me = NULL;
     int ret = ec_async_message_loop_get(&paml->avail, &me, &timeout);
     if (ret == -1)
         return; // got no message buffer

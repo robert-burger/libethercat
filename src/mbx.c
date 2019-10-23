@@ -208,8 +208,10 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec) {
                     break;
             } while (!ec_timer_expired(&timer) && !wkc);
 
-            if (ec_timer_expired(&timer))
+            if (ec_timer_expired(&timer)) {
+                ec_log(10, __func__, "slave %d timeout waiting for toggle ack\n", slave);
                 return 0;
+            }
 
             // wait for receive mailbox available 
             if (!ec_mbx_is_full(pec, slave, slv->mbx_read.sm_nr, nsec)) {

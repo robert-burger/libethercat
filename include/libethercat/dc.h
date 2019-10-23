@@ -37,7 +37,7 @@
 #include "libethercat/idx.h"
 #include "libethercat/datagram_pool.h"
 
-typedef struct PACKED ec_dc_info_slave {
+typedef struct ec_dc_info_slave {
     int use_dc;                 //!< flag, whether to use dc
     int next;                   //!< marker for next dc slave
     int prev;                   //!< marker for previous dc slave
@@ -49,9 +49,9 @@ typedef struct PACKED ec_dc_info_slave {
     uint32_t cycle_time_0;      //!< cycle time of sync 0 [ns]
     uint32_t cycle_time_1;      //!< cycle time of sync 1 [ns]
     uint32_t cycle_shift;       //!< cycle shift time [ns]
-} PACKED ec_dc_info_slave_t;
+} ec_dc_info_slave_t;
 
-typedef struct PACKED ec_dc_info {
+typedef struct ec_dc_info {
     uint16_t master_address;
     int have_dc;
     int next;
@@ -88,7 +88,7 @@ typedef struct PACKED ec_dc_info {
 
     datagram_entry_t *p_de_dc;
     idx_entry_t *p_idx_dc;
-} PACKED ec_dc_info_t;
+} ec_dc_info_t;
 
 struct ec;
 

@@ -1,0 +1,160 @@
+---
+- type: DLR SE QM project file
+- seqm_version: 1.1
+- project_name: libethercat
+- seqmedit_version: 0.12.1
+- howto: 'wanna create such a cool file? see https://wiki.robotic.dlr.de/Cissy#seqm.yaml (at RM) or https://gitlab-ee.sc.dlr.de/se-netzwerk/seqmedit (outside of RM, but inside of DLR)'
+- recommendations:
+    - eaa01:
+        - state: done
+    - eaa02:
+        - state: done
+    - eaa03:
+        - state: not necessary
+    - eaa04:
+        - state: not necessary
+    - eaa05:
+        - state: done
+    - eaa06:
+        - state: done
+    - eaa07:
+        - state: not done
+    - eaa08:
+        - state: done
+    - eaa09:
+        - state: done
+    - eaa10:
+        - state: done
+    - eaem01:
+        - state: done
+    - eaem02:
+        - state: done
+    - eaem03:
+        - state: done
+    - eaem04:
+        - state: not done
+    - eaem05:
+        - state: done
+    - eaem06:
+        - state: done
+    - eaem07:
+        - state: done
+    - eaem08:
+        - state: done
+    - eaem09:
+        - state: done
+    - eaem10:
+        - state: done
+    - eam01:
+        - state: done
+    - eam02:
+        - state: done
+    - eam03:
+        - state: done
+    - eam04:
+        - state: done
+    - eam05:
+        - state: done
+    - eam06:
+        - state: done
+    - eam07:
+        - state: done
+    - eam08:
+        - state: done
+    - eam09:
+        - state: done
+    - eam10:
+        - state: done
+    - edi01:
+        - state: done
+    - edi02:
+        - state: done
+    - edi03:
+        - state: not done
+    - edi04:
+        - state: done
+    - edi05:
+        - state: done
+    - edi06:
+        - state: done
+    - edi07:
+        - state: not done
+    - edi08:
+        - state: done
+    - edi09:
+        - state: done
+    - edi10:
+        - state: done
+    - edi11:
+        - state: not done
+    - eqa01:
+        - state: done
+    - eqa02:
+        - state: done
+    - eqa03:
+        - state: done
+    - eqa04:
+        - state: done
+    - erm01:
+        - state: done
+    - erm02:
+        - state: done
+    - erm03:
+        - state: done
+    - erm04:
+        - state: done
+    - erm05:
+        - state: done
+    - erm06:
+        - state: done
+    - erm07:
+        - state: done
+    - erm08:
+        - state: not done
+    - erm09:
+        - state: not necessary
+    - erm10:
+        - state: not necessary
+    - erm11:
+        - state: done
+    - esa01:
+        - state: not done
+    - esa02:
+        - state: done
+    - esa03:
+        - state: not done
+    - esa04:
+        - state: done
+    - esa05:
+        - state: done
+    - esa06:
+        - state: done
+    - esa07:
+        - state: done
+    - esa08:
+        - state: done
+    - esa10:
+        - state: not done
+    - esa11:
+        - state: not done
+    - est01:
+        - state: not done
+    - est02:
+        - state: not done
+    - est03:
+        - state: not done
+    - est04:
+        - state: done
+    - est05:
+        - state: not done
+    - est06:
+        - state: not done
+    - est07:
+        - state: not done
+    - est08:
+        - state: not done
+    - est09:
+        - state: not done
+    - est10:
+        - state: done
+- application_class: 3

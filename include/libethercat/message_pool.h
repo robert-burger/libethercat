@@ -36,6 +36,7 @@
 #include <stdint.h>
 #include <semaphore.h>
 
+#include "libethercat/common.h"
 #include "libethercat/timer.h"
 
 struct ec;
@@ -61,7 +62,7 @@ typedef struct ec_message {
 } ec_message_t;
 
 //! Message queue qentry
-typedef struct __attribute__((__packed__)) ec_message_entry {
+typedef struct ec_message_entry {
     TAILQ_ENTRY(ec_message_entry) qh;
                                     //!< handle to message entry queue
     

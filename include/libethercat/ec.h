@@ -48,7 +48,7 @@
 struct ec;
     
 //! process data group structure
-typedef struct PACKED ec_pd_group {
+typedef struct ec_pd_group {
     uint32_t log;                   //!< locical address
                                     /*!<
                                      * This defines the logical start address
@@ -97,7 +97,7 @@ typedef struct PACKED ec_pd_group {
     
     datagram_entry_t *p_de;         //!< EtherCAT datagram from pool
     idx_entry_t *p_idx;             //!< EtherCAT datagram index from pool
-} PACKED ec_pd_group_t;
+} ec_pd_group_t;
 
 //! ethercat master structure
 typedef struct ec {
@@ -149,8 +149,12 @@ typedef struct ec {
     
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state
+    int state_transition_pending;   //!< state transition is currently pending
 
     int threaded_startup;           //!< running state machine in threads for slave
+    
+    datagram_entry_t *p_de_state;   //!< EtherCAT datagram from pool for ec_state read
+    idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
 } ec_t;
 
 #ifdef __cplusplus
@@ -260,6 +264,21 @@ int ec_send_distributed_clocks_sync(ec_t *pec);
  * \return 0 on success
  */
 int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout);
+
+//! send broadcast read to ec state
+/*!
+ * \param pec ethercat master pointer
+ * \return 0 on success
+ */
+int ec_send_brd_ec_state(ec_t *pec);
+
+//! receive broadcast read to ec_state
+/*!
+ * \param pec ethercat master pointer
+ * \param timeout for waiting for packet
+ * \return 0 on success
+ */
+int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout);
 
 #ifdef __cplusplus
 };

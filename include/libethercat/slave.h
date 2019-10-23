@@ -41,29 +41,34 @@
 typedef enum ec_state_transition {
     BOOT_2_BOOT      = 0x0303,  //!< BOOT to BOOT state transition
     BOOT_2_INIT      = 0x0301,  //!< BOOT to INIT state transition
-    BOOT_2_PREOP     = 0x0302,  //!< BOOT to PREOP state transitio,
-    BOOT_2_SAFEOP    = 0x0304,  //!< BOOT to SAFEOP state transitio,
-    BOOT_2_OP        = 0x0308,  //!< BOOT to OP state transitio,
+    BOOT_2_PREOP     = 0x0302,  //!< BOOT to PREOP state transition,
+    BOOT_2_SAFEOP    = 0x0304,  //!< BOOT to SAFEOP state transition,
+    BOOT_2_OP        = 0x0308,  //!< BOOT to OP state transition,
+    UNKNOWN_2_BOOT   = 0x0003,  //!< UNKNOWN to BOOT state transition
+    UNKNOWN_2_INIT   = 0x0001,  //!< UNKNOWN to INIT state transition,
+    UNKNOWN_2_PREOP  = 0x0002,  //!< UNKNOWN to PREOP state transition,
+    UNKNOWN_2_SAFEOP = 0x0004,  //!< UNKNOWN to SAFEOP state transition,
+    UNKNOWN_2_OP     = 0x0008,  //!< UNKNOWN to OP state transition,
     INIT_2_BOOT      = 0x0103,  //!< INIT to BOOT state transition
-    INIT_2_INIT      = 0x0101,  //!< INIT to INIT state transitio,
-    INIT_2_PREOP     = 0x0102,  //!< INIT to PREOP state transitio,
-    INIT_2_SAFEOP    = 0x0104,  //!< INIT to SAFEOP state transitio,
-    INIT_2_OP        = 0x0108,  //!< INIT to OP state transitio,
-    PREOP_2_BOOT     = 0x0203,  //!< PREOP to BOOT state transitio,
-    PREOP_2_INIT     = 0x0201,  //!< PREOP to INIT state transitio,
-    PREOP_2_PREOP    = 0x0202,  //!< PREOP to PREOP state transitio,
-    PREOP_2_SAFEOP   = 0x0204,  //!< PREOP to SAFEOP state transitio,
-    PREOP_2_OP       = 0x0208,  //!< PREOP to OP state transitio,
-    SAFEOP_2_BOOT    = 0x0403,  //!< SAFEOP to BOOT state transitio,
-    SAFEOP_2_INIT    = 0x0401,  //!< SAFEOP to INIT state transitio,
-    SAFEOP_2_PREOP   = 0x0402,  //!< SAFEOP to PREOP state transitio,
-    SAFEOP_2_SAFEOP  = 0x0404,  //!< SAFEOP to SAFEOP state transitio,
-    SAFEOP_2_OP      = 0x0408,  //!< SAFEOP to OP state transitio,
-    OP_2_BOOT        = 0x0803,  //!< OP to BOOT state transitio,
-    OP_2_INIT        = 0x0801,  //!< OP to INIT state transitio,
-    OP_2_PREOP       = 0x0802,  //!< OP to PREOP state transitio,
-    OP_2_SAFEOP      = 0x0804,  //!< OP to SAFEOP state transitio,
-    OP_2_OP          = 0x0808,  //!< OP to OP state transitio,
+    INIT_2_INIT      = 0x0101,  //!< INIT to INIT state transition,
+    INIT_2_PREOP     = 0x0102,  //!< INIT to PREOP state transition,
+    INIT_2_SAFEOP    = 0x0104,  //!< INIT to SAFEOP state transition,
+    INIT_2_OP        = 0x0108,  //!< INIT to OP state transition,
+    PREOP_2_BOOT     = 0x0203,  //!< PREOP to BOOT state transition,
+    PREOP_2_INIT     = 0x0201,  //!< PREOP to INIT state transition,
+    PREOP_2_PREOP    = 0x0202,  //!< PREOP to PREOP state transition,
+    PREOP_2_SAFEOP   = 0x0204,  //!< PREOP to SAFEOP state transition,
+    PREOP_2_OP       = 0x0208,  //!< PREOP to OP state transition,
+    SAFEOP_2_BOOT    = 0x0403,  //!< SAFEOP to BOOT state transition,
+    SAFEOP_2_INIT    = 0x0401,  //!< SAFEOP to INIT state transition,
+    SAFEOP_2_PREOP   = 0x0402,  //!< SAFEOP to PREOP state transition,
+    SAFEOP_2_SAFEOP  = 0x0404,  //!< SAFEOP to SAFEOP state transition,
+    SAFEOP_2_OP      = 0x0408,  //!< SAFEOP to OP state transition,
+    OP_2_BOOT        = 0x0803,  //!< OP to BOOT state transition,
+    OP_2_INIT        = 0x0801,  //!< OP to INIT state transition,
+    OP_2_PREOP       = 0x0802,  //!< OP to PREOP state transition,
+    OP_2_SAFEOP      = 0x0804,  //!< OP to SAFEOP state transition,
+    OP_2_OP          = 0x0808,  //!< OP to OP state transition,
 } ec_state_transition_t;
 
 //! EtherCAT slave mailbox settings
@@ -225,6 +230,18 @@ typedef struct worker_arg {
     ec_state_t state;
 } worker_arg_t;
 
+//! Message queue qentry
+typedef struct ec_emergency_message_entry {
+    TAILQ_ENTRY(ec_emergency_message_entry) qh;
+                                //!< handle to message entry queue
+    ec_timer_t timestamp;       //!< timestamp, when emergency was received
+    size_t msg_len;             //!< length
+    uint8_t msg[1];             //!< message itself
+} ec_emergency_message_entry_t;
+
+TAILQ_HEAD(ec_emergency_message_queue, ec_emergency_message_entry);
+typedef struct ec_emergency_message_queue ec_emergency_message_queue_t;
+
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
     uint16_t fixed_address;     //!< virtual bus address, programmed on start
@@ -278,6 +295,8 @@ typedef struct ec_slave {
 
     ec_slave_mbx_t mbx_read;    //!< read mailbox 
     ec_slave_mbx_t mbx_write;   //!< write mailbox
+    ec_emergency_message_queue_t 
+        mbx_coe_emergencies;    //!< message pool queue
 
     int assigned_pd_group;
     ec_pd_t pdin;               //!< input process data 
@@ -466,12 +485,32 @@ void ec_slave_add_init_cmd(struct ec *pec, uint16_t slave,
         int type, int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen);
 
+//! Set Distributed Clocks config to slave
+/*! 
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] use_dc        Whether to en-/disable dc on slave.
+ * \param[in] type          DC type, 0 = sync0, 1 = sync01.
+ * \param[in] cycle_time_0  Cycle time of sync 0 [ns].
+ * \param[in] cycle_time_1  Cycle time of sync 1 [ns].
+ * \param[in] cycle_shift   Cycle shift time [ns].
+ */
+void ec_slave_set_dc_config(struct ec *pec, uint16_t slave, 
+        int use_dc, int type, uint32_t cycle_time_0, 
+        uint32_t cycle_time_1, uint32_t cycle_shift);
+
 //! Freeing init command structure.
 /*!
  * \param[in] cmd           Pointer to init command which willed be freed.
  */
 void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
 
+#if 0 
+{
+#endif
 #ifdef __cplusplus
 }
 #endif

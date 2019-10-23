@@ -33,6 +33,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "libethercat/common.h"
 
 #define EC_WKC_SIZE     2
 

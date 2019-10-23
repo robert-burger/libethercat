@@ -32,6 +32,8 @@
 #ifndef __LIBETHERCAT_SOE_H__
 #define __LIBETHERCAT_SOE_H__
 
+#include "libethercat/common.h"
+
 //! ServoDrive attributes of an IDN
 typedef struct PACKED ec_soe_idn_attribute {
     uint32_t evafactor   :16;       //!< Evalution factor .
@@ -134,6 +136,9 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
  */
 int ec_soe_generate_mapping(ec_t *pec, uint16_t slave);
 
+#if 0 
+{
+#endif
 #ifdef __cplusplus
 }
 #endif

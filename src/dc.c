@@ -90,7 +90,7 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
             break;
     }
 
-    int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift - slv->pdelay;
+    int64_t dc_start = rel_rtc_time + SYNC_DELAY + cycle_shift;
    
     // program first trigger time and cycle time
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, 
@@ -151,7 +151,7 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
     switch (pec->dc.mode) {
         case dc_mode_master_clock:
             if (active) 
-                while (pec->dc.act_diff == 0) {
+                while ((pec->dc.act_diff == 0) || (pec->dc.timer_prev == 0)) {
                     // wait until dc's are ready
                     ec_sleep(1000000);
                 }
@@ -159,14 +159,14 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
             rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) - pec->dc.act_diff;
             break;
         case dc_mode_ref_clock:
-            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto);
+            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) + 10000;
             break;
         case dc_mode_master_as_ref_clock:
             rel_rtc_time = pec->dc.timer_prev; 
             break;
     }
     
-    int64_t dc_start = rel_rtc_time + /*SYNC_DELAY +*/ cycle_time_0 + pec->dc.timer_override*1000 + cycle_shift - slv->pdelay;
+    int64_t dc_start = rel_rtc_time + pec->dc.timer_override * 1000 + cycle_shift;
    
     // program first trigger time and cycle time
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, 
@@ -175,6 +175,9 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
             sizeof(cycle_time_0), &wkc);    
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, 
             sizeof(cycle_time_1), &wkc);
+    
+    int64_t dc_time;
+    ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
 
     if (active) {
         // activate distributed clock on slave
@@ -183,9 +186,9 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
                 sizeof(dc_active), &wkc);
     
         ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
-                "%lld, cycletime_0 %d, cycletime_1 %d, dc_active %X\n", 
-                slave, rel_rtc_time, dc_start, cycle_time_0, cycle_time_1, 
-                dc_active);
+                "%lld, slv dc_time %lld, cycletime_0 %d, cycletime_1 %d, dc_active %d, act_diff %lld, %lld, %lld\n", 
+                slave, rel_rtc_time, dc_start, dc_time, cycle_time_0, cycle_time_1, 
+                dc_active, pec->dc.act_diff, pec->dc.timer_prev, pec->dc.rtc_sto);
     } else
         // if not active, the DC's stay inactive
         ec_log(100, "DISTRIBUTED_CLOCK", 
@@ -309,16 +312,12 @@ int ec_dc_config(struct ec *pec) {
         
         if (!pec->dc.have_dc) {                
             pec->dc.master_address = slv->fixed_address;
-            pec->dc.have_dc = 1;
+//            pec->dc.have_dc = 1;
             pec->dc.offset_compensation_cycles = 100;
             pec->dc.offset_compensation_cnt = 0;
-
-            pec->dc.timer_override = -1;
             pec->dc.timer_prev = 0;
-
             pec->dc.prev_rtc = 0;
             pec->dc.prev_dc = 0;
-
             pec->dc.next = slave;
             slv->dc.prev = -1;                
         } else {
@@ -346,7 +345,7 @@ int ec_dc_config(struct ec *pec) {
                     slv->entry_port = i; 
 
                 ec_log(100, "DISTRIBUTED_CLOCK", 
-                        "slave %2d: receive time port %d - %lld\n", 
+                        "slave %2d: receive time port %d - %d\n", 
                         slave, i, slv->dc.receive_times[i]);
             }
         }
@@ -444,8 +443,8 @@ int ec_dc_config(struct ec *pec) {
 
             // calculate current slave delay from delta times
             // assumption : forward delay equals return delay
-            slv->pdelay = ((delay_slave_with_childs - delay_childs) / 2) + 
-                delay_previous_slaves + pec->slaves[parent].pdelay;
+            slv->pdelay = (((delay_slave_with_childs - delay_childs) / 2) + 
+                delay_previous_slaves + pec->slaves[parent].pdelay);
 
             ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, "
                     "delay_previous_slaves %d, delay_slave_with_childs %d\n", 
@@ -457,12 +456,19 @@ int ec_dc_config(struct ec *pec) {
                     slave, slv->pdelay);
             ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSDELAY, &slv->pdelay, 
                     sizeof(slv->pdelay), &wkc);
+        } else {
+            slv->pdelay = 0;
+            ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSDELAY, &slv->pdelay, 
+                    sizeof(slv->pdelay), &wkc);
         }
     }
 
     uint64_t temp_dc = 0;
     ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME,
             &temp_dc, 8, &wkc);
+
+    if (pec->dc.master_address > 0)
+        pec->dc.have_dc = 1;
 
     return 1;
 }

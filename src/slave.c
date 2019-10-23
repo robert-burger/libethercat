@@ -170,6 +170,234 @@ void ec_slave_add_init_cmd(ec_t *pec, uint16_t slave,
         LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
 }
 
+// Set Distributed Clocks config to slave
+void ec_slave_set_dc_config(struct ec *pec, uint16_t slave, 
+        int use_dc, int type, uint32_t cycle_time_0, 
+        uint32_t cycle_time_1, uint32_t cycle_shift) {
+    pec->slaves[slave].dc.use_dc        = use_dc;
+    pec->slaves[slave].dc.type          = type;
+    pec->slaves[slave].dc.cycle_time_0  = cycle_time_0;
+    pec->slaves[slave].dc.cycle_time_1  = cycle_time_1;
+    pec->slaves[slave].dc.cycle_shift   = cycle_shift;
+}
+
+#define AL_STATUS_CODE__NOERROR                        0x0000 
+#define AL_STATUS_CODE__UNSPECIFIEDERROR               0x0001 
+#define AL_STATUS_CODE__NOMEMORY                       0x0002 
+#define AL_STATUS_CODE__FW_SII_NOT_MATCH               0x0006 
+#define AL_STATUS_CODE__FW_UPDATE_FAILED               0x0007 
+#define AL_STATUS_CODE__INVALIDALCONTROL               0x0011 
+#define AL_STATUS_CODE__UNKNOWNALCONTROL               0x0012 
+#define AL_STATUS_CODE__BOOTNOTSUPP                    0x0013 
+#define AL_STATUS_CODE__NOVALIDFIRMWARE                0x0014 
+#define AL_STATUS_CODE__INVALIDMBXCFGINBOOT            0x0015 
+#define AL_STATUS_CODE__INVALIDMBXCFGINPREOP           0x0016 
+#define AL_STATUS_CODE__INVALIDSMCFG                   0x0017 
+#define AL_STATUS_CODE__NOVALIDINPUTS                  0x0018 
+#define AL_STATUS_CODE__NOVALIDOUTPUTS                 0x0019 
+#define AL_STATUS_CODE__SYNCERROR                      0x001A 
+#define AL_STATUS_CODE__SMWATCHDOG                     0x001B 
+#define AL_STATUS_CODE__SYNCTYPESNOTCOMPATIBLE         0x001C 
+#define AL_STATUS_CODE__INVALIDSMOUTCFG                0x001D 
+#define AL_STATUS_CODE__INVALIDSMINCFG                 0x001E 
+#define AL_STATUS_CODE__INVALIDWDCFG                   0x001F 
+#define AL_STATUS_CODE__WAITFORCOLDSTART               0x0020 
+#define AL_STATUS_CODE__WAITFORINIT                    0x0021 
+#define AL_STATUS_CODE__WAITFORPREOP                   0x0022 
+#define AL_STATUS_CODE__WAITFORSAFEOP                  0x0023 
+#define AL_STATUS_CODE__INVALIDINPUTMAPPING            0x0024 
+#define AL_STATUS_CODE__INVALIDOUTPUTMAPPING           0x0025 
+#define AL_STATUS_CODE__INCONSISTENTSETTINGS           0x0026 
+#define AL_STATUS_CODE__FREERUNNOTSUPPORTED            0x0027 
+#define AL_STATUS_CODE__SYNCHRONNOTSUPPORTED           0x0028 
+#define AL_STATUS_CODE__FREERUNNEEDS3BUFFERMODE        0x0029 
+#define AL_STATUS_CODE__BACKGROUNDWATCHDOG             0x002A 
+#define AL_STATUS_CODE__NOVALIDINPUTSANDOUTPUTS        0x002B 
+#define AL_STATUS_CODE__FATALSYNCERROR                 0x002C 
+#define AL_STATUS_CODE__NOSYNCERROR                    0x002D 
+#define AL_STATUS_CODE__CYCLETIMETOOSMALL              0x002E 
+#define AL_STATUS_CODE__DCINVALIDSYNCCFG               0x0030 
+#define AL_STATUS_CODE__DCINVALIDLATCHCFG              0x0031 
+#define AL_STATUS_CODE__DCPLLSYNCERROR                 0x0032 
+#define AL_STATUS_CODE__DCSYNCIOERROR                  0x0033 
+#define AL_STATUS_CODE__DCSYNCMISSEDERROR              0x0034 
+#define AL_STATUS_CODE__DCINVALIDSYNCCYCLETIME         0x0035 
+#define AL_STATUS_CODE__DCSYNC0CYCLETIME               0x0036 
+#define AL_STATUS_CODE__DCSYNC1CYCLETIME               0x0037 
+#define AL_STATUS_CODE__MBX_AOE                        0x0041 
+#define AL_STATUS_CODE__MBX_EOE                        0x0042 
+#define AL_STATUS_CODE__MBX_COE                        0x0043 
+#define AL_STATUS_CODE__MBX_FOE                        0x0044 
+#define AL_STATUS_CODE__MBX_SOE                        0x0045 
+#define AL_STATUS_CODE__MBX_VOE                        0x004F 
+#define AL_STATUS_CODE__EE_NOACCESS                    0x0050 
+#define AL_STATUS_CODE__EE_ERROR                       0x0051 
+#define AL_STATUS_CODE__EXT_HARDWARE_NOT_READY         0x0052 
+
+const static char *_AL_STATUS_CODE__NOERROR                       = "no error"; 
+const static char *_AL_STATUS_CODE__UNSPECIFIEDERROR              = "unspecified error"; 
+const static char *_AL_STATUS_CODE__NOMEMORY                      = "no memory"; 
+const static char *_AL_STATUS_CODE__FW_SII_NOT_MATCH              = "firmware sii not match"; 
+const static char *_AL_STATUS_CODE__FW_UPDATE_FAILED              = "firmware update failed"; 
+const static char *_AL_STATUS_CODE__INVALIDALCONTROL              = "invalid al control"; 
+const static char *_AL_STATUS_CODE__UNKNOWNALCONTROL              = "unknown al control"; 
+const static char *_AL_STATUS_CODE__BOOTNOTSUPP                   = "boot not supported"; 
+const static char *_AL_STATUS_CODE__NOVALIDFIRMWARE               = "no valid firmware"; 
+const static char *_AL_STATUS_CODE__INVALIDMBXCFGINBOOT           = "invalid mailbox config in boot"; 
+const static char *_AL_STATUS_CODE__INVALIDMBXCFGINPREOP          = "invalid mailbox config in prepop"; 
+const static char *_AL_STATUS_CODE__INVALIDSMCFG                  = "invalid sync manager config"; 
+const static char *_AL_STATUS_CODE__NOVALIDINPUTS                 = "invalid inputs"; 
+const static char *_AL_STATUS_CODE__NOVALIDOUTPUTS                = "invalid outputs"; 
+const static char *_AL_STATUS_CODE__SYNCERROR                     = "sync error"; 
+const static char *_AL_STATUS_CODE__SMWATCHDOG                    = "sync manager watchdog"; 
+const static char *_AL_STATUS_CODE__SYNCTYPESNOTCOMPATIBLE        = "sync types not compatible"; 
+const static char *_AL_STATUS_CODE__INVALIDSMOUTCFG               = "invalid sync manager out config"; 
+const static char *_AL_STATUS_CODE__INVALIDSMINCFG                = "invalid sync manager in config"; 
+const static char *_AL_STATUS_CODE__INVALIDWDCFG                  = "invalid watchdog config"; 
+const static char *_AL_STATUS_CODE__WAITFORCOLDSTART              = "wait for cold start"; 
+const static char *_AL_STATUS_CODE__WAITFORINIT                   = "wait for init"; 
+const static char *_AL_STATUS_CODE__WAITFORPREOP                  = "wait for preop"; 
+const static char *_AL_STATUS_CODE__WAITFORSAFEOP                 = "wait for safeop"; 
+const static char *_AL_STATUS_CODE__INVALIDINPUTMAPPING           = "invalid input mapping"; 
+const static char *_AL_STATUS_CODE__INVALIDOUTPUTMAPPING          = "invalid output mapping"; 
+const static char *_AL_STATUS_CODE__INCONSISTENTSETTINGS          = "inconsistent settings"; 
+const static char *_AL_STATUS_CODE__FREERUNNOTSUPPORTED           = "freerun not supported"; 
+const static char *_AL_STATUS_CODE__SYNCHRONNOTSUPPORTED          = "synchron not supported"; 
+const static char *_AL_STATUS_CODE__FREERUNNEEDS3BUFFERMODE       = "freerun needs 3 buffer mode"; 
+const static char *_AL_STATUS_CODE__BACKGROUNDWATCHDOG            = "background watchdog"; 
+const static char *_AL_STATUS_CODE__NOVALIDINPUTSANDOUTPUTS       = "no valid inputs and outputs"; 
+const static char *_AL_STATUS_CODE__FATALSYNCERROR                = "fatal sync error"; 
+const static char *_AL_STATUS_CODE__NOSYNCERROR                   = "no sync error"; 
+const static char *_AL_STATUS_CODE__CYCLETIMETOOSMALL             = "cycletime too small"; 
+const static char *_AL_STATUS_CODE__DCINVALIDSYNCCFG              = "dc invalid sync config"; 
+const static char *_AL_STATUS_CODE__DCINVALIDLATCHCFG             = "dc invalid latch config"; 
+const static char *_AL_STATUS_CODE__DCPLLSYNCERROR                = "dc pll sync error"; 
+const static char *_AL_STATUS_CODE__DCSYNCIOERROR                 = "dc sync io error"; 
+const static char *_AL_STATUS_CODE__DCSYNCMISSEDERROR             = "dc sync missed error"; 
+const static char *_AL_STATUS_CODE__DCINVALIDSYNCCYCLETIME        = "dc invalid sync cycletime"; 
+const static char *_AL_STATUS_CODE__DCSYNC0CYCLETIME              = "dc sync0 cycletime"; 
+const static char *_AL_STATUS_CODE__DCSYNC1CYCLETIME              = "dc sync1 cycletime"; 
+const static char *_AL_STATUS_CODE__MBX_AOE                       = "mailbox aoe"; 
+const static char *_AL_STATUS_CODE__MBX_EOE                       = "mailbox eoe"; 
+const static char *_AL_STATUS_CODE__MBX_COE                       = "mailbox coe"; 
+const static char *_AL_STATUS_CODE__MBX_FOE                       = "mailbox foe"; 
+const static char *_AL_STATUS_CODE__MBX_SOE                       = "mailbox soe"; 
+const static char *_AL_STATUS_CODE__MBX_VOE                       = "mailbox voe"; 
+const static char *_AL_STATUS_CODE__EE_NOACCESS                   = "ee no access"; 
+const static char *_AL_STATUS_CODE__EE_ERROR                      = "ee error"; 
+const static char *_AL_STATUS_CODE__EXT_HARDWARE_NOT_READY        = "ext hardware not ready"; 
+
+const char *al_status_code_2_string(int code) {
+    switch (code) {
+        case AL_STATUS_CODE__NOERROR:
+            return _AL_STATUS_CODE__NOERROR;
+        case AL_STATUS_CODE__UNSPECIFIEDERROR:
+            return _AL_STATUS_CODE__UNSPECIFIEDERROR;
+        case AL_STATUS_CODE__NOMEMORY:
+            return _AL_STATUS_CODE__NOMEMORY;
+        case AL_STATUS_CODE__FW_SII_NOT_MATCH:
+            return _AL_STATUS_CODE__FW_SII_NOT_MATCH;
+        case AL_STATUS_CODE__FW_UPDATE_FAILED:
+            return _AL_STATUS_CODE__FW_UPDATE_FAILED;
+        case AL_STATUS_CODE__INVALIDALCONTROL:
+            return _AL_STATUS_CODE__INVALIDALCONTROL;
+        case AL_STATUS_CODE__UNKNOWNALCONTROL:
+            return _AL_STATUS_CODE__UNKNOWNALCONTROL;
+        case AL_STATUS_CODE__BOOTNOTSUPP:
+            return _AL_STATUS_CODE__BOOTNOTSUPP;
+        case AL_STATUS_CODE__NOVALIDFIRMWARE:
+            return _AL_STATUS_CODE__NOVALIDFIRMWARE;
+        case AL_STATUS_CODE__INVALIDMBXCFGINBOOT:
+            return _AL_STATUS_CODE__INVALIDMBXCFGINBOOT;
+        case AL_STATUS_CODE__INVALIDMBXCFGINPREOP:
+            return _AL_STATUS_CODE__INVALIDMBXCFGINPREOP;
+        case AL_STATUS_CODE__INVALIDSMCFG:
+            return _AL_STATUS_CODE__INVALIDSMCFG;
+        case AL_STATUS_CODE__NOVALIDINPUTS:
+            return _AL_STATUS_CODE__NOVALIDINPUTS;
+        case AL_STATUS_CODE__NOVALIDOUTPUTS:
+            return _AL_STATUS_CODE__NOVALIDOUTPUTS;
+        case AL_STATUS_CODE__SYNCERROR:
+            return _AL_STATUS_CODE__SYNCERROR;
+        case AL_STATUS_CODE__SMWATCHDOG:
+            return _AL_STATUS_CODE__SMWATCHDOG;
+        case AL_STATUS_CODE__SYNCTYPESNOTCOMPATIBLE:
+            return _AL_STATUS_CODE__SYNCTYPESNOTCOMPATIBLE;
+        case AL_STATUS_CODE__INVALIDSMOUTCFG:
+            return _AL_STATUS_CODE__INVALIDSMOUTCFG;
+        case AL_STATUS_CODE__INVALIDSMINCFG:
+            return _AL_STATUS_CODE__INVALIDSMINCFG;
+        case AL_STATUS_CODE__INVALIDWDCFG:
+            return _AL_STATUS_CODE__INVALIDWDCFG;
+        case AL_STATUS_CODE__WAITFORCOLDSTART:
+            return _AL_STATUS_CODE__WAITFORCOLDSTART;
+        case AL_STATUS_CODE__WAITFORINIT:
+            return _AL_STATUS_CODE__WAITFORINIT;
+        case AL_STATUS_CODE__WAITFORPREOP:
+            return _AL_STATUS_CODE__WAITFORPREOP;
+        case AL_STATUS_CODE__WAITFORSAFEOP:
+            return _AL_STATUS_CODE__WAITFORSAFEOP;
+        case AL_STATUS_CODE__INVALIDINPUTMAPPING:
+            return _AL_STATUS_CODE__INVALIDINPUTMAPPING;
+        case AL_STATUS_CODE__INVALIDOUTPUTMAPPING:
+            return _AL_STATUS_CODE__INVALIDOUTPUTMAPPING;
+        case AL_STATUS_CODE__INCONSISTENTSETTINGS:
+            return _AL_STATUS_CODE__INCONSISTENTSETTINGS;
+        case AL_STATUS_CODE__FREERUNNOTSUPPORTED:
+            return _AL_STATUS_CODE__FREERUNNOTSUPPORTED;
+        case AL_STATUS_CODE__SYNCHRONNOTSUPPORTED:
+            return _AL_STATUS_CODE__SYNCHRONNOTSUPPORTED;
+        case AL_STATUS_CODE__FREERUNNEEDS3BUFFERMODE:
+            return _AL_STATUS_CODE__FREERUNNEEDS3BUFFERMODE;
+        case AL_STATUS_CODE__BACKGROUNDWATCHDOG:
+            return _AL_STATUS_CODE__BACKGROUNDWATCHDOG;
+        case AL_STATUS_CODE__NOVALIDINPUTSANDOUTPUTS:
+            return _AL_STATUS_CODE__NOVALIDINPUTSANDOUTPUTS;
+        case AL_STATUS_CODE__FATALSYNCERROR:
+            return _AL_STATUS_CODE__FATALSYNCERROR;
+        case AL_STATUS_CODE__NOSYNCERROR:
+            return _AL_STATUS_CODE__NOSYNCERROR;
+        case AL_STATUS_CODE__CYCLETIMETOOSMALL:
+            return _AL_STATUS_CODE__CYCLETIMETOOSMALL;
+        case AL_STATUS_CODE__DCINVALIDSYNCCFG:
+            return _AL_STATUS_CODE__DCINVALIDSYNCCFG;
+        case AL_STATUS_CODE__DCINVALIDLATCHCFG:
+            return _AL_STATUS_CODE__DCINVALIDLATCHCFG;
+        case AL_STATUS_CODE__DCPLLSYNCERROR:
+            return _AL_STATUS_CODE__DCPLLSYNCERROR;
+        case AL_STATUS_CODE__DCSYNCIOERROR:
+            return _AL_STATUS_CODE__DCSYNCIOERROR;
+        case AL_STATUS_CODE__DCSYNCMISSEDERROR:
+            return _AL_STATUS_CODE__DCSYNCMISSEDERROR;
+        case AL_STATUS_CODE__DCINVALIDSYNCCYCLETIME:
+            return _AL_STATUS_CODE__DCINVALIDSYNCCYCLETIME;
+        case AL_STATUS_CODE__DCSYNC0CYCLETIME:
+            return _AL_STATUS_CODE__DCSYNC0CYCLETIME;
+        case AL_STATUS_CODE__DCSYNC1CYCLETIME:
+            return _AL_STATUS_CODE__DCSYNC1CYCLETIME;
+        case AL_STATUS_CODE__MBX_AOE:
+            return _AL_STATUS_CODE__MBX_AOE;
+        case AL_STATUS_CODE__MBX_EOE:
+            return _AL_STATUS_CODE__MBX_EOE;
+        case AL_STATUS_CODE__MBX_COE:
+            return _AL_STATUS_CODE__MBX_COE;
+        case AL_STATUS_CODE__MBX_FOE:
+            return _AL_STATUS_CODE__MBX_FOE;
+        case AL_STATUS_CODE__MBX_SOE:
+            return _AL_STATUS_CODE__MBX_SOE;
+        case AL_STATUS_CODE__MBX_VOE:
+            return _AL_STATUS_CODE__MBX_VOE;
+        case AL_STATUS_CODE__EE_NOACCESS:
+            return _AL_STATUS_CODE__EE_NOACCESS;
+        case AL_STATUS_CODE__EE_ERROR:
+            return _AL_STATUS_CODE__EE_ERROR;
+        case AL_STATUS_CODE__EXT_HARDWARE_NOT_READY:
+            return _AL_STATUS_CODE__EXT_HARDWARE_NOT_READY;
+    }
+
+    return NULL;
+}
+
 // Set EtherCAT state on slave 
 int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc = 0, act_state, value;
@@ -195,7 +423,7 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
             ec_fprd(pec, pec->slaves[slave].fixed_address, 
                     EC_REG_ALSTATCODE, &value, sizeof(value), &wkc);
             ec_log(10, "EC_STATE_SET", "slave %2d: state switch to %d failed, "
-                    "alstatcode 0x%04X\n", slave, state, value);
+                    "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
 
             ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | 
                     EC_STATE_RESET);
@@ -468,6 +696,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 alloc_resource(slv->mbx_read.buf, uint8_t, slv->sm[1].len);
                 slv->mbx_read.sm_state = NULL;
                 slv->mbx_read.skip_next = 0;
+                TAILQ_INIT(&slv->mbx_coe_emergencies);
 
                 // write mailbox
                 if ((transition == INIT_2_BOOT) && 
@@ -592,14 +821,19 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         }
         case SAFEOP_2_OP: {
             ec_log(10, get_transition_string(transition), 
-                    "slave %2d setting to operational\n", slave);
+                    "slave %2d: setting to operational\n", slave);
 
             // write state to slave
             wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
             break;
         }
-        case OP_2_PREOP:
         case OP_2_SAFEOP:
+        case OP_2_PREOP:
+            // write state to slave
+            wkc = ec_slave_set_state(pec, slave, state);
+
+            if (transition == OP_2_SAFEOP)
+                break;
         case OP_2_INIT:
         case SAFEOP_2_PREOP:
         case SAFEOP_2_INIT:
@@ -610,6 +844,10 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
             // write state to slave
             wkc = ec_slave_set_state(pec, slave, state);
+
+            if (    transition == OP_2_PREOP || 
+                    transition == SAFEOP_2_PREOP)
+                break;
         }
         case BOOT_2_INIT:
         case INIT_2_INIT: {

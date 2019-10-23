@@ -337,7 +337,7 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
 // read out whole eeprom and categories
 void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     int cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
-    uint16_t /*size,*/ cat_len, cat_type = 0;
+    uint16_t size, cat_len, cat_type = 0;
     uint32_t value32 = 0;
     ec_slave_t *slv = &pec->slaves[slave];
 
@@ -375,7 +375,11 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE,
             slv->eeprom.boot_mbx_send_size);
 
-    //size = value32 & 0x0000FFFF;
+    slv->eeprom.read_eeprom = 1;
+    
+    size = ((value32 & 0x0000FFFF) + 1) * 125; // convert kbit to byte
+    if (size <= 128)
+        return;
 
     while (cat_type != EC_EEPROM_CAT_END) {
         int ret = eeprom(cat_offset, value32);
@@ -439,7 +443,6 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
             }
             case EC_EEPROM_CAT_DATATYPES:
                 eeprom_log(100, "EEPROM_DATATYPES", "slave %2d:\n", slave);
-
                 break;
             case EC_EEPROM_CAT_GENERAL: {
                 eeprom_log(100, "EEPROM_GENERAL", "slave %2d:\n", slave);
@@ -461,6 +464,15 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
                 // skip cat type and len
                 int local_offset = cat_offset + 2;
+                slv->eeprom.fmmus_cnt = cat_len * 2;
+
+                if (!slv->eeprom.fmmus_cnt)
+                    break;
+
+                // alloc fmmus
+                slv->eeprom.fmmus = (ec_eeprom_cat_fmmu_t *)malloc(
+                        sizeof(ec_eeprom_cat_fmmu_t) * slv->eeprom.fmmus_cnt);
+
                 unsigned i, fmmu_idx = 0;
                 while (local_offset < (cat_offset + cat_len + 2)) {
                     eeprom(local_offset, value32);
@@ -469,6 +481,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         if ((fmmu_idx < slv->fmmu_ch) && 
                                 (tmp[i] >= 1) && (tmp[i] <= 3)) {
                             slv->fmmu[fmmu_idx].type = tmp[i];
+
+                            slv->eeprom.fmmus[fmmu_idx].type = tmp[i];
                 
                             eeprom_log(100, "EEPROM_FMMU", 
                                     "          fmmu%d, type %d\n", 
@@ -669,6 +683,9 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
         }
 
         cat_offset += cat_len + 2; 
+
+        if ((cat_offset * 2) >= size)
+            break;
     }
     
     slv->eeprom.read_eeprom = 1;

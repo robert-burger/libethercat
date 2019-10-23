@@ -22,7 +22,6 @@ Makefile.in
 *.lo
 *.la
 COPYING
-INSTALL
 Makefile
 config.h
 config.guess
@@ -45,3 +44,4 @@ m4/libtool.m4
 libethercat.pc
 libethercat.pt
 /build/
+cmake-build-*

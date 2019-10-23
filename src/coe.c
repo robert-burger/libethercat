@@ -177,58 +177,87 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
         goto exit;
     }
 
-    // wait for answer
-    ec_mbx_clear(pec, slave, 1);
-    wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
-        ret = EC_ERROR_MAILBOX_READ;
-        goto exit;
-    }
-
     ec_sdo_normal_upload_resp_t *read_buf  = 
         (ec_sdo_normal_upload_resp_t *)(slv->mbx_read.buf); 
 
-    if (read_buf->sdo_hdr.command == EC_COE_SDO_ABORT_REQ) {
-        ec_sdo_abort_request_t *abort_buf = 
-            (ec_sdo_abort_request_t *)(slv->mbx_read.buf); 
+    // wait for answer
+    do {
+        ec_mbx_clear(pec, slave, 1);
+        wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
+        if (!wkc) {
+            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ret = EC_ERROR_MAILBOX_READ;
+            goto exit;
+        }
 
-        ec_log(100, "ec_coe_sdo_write", "got sdo abort request on idx %#X, "
-                "subidx %d, abortcode %#X\n", index, sub_index, 
-                abort_buf->abort_code);
+        if (read_buf->mbx_hdr.mbxtype == EC_MBX_COE) {
+            if (    read_buf->coe_hdr.service == EC_COE_SDOREQ || 
+                    read_buf->coe_hdr.service == EC_COE_SDORES) {
+                if (read_buf->sdo_hdr.command == EC_COE_SDO_ABORT_REQ) {
+                    ec_sdo_abort_request_t *abort_buf = 
+                        (ec_sdo_abort_request_t *)(slv->mbx_read.buf); 
 
-        *abort_code = abort_buf->abort_code;
+                    ec_log(100, "ec_coe_sdo_write", "got sdo abort request on idx %#X, "
+                            "subidx %d, abortcode %#X\n", index, sub_index, 
+                            abort_buf->abort_code);
 
-        ret = EC_ERROR_MAILBOX_ABORT;
-        goto exit;
-    }
+                    *abort_code = abort_buf->abort_code;
 
-    // everthing is fine
-    *abort_code = 0;
+                    ret = EC_ERROR_MAILBOX_ABORT;
+                    goto exit;
+                }
 
-    if (read_buf->sdo_hdr.transfer_type) {
-        if (*len) 
-            (*len) = min(*len, 4 - read_buf->sdo_hdr.data_set_size);
-        else 
-            (*len) = 4 - read_buf->sdo_hdr.data_set_size;
+                if (read_buf->coe_hdr.service == EC_COE_SDOREQ)
+                    goto local_exit;
 
-        if (!(*buf))
-            (*buf) = malloc(*len);
+                // everthing is fine
+                *abort_code = 0;
 
-        ec_sdo_expedited_upload_resp_t *exp_read_buf = 
-            (ec_sdo_expedited_upload_resp_t *)(slv->mbx_read.buf);
-        memcpy(*buf, exp_read_buf->sdo_data.bdata, *len);
-    } else {
-        if (*len) 
-            (*len) = min(*len, read_buf->complete_size);
-        else 
-            (*len) = read_buf->complete_size;
+                if (read_buf->sdo_hdr.transfer_type) {
+                    if (*len) 
+                        (*len) = min(*len, 4 - read_buf->sdo_hdr.data_set_size);
+                    else 
+                        (*len) = 4 - read_buf->sdo_hdr.data_set_size;
 
-        if (!(*buf))
-            (*buf) = malloc(*len);
+                    if (!(*buf))
+                        (*buf) = malloc(*len);
 
-        memcpy(*buf, read_buf->sdo_data.bdata, *len);
-    }
+                    ec_sdo_expedited_upload_resp_t *exp_read_buf = 
+                        (ec_sdo_expedited_upload_resp_t *)(slv->mbx_read.buf);
+                    memcpy(*buf, exp_read_buf->sdo_data.bdata, *len);
+                } else {
+                    if (*len) 
+                        (*len) = min(*len, read_buf->complete_size);
+                    else 
+                        (*len) = read_buf->complete_size;
+
+                    if (!(*buf))
+                        (*buf) = malloc(*len);
+
+                    memcpy(*buf, read_buf->sdo_data.bdata, *len);
+                }
+                goto exit;  // sdo response, everything is OK
+            } else if (read_buf->coe_hdr.service == EC_COE_EMERGENCY) {
+                ec_coe_queue_emergency(pec, slave);
+                continue;
+            }
+        }
+
+local_exit:
+
+        {
+            // not our answer, print out this message
+            char msg_buf[64];
+            char *tmp = msg_buf;
+            size_t pos = 0;
+            for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
+                pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
+            ec_log(10, __func__, "got unexpected mailbox message on slave %d: %s\n", slave, msg_buf);
+
+            ret = EC_ERROR_MAILBOX_READ;
+            goto exit;
+        }
+    } while (1); 
 
 exit:
     // reset mailbox state 
@@ -524,9 +553,9 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
                 (*buf) = malloc(*len);
         }
 
-        uint8_t *from = val == 0 ? &read_buf->sdo_info_data.bdata[4] : 
+        uint8_t *from = val == 0 ? &read_buf->sdo_info_data.bdata[2] : 
             &read_buf->sdo_info_data.bdata[0];
-        size_t act_len = val == 0 ? (read_buf->mbx_hdr.length - 10) : (read_buf->mbx_hdr.length - 6);
+        size_t act_len = val == 0 ? (read_buf->mbx_hdr.length - 8) : (read_buf->mbx_hdr.length - 6);
 
         if ((val + act_len) > (*len))
             act_len = (*len) - val;
@@ -606,30 +635,53 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ret = EC_ERROR_MAILBOX_WRITE;
     }
 
-    // wait for answer
-    ec_mbx_clear(pec, slave, 1);
-    wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (wkc != 1) {
-        ec_log(10, __func__, "receive mailbox failed\n");
-        ret = EC_ERROR_MAILBOX_READ;
-    }
-
-    if (read_buf->coe_hdr.service == EC_COE_SDOINFO) {
-        if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP) {
-            // transfer was successfull
-            desc->data_type         = read_buf->sdo_info_data.wdata[1];
-            desc->max_subindices    = read_buf->sdo_info_data.bdata[4];
-            desc->obj_code          = read_buf->sdo_info_data.bdata[5];
-
-            desc->name_len = read_buf->mbx_hdr.length - 6 - 6;
-            desc->name = (char *)malloc(desc->name_len); // must be freed by caller
-            memcpy(desc->name, &read_buf->sdo_info_data.bdata[6], desc->name_len);
+    // wait for answer    
+    do {
+        ec_mbx_clear(pec, slave, 1);
+        wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
+        if (!wkc) {
+            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ret = EC_ERROR_MAILBOX_READ;
+            goto exit;
         }
-    } else if (read_buf->coe_hdr.service == EC_COE_SDOREQ) {
+
+        if (read_buf->mbx_hdr.mbxtype == EC_MBX_COE) {
+            if (
+                    (read_buf->coe_hdr.service == EC_COE_SDOINFO) &&
+                    (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP)) {
+                // transfer was successfull
+                desc->data_type         = read_buf->sdo_info_data.wdata[1];
+                desc->max_subindices    = read_buf->sdo_info_data.bdata[4];
+                desc->obj_code          = read_buf->sdo_info_data.bdata[5];
+
+                desc->name_len = read_buf->mbx_hdr.length - 6 - 6;
+                desc->name = (char *)malloc(desc->name_len); // must be freed by caller
+                memcpy(desc->name, &read_buf->sdo_info_data.bdata[6], desc->name_len);
+                goto exit;  
+            } else if (read_buf->coe_hdr.service == EC_COE_EMERGENCY) {                
+                ec_coe_queue_emergency(pec, slave);
+                continue;
+            }
+        }
+        
+        // not our answer, print out this message
+        char msg_buf[64];
+        char *tmp = msg_buf;
+        size_t pos = 0;
+        for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
+            pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
+        ec_log(10, __func__, "got unexpected mailbox message: %s\n", msg_buf);
+            
+        ret = EC_ERROR_MAILBOX_READ;
+        goto exit;
+    } while (1);
+
+exit:
+    if (ret != 0) {
         desc->data_type         = 0;
         desc->obj_code          = 0;
         desc->max_subindices    = 0;
-        desc->name[0] = '\0';
+        desc->name = strdup("");
 
         wkc = -1;
     }
@@ -714,30 +766,52 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ret = EC_ERROR_MAILBOX_WRITE;
     }
 
-    // wait for answer
-    ec_mbx_clear(pec, slave, 1);
-    wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (wkc != 1) {
-        ec_log(10, __func__, "receive mailbox failed\n");
-        ret = EC_ERROR_MAILBOX_READ;
-    }
-
-    if (read_buf->coe_hdr.service == EC_COE_SDOINFO) {
-        if (read_buf->sdo_info_hdr.opcode == 
-                EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP) {
-            // transfer was successfull
-            desc->value_info    = read_buf->value_info;
-            desc->data_type     = read_buf->data_type;
-            desc->bit_length    = read_buf->bit_length;
-            desc->obj_access    = read_buf->obj_access;
-            desc->data_len      = read_buf->mbx_hdr.length - 6 - 10;
-
-            if (!desc->data)
-                desc->data = malloc(desc->data_len);
-
-            memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
+    // wait for answer    
+    do {
+        ec_mbx_clear(pec, slave, 1);
+        wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
+        if (!wkc) {
+            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ret = EC_ERROR_MAILBOX_READ;
+            goto exit;
         }
-    } else if (read_buf->coe_hdr.service == EC_COE_SDOREQ) {
+
+        if (read_buf->mbx_hdr.mbxtype == EC_MBX_COE) {
+            if (
+                    (read_buf->coe_hdr.service == EC_COE_SDOINFO) &&
+                    (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP)) {
+                // transfer was successfull
+                desc->value_info    = read_buf->value_info;
+                desc->data_type     = read_buf->data_type;
+                desc->bit_length    = read_buf->bit_length;
+                desc->obj_access    = read_buf->obj_access;
+                desc->data_len      = read_buf->mbx_hdr.length - 6 - 10;
+
+                if (!desc->data)
+                    desc->data = malloc(desc->data_len);
+
+                memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
+                goto exit;  
+            } else if (read_buf->coe_hdr.service == EC_COE_EMERGENCY) {
+                ec_coe_queue_emergency(pec, slave);
+                continue;
+            }
+        }
+        
+        // not our answer, print out this message
+        char msg_buf[64];
+        char *tmp = msg_buf;
+        size_t pos = 0;
+        for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
+            pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
+        ec_log(10, __func__, "got unexpected mailbox message: %s\n", msg_buf);
+            
+        ret = EC_ERROR_MAILBOX_READ;
+        goto exit;
+    } while (1);
+
+exit:
+    if (ret != 0) {
         desc->value_info        = 0;
         desc->data_type         = 0;
         desc->bit_length        = 0;
@@ -869,5 +943,30 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
     }
 
     return ret;
+}
+
+//! queue read mailbox content
+/*!
+ * \param pec pointer to ethercat master
+ * \param slave slave number
+ */
+void ec_coe_queue_emergency(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+
+    // get length and queue this message    
+    ec_mbx_header_t *hdr = (ec_mbx_header_t *)slv->mbx_read.buf;
+
+    // don't copy any headers, we already know that we have a coe emergency
+    size_t msg_len = hdr->length - 2;
+
+    ec_emergency_message_entry_t *qmsg = (ec_emergency_message_entry_t *)
+        malloc(sizeof(ec_emergency_message_entry_t) + msg_len);
+
+    // skip mbx header and coe header
+    memcpy(qmsg->msg, slv->mbx_read.buf + 6 + 2, msg_len);
+
+    qmsg->msg_len = msg_len;
+    ec_timer_gettime(&qmsg->timestamp);
+    TAILQ_INSERT_TAIL(&slv->mbx_coe_emergencies, qmsg, qh);
 }
 

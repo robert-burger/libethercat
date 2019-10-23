@@ -65,14 +65,18 @@ typedef struct PACKED ec_eeprom_cat_pdo_entry {
     uint16_t flags;             //!< PDO entry flags
 } ec_eeprom_cat_pdo_entry_t;
 
-typedef struct PACKED ec_eeprom_cat_pdo {
-    uint16_t pdo_index;         //!< PDO index
-    uint8_t n_entry;            //!< number of PDO entries
-    uint8_t sm_nr;              //!< assigned sync manager
-    uint8_t dc_sync;            //!< use distributed clocks
-    uint8_t name_idx;           //!< name index in eeprom strings
-    uint16_t flags;             //!< PDO flags
+typedef struct ec_eeprom_cat_pdo {
+    struct PACKED {
+        uint16_t pdo_index;         //!< PDO index
+        uint8_t n_entry;            //!< number of PDO entries
+        uint8_t sm_nr;              //!< assigned sync manager
+        uint8_t dc_sync;            //!< use distributed clocks
+        uint8_t name_idx;           //!< name index in eeprom strings
+        uint16_t flags;             //!< PDO flags
+
 #define EC_EEPROM_CAT_PDO_LEN   8
+    };
+
     ec_eeprom_cat_pdo_entry_t *entries;
                                 //!< PDO entries, (n_entry count)
     
