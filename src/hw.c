@@ -392,8 +392,6 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             continue;
         }
 
-        ec_log(100, __func__, "received idx %d\n", d->idx);
-
         memcpy(entry->datagram, d, ec_datagram_length(d));
         
         if (entry->user_cb) {
@@ -452,7 +450,6 @@ void *hw_rx_thread(void *arg) {
             if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
                 continue;
 
-            ec_log(10, "RX_THREAD", "recv: %s\n", strerror(errno));
             sleep(1);
             continue;
         }
@@ -507,7 +504,6 @@ void *hw_rx_thread(void *arg) {
                 if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
                     continue;
 
-                ec_log(10, "RX_THREAD", "recv: %s\n", strerror(errno));
                 sleep(1);
                 continue;
             }
@@ -656,8 +652,6 @@ int hw_tx(hw_t *phw) {
         pframe->len += ec_datagram_length(entry->datagram);
         pdg_prev = pdg;
         pdg = ec_datagram_next(pdg);
-
-        ec_log(100, __func__, "sending idx %d\n", entry->datagram->idx);
 
         // store as sent
         phw->tx_send[entry->datagram->idx] = entry;
