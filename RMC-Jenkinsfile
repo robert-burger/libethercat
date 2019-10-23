@@ -1,0 +1,2 @@
+@Library('rmc-jenkins-libraries-v2-no-changelog') _
+rmcBuild.auto()
