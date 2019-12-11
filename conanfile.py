@@ -4,6 +4,7 @@ import re
 class MainProject(ConanFile):
     name = "libethercat"
     license = "GPLv3"
+    author = "Robert Burger <robert.burger@dlr.de>"
     url = f"https://rmc-github.robotic.dlr.de/common/{name}"
     description = "This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface"
     settings = "os", "compiler", "build_type", "arch"
