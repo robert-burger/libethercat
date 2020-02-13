@@ -312,7 +312,7 @@ int ec_dc_config(struct ec *pec) {
         
         if (!pec->dc.have_dc) {                
             pec->dc.master_address = slv->fixed_address;
-//            pec->dc.have_dc = 1;
+            pec->dc.have_dc = 1;
             pec->dc.offset_compensation_cycles = 100;
             pec->dc.offset_compensation_cnt = 0;
             pec->dc.timer_prev = 0;
@@ -466,9 +466,6 @@ int ec_dc_config(struct ec *pec) {
     uint64_t temp_dc = 0;
     ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME,
             &temp_dc, 8, &wkc);
-
-    if (pec->dc.master_address > 0)
-        pec->dc.have_dc = 1;
 
     return 1;
 }
