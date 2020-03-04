@@ -1332,8 +1332,12 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                 // -0.5 ms to +0.5 ms.
                 int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
                 pec->dc.rtc_sto  += ticks_off * (pec->dc.timer_override / 2);             
-
                 pec->dc.act_diff  = pec->dc.act_diff % (pec->dc.timer_override / 2);
+                
+                if (ticks_off > 0) {
+                    ec_log(10, __func__, "compensating %d cycles, timer_prev %lld, rtc_sto %lld\n", 
+                            ticks_off, pec->dc.timer_prev, pec->dc.rtc_sto);
+                }
             }
 
             pec->dc.prev_rtc = rtc_temp;
