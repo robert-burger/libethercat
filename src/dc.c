@@ -185,10 +185,10 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
         ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, 
                 sizeof(dc_active), &wkc);
     
-        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
-                "%lld, slv dc_time %lld, cycletime_0 %d, cycletime_1 %d, dc_active %d, act_diff %lld, %lld, %lld\n", 
-                slave, rel_rtc_time, dc_start, dc_time, cycle_time_0, cycle_time_1, 
-                dc_active, pec->dc.act_diff, pec->dc.timer_prev, pec->dc.rtc_sto);
+        ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
+                "%lld, slv dc_time %lld\n", slave, rel_rtc_time, dc_start, dc_time);
+        ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
+                "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
     } else
         // if not active, the DC's stay inactive
         ec_log(100, "DISTRIBUTED_CLOCK", 
