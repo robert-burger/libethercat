@@ -541,7 +541,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
 
         if (val == 0) {
             // first fragment, allocate buffer if not passed
-            size_t od_len = (read_buf->mbx_hdr.length - 10) +                             // first fragment
+            size_t od_len = (read_buf->mbx_hdr.length - 8) +                             // first fragment
                 (read_buf->sdo_info_hdr.fragments_left * (read_buf->mbx_hdr.length - 6)); // following fragments
 
             if (*len) 
