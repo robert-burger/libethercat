@@ -185,10 +185,10 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
         ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, 
                 sizeof(dc_active), &wkc);
     
-        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
-                "%lld, slv dc_time %lld, cycletime_0 %d, cycletime_1 %d, dc_active %d, act_diff %lld, %lld, %lld\n", 
-                slave, rel_rtc_time, dc_start, dc_time, cycle_time_0, cycle_time_1, 
-                dc_active, pec->dc.act_diff, pec->dc.timer_prev, pec->dc.rtc_sto);
+        ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
+                "%lld, slv dc_time %lld\n", slave, rel_rtc_time, dc_start, dc_time);
+        ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
+                "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
     } else
         // if not active, the DC's stay inactive
         ec_log(100, "DISTRIBUTED_CLOCK", 
@@ -312,7 +312,7 @@ int ec_dc_config(struct ec *pec) {
         
         if (!pec->dc.have_dc) {                
             pec->dc.master_address = slv->fixed_address;
-//            pec->dc.have_dc = 1;
+            pec->dc.have_dc = 1;
             pec->dc.offset_compensation_cycles = 100;
             pec->dc.offset_compensation_cnt = 0;
             pec->dc.timer_prev = 0;
@@ -466,9 +466,6 @@ int ec_dc_config(struct ec *pec) {
     uint64_t temp_dc = 0;
     ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME,
             &temp_dc, 8, &wkc);
-
-    if (pec->dc.master_address > 0)
-        pec->dc.have_dc = 1;
 
     return 1;
 }
