@@ -172,7 +172,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     // send request
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (!wkc) {
-        ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+        ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
         ret = EC_ERROR_MAILBOX_WRITE;
         goto exit;
     }
@@ -185,7 +185,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
         ec_mbx_clear(pec, slave, 1);
         wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox\n");
             ret = EC_ERROR_MAILBOX_READ;
             goto exit;
         }
@@ -252,7 +252,7 @@ local_exit:
             size_t pos = 0;
             for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
                 pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
-            ec_log(10, __func__, "got unexpected mailbox message on slave %d: %s\n", slave, msg_buf);
+            ec_log(1, __func__, "got unexpected mailbox message on slave %d: %s\n", slave, msg_buf);
 
             ret = EC_ERROR_MAILBOX_READ;
             goto exit;
@@ -334,7 +334,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         // send request
         wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+            ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
             ret = EC_ERROR_MAILBOX_WRITE;
             goto exit;
         }
@@ -343,7 +343,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         ec_mbx_clear(pec, slave, 1);
         wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox\n");
             ret = EC_ERROR_MAILBOX_READ;
             goto exit;
         }
@@ -352,7 +352,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
             (ec_sdo_expedited_upload_resp_t *)(slv->mbx_read.buf); 
 
         if (!(read_buf->mbx_hdr.mbxtype == EC_MBX_COE))
-            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox: answer is not COE\n");
+            ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox: answer is not COE\n");
 
         goto exit;
     } 
@@ -366,7 +366,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     // send request
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (!wkc) {
-        ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+        ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
         ret = EC_ERROR_MAILBOX_WRITE;
         goto exit;
     }
@@ -375,7 +375,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     ec_mbx_clear(pec, slave, 1);
     wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (!wkc) {
-        ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+        ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox\n");
         ret = EC_ERROR_MAILBOX_READ;
         goto exit;
     }
@@ -384,7 +384,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         (ec_sdo_normal_upload_resp_t *)(slv->mbx_read.buf); 
 
     if (!(read_buf->mbx_hdr.mbxtype == EC_MBX_COE))
-        ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox: answer is not "
+        ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox: answer is not "
                 "COE is 0x%X need 0x%X\n", read_buf->mbx_hdr.mbxtype, EC_MBX_COE);
 
     seg_len += (EC_SDO_NORMAL_HDR_LEN - EC_SDO_SEG_HDR_LEN);
@@ -421,7 +421,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         // send request
         wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, "ec_coe_sdo_write", "error on writing send mailbox\n");
+            ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
             ret = EC_ERROR_MAILBOX_WRITE;
             goto exit;
         }
@@ -430,13 +430,13 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         ec_mbx_clear(pec, slave, 1);
         wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox\n");
             ret = EC_ERROR_MAILBOX_READ;
             goto exit;
         }
 
         if (!(seg_read_buf->mbx_hdr.mbxtype == EC_MBX_COE))
-            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox: answer is not COE\n");
+            ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox: answer is not COE\n");
 
     }
 
@@ -514,7 +514,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
     // send request
     wkc = ec_mbx_send(pec, slave, 10 * EC_DEFAULT_TIMEOUT_MBX);
     if (wkc != 1) {
-        ec_log(10, __func__, "send mailbox failed\n");
+        ec_log(1, __func__, "send mailbox failed\n");
         ret = EC_ERROR_MAILBOX_WRITE;
     }
 
@@ -525,14 +525,14 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
         ec_mbx_clear(pec, slave, 1);
         wkc = ec_mbx_receive(pec, slave, 10 * EC_DEFAULT_TIMEOUT_MBX);
         if (wkc != 1) {
-            ec_log(10, __func__, "receive mailbox failed\n");
+            ec_log(1, __func__, "receive mailbox failed\n");
             ret = EC_ERROR_MAILBOX_READ;
             continue;
         }
 
         if (read_buf->mbx_hdr.mbxtype != EC_MBX_COE) {
             if (++errors == 10) {
-                ec_log(10, __func__, "receive mailbox got more than 10 errors...\n");
+                ec_log(1, __func__, "receive mailbox got more than 10 errors...\n");
                 return EC_ERROR_MAILBOX_READ;
             }
 
@@ -631,7 +631,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     // send request
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (wkc != 1) {
-        ec_log(10, __func__, "send mailbox failed\n");
+        ec_log(1, __func__, "send mailbox failed\n");
         ret = EC_ERROR_MAILBOX_WRITE;
     }
 
@@ -640,7 +640,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ec_mbx_clear(pec, slave, 1);
         wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox\n");
             ret = EC_ERROR_MAILBOX_READ;
             goto exit;
         }
@@ -670,7 +670,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         size_t pos = 0;
         for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
             pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
-        ec_log(10, __func__, "got unexpected mailbox message: %s\n", msg_buf);
+        ec_log(1, __func__, "got unexpected mailbox message: %s\n", msg_buf);
             
         ret = EC_ERROR_MAILBOX_READ;
         goto exit;
@@ -762,7 +762,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     // send request
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
     if (wkc != 1) {
-        ec_log(10, __func__, "send mailbox failed\n");
+        ec_log(1, __func__, "send mailbox failed\n");
         ret = EC_ERROR_MAILBOX_WRITE;
     }
 
@@ -771,7 +771,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ec_mbx_clear(pec, slave, 1);
         wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
         if (!wkc) {
-            ec_log(10, "ec_coe_sdo_write", "error on reading receive mailbox\n");
+            ec_log(1, "ec_coe_sdo_write", "error on reading receive mailbox\n");
             ret = EC_ERROR_MAILBOX_READ;
             goto exit;
         }
@@ -804,7 +804,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         size_t pos = 0;
         for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
             pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
-        ec_log(10, __func__, "got unexpected mailbox message: %s\n", msg_buf);
+        ec_log(1, __func__, "got unexpected mailbox message: %s\n", msg_buf);
             
         ret = EC_ERROR_MAILBOX_READ;
         goto exit;
@@ -853,7 +853,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
         buf = (uint8_t *)&entry_cnt;
         if ((ret = ec_coe_sdo_read(pec, slave, idx, 0, 0, &buf, 
                 &entry_cnt_size, &abort_code)) != 0) {
-            ec_log(10, "GENERATE_MAPPING COE", "slave %2d: sm%d reading "
+            ec_log(1, "GENERATE_MAPPING COE", "slave %2d: sm%d reading "
                     "0x%04X/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
             continue;
         }
@@ -870,7 +870,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             buf = (uint8_t *)&entry_idx;
             if ((ret = ec_coe_sdo_read(pec, slave, idx, i, 0, 
                     &buf, &entry_size, &abort_code)) != 0) {
-                ec_log(10, "GENERATE_MAPPING COE", "            "
+                ec_log(1, "GENERATE_MAPPING COE", "            "
                         "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
                         idx, i, ret);
                 continue;
@@ -889,7 +889,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             buf = (uint8_t *)&entry_cnt_2;
             if ((ret = ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, 
                     &buf, &entry_cnt_size, &abort_code)) != 0) {
-                ec_log(10, "GENERATE_MAPPING COE", "             "
+                ec_log(1, "GENERATE_MAPPING COE", "             "
                         "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
                         entry_idx, 0, ret);
                 continue;
@@ -904,7 +904,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
                 buf = (uint8_t *)&entry;
                 if ((ret = ec_coe_sdo_read(pec, slave, entry_idx, j, 0, &buf,
                             &entry_size, &abort_code)) != 0) {
-                    ec_log(10, "GENERATE_MAPPING COE", "                "
+                    ec_log(1, "GENERATE_MAPPING COE", "                "
                             "reading 0x%04X/%d failed, error code 0x%X\n", 
                             entry_idx, j, ret);
                     continue;
