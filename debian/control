@@ -1,0 +1,16 @@
+Source: libethercat
+Section: unknown
+Priority: optional
+Maintainer: Robert Burger <robert.burger@dlr.de>
+Build-Depends: debhelper-compat (= 13), autotools-dev
+Standards-Version: 4.5.1
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Browser: https://salsa.debian.org/debian/libethercat
+#Vcs-Git: https://salsa.debian.org/debian/libethercat.git
+Rules-Requires-Root: no
+
+Package: libethercat
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>

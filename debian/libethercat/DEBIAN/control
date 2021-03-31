@@ -1,0 +1,11 @@
+Package: libethercat
+Version: 1.0.0
+Architecture: amd64
+Maintainer: Robert Burger <robert.burger@dlr.de>
+Installed-Size: 561
+Depends: libc6 (>= 2.17)
+Section: unknown
+Priority: optional
+Homepage: <insert the upstream URL, if relevant>
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
