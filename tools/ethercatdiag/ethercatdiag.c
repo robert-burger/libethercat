@@ -96,11 +96,16 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 };
 
 void mii_read(int fd, ec_t *pec, int slave, int phy) {
-    int i;
+    int i, ret;
     for (i = 0; i < 0x20; ++i) {
         uint16_t data = 0;
         ec_miiread(pec, slave, phy, i, &data);
-        write(fd, &data, sizeof(data));
+        ret = write(fd, &data, sizeof(data));
+
+        if (ret == -1) {
+            perror("write returned:");
+            break;
+        }
     }
 }
 
