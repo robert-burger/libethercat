@@ -763,11 +763,11 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                 break;
         
         case SAFEOP_2_OP: 
-        case OP_2_OP: 
+        case OP_2_OP: {
             // ====> switch to OP stuff
             ec_state_transition_loop(pec, EC_STATE_OP, 1);
             break;
-            
+        }
         case OP_2_BOOT:
         case OP_2_INIT:
         case OP_2_PREOP:

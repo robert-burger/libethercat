@@ -668,7 +668,8 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         char msg_buf[64];
         char *tmp = msg_buf;
         size_t pos = 0;
-        for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
+        size_t max_pos = min(64, (6 + read_buf->mbx_hdr.length));
+        for (int u = 0; (u < max_pos) && ((64 - pos) > 0); ++u) 
             pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
         ec_log(1, __func__, "got unexpected mailbox message: %s\n", msg_buf);
             
@@ -717,6 +718,19 @@ typedef struct PACKED ec_sdo_entry_desc_resp {
     uint16_t            obj_access;
     ec_data_t           desc_data;
 } PACKED ec_sdo_entry_desc_resp_t;
+        
+char msg_buf[64];
+
+void ec_coe_print_msg(int level, const char *ctx, const char *msg, uint8_t *buf, size_t buflen) {
+    char *tmp = msg_buf;
+    size_t pos = 0;
+    size_t max_pos = min(64, buflen);
+    for (int u = 0; (u < max_pos) && ((64-pos) > 0); ++u) {
+        pos += snprintf(tmp + pos, 64 - pos, "%02X ", buf[u]);
+    }
+
+    ec_log(level, ctx, "%s: %s\n", msg, msg_buf);
+}
 
 // read coe sdo entry description
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
@@ -751,6 +765,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     // coe header
     write_buf->coe_hdr.service      = EC_COE_SDOINFO;
+    write_buf->coe_hdr.reserved     = 0x00;
     write_buf->coe_hdr.number       = 0x00;
 
     // sdo header
@@ -758,6 +773,8 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->index                = index;
     write_buf->sub_index            = sub_index;
     write_buf->value_info           = value_info;
+
+    ec_coe_print_msg(100, __func__, "sending coe request", slv->mbx_write.buf, 6 + write_buf->mbx_hdr.length);
 
     // send request
     wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
@@ -791,6 +808,9 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
                     desc->data = malloc(desc->data_len);
 
                 memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
+        
+                ec_coe_print_msg(100, __func__, "got coe answer", slv->mbx_read.buf, 6 + read_buf->mbx_hdr.length);
+
                 goto exit;  
             } else if (read_buf->coe_hdr.service == EC_COE_EMERGENCY) {
                 ec_coe_queue_emergency(pec, slave);
@@ -799,12 +819,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         }
         
         // not our answer, print out this message
-        char msg_buf[64];
-        char *tmp = msg_buf;
-        size_t pos = 0;
-        for (int u = 0; u < (6 + read_buf->mbx_hdr.length); ++u) 
-            pos += snprintf(tmp + pos, 64 - pos, "%02X ", slv->mbx_read.buf[u]);
-        ec_log(1, __func__, "got unexpected mailbox message: %s\n", msg_buf);
+        ec_coe_print_msg(1, __func__, "unexpected coe answer", slv->mbx_read.buf, 6 + read_buf->mbx_hdr.length);
             
         ret = EC_ERROR_MAILBOX_READ;
         goto exit;
