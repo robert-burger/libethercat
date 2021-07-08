@@ -846,7 +846,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     if (!pec)
         return ENOMEM;
 
-    ec_index_init(&pec->idx_q);
+    ec_index_init(&pec->idx_q, 256);
     pec->master_state       = EC_STATE_UNKNOWN;
 
     // slaves'n groups
@@ -872,6 +872,8 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     
     pec->dc.p_de_dc         = NULL;
     pec->dc.p_idx_dc        = NULL;
+
+    FD_ZERO(&pec->mbx_fds);
 
     // eeprom logging level
     pec->eeprom_log         = eeprom_log;

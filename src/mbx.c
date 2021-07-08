@@ -34,7 +34,27 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/eventfd.h>  
 
+#ifndef max
+#define max(a, b)  ((a) > (b) ? (a) : (b))
+#endif
+
+//! \brief Initialize mailbox structure.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_mbx_init(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = &pec->slaves[slave];
+
+    slv->mbx.efd = eventfd(0, 0);
+    FD_SET(slv->mbx.efd, &pec->mbx_fds);
+}
 
 //! check if mailbox is full
 /*!
@@ -236,5 +256,77 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec) {
  * \param[in] slave slave number
  */
 void ec_mbx_push(ec_t *pec, uint16_t slave) {
+}
+
+//! push current received mailbox to received queue
+/*!
+ * \param[in] pec pointer to ethercat master
+ * \param[in] slave slave number
+ */
+void ec_mbx_trigger_receive(ec_t *pec, uint16_t slave) {
+    pthread_mutex_lock(&pec->slaves[slave].mbx.recv_mutex);
+    pthread_cond_signal(&pec->slaves[slave].mbx.recv_cond);
+    pthread_mutex_unlock(&pec->slaves[slave].mbx.recv_mutex);
+}
+
+//! enqueue message to be sent
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_mbx_enqueue(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = &pec->slaves[slave];
+    int64_t tmp = 0;
+    write(slv->mbx.efd, &tmp, sizeof(tmp));
+}
+
+void ec_mbx_recv_thread(ec_t *pec) {
+    int ret, maxfd = 0, wkc;
+    struct timeval ts = {0, 100000};
+    fd_set read_fds, write_fds;
+
+    while (1) {
+        /* wait for event */
+        FD_ZERO(&read_fds);
+        FD_ZERO(&write_fds);
+
+        for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+            ec_slave_t *slv = &pec->slaves[slave];
+            FD_SET(slv->mbx.efd, &read_fds);
+            FD_SET(slv->mbx.efd, &write_fds);
+
+            maxfd = max(maxfd, slv->mbx.efd);
+        }
+
+        if ((ret = select(maxfd + 1, &read_fds, &write_fds, NULL, &ts)) == 0) {
+            continue;
+        } else if (ret == -1) {
+            if (errno != EINTR && errno != EBADF)
+                perror("select");
+            continue;
+        }
+
+        for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+            ec_slave_t *slv = &pec->slaves[slave];
+
+            if (FD_ISSET(slv->mbx.efd, &read_fds)) {
+                // slave mailbox is readable and has a message
+                printf("mailbox of slave %d needs to be read\n", slave);
+            }
+            
+            if (FD_ISSET(slv->mbx.efd, &write_fds)) {
+                // need to send a message to write mailbox
+                printf("mailbox of slave %d needs to be written\n", slave);
+                
+                wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
+                if (!wkc) {
+                    ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
+                }
+            }
+        }
+    }
 }
 

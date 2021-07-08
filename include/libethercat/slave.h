@@ -36,6 +36,7 @@
 #include "libethercat/common.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/dc.h"
+#include "libethercat/mbx.h"
 
 //! EtherCAT slave state transitions
 typedef enum ec_state_transition {
@@ -334,6 +335,8 @@ typedef struct ec_slave {
                                  * Sercos drives per slave, multiple CiA-DSP402
                                  * axes per slave, ...
                                  */
+
+    ec_mbx_t mbx;               //!< EtherCAT mailbox structure */
 
     eeprom_info_t eeprom;       //!< EtherCAT slave EEPROM data
     ec_dc_info_slave_t dc;      //!< Distributed Clock settings

@@ -30,6 +30,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libethercat/ec.h"
 #include "libethercat/foe.h"
 #include <string.h>
 #include <sys/stat.h>

@@ -21,7 +21,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libethercat/mbx.h"
+#include "libethercat/ec.h"
 #include "libethercat/eoe.h"
 #include "libethercat/timer.h"
 #include "libethercat/error_codes.h"
@@ -45,7 +45,6 @@ typedef struct {
     unsigned complete_size      : 6;
     unsigned frame_number       : 4;
 } PACKED ec_eoe_header_t;
-
 
 const static int EOE_FRAME_TYPE_REQUEST                         = 0;
 const static int EOE_FRAME_TYPE_RESPONSE                        = 3;
@@ -213,7 +212,18 @@ exit:
     return ret;
 }
 
-// read coe sdo 
+// send ethernet frame
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] frame         Ethernet frame buffer to be sent.
+ * \param[in] frame_len     Length of Ethernet frame buffer.
+ *
+ * \return 0 on success, otherwise error code.
+ */
 int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
         size_t frame_len) {
     int wkc, ret = 0;
@@ -225,6 +235,9 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         return EC_ERROR_MAILBOX_WRITE_IS_NULL;
     if (!(slv->mbx_read.buf))
         return EC_ERROR_MAILBOX_READ_IS_NULL;
+
+    size_t mbx_len = slv->sm[slv->mbx_write.sm_nr].len;
+    size_t frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
 
     pthread_mutex_lock(&slv->mbx_lock);
 
@@ -238,7 +251,6 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
     // mailbox header
     // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
     ec_mbx_clear(pec, slave, 0);
-    write_buf->mbx_hdr.length    = 8; // TODO calc header length 
 
     write_buf->mbx_hdr.address   = 0x0000;
     write_buf->mbx_hdr.priority  = 0x00;
@@ -255,14 +267,61 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
     write_buf->eoe_hdr.complete_size      = (frame_len + 31)/32;
     write_buf->eoe_hdr.frame_number       = 0x00;
 
-    // send request
-    wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(10, "ec_eoe_set_ip_parameter", "error on writing send mailbox\n");
-        ret = EC_ERROR_MAILBOX_WRITE;
-        goto exit;
+    size_t rest_len = frame_len;
+
+    while (rest_len > 0) {
+        write_buf->eoe_hdr.fragment_number++;
+
+        if (rest_len > frag_len) {
+            write_buf->eoe_hdr.last_fragment = 0x00;
+        } else {
+            write_buf->eoe_hdr.last_fragment = 0x01;
+        }
+    
+        size_t act_len = min(frag_len, rest_len);
+        write_buf->mbx_hdr.length = 4 + act_len;
+        memcpy(&write_buf->data.bdata[0], &frame[frame_len - rest_len], act_len);
+
+        // send request
+        wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
+        if (!wkc) {
+            ec_log(10, "ec_eoe_send_frame", "error on writing send mailbox\n");
+            ret = EC_ERROR_MAILBOX_WRITE;
+            goto exit;
+        }
+
+        rest_len -= frag_len;
     }
 
+exit:
+    // reset mailbox state 
+    if (slv->mbx_read.sm_state) {
+        *slv->mbx_read.sm_state = 0;
+        slv->mbx_read.skip_next = 1;
+    }
+
+    pthread_mutex_unlock(&slv->mbx_lock);
+
+    return ret;
+}
+
+// receive ethernet frame
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] frame         Ethernet frame buffer to be sent.
+ * \param[in] frame_len     Length of Ethernet frame buffer.
+ *
+ * \return 0 on success, otherwise error code.
+ */
+int ec_eoe_recv_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
+        size_t frame_len) {
+    int wkc, ret = 0;
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    
     // wait for answer
     ec_mbx_clear(pec, slave, 1);
     wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
@@ -272,10 +331,8 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         goto exit;
     }
 
-    ec_eoe_set_ip_parameter_response_t *read_buf  = 
-        (ec_eoe_set_ip_parameter_response_t *)(slv->mbx_read.buf); 
-
-    ret = read_buf->sip_hdr.result;
+//    ec_eoe_set_ip_parameter_response_t *read_buf  = 
+//        (ec_eoe_set_ip_parameter_response_t *)(slv->mbx_read.buf); 
 
 exit:
     // reset mailbox state 

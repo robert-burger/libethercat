@@ -32,7 +32,7 @@
 #define __LIBETHERCAT_MBX_H__
 
 #include "libethercat/common.h"
-#include "libethercat/ec.h"
+#include "libethercat/coe.h"
 
 //! mailbox types
 enum {
@@ -55,10 +55,24 @@ typedef struct PACKED ec_mbx_header {
 } PACKED ec_mbx_header_t;
 
 //! ethercat mailbox data
-typedef struct PACKED ec_mbx {
+typedef struct PACKED ec_mbx_buffer {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_data_t      mbx_data;    //!< mailbox data
-} PACKED ec_mbx_t;
+} PACKED ec_mbx_buffer_t;
+
+
+typedef struct ec_mbx {
+    pthread_cond_t recv_cond;
+    pthread_mutex_t recv_mutex;
+
+    int efd;    //!< event file descriptor
+
+    ec_coe_t coe;
+} ec_mbx_t;
+
+// forward declarations
+struct ec;
+typedef struct ec ec_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +80,16 @@ extern "C" {
 #if 0
 }
 #endif
+
+//! \brief Initialize mailbox structure.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_mbx_init(ec_t *pec, uint16_t slave);
 
 //! check if mailbox is empty
 /*!
@@ -119,6 +143,16 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec);
  * \param[in] slave slave number
  */
 void ec_mbx_push(ec_t *pec, uint16_t slave);
+
+//! enqueue message to be sent
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_mbx_enqueue(ec_t *pec, uint16_t slave);
 
 #if 0 
 {

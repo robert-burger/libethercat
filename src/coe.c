@@ -23,6 +23,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libethercat/ec.h"
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
 #include "libethercat/timer.h"
@@ -124,6 +125,19 @@ typedef struct {
     uint32_t abort_code;
 } PACKED ec_sdo_abort_request_t;
 
+//! initialize CoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_coe_init(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_index_init(&slv->mbx.coe.idx_q, 8);
+}
+
 // read coe sdo 
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
@@ -141,7 +155,10 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     if (!(slv->mbx_read.buf))
         return EC_ERROR_MAILBOX_READ_IS_NULL;
 
+    // lock mailbox and getting index
     pthread_mutex_lock(&slv->mbx_lock);
+    struct idx_entry *entry;
+    ec_index_get(&slv->mbx.coe.idx_q, &entry);
 
     ec_sdo_normal_upload_req_t *write_buf = 
         (ec_sdo_normal_upload_req_t *)(slv->mbx_write.buf);
@@ -158,6 +175,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->mbx_hdr.address   = 0x0000;
     write_buf->mbx_hdr.priority  = 0x00;
     write_buf->mbx_hdr.mbxtype   = EC_MBX_COE;
+    write_buf->mbx_hdr.counter   = entry->idx;
 
     // coe header
     write_buf->coe_hdr.service   = EC_COE_SDOREQ;
@@ -170,12 +188,13 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->sdo_hdr.sub_index = sub_index;
 
     // send request
-    wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
-        ret = EC_ERROR_MAILBOX_WRITE;
-        goto exit;
-    }
+    ec_mbx_enqueue(pec, slave);
+//    wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
+//    if (!wkc) {
+//        ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
+//        ret = EC_ERROR_MAILBOX_WRITE;
+//        goto exit;
+//    }
 
     ec_sdo_normal_upload_resp_t *read_buf  = 
         (ec_sdo_normal_upload_resp_t *)(slv->mbx_read.buf); 
@@ -266,6 +285,8 @@ exit:
         slv->mbx_read.skip_next = 1;
     }
 
+    // returning index and ulock 
+    ec_index_put(&slv->mbx.coe.idx_q, entry);
     pthread_mutex_unlock(&slv->mbx_lock);
 
     return ret;

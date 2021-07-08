@@ -82,14 +82,14 @@ int ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
  * \param idx_q pointer to index queue structure
  * \return 0 on success
  */
-int ec_index_init(idx_queue_t *idx_q) {
+int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
     int i;
     pthread_mutex_init(&idx_q->lock, NULL);
     
     // fill index queue
     TAILQ_INIT(&idx_q->q);
-    for (i = 0; i < EC_INDICES_MAX; ++i) {
-        idx_entry_t *entry = &idx_q->__indices[i];
+    for (i = 0; i < max_index; ++i) {
+        idx_entry_t *entry = (idx_entry_t *)malloc(sizeof(idx_entry_t));
         entry->idx = i;
         memset(&entry->waiter, 0, sizeof(sem_t));
         sem_init(&entry->waiter, 0, 0);
@@ -111,6 +111,8 @@ void ec_index_deinit(idx_queue_t *idx_q) {
     while ((idx = TAILQ_FIRST(&idx_q->q)) != NULL) {
         TAILQ_REMOVE(&idx_q->q, idx, qh);
         sem_destroy(&idx->waiter);
+
+        free(idx);
     }
 
     pthread_mutex_destroy(&idx_q->lock);

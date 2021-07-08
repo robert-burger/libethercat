@@ -13,6 +13,7 @@ include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 				  $(top_srcdir)/include/libethercat/eeprom.h \
 				  $(top_srcdir)/include/libethercat/error_codes.h \
 				  $(top_srcdir)/include/libethercat/foe.h \
+				  $(top_srcdir)/include/libethercat/eoe.h \
 				  $(top_srcdir)/include/libethercat/hw.h \
 				  $(top_srcdir)/include/libethercat/mbx.h \
 				  $(top_srcdir)/include/libethercat/message_pool.h \

@@ -33,6 +33,7 @@
 
 #include <pthread.h>
 #include <stdint.h>
+#include <sys/select.h>
 
 #include "libethercat/common.h"
 #include "libethercat/dc.h"
@@ -46,6 +47,8 @@
 #include "libethercat/eeprom.h"
 
 struct ec;
+struct ec_slave;
+typedef struct ec_slave ec_slave_t;
     
 //! process data group structure
 typedef struct ec_pd_group {
@@ -155,6 +158,8 @@ typedef struct ec {
     
     datagram_entry_t *p_de_state;   //!< EtherCAT datagram from pool for ec_state read
     idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
+
+    fd_set mbx_fds;
 } ec_t;
 
 #ifdef __cplusplus

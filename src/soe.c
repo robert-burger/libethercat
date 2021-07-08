@@ -28,7 +28,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libethercat/mbx.h"
+#include "libethercat/slave.h"
+#include "libethercat/ec.h"
 #include "libethercat/soe.h"
 #include "libethercat/timer.h"
 

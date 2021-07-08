@@ -32,7 +32,11 @@
 #define __LIBETHERCAT_COE_H__
 
 #include "libethercat/common.h"
-#include "libethercat/ec.h"
+#include "libethercat/idx.h"
+
+typedef struct ec_coe {
+    idx_queue_t idx_q;
+} ec_coe_t;
 
 //! CoE mailbox types
 enum {
@@ -95,12 +99,26 @@ typedef struct PACKED ec_coe_sdo_entry_desc {
 #define EC_COE_SDO_VALUE_INFO_MIN_VALUE          0x20
 #define EC_COE_SDO_VALUE_INFO_MAX_VALUE          0x40
 
+// forward declarations
+struct ec;
+typedef struct ec ec_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
 }
 #endif
+
+//! initialize CoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_coe_init(ec_t *pec, uint16_t slave);
 
 //! Read CoE service data object (SDO) 
 /*!

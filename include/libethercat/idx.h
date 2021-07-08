@@ -54,9 +54,6 @@ typedef struct idx_queue {
                                  */
 
     struct idx_entry_queue q;   //!< the head of the index queue
-
-#define EC_INDICES_MAX  256
-    idx_entry_t __indices[EC_INDICES_MAX];
 } idx_queue_t;
 
 #ifdef __cplusplus
@@ -71,7 +68,7 @@ extern "C" {
  * \param idx_q pointer to index queue structure
  * \return 0 on success
  */
-int ec_index_init(idx_queue_t *idx_q);
+int ec_index_init(idx_queue_t *idx_q, size_t max_index);
 
 //! deinitialize index queue structure
 /*!
