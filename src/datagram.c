@@ -33,7 +33,6 @@
 
 #include "libethercat/regs.h"
 #include "libethercat/datagram.h"
-#include "libethercat/datagram_pool.h"
 
 //! initialize empty frame
 /*/

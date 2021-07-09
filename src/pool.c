@@ -1,5 +1,5 @@
 /**
- * \file datagram_pool.c
+ * \file pool.c
  *
  * \author Robert Burger <robert.burger@dlr.de>
  *
@@ -28,7 +28,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libethercat/datagram_pool.h"
+#include "libethercat/pool.h"
 #include "libethercat/common.h"
 
 #include <errno.h>
@@ -37,17 +37,19 @@
 #include <stdio.h>
 #include <pthread.h>
 
-
-//! open a new datagram pool
+//! \brief Create a new data pool.
 /*!
- * \param pp return datagram_pool 
- * \param cnt number of packets in pool
+ * \param[out]  pp          Return pointer to newly created pool.
+ * \param[in]   cnt         Number of entries in pool.
+ * \param[in]   data_size   Size of data stored in each entry.
+ *
  * \return 0 or negative error code
  */
-int datagram_pool_open(datagram_pool_t **pp, size_t cnt) {
-    (*pp) = (datagram_pool_t *)malloc(sizeof(datagram_pool_t));
-    if (!(*pp))
+int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
+    (*pp) = (pool_t *)malloc(sizeof(pool_t));
+    if (!(*pp)) {
         return -ENOMEM;
+    }
 
     pthread_mutex_init(&(*pp)->_pool_lock, NULL);
     pthread_mutex_lock(&(*pp)->_pool_lock);
@@ -58,13 +60,13 @@ int datagram_pool_open(datagram_pool_t **pp, size_t cnt) {
 
     int i;
     for (i = 0; i < cnt; ++i) {
-        datagram_entry_t *datagram = 
-            (datagram_entry_t *)malloc(sizeof(datagram_entry_t));// + 1500);
-        memset(datagram, 0, sizeof(datagram_entry_t));// + 1500);
+        pool_entry_t *entry = (pool_entry_t *)malloc(sizeof(pool_entry_t));
+        memset(entry, 0, sizeof(pool_entry_t));
 
-        datagram->datagram = (ec_datagram_t *)malloc(sizeof(ec_datagram_t) + 1500);
-        memset(datagram->datagram, 0, sizeof(ec_datagram_t) + 1500);
-        TAILQ_INSERT_TAIL(&(*pp)->avail, datagram, qh);
+        entry->data_size = data_size;
+        entry->data = (void *)malloc(data_size);
+        memset(entry->data, 0, data_size);
+        TAILQ_INSERT_TAIL(&(*pp)->avail, entry, qh);
     }
     
     pthread_mutex_unlock(&(*pp)->_pool_lock);
@@ -72,21 +74,24 @@ int datagram_pool_open(datagram_pool_t **pp, size_t cnt) {
     return 0;
 }
 
-//! destroys a datagram pool
+//! \brief Destroys a datagram pool.
 /*!
- * \param pp datagram_pool handle
+ * \param[in]   pp          Pointer to pool.
+ *
  * \return 0 or negative error code
  */
-int datagram_pool_close(datagram_pool_t *pp) {
-    if (!pp)
+int pool_close(pool_t *pp) {
+    if (!pp) {
         return -EINVAL;
+    }
     
     pthread_mutex_lock(&pp->_pool_lock);
 
-    datagram_entry_t *datagram;
-    while ((datagram = TAILQ_FIRST(&pp->avail)) != NULL) {
-        TAILQ_REMOVE(&pp->avail, datagram, qh);
-        free(datagram);
+    pool_entry_t *entry;
+    while ((entry = TAILQ_FIRST(&pp->avail)) != NULL) {
+        TAILQ_REMOVE(&pp->avail, entry, qh);
+        free(entry->data);
+        free(entry);
     }
     
     pthread_mutex_unlock(&pp->_pool_lock);
@@ -97,25 +102,27 @@ int datagram_pool_close(datagram_pool_t *pp) {
     return 0;
 }
 
-//! get a datagram from datagram_pool
+//! \brief Get a datagram from pool.
 /*!
- * \param pp datagram_pool handle
- * \param datagram ec datagram pointer
- * \param timeout timeout waiting for packet
+ * \param[in]   pp          Pointer to pool.
+ * \param[out]  entry       Returns pointer to pool entry.
+ * \param[in]   timeout     Timeout waiting for free entry.
+ *
  * \return 0 or negative error code
  */
-int datagram_pool_get(datagram_pool_t *pp, 
-        datagram_entry_t **datagram, ec_timer_t *timeout) {
+int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
     int ret = ENODATA;
-    if (!pp || !datagram)
+    if (!pp || !entry) {
         return (ret = EINVAL);
+    }
 
     if (timeout) {
         struct timespec ts = { timeout->sec, timeout->nsec };
         ret = sem_timedwait(&pp->avail_cnt, &ts);
         if (ret != 0) {
-            if (errno != ETIMEDOUT)
+            if (errno != ETIMEDOUT) {
                 perror("sem_timedwait");
+            }
 
             return (ret = errno);
         }
@@ -123,9 +130,9 @@ int datagram_pool_get(datagram_pool_t *pp,
 
     pthread_mutex_lock(&pp->_pool_lock);
 
-    *datagram = (datagram_entry_t *)TAILQ_FIRST(&pp->avail);
-    if (*datagram) {
-        TAILQ_REMOVE(&pp->avail, (datagram_entry_t *)*datagram, qh);
+    *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
+    if (*entry) {
+        TAILQ_REMOVE(&pp->avail, (pool_entry_t *)*entry, qh);
         ret = 0;
     }
     
@@ -134,42 +141,41 @@ int datagram_pool_get(datagram_pool_t *pp,
     return ret;
 }
 
-//! get next datagram length from datagram_pool
+//! \brief Peek next entry from pool
 /*!
- * \param pp datagram_pool handle
- * \param len datagram length
+ * \param[in]   pp          Pointer to pool.
+ * \param[out]  entry       Returns pointer to pool entry. Be 
+ *                          carefull, entry relies still in pool.
+ *
  * \return 0 or negative error code
  */
-int datagram_pool_get_next_len(datagram_pool_t *pp, size_t *len) {
-    if (!pp || !len)
+int pool_peek(pool_t *pp, pool_entry_t **entry) {
+    if (!pp || !entry) {
         return EINVAL;
+    }
     
     pthread_mutex_lock(&pp->_pool_lock);
-
-    datagram_entry_t *entry = (datagram_entry_t *)TAILQ_FIRST(&pp->avail);
-    if (entry)
-        *len = ec_datagram_length(entry->datagram);
-    else
-        *len = 0;
-    
+    *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
     pthread_mutex_unlock(&pp->_pool_lock);
 
     return ENODATA;
 }
-
-//! return a datagram to datagram_pool
+    
+//! \brief Put entry back to pool.
 /*!
- * \param pp datagram_pool handle
- * \param datagram ec datagram pointer
+ * \param[in]   pp          Pointer to pool.
+ * \param[out]  entry       Entry to put back in pool.
+ *
  * \return 0 or negative error code
  */
-int datagram_pool_put(datagram_pool_t *pp, datagram_entry_t *datagram) {
-    if (!pp || !datagram)
+int pool_put(pool_t *pp, pool_entry_t *entry) {
+    if (!pp || !entry) {
         return -EINVAL;
+    }
     
     pthread_mutex_lock(&pp->_pool_lock);
 
-    TAILQ_INSERT_TAIL(&pp->avail, (datagram_entry_t *)datagram, qh);
+    TAILQ_INSERT_TAIL(&pp->avail, (pool_entry_t *)entry, qh);
     sem_post(&pp->avail_cnt);
     
     pthread_mutex_unlock(&pp->_pool_lock);

@@ -171,8 +171,8 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
 
     memset(*pphw, 0, sizeof(hw_t));
 
-    datagram_pool_open(&(*pphw)->tx_high, 0);
-    datagram_pool_open(&(*pphw)->tx_low, 0);
+    pool_open(&(*pphw)->tx_high, 0, 1518);
+    pool_open(&(*pphw)->tx_low, 0, 1518);
 
 #ifdef __linux__
     // create raw socket connection
@@ -372,8 +372,8 @@ int hw_close(hw_t *phw) {
     pthread_join(phw->rxthread, NULL);
 
     pthread_mutex_destroy(&phw->hw_lock);
-    datagram_pool_close(phw->tx_high);
-    datagram_pool_close(phw->tx_low);
+    pool_close(phw->tx_high);
+    pool_close(phw->tx_low);
 
     if (phw)
         free(phw);
@@ -394,7 +394,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
     for (d = ec_datagram_first(pframe); (uint8_t *) d <
             (uint8_t *) ec_frame_end(pframe);
             d = ec_datagram_next(d)) {
-        datagram_entry_t *entry = phw->tx_send[d->idx];
+        pool_entry_t *entry = phw->tx_send[d->idx];
 
         if (!entry) {
             ec_log(1, "RX_THREAD",
@@ -402,7 +402,14 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             continue;
         }
 
-        memcpy(entry->datagram, d, ec_datagram_length(d));
+        size_t size = ec_datagram_length(d);
+        if (entry->data_size < size) {
+            ec_log(1, "RX_THREAD",
+                    "received idx %d, size %d is to big for pool entry size %d!\n", 
+                    d->idx, size, entry->data_size);
+        }
+
+        memcpy(entry->data, d, min(size, entry->data_size));
         
         if (entry->user_cb) {
             (*entry->user_cb)(entry->user_arg, entry);
@@ -585,16 +592,23 @@ int hw_tx(hw_t *phw) {
     ec_datagram_t *pdg = ec_datagram_first(pframe), *pdg_prev = NULL;
     size_t len;
 
-    datagram_pool_t *pools[] = {
+    pool_t *pools[] = {
             phw->tx_high, phw->tx_low};
     int pool_idx = 0;
+    pool_entry_t *p_entry = NULL;
+    ec_datagram_t *p_entry_dg = NULL;
 
     // send high priority cyclic frames
     while (1) {
         if (pool_idx == 2)
             break;
-
-        datagram_pool_get_next_len(pools[pool_idx], &len);
+    
+        len = 0;
+        pool_peek(pools[pool_idx], &p_entry);
+        if (p_entry) {
+            p_entry_dg = (ec_datagram_t *)p_entry->data;
+            len = ec_datagram_length(p_entry_dg);
+        }
 
         if (((len == 0) && (pool_idx == 1)) ||
             ((pframe->len + len) > phw->mtu_size)) {
@@ -651,20 +665,20 @@ int hw_tx(hw_t *phw) {
             continue;
         }
 
-        datagram_entry_t *entry;
-        if (datagram_pool_get(pools[pool_idx], &entry, NULL) != 0)
+        if (pool_get(pools[pool_idx], &p_entry, NULL) != 0)
             break;  // no more frames
 
         if (pdg_prev)
             ec_datagram_mark_next(pdg_prev);
         
-        memcpy(pdg, entry->datagram, ec_datagram_length(entry->datagram));
-        pframe->len += ec_datagram_length(entry->datagram);
+        p_entry_dg = (ec_datagram_t *)p_entry->data;
+        memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
+        pframe->len += ec_datagram_length(p_entry_dg);
         pdg_prev = pdg;
         pdg = ec_datagram_next(pdg);
 
         // store as sent
-        phw->tx_send[entry->datagram->idx] = entry;
+        phw->tx_send[p_entry_dg->idx] = p_entry;
     }
 
     pthread_mutex_unlock(&phw->hw_lock);

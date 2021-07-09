@@ -33,8 +33,7 @@
 
 #include <pthread.h>
 
-#include "libethercat/datagram_pool.h"
-#include "libethercat/datagram.h"
+#include "libethercat/pool.h"
 
 //! hardware structure
 typedef struct hw {
@@ -56,10 +55,10 @@ typedef struct hw {
 
     pthread_mutex_t hw_lock;        //!< transmit lock
 
-    datagram_pool_t *tx_high;       //!< high priority datagrams
-    datagram_pool_t *tx_low;        //!< low priority datagrams
+    pool_t *tx_high;                //!< high priority datagrams
+    pool_t *tx_low;                 //!< low priority datagrams
 
-    datagram_entry_t *tx_send[256]; //!< sent datagrams
+    pool_entry_t *tx_send[256];     //!< sent datagrams
 } hw_t;   
 
 #ifdef __cplusplus

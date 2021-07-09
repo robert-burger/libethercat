@@ -42,7 +42,7 @@
 #include "libethercat/regs.h"
 #include "libethercat/idx.h"
 #include "libethercat/datagram.h"
-#include "libethercat/datagram_pool.h"
+#include "libethercat/pool.h"
 #include "libethercat/message_pool.h"
 #include "libethercat/eeprom.h"
 
@@ -98,7 +98,7 @@ typedef struct ec_pd_group {
                                      * reads and writes data by 3.
                                      */
     
-    datagram_entry_t *p_de;         //!< EtherCAT datagram from pool
+    pool_entry_t *p_entry;          //!< EtherCAT datagram from pool
     idx_entry_t *p_idx;             //!< EtherCAT datagram index from pool
 } ec_pd_group_t;
 
@@ -117,7 +117,7 @@ typedef struct ec {
                                      * loop).
                                      */
 
-    datagram_pool_t *pool;          //!< datagram pool
+    pool_t *pool;                   //!< datagram pool
                                     /*!<
                                      * All EtherCAT datagrams will be pre-
                                      * allocated and available in the datagram
@@ -156,7 +156,7 @@ typedef struct ec {
 
     int threaded_startup;           //!< running state machine in threads for slave
     
-    datagram_entry_t *p_de_state;   //!< EtherCAT datagram from pool for ec_state read
+    pool_entry_t *p_de_state;   //!< EtherCAT datagram from pool for ec_state read
     idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
 
     fd_set mbx_fds;

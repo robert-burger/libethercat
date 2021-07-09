@@ -35,7 +35,7 @@
 
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
-#include "libethercat/datagram_pool.h"
+#include "libethercat/pool.h"
 
 typedef struct ec_dc_info_slave {
     int use_dc;                 //!< flag, whether to use dc
@@ -86,7 +86,7 @@ typedef struct ec_dc_info {
         dc_mode_master_as_ref_clock
     } mode;
 
-    datagram_entry_t *p_de_dc;
+    pool_entry_t *p_de_dc;
     idx_entry_t *p_idx_dc;
 } ec_dc_info_t;
 
