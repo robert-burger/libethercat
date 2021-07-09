@@ -617,6 +617,8 @@ void ec_scan(ec_t *pec) {
         LIST_INIT(&pec->slaves[i].init_cmds);
         pthread_mutex_init(&pec->slaves[i].mbx_lock, NULL);
 
+        ec_mbx_init(pec, i);
+
         ec_apwr(pec, auto_inc, EC_REG_STADR, (uint8_t *)&fixed, 
                 sizeof(fixed), &wkc); 
         if (wkc == 0)

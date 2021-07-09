@@ -157,11 +157,14 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     // lock mailbox and getting index
     pthread_mutex_lock(&slv->mbx_lock);
-    struct idx_entry *entry;
-    ec_index_get(&slv->mbx.coe.idx_q, &entry);
+    struct idx_entry *p_idx = NULL;
+    ec_index_get(&slv->mbx.idx_q, &p_idx);
+
+    pool_entry_t *p_entry;
+    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
 
     ec_sdo_normal_upload_req_t *write_buf = 
-        (ec_sdo_normal_upload_req_t *)(slv->mbx_write.buf);
+        (ec_sdo_normal_upload_req_t *)p_entry->data;
 
     // empty mailbox if anything in
     ec_mbx_clear(pec, slave, 1);
@@ -169,13 +172,13 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     // mailbox header
     // (mbxhdr (6) - mbxhdr.length (2)) + coehdr (2) + sdohdr (4)
-    ec_mbx_clear(pec, slave, 0);
     write_buf->mbx_hdr.length    = EC_SDO_NORMAL_HDR_LEN; 
 
     write_buf->mbx_hdr.address   = 0x0000;
     write_buf->mbx_hdr.priority  = 0x00;
     write_buf->mbx_hdr.mbxtype   = EC_MBX_COE;
-    write_buf->mbx_hdr.counter   = entry->idx;
+    write_buf->mbx_hdr.counter   = p_idx->idx;
+    printf("sending coe read index: %d\n", p_idx->idx);
 
     // coe header
     write_buf->coe_hdr.service   = EC_COE_SDOREQ;
@@ -188,13 +191,8 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->sdo_hdr.sub_index = sub_index;
 
     // send request
-    ec_mbx_enqueue(pec, slave);
-//    wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-//    if (!wkc) {
-//        ec_log(1, "ec_coe_sdo_write", "error on writing send mailbox\n");
-//        ret = EC_ERROR_MAILBOX_WRITE;
-//        goto exit;
-//    }
+    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_index_put(&slv->mbx.idx_q, p_idx);
 
     ec_sdo_normal_upload_resp_t *read_buf  = 
         (ec_sdo_normal_upload_resp_t *)(slv->mbx_read.buf); 
@@ -286,7 +284,7 @@ exit:
     }
 
     // returning index and ulock 
-    ec_index_put(&slv->mbx.coe.idx_q, entry);
+//    ec_index_put(&slv->mbx.coe.idx_q, entry);
     pthread_mutex_unlock(&slv->mbx_lock);
 
     return ret;
