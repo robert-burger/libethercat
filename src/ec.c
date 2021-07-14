@@ -166,22 +166,22 @@ void ec_create_logical_mapping_lrw(ec_t *pec, int group) {
         if (slv->assigned_pd_group != group)
             continue;
 
-        slv->pdin_len = 0;
-        slv->pdout_len = 0;
+        size_t slv_pdin_len = 0, slv_pdout_len = 0;
 
         for (k = start_sm; k < slv->sm_ch; ++k) {
             if (slv->sm[k].flags & 0x00000004) {
-                slv->pdout_len += slv->sm[k].len; // outputs
+                slv_pdout_len += slv->sm[k].len; // outputs
             } else  {
-                slv->pdin_len += slv->sm[k].len;  // inputs
+                slv_pdin_len += slv->sm[k].len;  // inputs
             }
         }
 
-        if (slv->eeprom.mbx_supported)
+        if (slv->eeprom.mbx_supported) {
             // add state of sync manager read mailbox
-            slv->pdin_len += 1;
+            slv_pdin_len += 1;
+        }
         
-        size_t max_len = max(slv->pdout_len, slv->pdin_len);
+        size_t max_len = max(slv_pdout_len, slv_pdin_len);
 
         // add to pd lengths
         pd->pdout_len += max_len;
@@ -308,8 +308,8 @@ void ec_create_logical_mapping_lrw(ec_t *pec, int group) {
             log_base_in += 1;
         }
 
-        pdin += max(slv->pdin_len, slv->pdout_len);
-        pdout += max(slv->pdin_len, slv->pdout_len);
+        pdin += max(slv->pdin.len, slv->pdout.len);
+        pdout += max(slv->pdin.len, slv->pdout.len);
         log_base = max(log_base_in, log_base_out);
         pd->wkc_expected += wkc_expected;
     }
@@ -615,7 +615,6 @@ void ec_scan(ec_t *pec) {
         TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
         TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
         LIST_INIT(&pec->slaves[i].init_cmds);
-        pthread_mutex_init(&pec->slaves[i].mbx_lock, NULL);
 
         ec_apwr(pec, auto_inc, EC_REG_STADR, (uint8_t *)&fixed, 
                 sizeof(fixed), &wkc); 
@@ -1172,6 +1171,17 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
         ret = -1;
     } else {
         wkc_mismatch_cnt = 0;
+    }
+
+    for (int slave = 0; slave < pec->slave_cnt; ++slave) {
+        ec_slave_t *slv = &pec->slaves[slave];
+        if (slv->assigned_pd_group != group) { continue; }
+
+        if (slv->eeprom.mbx_supported && slv->mbx.sm_state) {
+            if (*slv->mbx.sm_state & 0x08) {
+                ec_mbx_sched_read(pec, slave);
+            }
+        }
     }
 
 local_exit:

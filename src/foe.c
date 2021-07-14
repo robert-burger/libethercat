@@ -151,7 +151,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         return -1;
     }
 
-    pthread_mutex_lock(&slv->mbx_lock);
+    pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -247,7 +247,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
 exit:
     ec_log(10, __func__, "reading file \"%s\" finished\n", file_name);
 
-    pthread_mutex_unlock(&slv->mbx_lock);
+    pthread_mutex_unlock(&slv->mbx.lock);
     return wkc;
 }
 
@@ -263,7 +263,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         return -1;
     }
 
-    pthread_mutex_lock(&slv->mbx_lock);
+    pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -366,7 +366,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
 exit:
     ec_log(10, __func__, "file download finished\n");
 
-    pthread_mutex_unlock(&slv->mbx_lock);
+    pthread_mutex_unlock(&slv->mbx.lock);
     return wkc;
 }
 

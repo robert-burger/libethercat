@@ -159,7 +159,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     int wkc = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    pthread_mutex_lock(&slv->mbx_lock);
+    pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -208,7 +208,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             break;
     }
     
-    pthread_mutex_unlock(&slv->mbx_lock);
+    pthread_mutex_unlock(&slv->mbx.lock);
     
     return wkc;
 }
@@ -218,7 +218,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     int wkc = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    pthread_mutex_lock(&slv->mbx_lock);
+    pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -280,7 +280,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx_lock);
+    pthread_mutex_unlock(&slv->mbx.lock);
 
     return wkc;
 }

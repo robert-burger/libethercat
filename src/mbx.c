@@ -77,6 +77,8 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
     pthread_mutex_init(&slv->mbx.recv_mutex, NULL);
     pthread_cond_init(&slv->mbx.recv_cond, NULL);
 
+    pthread_mutex_init(&slv->mbx.lock, NULL);
+
     ec_coe_init(pec, slave);
     ec_soe_init(pec, slave);
     ec_foe_init(pec, slave);
@@ -104,6 +106,8 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
 
     slv->mbx.handler_running = 0;
     pthread_join(slv->mbx.handler_tid, NULL);
+    
+    pthread_mutex_destroy(&slv->mbx.lock);
 
     ec_coe_deinit(pec, slave);
     ec_soe_deinit(pec, slave);

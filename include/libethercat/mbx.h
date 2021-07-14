@@ -97,6 +97,14 @@ typedef struct ec_mbx {
                                  * handler function.
                                  */
     pthread_t handler_tid;      //!< \brief Mailbox handler thread handle.
+    
+    pthread_mutex_t lock;       //!< mailbox lock
+                                /*!<
+                                 * Only one simoultaneous access to the 
+                                 * EtherCAT slave mailbox is possible at the 
+                                 * moment.
+                                 */
+
 
     pool_t *message_pool_free;
     pool_t *message_pool_queued;

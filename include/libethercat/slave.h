@@ -250,13 +250,6 @@ typedef struct ec_slave {
                                  * \endlink.
                                  */
 
-    pthread_mutex_t mbx_lock;   //!< mailbox lock
-                                /*!<
-                                 * Only one simoultaneous access to the 
-                                 * EtherCAT slave mailbox is possible at the 
-                                 * moment.
-                                 */
-
     int assigned_pd_group;
     ec_pd_t pdin;               //!< input process data 
                                 /*!<
@@ -266,7 +259,6 @@ typedef struct ec_slave {
                                  * defined by the slave (\link subdevs 
                                  * \endlink)
                                  */
-    size_t pdin_len;
 
     ec_pd_t pdout;              //!< output process data
                                 /*!<
@@ -276,7 +268,6 @@ typedef struct ec_slave {
                                  * defined by the slave (\link subdevs 
                                  * \endlink)
                                  */
-    size_t pdout_len;
 
     size_t subdev_cnt;          //!< count of sub devices
                                 /*!< 

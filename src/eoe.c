@@ -180,7 +180,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    pthread_mutex_lock(&slv->mbx_lock);
+    pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -231,7 +231,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
 
     pool_put(slv->mbx.message_pool_free, p_entry);
 
-    pthread_mutex_unlock(&slv->mbx_lock);
+    pthread_mutex_unlock(&slv->mbx.lock);
 
     return ret;
 }
@@ -256,7 +256,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
     size_t mbx_len = slv->sm[MAILBOX_WRITE].len;
     size_t frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
 
-    pthread_mutex_lock(&slv->mbx_lock);
+    pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
     
@@ -295,7 +295,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         rest_len -= frag_len;
     }
 
-    pthread_mutex_unlock(&slv->mbx_lock);
+    pthread_mutex_unlock(&slv->mbx.lock);
 
     return ret;
 }
@@ -337,7 +337,7 @@ exit:
         slv->mbx_read.skip_next = 1;
     }
 
-    pthread_mutex_unlock(&slv->mbx_lock);
+    pthread_mutex_unlock(&slv->mbx.lock);
 #endif
     return ret;
 }

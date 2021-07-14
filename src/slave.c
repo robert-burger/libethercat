@@ -631,8 +631,6 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
     free_resource(slv->eeprom.fmmus);
     free_resource(slv->sm);
     free_resource(slv->fmmu);
-
-    pthread_mutex_destroy(&slv->mbx_lock);
 }
 
 // state transition on ethercat slave
