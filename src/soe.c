@@ -65,84 +65,136 @@ enum {
     EC_SOE_EMERGENCY
 };
 
+//! initialize SoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_soe_init(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_open(&slv->mbx.soe.recv_pool, 0, 1518);
+}
+
+//! \brief Wait for SoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] pp_entry  Returns pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+
+    ec_mbx_sched_read(pec, slave);
+
+    ec_timer_t timeout;
+    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+
+    pool_get(slv->mbx.soe.recv_pool, pp_entry, &timeout);
+}
+
+//! \brief Enqueue SoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_put(slv->mbx.soe.recv_pool, p_entry);
+}
+
+//! Read elements of soe ID number
+/*!
+ * This reads all ID number elements from given EtherCAT slave's drive number. This function
+ * enables read access to the ServoDrive dictionary on SoE enabled devices. The call to 
+ * \link ec_soe_read \endlink is a synchronous call and will block until it's either finished or aborted.
+ *
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] atn       AT number according to ServoDrive Bus Specification. 
+ *                      In most cases this will be 0, if you are using a 
+ *                      multi-drive device this may be 0,1,... .
+ * \param[in] idn       ID number according to ServoDrive Bus Specification.
+ *                      IDN's in range 1...32767 are described in the Specification,
+ *                      IDN's greater 32768 are manufacturer specific.
+ * \param[in] elements  ServoDrive elements according to ServoDrive Bus Specification.
+ * \param[in,out] buf   Buffer for where to store the answer. This can either be
+ *                      NULL with 'len' also set to zero, or a pointer to a 
+ *                      preallocated buffer with set \p len field. In case \p buf is NULL
+ *                      it will be allocated by \link ec_soe_read \endlink call. Then 
+ *                      you have to make sure, that the buffer is freed by your application.
+ * \param[in,out] len   Length of \p buf, see 'buf' descriptions. Returns length of answer.
+ * \return 0 on successs
+ */
 int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
-        uint8_t elements, uint8_t *buf, size_t *len) {
+        uint8_t elements, uint8_t *buf, size_t *len) 
+{
     int wkc = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) ||
-            !(slv->mbx_write.buf) ||
-            !(slv->mbx_read.buf))
-        return 0;
-
     pthread_mutex_lock(&slv->mbx_lock);
 
-    ec_soe_request_t *write_buf = 
-        (ec_soe_request_t *)(slv->mbx_write.buf);
+    pool_entry_t *p_entry;
+    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+    memset(p_entry->data, 0, p_entry->data_size);
+    MESSAGE_POOL_DEBUG(free);
 
-    // empty mailbox if anything in
-    ec_mbx_clear(pec, slave, 1);
-    ec_mbx_receive(pec, slave, 0);
+    ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
     // mailbox header
-    ec_mbx_clear(pec, slave, 0);
     write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
-    write_buf->mbx_hdr.address  = 0x0000;
-    write_buf->mbx_hdr.priority = 0x00;
     write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
-    write_buf->mbx_hdr.counter  = 0;
-
     // soe header
     write_buf->soe_hdr.op_code    = EC_SOE_READ_REQ;
-    write_buf->soe_hdr.incomplete = 0;
-    write_buf->soe_hdr.error      = 0;
     write_buf->soe_hdr.atn        = atn;
     write_buf->soe_hdr.elements   = elements;
     write_buf->soe_hdr.idn        = idn;
 
     // send request
-    if (!(wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX))) {
-        ec_log(10, __func__, "error on writing send mailbox\n");
-        goto exit;
-    }
+    ec_mbx_enqueue(pec, slave, p_entry);
 
     uint8_t *to = buf;
     ssize_t left_len = *len;
-    ec_soe_request_t *read_buf  = 
-        (ec_soe_request_t *)(slv->mbx_read.buf); 
 
     while (1) {
         // wait for answer
-        ec_mbx_clear(pec, slave, 1);
-        if (!(wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX))) {
-            ec_log(10, __func__, "error on reading receive mailbox\n");
-            goto exit;
-        }
-
+        for (p_entry = NULL; !p_entry; ec_soe_wait(pec, slave, &p_entry)) {}
+        ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data); 
+    
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_READ_RES) {
-            ec_log(10, __func__, "got unexpected response %d\n", 
-                    read_buf->soe_hdr.op_code);
+            ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
+            pool_put(slv->mbx.message_pool_free, p_entry);
             continue; // TODO handle unexpected answer
         }
 
         if (left_len > 0) {
-            size_t read_len = read_buf->mbx_hdr.length - 
-                sizeof(ec_soe_header_t);
+            size_t read_len = read_buf->mbx_hdr.length - sizeof(ec_soe_header_t);
             memcpy(to, &read_buf->data, min(read_len, left_len));
             to += read_len;
             left_len -= read_len;
         }
+    
+        pool_put(slv->mbx.message_pool_free, p_entry);
 
         if (/*(left_len < 0) ||*/ !read_buf->soe_hdr.incomplete)
             break;
     }
     
-exit:
-    // reset mailbox state 
-    if (slv->mbx_read.sm_state)
-        *slv->mbx_read.sm_state = 0;
-
     pthread_mutex_unlock(&slv->mbx_lock);
     
     return wkc;
@@ -153,31 +205,20 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     int wkc = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (    !(slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) ||
-            !(slv->mbx_write.buf) ||
-            !(slv->mbx_read.buf))
-        return 0;
-
     pthread_mutex_lock(&slv->mbx_lock);
 
-    ec_soe_request_t *write_buf = 
-        (ec_soe_request_t *)(slv->mbx_write.buf);
+    pool_entry_t *p_entry;
+    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+    memset(p_entry->data, 0, p_entry->data_size);
+    MESSAGE_POOL_DEBUG(free);
 
-    // empty mailbox if anything in
-    ec_mbx_clear(pec, slave, 1);
-    while (ec_mbx_receive(pec, slave, EC_SHORT_TIMEOUT_MBX) != 0)
-        ;
+    ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
     // mailbox header
-    ec_mbx_clear(pec, slave, 0);
     write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
-    write_buf->mbx_hdr.address  = 0x0000;
-    write_buf->mbx_hdr.priority = 0x00;
     write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
-
     // soe header
     write_buf->soe_hdr.op_code    = EC_SOE_WRITE_REQ;
-    write_buf->soe_hdr.error      = 0;
     write_buf->soe_hdr.atn        = atn;
     write_buf->soe_hdr.elements   = elements;
     write_buf->soe_hdr.idn        = idn;
@@ -186,8 +227,6 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     size_t left_len = len;
     size_t mbx_len = slv->sm[0].len 
         - sizeof(ec_mbx_header_t) - sizeof(ec_soe_header_t);
-    ec_soe_request_t *read_buf  = 
-        (ec_soe_request_t *)(slv->mbx_read.buf); 
 
     ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, "
             "len %d, left %d, mbx_len %d\n", 
@@ -209,35 +248,24 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         }
 
         // send request
-        if (!(wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX))) {
-            ec_log(10, __func__, "error on writing send mailbox\n");
-            goto exit;
-        }
+        ec_mbx_enqueue(pec, slave, p_entry);
 
         if (!left_len) {
             // wait for answer
-            ec_mbx_clear(pec, slave, 1);
-            if (!(wkc = ec_mbx_receive(pec, slave,
-                            EC_DEFAULT_TIMEOUT_MBX * 10))) {
-                ec_log(10, __func__, "error on reading receive mailbox\n");
-                goto exit;
-            }
+            for (p_entry = NULL; !p_entry; ec_soe_wait(pec, slave, &p_entry)) {}
+            ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data); 
 
             // check for correct op_code
             if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
-                ec_log(10, __func__, "got unexpected response %d\n", 
-                        read_buf->soe_hdr.op_code);
+                ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
+                pool_put(slv->mbx.message_pool_free, p_entry);
                 continue; // TODO handle unexpected answer
             }
-
+        
+            pool_put(slv->mbx.message_pool_free, p_entry);
             break;
         }
     }
-
-exit:
-    // reset mailbox state 
-    if (slv->mbx_read.sm_state)
-        *slv->mbx_read.sm_state = 0;
 
     pthread_mutex_unlock(&slv->mbx_lock);
 

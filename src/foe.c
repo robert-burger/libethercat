@@ -38,6 +38,94 @@
 #include <unistd.h>
 #include <errno.h>
 
+//! FoE header
+typedef struct ec_foe_header {
+    uint8_t op_code;            //!< FoE op code
+    uint8_t reserved;           //!< FoE reserved 
+} ec_foe_header_t;
+
+//! read/write request
+typedef struct ec_foe_rw_request {
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        password;   //!< FoE password
+    char            file_name[MAX_FILE_NAME_SIZE];
+                                //!< FoE filename to read/write
+} ec_foe_rw_request_t;
+
+//! data packet
+typedef struct ec_foe_data_request {
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        packet_nr;  //!< FoE segmented packet number
+    ec_data_t       data;       //!< FoE segmented packet data
+} ec_foe_data_request_t;
+
+//! acknowledge data packet
+typedef struct ec_foe_ack_request {
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        packet_nr;  //!< FoE segmented packet number
+} ec_foe_ack_request_t;
+
+//! error request
+typedef struct ec_foe_error_request {
+    ec_mbx_header_t mbx_hdr;    //!< mailbox header
+    ec_foe_header_t foe_hdr;    //!< FoE header
+    uint32_t        error_code; //!< error code
+    char            error_text[MAX_ERROR_TEXT_SIZE];
+                                //!< error text
+} ec_foe_error_request_t;
+
+//! initialize FoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_foe_init(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_open(&slv->mbx.foe.recv_pool, 0, 1518);
+}
+
+//! \brief Wait for FoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] pp_entry  Returns pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+
+    ec_mbx_sched_read(pec, slave);
+
+    ec_timer_t timeout;
+    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+
+    pool_get(slv->mbx.foe.recv_pool, pp_entry, &timeout);
+}
+
+//! \brief Enqueue FoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_foe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_put(slv->mbx.foe.recv_pool, p_entry);
+}
+
 // read file over foe
 int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t **file_data, 
@@ -52,29 +140,22 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
 
     pthread_mutex_lock(&slv->mbx_lock);
 
-    ec_foe_rw_request_t *write_buf = 
-        (ec_foe_rw_request_t *)(slv->mbx_write.buf);
+    pool_entry_t *p_entry;
+    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+    memset(p_entry->data, 0, p_entry->data_size);
+    MESSAGE_POOL_DEBUG(free);
+
+    ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry->data);
 
     // calc lengths
     ssize_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
     ssize_t file_name_len = min(strlen(file_name), foe_max_len-6);
 
-    // empty mailbox if anything in
-    ec_mbx_clear(pec, slave, 1);
-    ec_mbx_receive(pec, slave, 0);
-
     // mailbox header
-    ec_mbx_clear(pec, slave, 0);
     write_buf->mbx_hdr.length    = 6 + file_name_len;
-    write_buf->mbx_hdr.address   = 0x0000;
-    write_buf->mbx_hdr.priority  = 0x00;
-    write_buf->mbx_hdr.counter   = 0;
     write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
-
     // foe header (2 Byte)
     write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_READ_REQUEST;
-    write_buf->foe_hdr.reserved  = 0x00;
-
     // read request (password 4 Byte)
     write_buf->password          = password;
     memcpy(write_buf->file_name, file_name, file_name_len);
@@ -82,33 +163,14 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
     ec_log(10, __func__, "start reading file \"%s\"\n", file_name);
 
     // send request
-    wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(10, __func__, "error on writing send mailbox\n");
-        goto exit;
-    }
-
-    ec_foe_ack_request_t *write_buf_ack = 
-        (ec_foe_ack_request_t *)(slv->mbx_write.buf);
-    ec_foe_data_request_t *read_buf_data = 
-        (ec_foe_data_request_t *)(slv->mbx_read.buf);
+    ec_mbx_enqueue(pec, slave, p_entry);
 
     *file_data_len = 0;
 
     while (1) {
         // wait for answer
-        ec_mbx_clear(pec, slave, 1);
-        wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-        if (!wkc) {
-            ec_log(10, __func__, "error on reading receive mailbox\n");
-            goto exit;
-        }
-
-        if (read_buf_data->mbx_hdr.mbxtype != EC_MBX_FOE) {
-            ec_log(10, __func__, "wrong mailbox type 0x%X\n", 
-                    read_buf_data->mbx_hdr.mbxtype);
-            continue;
-        }
+        for (p_entry = NULL; !p_entry; ec_foe_wait(pec, slave, &p_entry)) {}
+        ec_foe_data_request_t *read_buf_data = (ec_foe_data_request_t *)(p_entry->data);
 
         if (read_buf_data->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
             ec_foe_error_request_t *read_buf_error =
@@ -127,13 +189,15 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
             }
 
             wkc = -1;
+            pool_put(slv->mbx.message_pool_free, p_entry);
+            MESSAGE_POOL_DEBUG(free);
             goto exit;
         }
 
         if (read_buf_data->foe_hdr.op_code != EC_FOE_OP_CODE_DATA_REQUEST) {
-            ec_log(10, __func__, "got foe op_code %X\n", 
-                    read_buf_data->foe_hdr.op_code);
-
+            ec_log(10, __func__, "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
+            pool_put(slv->mbx.message_pool_free, p_entry);
+            MESSAGE_POOL_DEBUG(free);
             continue;
         }
 
@@ -143,38 +207,32 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
                 &read_buf_data->data.bdata[0], len); 
         *file_data_len += len;
 
+        int packet_nr = read_buf_data->packet_nr;
+        int read_data_length = read_buf_data->mbx_hdr.length;
+    
+        memset(p_entry->data, 0, p_entry->data_size);
+        ec_foe_ack_request_t *write_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
+
         // everthing is fine, send ack 
         // mailbox header
-        ec_mbx_clear(pec, slave, 0);
         write_buf_ack->mbx_hdr.length    = 6; 
-        write_buf_ack->mbx_hdr.address   = 0x0000;
-        write_buf_ack->mbx_hdr.priority  = 0x00;
         write_buf_ack->mbx_hdr.mbxtype   = EC_MBX_FOE;
-
         // foe
         write_buf_ack->foe_hdr.op_code   = EC_FOE_OP_CODE_ACK_REQUEST;
-        write_buf_ack->foe_hdr.reserved  = 0x00;
-        write_buf_ack->packet_nr         = read_buf_data->packet_nr;
+        write_buf_ack->packet_nr         = packet_nr;
 
-        wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-        if (!wkc) {
-            ec_log(10, __func__, "error on writing send mailbox\n");
-            goto exit;
-        }
+        // send request
+        ec_mbx_enqueue(pec, slave, p_entry);
 
         // compare length + mbx_hdr_size with mailbox size
-        if ((read_buf_data->mbx_hdr.length + 6) < slv->sm[1].len)
+        if ((read_data_length + 6) < slv->sm[1].len) {
+            pool_put(slv->mbx.message_pool_free, p_entry);
             break;
+        }
     }
 
 exit:
     ec_log(10, __func__, "reading file \"%s\" finished\n", file_name);
-
-    // reset mailbox state 
-    if (slv->mbx_read.sm_state) {
-        *slv->mbx_read.sm_state = 0;
-        slv->mbx_read.skip_next = 1;
-    }
 
     pthread_mutex_unlock(&slv->mbx_lock);
     return wkc;
@@ -194,73 +252,38 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
 
     pthread_mutex_lock(&slv->mbx_lock);
 
-    ec_foe_rw_request_t *write_buf = 
-        (ec_foe_rw_request_t *)(slv->mbx_write.buf);
+    pool_entry_t *p_entry;
+    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+    memset(p_entry->data, 0, p_entry->data_size);
+    MESSAGE_POOL_DEBUG(free);
+
+    ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry->data);
 
     // calc lengths
     ssize_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
     ssize_t file_name_len = min(strlen(file_name), foe_max_len-6);
 
-    // empty mailbox if anything in
-    ec_mbx_clear(pec, slave, 1);
-    ec_mbx_receive(pec, slave, 0);
-
     // mailbox header
-    ec_mbx_clear(pec, slave, 0);
     write_buf->mbx_hdr.length    = 6 + file_name_len;
-    write_buf->mbx_hdr.address   = 0x0000;
-    write_buf->mbx_hdr.priority  = 0x00;
-    write_buf->mbx_hdr.counter   = 0;
     write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
-
     // foe header (2 Byte)
     write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_WRITE_REQUEST;
-    write_buf->foe_hdr.reserved  = 0x00;
-
     // read request (password 4 Byte)
     write_buf->password          = password;
     memcpy(write_buf->file_name, file_name, file_name_len);
 
     // send request
-    wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(10, __func__, "error on writing send mailbox\n");
-        goto exit;
-    }
+    ec_mbx_enqueue(pec, slave, p_entry);
 
-    ec_foe_data_request_t *write_buf_data = 
-        (ec_foe_data_request_t *)(slv->mbx_write.buf);
-    ec_foe_ack_request_t *read_buf_ack = 
-        (ec_foe_ack_request_t *)(slv->mbx_read.buf);
-        
-    // wait for ack
-    int i = 10000000;
-    do {
-        ec_mbx_clear(pec, slave, 1);
-        wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX * 10);
+    // wait for answer
+    for (p_entry = NULL; !p_entry; ec_foe_wait(pec, slave, &p_entry)) {}
+    ec_foe_ack_request_t *read_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
 
-        if (--i == 0)
-            break;
-    } while (wkc != 1);
-    if (!wkc) {
-        ec_log(10, __func__, 
-                "error on reading receive mailbox wating for ack\n");
-        goto exit;
-    }
-
-    if (read_buf_ack->mbx_hdr.mbxtype != EC_MBX_FOE) {
-        ec_log(10, __func__, "wrong mailbox type 0x%X\n", 
-                read_buf_ack->mbx_hdr.mbxtype);
-        goto exit;
-    }
-        
     if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
         if (read_buf_ack->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
-            ec_foe_error_request_t *read_buf_error =
-                (ec_foe_error_request_t *)(slv->mbx_read.buf);
+            ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry->data);
 
-            ec_log(10, __func__, "got foe error code 0x%X\n",
-                    read_buf_error->error_code);
+            ec_log(10, __func__, "got foe error code 0x%X\n", read_buf_error->error_code);
 
             ssize_t text_len = (read_buf_ack->mbx_hdr.length - 6);
             if (text_len > 0) {
@@ -274,77 +297,61 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
                     read_buf_ack->foe_hdr.op_code);
         goto exit;
     }
+    
+    // returning ack message
+    pool_put(slv->mbx.message_pool_free, p_entry);
 
     // mailbox len - mailbox hdr (6) - foe header (6)
     size_t data_len = slv->sm[1].len - 6 - 6;
     off_t file_offset = 0;
 
     while (1) {
+        pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+        memset(p_entry->data, 0, p_entry->data_size);
+        MESSAGE_POOL_DEBUG(free);
+
+        ec_foe_data_request_t *write_buf_data = (ec_foe_data_request_t *)p_entry->data;
+
         int last_pkt = 0;
 
-        // everthing is fine, send data 
-        ec_mbx_clear(pec, slave, 0);
-    
         int bytes_read = min(file_data_len - file_offset, data_len);
         memcpy(&write_buf_data->data.bdata[0], file_data + file_offset, bytes_read);
-        if (bytes_read < data_len)
+        if (bytes_read < data_len) {
             last_pkt = 1;
+        }
 
         file_offset += bytes_read;
 
         // mailbox header
         write_buf_data->mbx_hdr.length    = 6 + bytes_read; 
-        write_buf_data->mbx_hdr.address   = 0x0000;
-        write_buf_data->mbx_hdr.priority  = 0x00;
         write_buf_data->mbx_hdr.mbxtype   = EC_MBX_FOE;
-
         // foe
         write_buf_data->foe_hdr.op_code   = EC_FOE_OP_CODE_DATA_REQUEST;
-        write_buf_data->foe_hdr.reserved  = 0x00;
         write_buf_data->packet_nr         = read_buf_ack->packet_nr + 1;
 
-        wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-        if (!wkc) {
-            ec_log(10, __func__,
-                    "error on writing send mailbox with data packet %d\n", 
-                    write_buf_data->packet_nr);
-            goto exit;
-        }
+        // send request
+        ec_mbx_enqueue(pec, slave, p_entry);
 
-        // wait for ack
-        ec_mbx_clear(pec, slave, 1);
-        wkc = ec_mbx_receive(pec, slave, 10 * EC_DEFAULT_TIMEOUT_MBX);
-        if (!wkc) {
-            ec_log(10, __func__,
-                    "error on reading receive mailbox wating for data ack\n");
-            goto exit;
-        }
-
-        if (read_buf_ack->mbx_hdr.mbxtype != EC_MBX_FOE) {
-            ec_log(10, __func__, "wrong mailbox type 0x%X\n", 
-                    read_buf_ack->mbx_hdr.mbxtype);
-            goto exit;
-        }
+        // wait for answer
+        for (p_entry = NULL; !p_entry; ec_foe_wait(pec, slave, &p_entry)) {}
+        ec_foe_ack_request_t *read_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
 
         if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
             ec_log(10, __func__,
                     "got no ack on foe write request, got 0x%X\n", 
                     read_buf_ack->foe_hdr.op_code);
+            pool_put(slv->mbx.message_pool_free, p_entry);
             goto exit;
         }
         
-        if (last_pkt)
+        if (last_pkt) {
+            pool_put(slv->mbx.message_pool_free, p_entry);
             break;
+        }
     }
 
 exit:
     ec_log(10, __func__, "file download finished\n");
-
-    // reset mailbox state 
-    if (slv->mbx_read.sm_state) {
-        *slv->mbx_read.sm_state = 0;
-        slv->mbx_read.skip_next = 1;
-    }
 
     pthread_mutex_unlock(&slv->mbx_lock);
     return wkc;

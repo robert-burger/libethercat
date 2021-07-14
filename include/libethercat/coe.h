@@ -33,9 +33,14 @@
 
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
+#include "libethercat/pool.h"
 
 typedef struct ec_coe {
     idx_queue_t idx_q;
+    pool_t *recv_pool;
+
+    pthread_mutex_t recv_pool_mutex;
+    pthread_cond_t  recv_pool_cond;
 } ec_coe_t;
 
 //! CoE mailbox types
@@ -228,7 +233,19 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave);
  * \param pec pointer to ethercat master
  * \param slave slave number
  */
-void ec_coe_queue_emergency(ec_t *pec, uint16_t slave);
+void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+
+//! \brief Enqueue CoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
 #if 0 
 {

@@ -33,49 +33,13 @@
 #define __LIBETHERCAT_FOE_H__
 
 #include "libethercat/common.h"
-#include "libethercat/mbx.h"
 
-//! FoE header
-typedef struct ec_foe_header {
-    uint8_t op_code;            //!< FoE op code
-    uint8_t reserved;           //!< FoE reserved 
-} ec_foe_header_t;
+typedef struct ec_foe {
+    pool_t *recv_pool;
+} ec_foe_t;
 
 #define MAX_FILE_NAME_SIZE 512  //!< file name max size
 #define MAX_ERROR_TEXT_SIZE 512 //!< error text max size
-
-//! read/write request
-typedef struct ec_foe_rw_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        password;   //!< FoE password
-    char            file_name[MAX_FILE_NAME_SIZE];
-                                //!< FoE filename to read/write
-} ec_foe_rw_request_t;
-
-//! data packet
-typedef struct ec_foe_data_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        packet_nr;  //!< FoE segmented packet number
-    ec_data_t       data;       //!< FoE segmented packet data
-} ec_foe_data_request_t;
-
-//! acknowledge data packet
-typedef struct ec_foe_ack_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        packet_nr;  //!< FoE segmented packet number
-} ec_foe_ack_request_t;
-
-//! error request
-typedef struct ec_foe_error_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        error_code; //!< error code
-    char            error_text[MAX_ERROR_TEXT_SIZE];
-                                //!< error text
-} ec_foe_error_request_t;
 
 //! firmware update 
 typedef struct ec_fw_update {
@@ -131,6 +95,40 @@ extern "C" {
 #if 0
 }
 #endif
+
+//! initialize FoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_foe_init(ec_t *pec, uint16_t slave);
+
+//! \brief Wait for FoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] pp_entry  Returns pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry);
+
+//! \brief Enqueue FoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_foe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
 //! Read file over FoE.
 /*!

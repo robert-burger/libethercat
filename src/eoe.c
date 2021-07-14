@@ -111,48 +111,77 @@ typedef struct {
     ec_eoe_set_ip_parameter_response_header_t   sip_hdr;
 } PACKED ec_eoe_set_ip_parameter_response_t;
 
+//! initialize EoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_eoe_init(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_open(&slv->mbx.eoe.recv_pool, 0, 1518);
+}
+
+//! \brief Wait for EoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] pp_entry  Returns pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+
+    ec_mbx_sched_read(pec, slave);
+
+    ec_timer_t timeout;
+    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+
+    pool_get(slv->mbx.eoe.recv_pool, pp_entry, &timeout);
+}
+
+//! \brief Enqueue EoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_put(slv->mbx.eoe.recv_pool, p_entry);
+}
+
 // read coe sdo 
 int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
         uint8_t *dns, char *dns_name) {
-    int wkc, ret = 0;
+    int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
-
-    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE))
-        return EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE;
-    if (!(slv->mbx_write.buf))
-        return EC_ERROR_MAILBOX_WRITE_IS_NULL;
-    if (!(slv->mbx_read.buf))
-        return EC_ERROR_MAILBOX_READ_IS_NULL;
 
     pthread_mutex_lock(&slv->mbx_lock);
 
-    ec_eoe_set_ip_parameter_request_t *write_buf = 
-        (ec_eoe_set_ip_parameter_request_t *)(slv->mbx_write.buf);
-    
-    // empty mailbox if anything in
-    ec_mbx_clear(pec, slave, 1);
-    ec_mbx_receive(pec, slave, 0);
+    pool_entry_t *p_entry;
+    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+    memset(p_entry->data, 0, p_entry->data_size);
 
+    ec_eoe_set_ip_parameter_request_t *write_buf = (ec_eoe_set_ip_parameter_request_t *)(p_entry->data);
+    
     // mailbox header
     // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (4) + siphdr (4)
-    ec_mbx_clear(pec, slave, 0);
     write_buf->mbx_hdr.length    = 8;
-
-    write_buf->mbx_hdr.address   = 0x0000;
-    write_buf->mbx_hdr.priority  = 0x00;
     write_buf->mbx_hdr.mbxtype   = EC_MBX_EOE;
-
     // eoe header
     write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_SET_ADDRESS_FILTER_REQUEST;
-    write_buf->eoe_hdr.port               = 0x00;    
     write_buf->eoe_hdr.last_fragment      = 0x01;
-    write_buf->eoe_hdr.time_appended      = 0x00;
-    write_buf->eoe_hdr.time_requested     = 0x00;
-    write_buf->eoe_hdr.reserved           = 0x00;
-    write_buf->eoe_hdr.fragment_number    = 0x00;
-    write_buf->eoe_hdr.complete_size      = 0x00;
-    write_buf->eoe_hdr.frame_number       = 0x00;
 
     memset(&(write_buf->sip_hdr), 0, sizeof(write_buf->sip_hdr));
     uint8_t *buf = &write_buf->data.bdata[0];
@@ -179,33 +208,15 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     ADD_PARAMETER(dns_name,     EOE_SIZEOF_DNS_NAME);
     
     // send request
-    wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(10, "ec_eoe_set_ip_parameter", "error on writing send mailbox\n");
-        ret = EC_ERROR_MAILBOX_WRITE;
-        goto exit;
-    }
+    ec_mbx_enqueue(pec, slave, p_entry);
 
     // wait for answer
-    ec_mbx_clear(pec, slave, 1);
-    wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(10, "ec_eoe_set_ip_parameter", "error on reading receive mailbox\n");
-        ret = EC_ERROR_MAILBOX_READ;
-        goto exit;
-    }
-
-    ec_eoe_set_ip_parameter_response_t *read_buf  = 
-        (ec_eoe_set_ip_parameter_response_t *)(slv->mbx_read.buf); 
+    for (p_entry = NULL; !p_entry; ec_eoe_wait(pec, slave, &p_entry)) {}
+    ec_eoe_set_ip_parameter_response_t *read_buf = (ec_eoe_set_ip_parameter_response_t *)(p_entry->data);
 
     ret = read_buf->sip_hdr.result;
 
-exit:
-    // reset mailbox state 
-    if (slv->mbx_read.sm_state) {
-        *slv->mbx_read.sm_state = 0;
-        slv->mbx_read.skip_next = 1;
-    }
+    pool_put(slv->mbx.message_pool_free, p_entry);
 
     pthread_mutex_unlock(&slv->mbx_lock);
 
@@ -226,7 +237,7 @@ exit:
  */
 int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
         size_t frame_len) {
-    int wkc, ret = 0;
+    int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
     if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE))
@@ -241,36 +252,26 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
 
     pthread_mutex_lock(&slv->mbx_lock);
 
-    ec_eoe_request_t *write_buf = 
-        (ec_eoe_request_t *)(slv->mbx_write.buf);
+    pool_entry_t *p_entry;
     
-    // empty mailbox if anything in
-    ec_mbx_clear(pec, slave, 1);
-    ec_mbx_receive(pec, slave, 0);
-
-    // mailbox header
-    // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
-    ec_mbx_clear(pec, slave, 0);
-
-    write_buf->mbx_hdr.address   = 0x0000;
-    write_buf->mbx_hdr.priority  = 0x00;
-    write_buf->mbx_hdr.mbxtype   = EC_MBX_EOE;
-
-    // eoe header
-    write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_REQUEST;
-    write_buf->eoe_hdr.port               = 0x00;    
-    write_buf->eoe_hdr.last_fragment      = 0x01;
-    write_buf->eoe_hdr.time_appended      = 0x00;
-    write_buf->eoe_hdr.time_requested     = 0x00;
-    write_buf->eoe_hdr.reserved           = 0x00;
-    write_buf->eoe_hdr.fragment_number    = 0x00;
-    write_buf->eoe_hdr.complete_size      = (frame_len + 31)/32;
-    write_buf->eoe_hdr.frame_number       = 0x00;
-
     size_t rest_len = frame_len;
+    int fragment_number = 0;
 
     while (rest_len > 0) {
-        write_buf->eoe_hdr.fragment_number++;
+        pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+        memset(p_entry->data, 0, p_entry->data_size);
+
+        ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
+
+        // mailbox header
+        // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
+        write_buf->mbx_hdr.mbxtype   = EC_MBX_EOE;
+
+        // eoe header
+        write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_REQUEST;
+        write_buf->eoe_hdr.last_fragment      = 0x01;
+        write_buf->eoe_hdr.complete_size      = (frame_len + 31)/32;
+        write_buf->eoe_hdr.fragment_number    = fragment_number++;
 
         if (rest_len > frag_len) {
             write_buf->eoe_hdr.last_fragment = 0x00;
@@ -283,21 +284,9 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         memcpy(&write_buf->data.bdata[0], &frame[frame_len - rest_len], act_len);
 
         // send request
-        wkc = ec_mbx_send(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-        if (!wkc) {
-            ec_log(10, "ec_eoe_send_frame", "error on writing send mailbox\n");
-            ret = EC_ERROR_MAILBOX_WRITE;
-            goto exit;
-        }
+        ec_mbx_enqueue(pec, slave, p_entry);
 
         rest_len -= frag_len;
-    }
-
-exit:
-    // reset mailbox state 
-    if (slv->mbx_read.sm_state) {
-        *slv->mbx_read.sm_state = 0;
-        slv->mbx_read.skip_next = 1;
     }
 
     pthread_mutex_unlock(&slv->mbx_lock);
@@ -319,7 +308,8 @@ exit:
  */
 int ec_eoe_recv_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
         size_t frame_len) {
-    int wkc, ret = 0;
+    int ret = 0;
+#if 0
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     
     // wait for answer
@@ -342,7 +332,7 @@ exit:
     }
 
     pthread_mutex_unlock(&slv->mbx_lock);
-
+#endif
     return ret;
 }
 

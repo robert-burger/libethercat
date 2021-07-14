@@ -116,16 +116,26 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
         return (ret = EINVAL);
     }
 
-    if (timeout) {
-        struct timespec ts = { timeout->sec, timeout->nsec };
-        ret = sem_timedwait(&pp->avail_cnt, &ts);
-        if (ret != 0) {
-            if (errno != ETIMEDOUT) {
-                perror("sem_timedwait");
-            }
+    struct timespec ts;
 
-            return (ret = errno);
+    if (timeout) {
+        ts.tv_sec = timeout->sec;
+        ts.tv_nsec = timeout->nsec;
+    } else {
+        ec_timer_t tim;
+        ec_timer_gettime(&tim);
+        ts.tv_sec = tim.sec;
+        ts.tv_nsec = tim.nsec;
+    }
+
+    ret = sem_timedwait(&pp->avail_cnt, &ts);
+    if (ret != 0) {
+        if (errno != ETIMEDOUT) {
+            perror("sem_timedwait");
         }
+
+        *entry = NULL;
+        return (ret = errno);
     }
 
     pthread_mutex_lock(&pp->_pool_lock);

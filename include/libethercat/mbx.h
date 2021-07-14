@@ -33,7 +33,19 @@
 
 #include "libethercat/common.h"
 #include "libethercat/coe.h"
+#include "libethercat/soe.h"
+#include "libethercat/foe.h"
+#include "libethercat/eoe.h"
 #include "libethercat/pool.h"
+    
+#define MESSAGE_POOL_DEBUG(type) {}
+
+#define _MESSAGE_POOL_DEBUG(type) \
+{                                                                                       \
+    int avail = 0;                                                                      \
+    sem_getvalue(&slv->mbx.message_pool_ ## type->avail_cnt, &avail);                   \
+    ec_log(10, __func__, "slave %d: " #type " pool avail %d\n", slave, avail);          \
+}
 
 //! mailbox types
 enum {
@@ -61,8 +73,11 @@ typedef struct PACKED ec_mbx_buffer {
     ec_data_t      mbx_data;    //!< mailbox data
 } PACKED ec_mbx_buffer_t;
 
+#define MBX_HANDLER_FLAGS_SEND  ((uint32_t)0x00000001u)
+#define MBX_HANDLER_FLAGS_RECV  ((uint32_t)0x00000002u)
 
 typedef struct ec_mbx {
+    uint32_t handler_flags;
     pthread_cond_t recv_cond;
     pthread_mutex_t recv_mutex;
 
@@ -75,8 +90,12 @@ typedef struct ec_mbx {
     pool_t *message_pool_free;
     pool_t *message_pool_queued;
 
-    ec_coe_t coe;
+    pool_entry_t *sent[8];
 
+    ec_coe_t coe;
+    ec_soe_t soe;
+    ec_foe_t foe;
+    ec_eoe_t eoe;
 } ec_mbx_t;
 
 // forward declarations
@@ -163,6 +182,8 @@ void ec_mbx_push(ec_t *pec, uint16_t slave);
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
 void ec_mbx_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+
+void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
 
 #if 0 
 {

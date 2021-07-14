@@ -31,12 +31,52 @@
 #ifndef LIBETHERCAT_EOE_H
 #define LIBETHERCAT_EOE_H
 
+#include "libethercat/common.h"
+
+typedef struct ec_eoe {
+    pool_t *recv_pool;
+} ec_eoe_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
 }
 #endif
+
+//! initialize EoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_eoe_init(ec_t *pec, uint16_t slave);
+
+//! \brief Wait for EoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] pp_entry  Returns pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry);
+
+//! \brief Enqueue EoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
 int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 

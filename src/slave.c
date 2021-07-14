@@ -30,6 +30,7 @@
 #include "libethercat/ec.h"
 #include "libethercat/coe.h"
 #include "libethercat/soe.h"
+#include "libethercat/foe.h"
 #include "libethercat/mbx.h"
 #include "libethercat/dc.h"
 
@@ -714,6 +715,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 alloc_resource(slv->mbx_write.buf, uint8_t, slv->sm[0].len);
                 slv->mbx_write.sm_state = NULL;
                 slv->mbx_read.skip_next = 0;
+
+                ec_mbx_init(pec, slave);
 
                 for (int sm_idx = 0; sm_idx < 2; ++sm_idx) {
                     ec_log(10, get_transition_string(transition), "slave %2d: "
