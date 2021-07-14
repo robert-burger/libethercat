@@ -35,12 +35,22 @@
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
 
-typedef struct ec_coe {
-    idx_queue_t idx_q;
-    pool_t *recv_pool;
+//! Message queue qentry
+typedef struct ec_coe_emergency_message_entry {
+    TAILQ_ENTRY(ec_coe_emergency_message_entry) qh;
+                                //!< handle to message entry queue
+    ec_timer_t timestamp;       //!< timestamp, when emergency was received
+    size_t msg_len;             //!< length
+    uint8_t msg[1];             //!< message itself
+} ec_coe_emergency_message_entry_t;
 
-    pthread_mutex_t recv_pool_mutex;
-    pthread_cond_t  recv_pool_cond;
+TAILQ_HEAD(ec_coe_emergency_message_queue, ec_coe_emergency_message_entry);
+typedef struct ec_coe_emergency_message_queue ec_coe_emergency_message_queue_t;
+
+typedef struct ec_coe {
+    pool_t *recv_pool;
+    
+    ec_coe_emergency_message_queue_t emergencies;    //!< message pool queue
 } ec_coe_t;
 
 //! CoE mailbox types
@@ -124,6 +134,16 @@ extern "C" {
  *                          (usually the n'th slave attached).
  */
 void ec_coe_init(ec_t *pec, uint16_t slave);
+
+//! deinitialize CoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_coe_deinit(ec_t *pec, uint16_t slave);
 
 //! Read CoE service data object (SDO) 
 /*!

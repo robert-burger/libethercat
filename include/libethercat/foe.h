@@ -106,6 +106,16 @@ extern "C" {
  */
 void ec_foe_init(ec_t *pec, uint16_t slave);
 
+//! deinitialize FoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_foe_deinit(ec_t *pec, uint16_t slave);
+
 //! \brief Wait for FoE message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 

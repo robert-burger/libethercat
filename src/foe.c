@@ -90,6 +90,19 @@ void ec_foe_init(ec_t *pec, uint16_t slave) {
     pool_open(&slv->mbx.foe.recv_pool, 0, 1518);
 }
 
+//! deinitialize FoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_foe_deinit(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_close(slv->mbx.foe.recv_pool);
+}
+
 //! \brief Wait for FoE message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 
@@ -174,7 +187,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
 
         if (read_buf_data->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
             ec_foe_error_request_t *read_buf_error =
-                (ec_foe_error_request_t *)(slv->mbx_read.buf);
+                (ec_foe_error_request_t *)(p_entry->data);
 
             ec_log(100, __func__, "got foe error code 0x%X\n", 
                     read_buf_error->error_code);

@@ -78,6 +78,19 @@ void ec_soe_init(ec_t *pec, uint16_t slave) {
     pool_open(&slv->mbx.soe.recv_pool, 0, 1518);
 }
 
+//! deinitialize SoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_soe_deinit(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_close(slv->mbx.soe.recv_pool);
+}
+
 //! \brief Wait for SoE message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 

@@ -72,31 +72,6 @@ typedef enum ec_state_transition {
     OP_2_OP          = 0x0808,  //!< OP to OP state transition,
 } ec_state_transition_t;
 
-//! EtherCAT slave mailbox settings
-typedef struct ec_slave_mbx {
-    uint8_t  sm_nr;             //!< mailbox sync manager numer
-                                /*!<
-                                 * This specifies the assign sync manager
-                                 * for the mailbox access.
-                                 */
-
-    uint8_t *sm_state;          //!< sync manager state
-                                /*!<
-                                 * The field is used to receive the mailbox 
-                                 * sync manager state. This is useful to 
-                                 * determine if the mailbox is full or empty
-                                 * without the need to poll the state manually.
-                                 */
-
-    uint8_t *buf;               //!< mailbox buffer
-                                /*!<
-                                 * Receive or Transmit buffer for mailbox 
-                                 * messages.
-                                 */
-
-    uint8_t  skip_next;         //!< set if next message should be skipped
-} ec_slave_mbx_t;
-
 //! slave sync manager settings
 typedef struct PACKED ec_slave_sm {
     uint16_t adr;               //!< sync manager address
@@ -231,18 +206,6 @@ typedef struct worker_arg {
     ec_state_t state;
 } worker_arg_t;
 
-//! Message queue qentry
-typedef struct ec_emergency_message_entry {
-    TAILQ_ENTRY(ec_emergency_message_entry) qh;
-                                //!< handle to message entry queue
-    ec_timer_t timestamp;       //!< timestamp, when emergency was received
-    size_t msg_len;             //!< length
-    uint8_t msg[1];             //!< message itself
-} ec_emergency_message_entry_t;
-
-TAILQ_HEAD(ec_emergency_message_queue, ec_emergency_message_entry);
-typedef struct ec_emergency_message_queue ec_emergency_message_queue_t;
-
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
     uint16_t fixed_address;     //!< virtual bus address, programmed on start
@@ -293,11 +256,6 @@ typedef struct ec_slave {
                                  * EtherCAT slave mailbox is possible at the 
                                  * moment.
                                  */
-
-    ec_slave_mbx_t mbx_read;    //!< read mailbox 
-    ec_slave_mbx_t mbx_write;   //!< write mailbox
-    ec_emergency_message_queue_t 
-        mbx_coe_emergencies;    //!< message pool queue
 
     int assigned_pd_group;
     ec_pd_t pdin;               //!< input process data 

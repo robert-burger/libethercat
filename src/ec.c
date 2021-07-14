@@ -299,7 +299,7 @@ void ec_create_logical_mapping_lrw(ec_t *pec, int group) {
                 } else 
                     slv->pdin.len += 1;
 
-                slv->mbx_read.sm_state = tmp_pdin;
+                slv->mbx.sm_state = tmp_pdin;
 
                 wkc_expected |= 1;
             }
@@ -445,7 +445,7 @@ void ec_create_logical_mapping(ec_t *pec, int group) {
                 } else 
                     slv->pdin.len += 1;
 
-                slv->mbx_read.sm_state = pdin;
+                slv->mbx.sm_state = pdin;
 
                 wkc_expected |= 1;
             }

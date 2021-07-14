@@ -595,6 +595,8 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
 void ec_slave_free(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = &pec->slaves[slave];
 
+    ec_mbx_deinit(pec, slave);
+
     // free resources
     if (slv->eeprom.strings) {
         int string;
@@ -629,8 +631,6 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
     free_resource(slv->eeprom.fmmus);
     free_resource(slv->sm);
     free_resource(slv->fmmu);
-    free_resource(slv->mbx_read.buf);
-    free_resource(slv->mbx_write.buf);
 
     pthread_mutex_destroy(&slv->mbx_lock);
 }
@@ -685,36 +685,26 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 // read mailbox
                 if ((transition == INIT_2_BOOT) && 
                         slv->eeprom.boot_mbx_send_offset) {
-                    slv->sm[1].adr = slv->eeprom.boot_mbx_send_offset;
-                    slv->sm[1].len = slv->eeprom.boot_mbx_send_size;
+                    slv->sm[MAILBOX_READ].adr = slv->eeprom.boot_mbx_send_offset;
+                    slv->sm[MAILBOX_READ].len = slv->eeprom.boot_mbx_send_size;
                 } else {
-                    slv->sm[1].adr = slv->eeprom.mbx_send_offset;
-                    slv->sm[1].len = slv->eeprom.mbx_send_size;
+                    slv->sm[MAILBOX_READ].adr = slv->eeprom.mbx_send_offset;
+                    slv->sm[MAILBOX_READ].len = slv->eeprom.mbx_send_size;
                 }
-                slv->sm[1].flags = 0x00010022;
-                slv->mbx_read.sm_nr = 1;
-                free_resource(slv->mbx_read.buf);
-                alloc_resource(slv->mbx_read.buf, uint8_t, slv->sm[1].len);
-                slv->mbx_read.sm_state = NULL;
-                slv->mbx_read.skip_next = 0;
-                TAILQ_INIT(&slv->mbx_coe_emergencies);
+                slv->sm[MAILBOX_READ].flags = 0x00010022;
+                slv->mbx.sm_state = NULL;
 
                 // write mailbox
                 if ((transition == INIT_2_BOOT) && 
                         slv->eeprom.boot_mbx_receive_offset) {
-                    slv->sm[0].adr = slv->eeprom.boot_mbx_receive_offset;
-                    slv->sm[0].len = slv->eeprom.boot_mbx_receive_size;
+                    slv->sm[MAILBOX_WRITE].adr = slv->eeprom.boot_mbx_receive_offset;
+                    slv->sm[MAILBOX_WRITE].len = slv->eeprom.boot_mbx_receive_size;
                 } else {
-                    slv->sm[0].adr = slv->eeprom.mbx_receive_offset;
-                    slv->sm[0].len = slv->eeprom.mbx_receive_size;
+                    slv->sm[MAILBOX_WRITE].adr = slv->eeprom.mbx_receive_offset;
+                    slv->sm[MAILBOX_WRITE].len = slv->eeprom.mbx_receive_size;
                 }
 
-                slv->sm[0].flags = 0x00010026;
-                slv->mbx_write.sm_nr = 0;
-                free_resource(slv->mbx_write.buf);
-                alloc_resource(slv->mbx_write.buf, uint8_t, slv->sm[0].len);
-                slv->mbx_write.sm_state = NULL;
-                slv->mbx_read.skip_next = 0;
+                slv->sm[MAILBOX_WRITE].flags = 0x00010026;
 
                 ec_mbx_init(pec, slave);
 

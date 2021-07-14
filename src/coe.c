@@ -151,12 +151,22 @@ void ec_coe_print_msg(int level, const char *ctx, int slave, const char *msg, ui
  */
 void ec_coe_init(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
-    ec_index_init(&slv->mbx.coe.idx_q, 8);
-
     pool_open(&slv->mbx.coe.recv_pool, 0, 1518);
+                
+    TAILQ_INIT(&slv->mbx.coe.emergencies);
+}
 
-    pthread_mutex_init(&slv->mbx.coe.recv_pool_mutex, NULL);
-    pthread_cond_init(&slv->mbx.coe.recv_pool_cond, NULL);
+//! deinitialize CoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_coe_deinit(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_close(slv->mbx.coe.recv_pool);
 }
 
 //! \brief Wait for CoE message received from slave.
@@ -310,7 +320,6 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
 
     // mailbox header
     // (mbxhdr (6) - mbxhdr.length (2)) + coehdr (2) + sdohdr (4)
-    ec_mbx_clear(pec, slave, 0);
     write_buf->mbx_hdr.length           = EC_SDO_NORMAL_HDR_LEN + seg_len; 
     write_buf->mbx_hdr.mbxtype          = EC_MBX_COE;
     // coe header
@@ -796,15 +805,15 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) 
     // don't copy any headers, we already know that we have a coe emergency
     size_t msg_len = hdr->length - 2;
 
-    ec_emergency_message_entry_t *qmsg = (ec_emergency_message_entry_t *)
-        malloc(sizeof(ec_emergency_message_entry_t) + msg_len);
+    ec_coe_emergency_message_entry_t *qmsg = (ec_coe_emergency_message_entry_t *)
+        malloc(sizeof(ec_coe_emergency_message_entry_t) + msg_len);
 
     // skip mbx header and coe header
-    memcpy(qmsg->msg, slv->mbx_read.buf + 6 + 2, msg_len);
+    memcpy(qmsg->msg, (uint8_t *)(p_entry->data) + 6 + 2, msg_len);
 
     qmsg->msg_len = msg_len;
     ec_timer_gettime(&qmsg->timestamp);
-    TAILQ_INSERT_TAIL(&slv->mbx_coe_emergencies, qmsg, qh);
+    TAILQ_INSERT_TAIL(&slv->mbx.coe.emergencies, qmsg, qh);
 
     pool_put(slv->mbx.message_pool_free, p_entry);
 }

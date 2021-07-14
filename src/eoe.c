@@ -124,6 +124,19 @@ void ec_eoe_init(ec_t *pec, uint16_t slave) {
     pool_open(&slv->mbx.eoe.recv_pool, 0, 1518);
 }
 
+//! deinitialize EoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_close(slv->mbx.eoe.recv_pool);
+}
+
 //! \brief Wait for EoE message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 
@@ -240,14 +253,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE))
-        return EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE;
-    if (!(slv->mbx_write.buf))
-        return EC_ERROR_MAILBOX_WRITE_IS_NULL;
-    if (!(slv->mbx_read.buf))
-        return EC_ERROR_MAILBOX_READ_IS_NULL;
-
-    size_t mbx_len = slv->sm[slv->mbx_write.sm_nr].len;
+    size_t mbx_len = slv->sm[MAILBOX_WRITE].len;
     size_t frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
 
     pthread_mutex_lock(&slv->mbx_lock);
