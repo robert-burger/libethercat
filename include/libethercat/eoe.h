@@ -35,6 +35,9 @@
 
 typedef struct ec_eoe {
     pool_t *recv_pool;
+
+    pool_t *eth_frames_free_pool;
+    pool_t *eth_frames_recv_pool;
 } ec_eoe_t;
 
 #ifdef __cplusplus
@@ -106,6 +109,8 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
  */
 int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
         size_t frame_len);
+
+int ec_eoe_setup_vtun(ec_t *pec);
 
 #ifdef __cplusplus
 }

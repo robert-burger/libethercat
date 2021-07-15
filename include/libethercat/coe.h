@@ -50,6 +50,12 @@ typedef struct ec_coe_emergency_message_queue ec_coe_emergency_message_queue_t;
 typedef struct ec_coe {
     pool_t *recv_pool;
     
+    pthread_mutex_t lock;       //!< \brief CoE mailbox lock.
+                                /*!<
+                                 * Only one simoultaneous access to the 
+                                 * EtherCAT slave CoE mailbox is possible 
+                                 */
+
     ec_coe_emergency_message_queue_t emergencies;    //!< message pool queue
 } ec_coe_t;
 

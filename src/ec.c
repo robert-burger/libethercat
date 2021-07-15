@@ -874,6 +874,8 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
 
     FD_ZERO(&pec->mbx_fds);
 
+    ec_eoe_setup_vtun(pec);
+
     // eeprom logging level
     pec->eeprom_log         = eeprom_log;
 

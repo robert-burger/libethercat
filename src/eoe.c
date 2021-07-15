@@ -28,6 +28,16 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
+
+// forward declarations
+void ec_eoe_process_recv(ec_t *pec, uint16_t slave);
 
 typedef struct {
     // 8 bit
@@ -111,6 +121,11 @@ typedef struct {
     ec_eoe_set_ip_parameter_response_header_t   sip_hdr;
 } PACKED ec_eoe_set_ip_parameter_response_t;
 
+typedef struct eth_frame {
+    size_t frame_size;
+    uint8_t frame_data[1518];
+} eth_frame_t;
+
 //! initialize EoE structure 
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -122,6 +137,9 @@ typedef struct {
 void ec_eoe_init(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     pool_open(&slv->mbx.eoe.recv_pool, 0, 1518);
+    
+    pool_open(&slv->mbx.eoe.eth_frames_free_pool, 128, sizeof(eth_frame_t));
+    pool_open(&slv->mbx.eoe.eth_frames_recv_pool, 0, sizeof(eth_frame_t));
 }
 
 //! deinitialize EoE structure 
@@ -171,6 +189,11 @@ void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
 void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     pool_put(slv->mbx.eoe.recv_pool, p_entry);
+        
+    ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
+    if (write_buf->eoe_hdr.last_fragment) {
+        ec_eoe_process_recv(pec, slave);
+    }
 }
 
 // read coe sdo 
@@ -236,6 +259,8 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     return ret;
 }
 
+#define ALIGN_32BIT_BLOCKS(a) { (a) = (((a) >> 5) << 5); }
+
 // send ethernet frame
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -254,49 +279,55 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
     size_t mbx_len = slv->sm[MAILBOX_WRITE].len;
-    size_t frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
+    size_t max_frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
+    ALIGN_32BIT_BLOCKS(max_frag_len);
+    off_t frame_offset = 0;
+    int frag_number = 0;
 
     pthread_mutex_lock(&slv->mbx.lock);
 
-    pool_entry_t *p_entry;
-    
-    size_t rest_len = frame_len;
-    int fragment_number = 0;
+    do {
+        size_t frag_len = min(frame_len - frame_offset, max_frag_len);
 
-    while (rest_len > 0) {
+        // get mailbox buffer to write frame fragment request
+        pool_entry_t *p_entry;
         pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-        memset(p_entry->data, 0, p_entry->data_size);
+        if (!p_entry) {
+            ec_log(1, __func__, "slave %2d: out of mailbox messages\n", slave);
+            ret = -1;
+            goto exit;
+        }
 
+        memset(p_entry->data, 0, p_entry->data_size);
         ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
 
+        ec_log(10, __func__, "slave %2d: sending eoe fragment %d\n", slave, frag_number);
         // mailbox header
         // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
-        write_buf->mbx_hdr.mbxtype   = EC_MBX_EOE;
-
+        write_buf->mbx_hdr.length           = 4 + frag_len;
+        write_buf->mbx_hdr.mbxtype          = EC_MBX_EOE;
         // eoe header
-        write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_REQUEST;
-        write_buf->eoe_hdr.last_fragment      = 0x01;
-        write_buf->eoe_hdr.complete_size      = (frame_len + 31)/32;
-        write_buf->eoe_hdr.fragment_number    = fragment_number++;
+        write_buf->eoe_hdr.frame_type       = EOE_FRAME_TYPE_REQUEST;
+        write_buf->eoe_hdr.fragment_number  = frag_number;
 
-        if (rest_len > frag_len) {
-            write_buf->eoe_hdr.last_fragment = 0x00;
-        } else {
-            write_buf->eoe_hdr.last_fragment = 0x01;
-        }
+        if (frag_len < max_frag_len) { write_buf->eoe_hdr.last_fragment  = 0x01; } 
+        else                         { write_buf->eoe_hdr.last_fragment  = 0x00; }
+        
+        if (frag_number == 0)        { write_buf->eoe_hdr.complete_size  = (frame_len + 31) >> 5; }
+        else                         { write_buf->eoe_hdr.complete_size  = (frame_offset) >> 5;   }
     
-        size_t act_len = min(frag_len, rest_len);
-        write_buf->mbx_hdr.length = 4 + act_len;
-        memcpy(&write_buf->data.bdata[0], &frame[frame_len - rest_len], act_len);
+        // copy fragment
+        memcpy(&write_buf->data.bdata[0], &frame[frame_offset], frag_len);
+        frame_offset += frag_len;
+        frag_number++;
 
         // send request
         ec_mbx_enqueue(pec, slave, p_entry);
-
-        rest_len -= frag_len;
-    }
+    } while(frame_offset < frame_len);
 
     pthread_mutex_unlock(&slv->mbx.lock);
 
+exit:
     return ret;
 }
 
@@ -312,33 +343,176 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_eoe_recv_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
-        size_t frame_len) {
+int ec_eoe_recv_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_len) {
     int ret = 0;
-#if 0
+    pool_entry_t *p_entry = NULL;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    size_t rest_len = frame_len;
+    size_t mbx_len = slv->sm[MAILBOX_WRITE].len;
+    size_t frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
     
-    // wait for answer
-    ec_mbx_clear(pec, slave, 1);
-    wkc = ec_mbx_receive(pec, slave, EC_DEFAULT_TIMEOUT_MBX);
-    if (!wkc) {
-        ec_log(10, "ec_eoe_set_ip_parameter", "error on reading receive mailbox\n");
-        ret = EC_ERROR_MAILBOX_READ;
-        goto exit;
-    }
+    pthread_mutex_lock(&slv->mbx.lock);
 
-//    ec_eoe_set_ip_parameter_response_t *read_buf  = 
-//        (ec_eoe_set_ip_parameter_response_t *)(slv->mbx_read.buf); 
+    for (ec_eoe_wait(pec, slave, &p_entry); p_entry; ec_eoe_wait(pec, slave, &p_entry)) {
+        ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
 
-exit:
-    // reset mailbox state 
-    if (slv->mbx_read.sm_state) {
-        *slv->mbx_read.sm_state = 0;
-        slv->mbx_read.skip_next = 1;
+        size_t act_len = min(frag_len, rest_len);
+        memcpy(&frame[frame_len - rest_len], &(read_buf->data.bdata[0]), act_len);
+        rest_len -= act_len;
+
+        if (p_entry) {        
+            pool_put(slv->mbx.message_pool_free, p_entry);
+        }
     }
 
     pthread_mutex_unlock(&slv->mbx.lock);
-#endif
     return ret;
 }
+
+void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_entry_t *p_entry = NULL, *p_eth_entry = NULL;
+    pool_get(slv->mbx.eoe.eth_frames_free_pool, &p_eth_entry, NULL);
+    eth_frame_t *eth_frame = (eth_frame_t *)(p_eth_entry->data);
+    
+    pthread_mutex_lock(&slv->mbx.lock);
+    
+    // get first received EoE frame, should be start of ethernet frame
+    pool_get(slv->mbx.eoe.recv_pool, &p_entry, NULL);
+    if (!p_entry) { return; }
+    
+    ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
+    if (read_buf->eoe_hdr.fragment_number != 0) {
+        ec_log(1, __func__, "slave %2d: first EoE fragment is not first fragment (got %d)\n",
+                slave, read_buf->eoe_hdr.fragment_number);
+
+        // proceed with next EoE message until queue is empty
+        pool_put(slv->mbx.message_pool_free, p_entry);
+        return ec_eoe_process_recv(pec, slave);
+    }
+
+    eth_frame->frame_size = read_buf->eoe_hdr.complete_size << 5;
+    size_t frag_len       = read_buf->mbx_hdr.length - 4;
+    off_t frame_offset    = 0;
+
+    memcpy(&(eth_frame->frame_data[frame_offset]), &read_buf->data.bdata[0], frag_len);
+    frame_offset += frag_len;
+
+    if (!read_buf->eoe_hdr.last_fragment) {
+        // proceed with next fragment
+        for (ec_eoe_wait(pec, slave, &p_entry); p_entry; ec_eoe_wait(pec, slave, &p_entry)) {
+            ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
+
+            if (frame_offset != (read_buf->eoe_hdr.complete_size << 5)) {
+                ec_log(1, __func__, "slave %d: frame offset mismatch %d != %d\n", 
+                        slave, frame_offset, read_buf->eoe_hdr.complete_size << 5);
+            }
+
+            frag_len = read_buf->mbx_hdr.length - 4;
+            memcpy(&(eth_frame->frame_data[frame_offset]), &(read_buf->data.bdata[0]), frag_len);
+            frame_offset += frag_len;
+
+            if (read_buf->eoe_hdr.last_fragment) {
+                if (pec->tun_fd > 0) {
+                    write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
+                    pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
+                } else {
+                    pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+                }
+
+                p_eth_entry = NULL;
+                break;
+            }
+
+            if (p_entry) {        
+                pool_put(slv->mbx.message_pool_free, p_entry);
+            }
+        }
+    }
+        
+    if (p_entry) {        
+        pool_put(slv->mbx.message_pool_free, p_entry);
+    }
+
+    pthread_mutex_unlock(&slv->mbx.lock);
+    return;
+}
+
+#include <errno.h>
+
+void ec_eoe_vtun_handler(ec_t *pec) {
+    eth_frame_t tmp_frame;
+
+    while(1) {
+        int ret;
+        fd_set rd_set;
+
+        FD_ZERO(&rd_set);
+        FD_SET(pec->tun_fd, &rd_set);
+
+        ret = select(pec->tun_fd + 1, &rd_set, NULL, NULL, NULL);
+
+        if (ret < 0 && errno == EINTR){
+            continue;
+        }
+
+        if (ret < 0) {
+            perror("select()");
+            exit(1);
+        }
+
+        if (FD_ISSET(pec->tun_fd, &rd_set)) {            
+            int rd = read(pec->tun_fd, &tmp_frame.frame_data[0], sizeof(tmp_frame.frame_data));
+            if (rd > 0) {
+                // simple switch here 
+                printf("got eth frame: ");
+                for (int i = 0; i < rd; ++i)
+                    printf("%02X", tmp_frame.frame_data[i]);
+                printf("\n");
+
+                ec_eoe_send_frame(pec, 0, tmp_frame.frame_data, rd);
+            }
+        }
+    }
+}
+
+void *ec_eoe_vtun_handler_wrapper(void *arg) {
+    ec_t *pec = arg;
+    ec_eoe_vtun_handler(pec);
+    return NULL;
+}
+
+pthread_t vtun_tid;
+
+int ec_eoe_setup_vtun(ec_t *pec) {
+    // open tun device
+    pec->tun_fd = open("/dev/net/tun", O_RDWR);
+    if (pec->tun_fd == -1) {
+        ec_log(1, __func__, "could not open /dev/net/tun\n");
+        return -1;
+    }
+
+    struct ifreq ifr;
+    memset(&ifr, 0, sizeof(ifr));
+    /* Flags: IFF_TUN   - TUN device (no Ethernet headers) 
+     *        IFF_TAP   - TAP device  
+     *
+     *        IFF_NO_PI - Do not provide packet information  
+     */ 
+    ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
+    //ifr.ifr_flags = IFF_TUN; 
+
+    if (ioctl(pec->tun_fd, TUNSETIFF, (void *)&ifr)) {
+        ec_log(1, __func__, "could not request tun/tap device\n");
+        close(pec->tun_fd);
+        pec->tun_fd = 0;
+        return -1;
+    }
+
+    ec_log(10, __func__, "using interface %s\n", ifr.ifr_name);
+    pthread_create(&vtun_tid, NULL, ec_eoe_vtun_handler_wrapper, pec);
+    return 0;
+}
+
+
 

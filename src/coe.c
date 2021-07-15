@@ -152,6 +152,7 @@ void ec_coe_print_msg(int level, const char *ctx, int slave, const char *msg, ui
 void ec_coe_init(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     pool_open(&slv->mbx.coe.recv_pool, 0, 1518);
+    pthread_mutex_init(&slv->mbx.coe.lock, NULL);
                 
     TAILQ_INIT(&slv->mbx.coe.emergencies);
 }
@@ -166,6 +167,8 @@ void ec_coe_init(ec_t *pec, uint16_t slave) {
  */
 void ec_coe_deinit(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    
+    pthread_mutex_destroy(&slv->mbx.coe.lock);
     pool_close(slv->mbx.coe.recv_pool);
 }
 
@@ -223,7 +226,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     (*abort_code) = 0;
 
     // getting index
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -297,7 +300,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     }
 
     // returning index and ulock 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.coe.lock);
 
     return ret;
 }
@@ -313,7 +316,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     // default error return
     (*abort_code) = 0;
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -462,7 +465,7 @@ exit:
         pool_put(slv->mbx.message_pool_free, p_entry);
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.coe.lock);
     return ret;
 }
 
@@ -492,7 +495,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -552,7 +555,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
 
     *len = val;
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.coe.lock);
 
     return ret;
 }
@@ -577,7 +580,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.coe.lock);
     
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -624,7 +627,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         pool_put(slv->mbx.message_pool_free, p_entry);
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.coe.lock);
     return ret;
 }
 
@@ -656,7 +659,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     int ret = EC_ERROR_MAILBOX_READ;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -709,7 +712,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         pool_put(slv->mbx.message_pool_free, p_entry);
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.coe.lock);
     return ret;
 }
 

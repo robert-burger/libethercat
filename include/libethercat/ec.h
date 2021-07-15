@@ -150,6 +150,8 @@ typedef struct ec {
                                      * may be e.g. emergency messages...
                                      */
     
+    int tun_fd;
+    
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state
     int state_transition_pending;   //!< state transition is currently pending
