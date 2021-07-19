@@ -485,6 +485,13 @@ void *ec_eoe_vtun_handler_wrapper(void *arg) {
 
 pthread_t vtun_tid;
 
+
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+    #include <netinet/in.h>
 int ec_eoe_setup_vtun(ec_t *pec) {
     // open tun device
     pec->tun_fd = open("/dev/net/tun", O_RDWR);
@@ -495,13 +502,7 @@ int ec_eoe_setup_vtun(ec_t *pec) {
 
     struct ifreq ifr;
     memset(&ifr, 0, sizeof(ifr));
-    /* Flags: IFF_TUN   - TUN device (no Ethernet headers) 
-     *        IFF_TAP   - TAP device  
-     *
-     *        IFF_NO_PI - Do not provide packet information  
-     */ 
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
-    //ifr.ifr_flags = IFF_TUN; 
 
     if (ioctl(pec->tun_fd, TUNSETIFF, (void *)&ifr)) {
         ec_log(1, __func__, "could not request tun/tap device\n");
@@ -511,6 +512,40 @@ int ec_eoe_setup_vtun(ec_t *pec) {
     }
 
     ec_log(10, __func__, "using interface %s\n", ifr.ifr_name);
+
+    int s;
+    // Create a socket
+    if ( (s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("socket");
+        exit(1);
+    }
+
+    // Get interface flags
+    if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) {
+        perror("cannot get interface flags");
+        exit(1);
+    }
+
+    // Turn on interface
+    ifr.ifr_flags |= IFF_UP;
+    if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0) {
+        fprintf(stderr, "ifup: failed ");
+        perror(ifr.ifr_name);
+        exit(1);
+    }
+
+    // Set interface address
+    struct sockaddr_in  my_addr;
+    bzero((char *) &my_addr, sizeof(my_addr));
+    my_addr.sin_family = AF_INET;
+    my_addr.sin_addr.s_addr = htonl(inet_network("192.168.2.1"));
+    memcpy(&ifr.ifr_addr, &my_addr, sizeof(struct sockaddr));
+
+    if (ioctl(s, SIOCSIFADDR, &ifr) < 0) {
+        fprintf(stderr, "Cannot set IP address. ");
+        perror(ifr.ifr_name);
+        exit(1);
+    }
     pthread_create(&vtun_tid, NULL, ec_eoe_vtun_handler_wrapper, pec);
     return 0;
 }
