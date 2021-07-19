@@ -317,11 +317,11 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     // mailbox len - mailbox hdr (6) - foe header (6)
     size_t data_len = slv->sm[1].len - 6 - 6;
     off_t file_offset = 0;
+    int packet_nr = 0;
 
     while (1) {
         pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
         memset(p_entry->data, 0, p_entry->data_size);
-        MESSAGE_POOL_DEBUG(free);
 
         ec_foe_data_request_t *write_buf_data = (ec_foe_data_request_t *)p_entry->data;
 
@@ -340,25 +340,36 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         write_buf_data->mbx_hdr.mbxtype   = EC_MBX_FOE;
         // foe
         write_buf_data->foe_hdr.op_code   = EC_FOE_OP_CODE_DATA_REQUEST;
-        write_buf_data->packet_nr         = read_buf_ack->packet_nr + 1;
+        write_buf_data->packet_nr         = ++packet_nr;
 
         // send request
         ec_mbx_enqueue(pec, slave, p_entry);
 
         // wait for answer
-        for (p_entry = NULL; !p_entry; ec_foe_wait(pec, slave, &p_entry)) {}
-        ec_foe_ack_request_t *read_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
+        for (ec_foe_wait(pec, slave, &p_entry); p_entry; ec_foe_wait(pec, slave, &p_entry)) {
+            ec_foe_ack_request_t *read_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
 
-        if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
+            if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
+                ec_log(10, __func__,
+                        "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %d, data_len %d, packet_nr %d\n", 
+                        read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
+                pool_put(slv->mbx.message_pool_free, p_entry);
+                goto exit;
+            }
+
+            break;
+        }
+
+        if (!p_entry) {
             ec_log(10, __func__,
-                    "got no ack on foe write request, got 0x%X\n", 
-                    read_buf_ack->foe_hdr.op_code);
-            pool_put(slv->mbx.message_pool_free, p_entry);
+                    "got no ack on foe write request, last_pkt %d, bytes_read %d, data_len %d\n", 
+                    last_pkt, bytes_read, data_len);
             goto exit;
         }
+            
+        pool_put(slv->mbx.message_pool_free, p_entry);
         
         if (last_pkt) {
-            pool_put(slv->mbx.message_pool_free, p_entry);
             break;
         }
     }
