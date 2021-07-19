@@ -150,7 +150,8 @@ typedef struct ec {
                                      * may be e.g. emergency messages...
                                      */
     
-    int tun_fd;
+    int tun_fd;                     //!< tun device file descriptor
+    uint32_t tun_ip;                //!< tun device ip addres
     
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state

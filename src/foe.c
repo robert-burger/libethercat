@@ -255,7 +255,7 @@ exit:
 int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t *file_data, 
         ssize_t file_data_len, char **error_message) {
-    int wkc = -1;
+    int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
     if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
@@ -333,6 +333,9 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
             last_pkt = 1;
         }
 
+        ec_log(10, __func__, "slave %2d: sending file offset %d, bytes %d\n", 
+                slave, file_offset, bytes_read);
+
         file_offset += bytes_read;
 
         // mailbox header
@@ -364,6 +367,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
             ec_log(10, __func__,
                     "got no ack on foe write request, last_pkt %d, bytes_read %d, data_len %d\n", 
                     last_pkt, bytes_read, data_len);
+            ret = -1;
             goto exit;
         }
             
@@ -375,9 +379,13 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     }
 
 exit:
-    ec_log(10, __func__, "file download finished\n");
+    if (ret == 0) {
+        ec_log(10, __func__, "file download finished\n");
+    } else {
+        ec_log(1, __func__, "file download FAILED: error %d\n", ret);
+    }
 
     pthread_mutex_unlock(&slv->mbx.lock);
-    return wkc;
+    return ret;
 }
 

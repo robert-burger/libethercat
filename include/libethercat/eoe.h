@@ -33,6 +33,17 @@
 
 #include "libethercat/common.h"
 
+typedef struct ec_eoe_slave_config {
+    int use_eoe;
+
+    uint8_t *mac;
+    uint8_t *ip_address;
+    uint8_t *subnet;
+    uint8_t *gateway;
+    uint8_t *dns;
+    char *dns_name;
+} ec_eoe_slave_config_t;
+
 typedef struct ec_eoe {
     pool_t *recv_pool;
 

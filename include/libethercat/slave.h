@@ -160,7 +160,7 @@ typedef struct ec_slave_mailbox_init_cmd {
                                  * can be one of \link EC_MBX_COE \endlink, 
                                  * \link EC_MBX_SOE \endlink, ... 
                                  */
-
+    
     int transition;             //!< ECat transition
                                 /*!< 
                                  * This defines at which EtherCAT state machine 
@@ -170,6 +170,12 @@ typedef struct ec_slave_mailbox_init_cmd {
                                  * target state. (e.g. 0x24 -> PRE to SAFE, ..)
                                  */
 
+    LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
+
+    uint8_t cmd[0];
+} ec_slave_mailbox_init_cmd_t;
+
+typedef struct {
     int id;                     //!< index 
                                 /*!< 
                                  * This depends of which Mailbox protocol is 
@@ -195,8 +201,10 @@ typedef struct ec_slave_mailbox_init_cmd {
     char *data;                 //!< new id data
     size_t datalen;             //!< new id data length
 
-    LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
-} ec_slave_mailbox_init_cmd_t;
+} ec_coe_init_cmd_t, ec_soe_init_cmd_t;
+
+#define COE_INIT_CMD_SIZE       (sizeof(ec_slave_mailbox_init_cmd_t) + sizeof(ec_coe_init_cmd_t))
+#define SOE_INIT_CMD_SIZE       (sizeof(ec_slave_mailbox_init_cmd_t) + sizeof(ec_soe_init_cmd_t))
     
 LIST_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
 
@@ -289,6 +297,8 @@ typedef struct ec_slave {
 
     eeprom_info_t eeprom;       //!< EtherCAT slave EEPROM data
     ec_dc_info_slave_t dc;      //!< Distributed Clock settings
+
+    ec_eoe_slave_config_t eoe;  //!< EoE config
     
     ec_state_t expected_state;  //!< Master expected slave state
 
@@ -421,8 +431,6 @@ int ec_slave_state_transition(struct ec *pec, uint16_t slave,
  * \param[in] slave         Number of ethercat slave. this depends on 
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
- * \param[in] type          Type of init command. This should be one of 
- *                          \p EC_MBX_COE, \p EC_MBX_SOE, ...
  * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
  *                          the state we are coming from and 'b' is the state 
  *                          we want to get.
@@ -433,8 +441,31 @@ int ec_slave_state_transition(struct ec *pec, uint16_t slave,
  *                          be transfered.
  * \param[in] datalen       Length of \p data
  */
-void ec_slave_add_init_cmd(struct ec *pec, uint16_t slave,
-        int type, int transition, int id, int si_el, int ca_atn,
+void ec_slave_add_coe_init_cmd(struct ec *pec, uint16_t slave,
+        int transition, int id, int si_el, int ca_atn,
+        char *data, size_t datalen);
+
+//! Add master init command.
+/*!
+ * This adds an EtherCAT slave init command. 
+ *
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
+ *                          the state we are coming from and 'b' is the state 
+ *                          we want to get.
+ * \param[in] id            Either CoE Index number or the ServoDrive IDN.
+ * \param[in] si_el         Either CoE SubIndex or ServoDrive element number.
+ * \param[in] ca_atn        Either CoE complete access or ServoDrive ATN.
+ * \param[in] data          Pointer to memory buffer with data which should 
+ *                          be transfered.
+ * \param[in] datalen       Length of \p data
+ */
+void ec_slave_add_soe_init_cmd(struct ec *pec, uint16_t slave,
+        int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen);
 
 //! Set Distributed Clocks config to slave
@@ -459,6 +490,24 @@ void ec_slave_set_dc_config(struct ec *pec, uint16_t slave,
  * \param[in] cmd           Pointer to init command which willed be freed.
  */
 void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
+
+//! Adds master EoE settings.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] mac           Pointer to 6 byte MAC address (mandatory).
+ * \param[in] ip_address    Pointer to 4 byte IP address (optional maybe NULL).
+ * \param[in] subnet        Pointer to 4 byte subnet address (optional maybe NULL).
+ * \param[in] gateway       Pointer to 4 byte gateway address (optional maybe NULL).
+ * \param[in] dns           Pointer to 4 byte DNS address (optional maybe NULL).
+ * \param[in] dns_name      Null-terminated domain name server string.
+ */
+void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
+        uint8_t *mac, uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
+        uint8_t *dns, char *dns_name);
 
 #if 0 
 {

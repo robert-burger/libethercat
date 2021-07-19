@@ -191,8 +191,11 @@ void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     pool_put(slv->mbx.eoe.recv_pool, p_entry);
         
+    ec_log(100, __func__, "slave %2d: got eoe frame\n", slave);
+
     ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
     if (write_buf->eoe_hdr.last_fragment) {
+        ec_log(100, __func__, "slave %2d: was last fragment\n", slave);
         ec_eoe_process_recv(pec, slave);
     }
 }
@@ -205,6 +208,8 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
     pthread_mutex_lock(&slv->mbx.lock);
+
+    ec_log(10, __func__, "slave %2d: set ip parameter\n", slave);
 
     pool_entry_t *p_entry;
     pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
@@ -248,12 +253,13 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     ec_mbx_enqueue(pec, slave, p_entry);
 
     // wait for answer
-    for (p_entry = NULL; !p_entry; ec_eoe_wait(pec, slave, &p_entry)) {}
-    ec_eoe_set_ip_parameter_response_t *read_buf = (ec_eoe_set_ip_parameter_response_t *)(p_entry->data);
+    for (ec_eoe_wait(pec, slave, &p_entry); p_entry; ec_eoe_wait(pec, slave, &p_entry)) {
+        ec_eoe_set_ip_parameter_response_t *read_buf = (ec_eoe_set_ip_parameter_response_t *)(p_entry->data);
 
-    ret = read_buf->sip_hdr.result;
-
-    pool_put(slv->mbx.message_pool_free, p_entry);
+        ret = read_buf->sip_hdr.result;
+        pool_put(slv->mbx.message_pool_free, p_entry);
+        break;
+    }
 
     pthread_mutex_unlock(&slv->mbx.lock);
 
@@ -302,7 +308,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         memset(p_entry->data, 0, p_entry->data_size);
         ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
 
-        ec_log(10, __func__, "slave %2d: sending eoe fragment %d\n", slave, frag_number);
+        ec_log(100, __func__, "slave %2d: sending eoe fragment %d\n", slave, frag_number);
         // mailbox header
         // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
         write_buf->mbx_hdr.length           = 4 + frag_len;
@@ -429,6 +435,13 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
                 pool_put(slv->mbx.message_pool_free, p_entry);
             }
         }
+    } else {
+        if (pec->tun_fd > 0) {
+            write(pec->tun_fd, eth_frame->frame_data, frame_offset);
+            pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
+        } else {
+            pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+        }
     }
         
     if (p_entry) {        
@@ -466,12 +479,32 @@ void ec_eoe_vtun_handler(ec_t *pec) {
             int rd = read(pec->tun_fd, &tmp_frame.frame_data[0], sizeof(tmp_frame.frame_data));
             if (rd > 0) {
                 // simple switch here 
-                printf("got eth frame: ");
-                for (int i = 0; i < rd; ++i)
-                    printf("%02X", tmp_frame.frame_data[i]);
-                printf("\n");
+//                printf("got eth frame: ");
+//                for (int i = 0; i < rd; ++i)
+//                    printf("%02X", tmp_frame.frame_data[i]);
+//                printf("\n");
 
-                ec_eoe_send_frame(pec, 0, tmp_frame.frame_data, rd);
+                static const uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+                uint8_t *dst_mac = &tmp_frame.frame_data[0];
+                int is_broadcast = (memcmp(broadcast_mac, dst_mac, 6) == 0);
+
+                for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+                    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+                    if (!slv->eoe.use_eoe) {
+                        continue;
+                    }
+
+                    if (
+                            is_broadcast || 
+                            (slv->eoe.mac && (memcmp(slv->eoe.mac, dst_mac, 6) == 0))   ) {
+                        ec_log(100, __func__, "slave %2d: sending eoe frame\n", slave);
+                        ec_eoe_send_frame(pec, slave, tmp_frame.frame_data, rd);
+
+                        if (!is_broadcast) {
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

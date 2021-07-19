@@ -1181,6 +1181,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
 
         if (slv->eeprom.mbx_supported && slv->mbx.sm_state) {
             if (*slv->mbx.sm_state & 0x08) {
+                //ec_log(10, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
                 ec_mbx_sched_read(pec, slave);
             }
         }
@@ -1213,9 +1214,9 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     pthread_mutex_lock(&send_dc_lock);
 
     if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
-        ec_log(1, __func__, "already sent dc frame, will not send until it "
-                "has returned...\n");
-
+//        ec_log(1, __func__, "already sent dc frame, will not send until it "
+//                "has returned...\n");
+//
         pthread_mutex_unlock(&send_dc_lock);
         return -1;
     }

@@ -103,55 +103,57 @@ static const char *get_transition_string(ec_state_transition_t transition) {
 }
 
 // allocate init command structure
-static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_init_cmd_alloc(
-        int type, int transition, int id, int si_el, int ca_atn,
+static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
+        int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen) {
-    ec_slave_mailbox_init_cmd_t *cmd = (ec_slave_mailbox_init_cmd_t *)malloc(
-            sizeof(ec_slave_mailbox_init_cmd_t));
+    ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(COE_INIT_CMD_SIZE);
 
     if (cmd == NULL) {
-        ec_log(10, "ec_slave_mailbox_init_cmd_alloc", "malloc error %s\n", 
-                strerror(errno));
+        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
         return NULL;
     }
 
-    cmd->type       = type;
+    cmd->type       = EC_MBX_COE;
     cmd->transition = transition;
-    cmd->id         = id; 
-    cmd->si_el      = si_el;
-    cmd->ca_atn     = ca_atn;
-    cmd->data       = (char *)malloc(datalen);
-    cmd->datalen    = datalen;
     
-    if (cmd->data == NULL) {
-        ec_log(10, "ec_slave_mailbox_init_cmd_alloc", "malloc error %s\n", 
-                strerror(errno));
+    ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
+    coe->id         = id; 
+    coe->si_el      = si_el;
+    coe->ca_atn     = ca_atn;
+    coe->data       = (char *)malloc(datalen);
+    coe->datalen    = datalen;
+    
+    if (coe->data == NULL) {
+        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
         free(cmd);
         return NULL;
     }
 
-    memcpy(cmd->data, data, datalen);
+    memcpy(coe->data, data, datalen);
 
     return cmd;
 }
 
 // freeing init command strucuture
-void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
+void ec_slave_mailbox_coe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
     if (cmd) {
-        if (cmd->data)
-            free(cmd->data);
+        if (cmd->type == EC_MBX_COE) {
+            ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
+
+            if (coe->data) { free(coe->data); }
+        }
 
         free (cmd);
     }
 }
 
 // add master init command
-void ec_slave_add_init_cmd(ec_t *pec, uint16_t slave,
-        int type, int transition, int id, int si_el, int ca_atn,
+void ec_slave_add_coe_init_cmd(ec_t *pec, uint16_t slave,
+        int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen) {
 
-    ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_init_cmd_alloc(
-            type, transition, id, si_el, ca_atn, data, datalen);
+    ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_coe_init_cmd_alloc(
+            transition, id, si_el, ca_atn, data, datalen);
 
     if (!cmd)
         return;
@@ -169,6 +171,92 @@ void ec_slave_add_init_cmd(ec_t *pec, uint16_t slave,
         LIST_INSERT_AFTER(last_cmd, cmd, le);
     else 
         LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
+}
+
+// allocate init command structure
+static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
+        int transition, int id, int si_el, int ca_atn,
+        char *data, size_t datalen) {
+    ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(SOE_INIT_CMD_SIZE);
+
+    if (cmd == NULL) {
+        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+        return NULL;
+    }
+
+    cmd->type       = EC_MBX_SOE;
+    cmd->transition = transition;
+    
+    ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
+    soe->id         = id; 
+    soe->si_el      = si_el;
+    soe->ca_atn     = ca_atn;
+    soe->data       = (char *)malloc(datalen);
+    soe->datalen    = datalen;
+    
+    if (soe->data == NULL) {
+        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+        free(cmd);
+        return NULL;
+    }
+
+    memcpy(soe->data, data, datalen);
+
+    return cmd;
+}
+
+// freeing init command strucuture
+void ec_slave_mailbox_soe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
+    if (cmd) {
+        if (cmd->type == EC_MBX_SOE) {
+            ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
+
+            if (soe->data) { free(soe->data); }
+        }
+
+        free (cmd);
+    }
+}
+
+// add master init command
+void ec_slave_add_soe_init_cmd(ec_t *pec, uint16_t slave,
+        int transition, int id, int si_el, int ca_atn,
+        char *data, size_t datalen) {
+
+    ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_soe_init_cmd_alloc(
+            transition, id, si_el, ca_atn, data, datalen);
+
+    if (!cmd)
+        return;
+
+    ec_slave_mailbox_init_cmd_t *last_cmd = 
+        LIST_FIRST(&pec->slaves[slave].init_cmds);
+
+    while (
+            (last_cmd != NULL) && 
+            (LIST_NEXT(last_cmd, le) != NULL)) {
+        last_cmd = LIST_NEXT(last_cmd, le);
+    }
+
+    if (last_cmd)
+        LIST_INSERT_AFTER(last_cmd, cmd, le);
+    else 
+        LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
+}
+
+// freeing init command strucuture
+void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
+    switch(cmd->type) {
+        case EC_MBX_COE:
+            ec_slave_mailbox_coe_init_cmd_free(cmd);
+            break;
+        case EC_MBX_SOE:
+            ec_slave_mailbox_soe_init_cmd_free(cmd);
+            break;
+        default: 
+            free(cmd);
+            break;
+    }
 }
 
 // Set Distributed Clocks config to slave
@@ -565,23 +653,27 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                 if (cmd->transition != 0x24) 
                     continue;
 
-                if (cmd->type == EC_MBX_COE) {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d: sending CoE init cmd 0x%04X:%d, "
-                            "ca %d, datalen %d, datap %p\n", slave, cmd->id, 
-                            cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
+                switch (cmd->type) {
+                    case EC_MBX_COE: {
+                        ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
 
-                    uint8_t *buf = (uint8_t *)cmd->data;
-                    size_t buf_len = cmd->datalen;
-                    uint32_t abort_code = 0;
-
-                    int ret = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, 
-                            cmd->ca_atn, buf, buf_len, &abort_code);
-                    if (ret != 0) {
                         ec_log(10, get_transition_string(transition), 
-                                "slave %2d: writing sdo failed: error code 0x%X!\n", 
-                                slave, ret);
-                    } 
+                                "slave %2d: sending CoE init cmd 0x%04X:%d, "
+                                "ca %d, datalen %d, datap %p\n", slave, coe->id, 
+                                coe->si_el, coe->ca_atn, coe->datalen, coe->data);
+
+                        uint8_t *buf = (uint8_t *)coe->data;
+                        size_t buf_len = coe->datalen;
+                        uint32_t abort_code = 0;
+
+                        int ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, 
+                                coe->ca_atn, buf, buf_len, &abort_code);
+                        if (ret != 0) {
+                            ec_log(10, get_transition_string(transition), 
+                                    "slave %2d: writing sdo failed: error code 0x%X!\n", 
+                                    slave, ret);
+                        } 
+                    }
                 }
             }
 
@@ -727,6 +819,50 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             } else
                 wkc = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
                 
+            // apply eoe settings if any
+            if (slv->eoe.use_eoe) {
+                ec_log(10, get_transition_string(transition), 
+                        "slave %2d: applying EoE settings\n", slave);
+                if (slv->eoe.mac) {
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d:         MAC %02X:%02X:%02X:%02X:%02X:%02X\n",
+                            slave, slv->eoe.mac[0], slv->eoe.mac[1], slv->eoe.mac[2],
+                            slv->eoe.mac[3], slv->eoe.mac[4], slv->eoe.mac[5]);
+                }
+                if (slv->eoe.ip_address) {
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d:         IP     %d.%d.%d.%d\n",
+                            slave, slv->eoe.ip_address[3], slv->eoe.ip_address[2], 
+                            slv->eoe.ip_address[1], slv->eoe.ip_address[0]);
+                }
+                if (slv->eoe.subnet) {
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d:         Subnet  %d.%d.%d.%d\n",
+                            slave, slv->eoe.subnet[0], slv->eoe.subnet[1], 
+                            slv->eoe.subnet[2], slv->eoe.subnet[3]);
+                }
+                if (slv->eoe.gateway) {
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d:         Gateway %d.%d.%d.%d\n",
+                            slave, slv->eoe.gateway[0], slv->eoe.gateway[1], 
+                            slv->eoe.gateway[2], slv->eoe.gateway[3]);
+                }                        
+                if (slv->eoe.dns) {
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d:         DNS     %d.%d.%d.%d\n",
+                            slave, slv->eoe.dns[0], slv->eoe.dns[1], 
+                            slv->eoe.dns[2], slv->eoe.dns[3]);
+                }
+                if (slv->eoe.dns_name) {
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d:         DNSname %s\n",
+                            slave, slv->eoe.dns_name);
+                }
+
+                ec_eoe_set_ip_parameter(pec, slave, slv->eoe.mac, slv->eoe.ip_address, 
+                                slv->eoe.subnet, slv->eoe.gateway, slv->eoe.dns, slv->eoe.dns_name);
+            }
+
             if (transition == INIT_2_PREOP || transition == INIT_2_BOOT)
                 break;
         }
@@ -935,5 +1071,43 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     };
 
     return wkc;
+}
+
+//! Adds master EoE settings.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] mac           Pointer to 6 byte MAC address (mandatory).
+ * \param[in] ip_address    Pointer to 4 byte IP address (optional maybe NULL).
+ * \param[in] subnet        Pointer to 4 byte subnet address (optional maybe NULL).
+ * \param[in] gateway       Pointer to 4 byte gateway address (optional maybe NULL).
+ * \param[in] dns           Pointer to 4 byte DNS address (optional maybe NULL).
+ * \param[in] dns_name      Null-terminated domain name server string.
+ */
+void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
+        uint8_t *mac, uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
+        uint8_t *dns, char *dns_name) {
+    ec_slave_t *slv = &pec->slaves[slave];
+
+    slv->eoe.use_eoe = 1;
+
+#define EOE_ALLOC(field, sz) {          \
+    if (field) {                        \
+        slv->eoe.field = malloc(sz);        \
+        memcpy(slv->eoe.field, field, sz);  \
+    } else { slv->eoe.field = NULL; } }
+
+    EOE_ALLOC(mac, 6);
+    EOE_ALLOC(ip_address, 4);
+    EOE_ALLOC(subnet, 4);
+    EOE_ALLOC(gateway, 4);
+    EOE_ALLOC(dns, 4);
+    if (dns_name) { slv->eoe.dns_name = strdup(dns_name); } else { slv->eoe.dns_name = NULL; }
+
+#undef EOE_ALLOC
+
 }
 
