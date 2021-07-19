@@ -217,7 +217,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     write_buf->mbx_hdr.length    = 8;
     write_buf->mbx_hdr.mbxtype   = EC_MBX_EOE;
     // eoe header
-    write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_SET_ADDRESS_FILTER_REQUEST;
+    write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_SET_IP_ADDRESS_REQUEST;
     write_buf->eoe_hdr.last_fragment      = 0x01;
 
     memset(&(write_buf->sip_hdr), 0, sizeof(write_buf->sip_hdr));
