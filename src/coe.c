@@ -219,7 +219,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
         uint32_t *abort_code) 
 {
-    int ret = 0;
+    int ret = -1;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
     // default error return
@@ -284,6 +284,8 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
 
                 memcpy(*buf, read_buf->sdo_data.bdata, *len);
             }
+
+            ret = 0;
             break;
         } else {
             ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
