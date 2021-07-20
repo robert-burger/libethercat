@@ -75,7 +75,7 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
 
     ec_log(10, __func__, "slave %d: initilizing mailbox\n", slave);
 
-    pool_open(&slv->mbx.message_pool_free, 8, 1518);
+    pool_open(&slv->mbx.message_pool_free, 128, 1518);
     pool_open(&slv->mbx.message_pool_queued, 0, 1518);
 
     pthread_mutex_init(&slv->mbx.recv_mutex, NULL);
@@ -393,7 +393,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                 ec_log(100, __func__, "slave %d: got mailbox buffer to write\n", slave);
 
                 wkc = ec_mbx_send(pec, slave, p_entry->data, 
-                        min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
+                        min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), 10*EC_DEFAULT_TIMEOUT_MBX);
 
                 if (!wkc) {
                     ec_log(1, __func__, "error on writing send mailbox\n");
