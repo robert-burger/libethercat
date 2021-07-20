@@ -352,7 +352,7 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
 }
 
 void ec_mbx_handler(ec_t *pec, int slave) {
-    int ret, wkc;
+    int ret = 0, wkc;
     ec_slave_t *slv = &pec->slaves[slave];
     ec_timer_t timeout;
     pool_entry_t *p_entry = NULL;
