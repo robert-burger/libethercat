@@ -69,6 +69,10 @@ void *ec_mbx_handler_thread(void *arg) {
 void ec_mbx_init(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = &pec->slaves[slave];
 
+    if (slv->mbx.handler_running) {
+        return;
+    }
+
     ec_log(10, __func__, "slave %d: initilizing mailbox\n", slave);
 
     pool_open(&slv->mbx.message_pool_free, 8, 1518);
@@ -101,6 +105,10 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
  */
 void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = &pec->slaves[slave];
+
+    if (!slv->mbx.handler_running) {
+        return;
+    }
 
     ec_log(10, __func__, "slave %d: deinitilizing mailbox\n", slave);
 

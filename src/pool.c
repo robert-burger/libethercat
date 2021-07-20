@@ -90,7 +90,7 @@ int pool_close(pool_t *pp) {
     pool_entry_t *entry;
     while ((entry = TAILQ_FIRST(&pp->avail)) != NULL) {
         TAILQ_REMOVE(&pp->avail, entry, qh);
-        free(entry->data);
+        if (entry->data) { free(entry->data); }
         free(entry);
     }
     
