@@ -539,11 +539,13 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
 int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, 
         uint16_t *alstatcode) {
     uint16_t wkc = 0, value = 0;
+    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     ec_fprd(pec, pec->slaves[slave].fixed_address, 
             EC_REG_ALSTAT, &value, sizeof(value), &wkc);
 
-    if (wkc)
-        *state = (ec_state_t)value;
+    if (wkc) {
+        slv->act_state = *state = (ec_state_t)value;
+    }
 
     if (alstatcode && (*state & 0x10)) {
         ec_fprd(pec, pec->slaves[slave].fixed_address, 

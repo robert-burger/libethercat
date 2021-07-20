@@ -301,6 +301,7 @@ typedef struct ec_slave {
     ec_eoe_slave_config_t eoe;  //!< EoE config
     
     ec_state_t expected_state;  //!< Master expected slave state
+    ec_state_t act_state;       //!< Actual/Last read slave state.
 
     struct ec_slave_mailbox_init_cmds init_cmds;
                                 //!< EtherCAT slave init commands
