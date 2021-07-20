@@ -152,6 +152,8 @@ typedef struct ec {
     
     int tun_fd;                     //!< tun device file descriptor
     uint32_t tun_ip;                //!< tun device ip addres
+    pthread_t tun_tid;              //!< tun device handler thread id.
+    int tun_running;                //!< tun device handler run flag.
     
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state
@@ -192,6 +194,14 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
  * \return 0 on success 
  */
 int ec_close(ec_t *pec);
+
+//! configures tun device of EtherCAT master, used for EoE slaves.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] ip_address    IP address to be set for tun device.
+ */
+void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]);
 
 //! create process data groups
 /*!

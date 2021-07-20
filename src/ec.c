@@ -874,8 +874,6 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
 
     FD_ZERO(&pec->mbx_fds);
 
-    ec_eoe_setup_vtun(pec);
-
     // eeprom logging level
     pec->eeprom_log         = eeprom_log;
 
@@ -902,6 +900,8 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
  * \return 0 on success 
  */
 int ec_close(ec_t *pec) {
+    ec_eoe_destroy_tun(pec);
+
     ec_async_message_pool_destroy(pec->async_loop);
     hw_close(pec->phw);
     pool_close(pec->pool);
@@ -1545,4 +1545,13 @@ local_exit:
     return ret;
 }
 
-
+//! configures tun device of EtherCAT master, used for EoE slaves.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] ip_address    IP address to be set for tun device.
+ */
+void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]) {
+    memcpy(&pec->tun_ip, &ip_address[0], 4);
+    ec_eoe_setup_tun(pec);
+}

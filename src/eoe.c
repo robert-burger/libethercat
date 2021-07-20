@@ -36,6 +36,9 @@
 #include <sys/ioctl.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
 
 // forward declarations
 void ec_eoe_process_recv(ec_t *pec, uint16_t slave);
@@ -154,6 +157,9 @@ void ec_eoe_init(ec_t *pec, uint16_t slave) {
 void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     pool_close(slv->mbx.eoe.recv_pool);
+    
+    pool_close(slv->mbx.eoe.eth_frames_recv_pool);
+    pool_close(slv->mbx.eoe.eth_frames_free_pool);
 }
 
 //! \brief Wait for EoE message received from slave.
@@ -302,7 +308,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         if (!p_entry) {
             ec_log(1, __func__, "slave %2d: out of mailbox messages\n", slave);
             ret = -1;
-            goto exit;
+            break;
         }
 
         memset(p_entry->data, 0, p_entry->data_size);
@@ -333,49 +339,17 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
     } while(frame_offset < frame_len);
 
     pthread_mutex_unlock(&slv->mbx.lock);
-
-exit:
     return ret;
 }
 
-// receive ethernet frame
+//! \brief Process received ethernet frame.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
  * \param[in] slave         Number of ethercat slave. this depends on 
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
- * \param[in] frame         Ethernet frame buffer to be sent.
- * \param[in] frame_len     Length of Ethernet frame buffer.
- *
- * \return 0 on success, otherwise error code.
  */
-int ec_eoe_recv_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_len) {
-    int ret = 0;
-    pool_entry_t *p_entry = NULL;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
-    size_t rest_len = frame_len;
-    size_t mbx_len = slv->sm[MAILBOX_WRITE].len;
-    size_t frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
-    
-    pthread_mutex_lock(&slv->mbx.lock);
-
-    for (ec_eoe_wait(pec, slave, &p_entry); p_entry; ec_eoe_wait(pec, slave, &p_entry)) {
-        ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
-
-        size_t act_len = min(frag_len, rest_len);
-        memcpy(&frame[frame_len - rest_len], &(read_buf->data.bdata[0]), act_len);
-        rest_len -= act_len;
-
-        if (p_entry) {        
-            pool_put(slv->mbx.message_pool_free, p_entry);
-        }
-    }
-
-    pthread_mutex_unlock(&slv->mbx.lock);
-    return ret;
-}
-
 void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     pool_entry_t *p_entry = NULL, *p_eth_entry = NULL;
@@ -452,12 +426,15 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     return;
 }
 
-#include <errno.h>
-
-void ec_eoe_vtun_handler(ec_t *pec) {
+//! \brief Handler thread for tap interface
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ */
+void ec_eoe_tun_handler(ec_t *pec) {
     eth_frame_t tmp_frame;
 
-    while(1) {
+    while (pec->tun_running) {
         int ret;
         fd_set rd_set;
 
@@ -510,22 +487,18 @@ void ec_eoe_vtun_handler(ec_t *pec) {
     }
 }
 
-void *ec_eoe_vtun_handler_wrapper(void *arg) {
+void *ec_eoe_tun_handler_wrapper(void *arg) {
     ec_t *pec = arg;
-    ec_eoe_vtun_handler(pec);
+    ec_eoe_tun_handler(pec);
     return NULL;
 }
 
-pthread_t vtun_tid;
-
-
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-    #include <netinet/in.h>
-int ec_eoe_setup_vtun(ec_t *pec) {
+// setup tun interface
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ */
+int ec_eoe_setup_tun(ec_t *pec) {
     // open tun device
     pec->tun_fd = open("/dev/net/tun", O_RDWR);
     if (pec->tun_fd == -1) {
@@ -571,7 +544,7 @@ int ec_eoe_setup_vtun(ec_t *pec) {
     struct sockaddr_in  my_addr;
     bzero((char *) &my_addr, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
-    my_addr.sin_addr.s_addr = htonl(inet_network("192.168.2.1"));
+    my_addr.sin_addr.s_addr = htonl(pec->tun_ip);//inet_network("192.168.2.1"));
     memcpy(&ifr.ifr_addr, &my_addr, sizeof(struct sockaddr));
 
     if (ioctl(s, SIOCSIFADDR, &ifr) < 0) {
@@ -579,9 +552,26 @@ int ec_eoe_setup_vtun(ec_t *pec) {
         perror(ifr.ifr_name);
         exit(1);
     }
-    pthread_create(&vtun_tid, NULL, ec_eoe_vtun_handler_wrapper, pec);
+
+    pec->tun_running = 1;
+    pthread_create(&pec->tun_tid, NULL, ec_eoe_tun_handler_wrapper, pec);
     return 0;
 }
 
+// Destroy tun interface
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ */
+void ec_eoe_destroy_tun(ec_t *pec) {
+    if (!pec->tun_running) {
+        return;
+    }
 
+    pec->tun_running = 0;
+    pthread_join(pec->tun_tid, NULL);
+
+    close(pec->tun_fd);
+    pec->tun_fd = 0;
+}
 
