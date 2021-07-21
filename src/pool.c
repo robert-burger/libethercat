@@ -135,11 +135,11 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
         if (ret != 0) {
             if (errno != ETIMEDOUT) {
                 perror("sem_timedwait");
+                continue;
             }
 
-            continue;
-//            *entry = NULL;
-//            return (ret = errno);
+            *entry = NULL;
+            return (ret = errno);
         } else {
             break;
         }
@@ -200,3 +200,24 @@ int pool_put(pool_t *pp, pool_entry_t *entry) {
     return 0;
 }
 
+//! \brief Put entry back to pool in front.
+/*!
+ * \param[in]   pp          Pointer to pool.
+ * \param[out]  entry       Entry to put back in pool.
+ *
+ * \return 0 or negative error code
+ */
+int pool_put_head(pool_t *pp, pool_entry_t *entry) {
+    if (!pp || !entry) {
+        return -EINVAL;
+    }
+    
+    pthread_mutex_lock(&pp->_pool_lock);
+
+    TAILQ_INSERT_HEAD(&pp->avail, (pool_entry_t *)entry, qh);
+    sem_post(&pp->avail_cnt);
+    
+    pthread_mutex_unlock(&pp->_pool_lock);
+    
+    return 0;
+}

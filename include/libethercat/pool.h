@@ -113,6 +113,15 @@ int pool_peek(pool_t *pp, pool_entry_t **entry);
  */
 int pool_put(pool_t *pp, pool_entry_t *entry);
 
+//! \brief Put entry back to pool in front.
+/*!
+ * \param[in]   pp          Pointer to pool.
+ * \param[out]  entry       Entry to put back in pool.
+ *
+ * \return 0 or negative error code
+ */
+int pool_put_head(pool_t *pp, pool_entry_t *entry);
+
 #ifdef __cplusplus
 }
 #endif
