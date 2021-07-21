@@ -130,6 +130,18 @@ typedef struct eth_frame {
     uint8_t frame_data[1518];
 } eth_frame_t;
 
+void eoe_debug_print(char *msg, uint8_t *frame, size_t frame_len) {
+#define EOE_DEBUG_BUFFER_SIZE   1024
+    static char eoe_debug_buffer[EOE_DEBUG_BUFFER_SIZE];
+    
+    int pos = snprintf(eoe_debug_buffer, EOE_DEBUG_BUFFER_SIZE, "%s: ", msg);
+    for (unsigned i = 0; (i < frame_len) && (pos < EOE_DEBUG_BUFFER_SIZE); ++i) {
+        pos += snprintf(eoe_debug_buffer+pos, EOE_DEBUG_BUFFER_SIZE-pos, "%02X", frame[i]);
+    }
+
+    ec_log(10, __func__, "%s\n", eoe_debug_buffer);
+}
+
 //! initialize EoE structure 
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -434,10 +446,8 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
         }
     } else {
         if (pec->tun_fd > 0) {
-            printf("recv eth frame: ");
-            for (int i = 0; i < min(frame_offset, 40); ++i)
-                printf("%02X", eth_frame->frame_data[i]);
-            printf("\n");
+            eoe_debug_print("recv eth frame", eth_frame->frame_data, frame_offset);
+
             write(pec->tun_fd, eth_frame->frame_data, frame_offset);
             pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
         } else {
@@ -484,10 +494,7 @@ void ec_eoe_tun_handler(ec_t *pec) {
             int rd = read(pec->tun_fd, &tmp_frame.frame_data[0], sizeof(tmp_frame.frame_data));
             if (rd > 0) {
                 // simple switch here 
-                printf("send eth frame: ");
-                for (int i = 0; i < min(rd, 40); ++i)
-                    printf("%02X", tmp_frame.frame_data[i]);
-                printf("\n");
+                eoe_debug_print("got eth frame", tmp_frame.frame_data, rd);
 
                 static const uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
                 uint8_t *dst_mac = &tmp_frame.frame_data[0];
