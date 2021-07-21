@@ -358,7 +358,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
 
         // send request
         ec_mbx_enqueue(pec, slave, p_entry);
-        sem_wait(&slv->.mbx.eoe.send_sync);
+        sem_wait(&slv->mbx.eoe.send_sync);
     } while(frame_offset < frame_len);
 
     pthread_mutex_unlock(&slv->mbx.eoe.lock);
