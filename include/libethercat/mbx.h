@@ -84,6 +84,7 @@ typedef struct ec_mbx {
     uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
     pthread_cond_t recv_cond;   //!< \brief Sync condition for handler wait.
     pthread_mutex_t recv_mutex; //!< \brief Sync mutex for handler flags.
+    sem_t sync_sem;
 
     int handler_running;        //!< \brief Mailbox handler thread running flag.
     ec_t *pec;                  //!< \brief Pointer to ethercat master structure.
@@ -160,6 +161,17 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave);
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
 void ec_mbx_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+
+//! \brief Enqueue mailbox message to send queue.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
+ */
+void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
 //! \brief Trigger read of mailbox.
 /*!
