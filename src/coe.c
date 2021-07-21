@@ -369,9 +369,19 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                 *abort_code = abort_buf->abort_code;
                 ret = EC_ERROR_MAILBOX_ABORT;
                 goto exit; 
-            }
+            } else if (read_buf->coe_hdr.service == EC_COE_SDORES) {
+                // everthing is fine
+                pool_put(slv->mbx.message_pool_free, p_entry);
+                p_entry = NULL;
+                goto exit;
+            } else {
+                ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
+                        (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
+                ret = EC_ERROR_MAILBOX_READ;
 
-            goto exit;
+                pool_put(slv->mbx.message_pool_free, p_entry);
+                p_entry = NULL;
+            }
         }
     } 
 
@@ -399,10 +409,19 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
             *abort_code = abort_buf->abort_code;
             ret = EC_ERROR_MAILBOX_ABORT;
             goto exit; 
+        } else if (read_buf->coe_hdr.service == EC_COE_SDORES) {
+            // everthing is fine
+            pool_put(slv->mbx.message_pool_free, p_entry);
+            seg_len += (EC_SDO_NORMAL_HDR_LEN - EC_SDO_SEG_HDR_LEN);
+            break;
+        } else {
+            ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
+                    (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
+            ret = EC_ERROR_MAILBOX_READ;
+        
+            pool_put(slv->mbx.message_pool_free, p_entry);
+            p_entry = NULL;
         }
-
-        pool_put(slv->mbx.message_pool_free, p_entry);
-        seg_len += (EC_SDO_NORMAL_HDR_LEN - EC_SDO_SEG_HDR_LEN);
     }
 
     uint8_t toggle = 1;
@@ -455,10 +474,19 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                 *abort_code = abort_buf->abort_code;
                 ret = EC_ERROR_MAILBOX_ABORT;
                 goto exit; 
+            } else if (read_buf->coe_hdr.service == EC_COE_SDORES) {
+                // everthing is fine
+                pool_put(slv->mbx.message_pool_free, p_entry);
+                p_entry = NULL;
+                break;
+            } else {
+                ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
+                        (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
+                ret = EC_ERROR_MAILBOX_READ;
+
+                pool_put(slv->mbx.message_pool_free, p_entry);
+                p_entry = NULL;
             }
-            
-            pool_put(slv->mbx.message_pool_free, p_entry);
-            p_entry = NULL;
         }
     }
 
