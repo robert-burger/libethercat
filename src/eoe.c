@@ -140,8 +140,10 @@ typedef struct eth_frame {
  */
 void ec_eoe_init(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+
+    pthread_mutex_init(&slv->mbx.eoe.lock, NULL);
+
     pool_open(&slv->mbx.eoe.recv_pool, 0, 1518);
-    
     pool_open(&slv->mbx.eoe.eth_frames_free_pool, 128, sizeof(eth_frame_t));
     pool_open(&slv->mbx.eoe.eth_frames_recv_pool, 0, sizeof(eth_frame_t));
 }
@@ -156,10 +158,15 @@ void ec_eoe_init(ec_t *pec, uint16_t slave) {
  */
 void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
-    pool_close(slv->mbx.eoe.recv_pool);
     
+    pthread_mutex_lock(&slv->mbx.eoe.lock);
+
     pool_close(slv->mbx.eoe.eth_frames_recv_pool);
     pool_close(slv->mbx.eoe.eth_frames_free_pool);
+    pool_close(slv->mbx.eoe.recv_pool);
+    
+    pthread_mutex_unlock(&slv->mbx.eoe.lock);
+    pthread_mutex_destroy(&slv->mbx.eoe.lock);
 }
 
 //! \brief Wait for EoE message received from slave.
@@ -213,7 +220,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.eoe.lock);
 
     ec_log(10, __func__, "slave %2d: set ip parameter\n", slave);
 
@@ -267,7 +274,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         break;
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.eoe.lock);
 
     return ret;
 }
@@ -291,20 +298,22 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
-    size_t mbx_len = slv->sm[MAILBOX_WRITE].len;
-    size_t max_frag_len = (mbx_len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
+    size_t max_frag_len = (slv->sm[MAILBOX_WRITE].len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
     ALIGN_32BIT_BLOCKS(max_frag_len);
     off_t frame_offset = 0;
     int frag_number = 0;
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.eoe.lock);
 
     do {
         size_t frag_len = min(frame_len - frame_offset, max_frag_len);
 
         // get mailbox buffer to write frame fragment request
         pool_entry_t *p_entry;
-        pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+        ec_timer_t timeout;
+        ec_timer_gettime(&timeout);
+        timeout.sec += 10;
+        pool_get(slv->mbx.message_pool_free, &p_entry, &timeout);
         if (!p_entry) {
             ec_log(1, __func__, "slave %2d: out of mailbox messages\n", slave);
             ret = -1;
@@ -338,7 +347,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         ec_mbx_enqueue(pec, slave, p_entry);
     } while(frame_offset < frame_len);
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.eoe.lock);
     return ret;
 }
 
@@ -356,7 +365,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     pool_get(slv->mbx.eoe.eth_frames_free_pool, &p_eth_entry, NULL);
     eth_frame_t *eth_frame = (eth_frame_t *)(p_eth_entry->data);
     
-    pthread_mutex_lock(&slv->mbx.lock);
+    pthread_mutex_lock(&slv->mbx.eoe.lock);
     
     // get first received EoE frame, should be start of ethernet frame
     pool_get(slv->mbx.eoe.recv_pool, &p_entry, NULL);
@@ -411,6 +420,10 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
         }
     } else {
         if (pec->tun_fd > 0) {
+            printf("recv eth frame: ");
+            for (int i = 0; i < min(frame_offset, 40); ++i)
+                printf("%02X", eth_frame->frame_data[i]);
+            printf("\n");
             write(pec->tun_fd, eth_frame->frame_data, frame_offset);
             pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
         } else {
@@ -422,7 +435,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
         pool_put(slv->mbx.message_pool_free, p_entry);
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    pthread_mutex_unlock(&slv->mbx.eoe.lock);
     return;
 }
 
@@ -444,6 +457,7 @@ void ec_eoe_tun_handler(ec_t *pec) {
         ret = select(pec->tun_fd + 1, &rd_set, NULL, NULL, NULL);
 
         if (ret < 0 && errno == EINTR){
+            printf("select returned %d, errno %d\n", ret, errno);
             continue;
         }
 
@@ -456,10 +470,10 @@ void ec_eoe_tun_handler(ec_t *pec) {
             int rd = read(pec->tun_fd, &tmp_frame.frame_data[0], sizeof(tmp_frame.frame_data));
             if (rd > 0) {
                 // simple switch here 
-//                printf("got eth frame: ");
-//                for (int i = 0; i < rd; ++i)
-//                    printf("%02X", tmp_frame.frame_data[i]);
-//                printf("\n");
+                printf("send eth frame: ");
+                for (int i = 0; i < min(rd, 40); ++i)
+                    printf("%02X", tmp_frame.frame_data[i]);
+                printf("\n");
 
                 static const uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
                 uint8_t *dst_mac = &tmp_frame.frame_data[0];
@@ -467,7 +481,9 @@ void ec_eoe_tun_handler(ec_t *pec) {
 
                 for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
                     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
-                    if (!slv->eoe.use_eoe) {
+                    if (    !slv->eoe.use_eoe || 
+                            (slv->act_state == EC_STATE_INIT)   ||
+                            (slv->act_state == EC_STATE_BOOT)) {
                         continue;
                     }
 
