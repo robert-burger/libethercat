@@ -81,11 +81,21 @@ int main(int argc, char **argv) {
 
             if (fn) {
                 // write to file
-                int fd = open(fn, O_CREAT | O_RDWR);
-                write(fd, bigbuf, bigbuf_len);
+                int fd = open(fn, O_CREAT | O_RDWR, 0777);
+                int ret = write(fd, bigbuf, bigbuf_len);
+                
+                if (ret == -1) {
+                    perror("write returned:");
+                }
+                
                 close(fd);
-            } else
-                write(1, bigbuf, bigbuf_len);
+            } else {
+                int ret = write(1, bigbuf, bigbuf_len);
+
+                if (ret == -1) {
+                    perror("write returned:");
+                }
+            }
             break;
         }
         case mode_write: {
@@ -94,7 +104,7 @@ int main(int argc, char **argv) {
             int bytes;
             
             if (fn) {
-                int fd = open(fn, O_CREAT | O_RDWR);
+                int fd = open(fn, O_CREAT | O_RDWR, 0777);
                 bytes = read(fd, bigbuf, bigbuf_len);
                 close(fd);
             } else

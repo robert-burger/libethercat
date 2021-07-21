@@ -1,0 +1,5 @@
+libethercat (0.2.6) testing; urgency=medium
+
+  * Initial Release.
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 31 Mar 2021 10:47:14 +0200

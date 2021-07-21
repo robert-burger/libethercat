@@ -78,7 +78,7 @@ int ec_timer_gettime(ec_timer_t *timer) {
 
 // gets time in nanoseconds
 uint64_t ec_timer_gettime_nsec() {
-    ec_timer_t tmr;
+    ec_timer_t tmr = { 0, 0 };
     ec_timer_gettime(&tmr);
 
     return (tmr.sec * 1E9 + tmr.nsec);
@@ -102,7 +102,7 @@ void ec_timer_init(ec_timer_t *timer, uint64_t timeout) {
 
 // checks if timer is expired
 int ec_timer_expired(ec_timer_t *timer) {
-    ec_timer_t act;
+    ec_timer_t act = { 0, 0 };
     ec_timer_gettime(&act);    
 
     return !timer_cmp(&act, timer, <);

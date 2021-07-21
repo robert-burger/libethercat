@@ -59,7 +59,7 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
 
     SII_REG(rd, EC_REG_EEPCFG, eepctl);
     if (cnt == 0) {
-        ec_log(10, __func__, "slave %2d: unable to get eeprom "
+        ec_log(1, __func__, "slave %2d: unable to get eeprom "
                 "config/control\n", slave);
         return -1;
     }
@@ -71,14 +71,14 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
     eepctl = 0;
     SII_REG(wr, EC_REG_EEPCFG, eepctl);
     if (cnt == 0) {
-        ec_log(10, __func__, "slave %2d did not accept assigning EEPROM "
+        ec_log(1, __func__, "slave %2d did not accept assigning EEPROM "
                 "to PDI\n", slave);
         return -1;
     }
 
     SII_REG(rd, EC_REG_EEPCFG, eepctl);
     if (cnt == 0) {
-        ec_log(10, __func__, "slave %2d: unable to get eeprom "
+        ec_log(1, __func__, "slave %2d: unable to get eeprom "
                 "config/control\n", slave);
         return -1;
     }
@@ -102,7 +102,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
         ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                 (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_READ", "reading eepctl failed, wkc %d\n", wkc);
+            ec_log(1, "EEPROM_READ", "reading eepctl failed, wkc %d\n", wkc);
             ret = -1;
             goto func_exit;
         }
@@ -111,7 +111,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPADR,
             (uint8_t *)&eepadr, sizeof(eepadr), &wkc);
     if (wkc != 1) {
-        ec_log(10, "EEPROM_READ", "writing eepadr failed\n");
+        ec_log(1, "EEPROM_READ", "writing eepadr failed\n");
         ret = -1;
         goto func_exit;
     }
@@ -120,7 +120,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
             (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
     if (wkc != 1) {
-        ec_log(10, "EEPROM_READ", "wirting eepctl failed\n");
+        ec_log(1, "EEPROM_READ", "wirting eepctl failed\n");
         ret = -1;
         goto func_exit;
     }
@@ -132,7 +132,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
         ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                 (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_WRITE", "reading eepctl failed, wkc %d\n", wkc);
+            ec_log(1, "EEPROM_WRITE", "reading eepctl failed, wkc %d\n", wkc);
             ret = -1;
             goto func_exit;
         }
@@ -142,7 +142,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPDAT,
             (uint8_t *)data, sizeof(*data), &wkc);
     if (wkc != 1) {
-        ec_log(10, "EEPROM_READ", "reading data failed\n");
+        ec_log(1, "EEPROM_READ", "reading data failed\n");
         ret = -1;
         goto func_exit;
     }
@@ -155,11 +155,11 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     if (eepcsr & 0x0100)  
         ec_log(10, "EEPROM_WRITE", "write in progress\n");
     if (eepcsr & 0x4000)
-        ec_log(10, "EEPROM_WRITE", "error write enable\n");
+        ec_log(1, "EEPROM_WRITE", "error write enable\n");
     if (eepcsr & 0x2000)
         ret = -1;
     if (eepcsr & 0x0800)
-        ec_log(10, "EEPROM_WRITE", 
+        ec_log(1, "EEPROM_WRITE", 
                 "checksum error at in ESC configuration area\n");
 
 func_exit:
@@ -185,7 +185,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr,
         ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                 (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_WRITE", "waiting for eeprom !busy failed, "
+            ec_log(1, "EEPROM_WRITE", "waiting for eeprom !busy failed, "
                     "wkc %d\n", wkc);
             ret = -1;
             goto func_exit;
@@ -215,7 +215,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr,
                 (uint8_t *)&eepadr, sizeof(eepadr), &wkc);
 
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_WRITE", "writing eepadr failed, wkc %d\n", wkc);
+            ec_log(1, "EEPROM_WRITE", "writing eepadr failed, wkc %d\n", wkc);
             ret = -1;
             goto func_exit;
         }
@@ -229,7 +229,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr,
                 (uint8_t *)data, sizeof(*data), &wkc);
 
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_WRITE", "writing data failed\n");
+            ec_log(1, "EEPROM_WRITE", "writing data failed\n");
             ret = -1;
             goto func_exit;
         }
@@ -249,7 +249,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr,
                 (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_WRITE", "wirting eepctl failed\n");
+            ec_log(1, "EEPROM_WRITE", "wirting eepctl failed\n");
             ret = -1;
             goto func_exit;
         }
@@ -265,7 +265,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr,
         ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                 (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
         if (--retry_cnt == 0) {
-            ec_log(10, "EEPROM_WRITE", "reading eepctl failed, wkc %d\n", wkc);
+            ec_log(1, "EEPROM_WRITE", "reading eepctl failed, wkc %d\n", wkc);
             ret = -1;
             goto func_exit;
         }
@@ -277,13 +277,13 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr,
     // wait some time before retrying to allow slow EEPROMs to store the 
     // data internally
     if (eepcsr & 0x0100)  
-        ec_log(10, "EEPROM_WRITE", "write in progress\n");
+        ec_log(1, "EEPROM_WRITE", "write in progress\n");
     if (eepcsr & 0x4000)
-        ec_log(10, "EEPROM_WRITE", "error write enable\n");
+        ec_log(1, "EEPROM_WRITE", "error write enable\n");
     if (eepcsr & 0x2000)
         ret = -1;
     if (eepcsr & 0x0800)
-        ec_log(10, "EEPROM_WRITE", 
+        ec_log(1, "EEPROM_WRITE", 
                 "checksum error at in ESC configuration area\n");
 
 func_exit:
