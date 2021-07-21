@@ -405,6 +405,10 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                         pool_put(slv->mbx.message_pool_free, p_entry);
                     }
                 }
+                
+                if (p_entry->user_cb) {
+                    (*p_entry->user_cb)(p_entry->user_arg);
+                }
 
                 pool_peek(slv->mbx.message_pool_queued, &p_entry);
                 if (p_entry) {

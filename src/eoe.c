@@ -146,6 +146,8 @@ void ec_eoe_init(ec_t *pec, uint16_t slave) {
     pool_open(&slv->mbx.eoe.recv_pool, 0, 1518);
     pool_open(&slv->mbx.eoe.eth_frames_free_pool, 128, sizeof(eth_frame_t));
     pool_open(&slv->mbx.eoe.eth_frames_recv_pool, 0, sizeof(eth_frame_t));
+
+    sem_init(&slv->mbx.eoe.send_sync, 0, 0);
 }
 
 //! deinitialize EoE structure 
@@ -161,6 +163,7 @@ void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
     
     pthread_mutex_lock(&slv->mbx.eoe.lock);
 
+    sem_destroy(&slv->mbx.eoe.send_sync);
     pool_close(slv->mbx.eoe.eth_frames_recv_pool);
     pool_close(slv->mbx.eoe.eth_frames_free_pool);
     pool_close(slv->mbx.eoe.recv_pool);
@@ -278,6 +281,12 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
 
     return ret;
 }
+    
+void ec_eoe_send_sync(void *user_arg, struct pool_entry *p) {
+    ec_mbx_t *pmbx = (ec_mbx_t *)user_arg;
+    
+    sem_post(&pmbx->pec->slaves[pmbx->slave].mbx.eoe.send_sync);
+}
 
 #define ALIGN_32BIT_BLOCKS(a) { (a) = (((a) >> 5) << 5); }
 
@@ -320,6 +329,10 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
             break;
         }
 
+        // send sync callback
+        p_entry->user_cb = ec_eoe_send_sync;
+        p_entry->user_arg = &slv->mbx;
+
         memset(p_entry->data, 0, p_entry->data_size);
         ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
 
@@ -345,6 +358,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
 
         // send request
         ec_mbx_enqueue(pec, slave, p_entry);
+        sem_wait(&slv->.mbx.eoe.send_sync);
     } while(frame_offset < frame_len);
 
     pthread_mutex_unlock(&slv->mbx.eoe.lock);

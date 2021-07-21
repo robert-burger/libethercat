@@ -51,6 +51,7 @@ typedef struct ec_eoe {
     pool_t *eth_frames_recv_pool;
 
     pthread_mutex_t lock;
+    sem_t send_sync;
 } ec_eoe_t;
 
 #ifdef __cplusplus
