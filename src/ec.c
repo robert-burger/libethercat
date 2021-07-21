@@ -116,9 +116,8 @@ int ec_create_pd_groups(ec_t *pec, int pd_group_cnt) {
  * \return 0 on success
  */
 int ec_destroy_pd_groups(ec_t *pec) {
-    int i;
-
     if (pec->pd_groups) {
+        int i;
         for (i = 0; i < pec->pd_group_cnt; ++i)
             free_resource(pec->pd_groups[i].pd);
         free(pec->pd_groups);
