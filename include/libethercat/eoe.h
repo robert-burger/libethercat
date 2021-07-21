@@ -46,6 +46,7 @@ typedef struct ec_eoe_slave_config {
 
 typedef struct ec_eoe {
     pool_t *recv_pool;
+    pool_t *response_pool;
 
     pool_t *eth_frames_free_pool;
     pool_t *eth_frames_recv_pool;
