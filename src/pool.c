@@ -128,14 +128,19 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
         ts.tv_nsec = tim.nsec;
     }
 
-    ret = sem_timedwait(&pp->avail_cnt, &ts);
-    if (ret != 0) {
-        if (errno != ETIMEDOUT) {
-            perror("sem_timedwait");
-        }
+    while (1) {
+        ret = sem_timedwait(&pp->avail_cnt, &ts);
+        if (ret != 0) {
+            if (errno != ETIMEDOUT) {
+                perror("sem_timedwait");
+            }
 
-        *entry = NULL;
-        return (ret = errno);
+            continue;
+//            *entry = NULL;
+//            return (ret = errno);
+        } else {
+            break;
+        }
     }
 
     pthread_mutex_lock(&pp->_pool_lock);
