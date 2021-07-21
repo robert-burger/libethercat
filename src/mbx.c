@@ -399,6 +399,10 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                     ec_log(1, __func__, "error on writing send mailbox\n");
                 }
                 
+                if (p_entry->user_cb) {
+                    (*p_entry->user_cb)(p_entry->user_arg);
+                }
+
                 // returning to free pool and get next
                 pool_put(slv->mbx.message_pool_free, p_entry);
                 pool_get(slv->mbx.message_pool_queued, &p_entry, NULL);

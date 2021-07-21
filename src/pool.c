@@ -96,6 +96,8 @@ int pool_close(pool_t *pp) {
     
     pthread_mutex_unlock(&pp->_pool_lock);
     pthread_mutex_destroy(&pp->_pool_lock);
+    
+    sem_destroy(&pp->avail_cnt);
 
     free(pp);
     
@@ -184,6 +186,9 @@ int pool_put(pool_t *pp, pool_entry_t *entry) {
     }
     
     pthread_mutex_lock(&pp->_pool_lock);
+
+    p_entry->user_cb = NULL;
+    p_entry->user_arg = NULL;
 
     TAILQ_INSERT_TAIL(&pp->avail, (pool_entry_t *)entry, qh);
     sem_post(&pp->avail_cnt);
