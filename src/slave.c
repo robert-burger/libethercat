@@ -487,6 +487,29 @@ const char *al_status_code_2_string(int code) {
     return NULL;
 }
 
+const static char *_ECAT_STATE_INIT     = "INIT";
+const static char *_ECAT_STATE_PREOP    = "PRE-OPERATIONAL";
+const static char *_ECAT_STATE_SAFEOP   = "SAFE-OPERATIONAL";
+const static char *_ECAT_STATE_OP       = "OPERATIONAL";
+const static char *_ECAT_STATE_BOOT     = "BOOT";
+
+const char *ecat_state_2_string(int state) {
+    switch (state) {
+        case EC_STATE_INIT:
+            return _ECAT_STATE_INIT;
+        case EC_STATE_PREOP:
+            return _ECAT_STATE_PREOP;
+        case EC_STATE_SAFEOP:
+            return _ECAT_STATE_SAFEOP;
+        case EC_STATE_OP:
+            return _ECAT_STATE_OP;
+        case EC_STATE_BOOT:
+            return _ECAT_STATE_BOOT;
+    }
+
+    return NULL;
+}
+
 // Set EtherCAT state on slave 
 int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc = 0, act_state, value;
@@ -495,6 +518,8 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
 
     if (state & EC_STATE_RESET)
         return wkc; // just return here, we did an error reset
+
+    ec_log(10, "EC_STATE_SET", "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
 
     pec->slaves[slave].expected_state = state;
 
@@ -532,6 +557,13 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", 
             slave, state, act_state, wkc);
 
+    if (act_state == state) {    
+        ec_log(10, "EC_STATE_SET", "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
+    } else {
+        ec_log(1, "EC_STATE_SET", "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
+    }
+            
+    pec->slaves[slave].act_state = act_state;
     return wkc;
 }
 
@@ -949,9 +981,6 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 break;
         }
         case SAFEOP_2_OP: {
-            ec_log(10, get_transition_string(transition), 
-                    "slave %2d: setting to operational\n", slave);
-
             // write state to slave
             wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
             break;
