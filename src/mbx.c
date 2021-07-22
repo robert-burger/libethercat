@@ -78,9 +78,7 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
     pool_open(&slv->mbx.message_pool_free, 8, 1518);
     pool_open(&slv->mbx.message_pool_queued, 0, 1518);
 
-    pthread_mutex_init(&slv->mbx.recv_mutex, NULL);
-    pthread_cond_init(&slv->mbx.recv_cond, NULL);
-
+    pthread_mutex_init(&slv->mbx.sync_mutex, NULL);
     sem_init(&slv->mbx.sync_sem, 0, 0);
     pthread_mutex_init(&slv->mbx.lock, NULL);
 
@@ -116,16 +114,15 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
     slv->mbx.handler_running = 0;
     pthread_join(slv->mbx.handler_tid, NULL);
     
-    pthread_mutex_destroy(&slv->mbx.lock);
-
     ec_coe_deinit(pec, slave);
     ec_soe_deinit(pec, slave);
     ec_foe_deinit(pec, slave);
     ec_eoe_deinit(pec, slave);
 
-    pthread_mutex_destroy(&slv->mbx.recv_mutex);
-    pthread_cond_destroy(&slv->mbx.recv_cond);
-    
+    pthread_mutex_destroy(&slv->mbx.lock);
+    sem_destroy(&slv->mbx.sync_sem);
+    pthread_mutex_destroy(&slv->mbx.sync_mutex);
+     
     pool_close(slv->mbx.message_pool_free);
     pool_close(slv->mbx.message_pool_queued);
 
@@ -329,16 +326,16 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     ec_slave_t *slv = &pec->slaves[slave];
 
     pool_put_head(slv->mbx.message_pool_queued, p_entry);
     
-    pthread_mutex_lock(&pec->slaves[slave].mbx.recv_mutex);
+    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
     
     sem_post(&slv->mbx.sync_sem);
-    pthread_mutex_unlock(&pec->slaves[slave].mbx.recv_mutex);
+    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Enqueue mailbox message to send queue.
@@ -355,11 +352,11 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 
     pool_put(slv->mbx.message_pool_queued, p_entry);
     
-    pthread_mutex_lock(&pec->slaves[slave].mbx.recv_mutex);
+    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
     
     sem_post(&slv->mbx.sync_sem);
-    pthread_mutex_unlock(&pec->slaves[slave].mbx.recv_mutex);
+    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Trigger read of mailbox.
@@ -373,11 +370,11 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
     ec_slave_t *slv = &pec->slaves[slave];
     
-    pthread_mutex_lock(&pec->slaves[slave].mbx.recv_mutex);
+    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
 
-    pthread_cond_signal(&slv->mbx.recv_cond);
-    pthread_mutex_unlock(&pec->slaves[slave].mbx.recv_mutex);
+    sem_post(&slv->mbx.sync_sem);
+    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Mailbox handler for one slave
@@ -397,20 +394,19 @@ void ec_mbx_handler(ec_t *pec, int slave) {
     ec_log(10, __func__, "slave %d: started mailbox handler\n", slave);
 
     while (slv->mbx.handler_running) {
-
         // wait for mailbox event
         ec_timer_init(&timeout, 1000000);
         struct timespec ts = { timeout.sec, timeout.nsec };
 
         ret = sem_timedwait(&slv->mbx.sync_sem, &ts);
         
-        pthread_mutex_lock(&pec->slaves[slave].mbx.recv_mutex);
+        pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
         uint32_t flags = slv->mbx.handler_flags;
         slv->mbx.handler_flags = 0;
-        pthread_mutex_unlock(&pec->slaves[slave].mbx.recv_mutex);
+        pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 
         if (!flags && (ret != 0)) {
-            if ((errno == ETIMEDOUT)) {// && (slv->act_state == EC_STATE_PREOP)) {
+            if ((errno == ETIMEDOUT)) {
                 // check receive mailbox on timeout if PREOP or lower
                 flags = MBX_HANDLER_FLAGS_RECV | MBX_HANDLER_FLAGS_SEND;
             } else {
@@ -472,15 +468,16 @@ void ec_mbx_handler(ec_t *pec, int slave) {
 
                 if (p_entry) {
                     ec_log(100, __func__, "slave %d: got mailbox buffer to write\n", slave);
+                    int retry_cnt = 10;
 
                     do {
-                    wkc = ec_mbx_send(pec, slave, p_entry->data, 
-                            min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
-                    } while (!wkc);
+                        wkc = ec_mbx_send(pec, slave, p_entry->data, 
+                                min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
+                    } while ((!wkc) && (--retry_cnt > 0));
 
                     if (!wkc) {
                         ec_log(1, __func__, "error on writing send mailbox -> requeue\n");
-                        ec_mbx_enqueue(pec, slave, p_entry);
+                        ec_mbx_enqueue_head(pec, slave, p_entry);
                     } else {                    
                         // all done
                         if (p_entry->user_cb) {

@@ -178,7 +178,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     write_buf->soe_hdr.idn        = idn;
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     uint8_t *to = buf;
     ssize_t left_len = *len;
@@ -217,35 +217,34 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         uint8_t elements, uint8_t *buf, size_t len) {
     int wkc = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    pool_entry_t *p_entry;
 
     pthread_mutex_lock(&slv->mbx.lock);
 
-    pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
-    MESSAGE_POOL_DEBUG(free);
-
-    ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
-
-    // mailbox header
-    write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
-    write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
-    // soe header
-    write_buf->soe_hdr.op_code    = EC_SOE_WRITE_REQ;
-    write_buf->soe_hdr.atn        = atn;
-    write_buf->soe_hdr.elements   = elements;
-    write_buf->soe_hdr.idn        = idn;
-
     uint8_t *from = buf;
     size_t left_len = len;
-    size_t mbx_len = slv->sm[0].len 
+    size_t mbx_len = slv->sm[MAILBOX_WRITE].len 
         - sizeof(ec_mbx_header_t) - sizeof(ec_soe_header_t);
 
     ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, "
             "len %d, left %d, mbx_len %d\n", 
             slave, atn, idn, elements, buf, len, left_len, mbx_len);
 
-    while (1) {
+    while (left_len) {
+        pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+        memset(p_entry->data, 0, p_entry->data_size);
+
+        ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
+
+        // mailbox header
+        write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
+        write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
+        // soe header
+        write_buf->soe_hdr.op_code    = EC_SOE_WRITE_REQ;
+        write_buf->soe_hdr.atn        = atn;
+        write_buf->soe_hdr.elements   = elements;
+        write_buf->soe_hdr.idn        = idn;
+
         size_t send_len = min(left_len, mbx_len);
         write_buf->mbx_hdr.length = sizeof(ec_soe_header_t) + send_len;
         memcpy(&write_buf->data, from, send_len);
@@ -261,23 +260,22 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         }
 
         // send request
-        ec_mbx_enqueue(pec, slave, p_entry);
+        ec_mbx_enqueue_head(pec, slave, p_entry);
+    }
+    
+    // wait for answer
+    for (ec_soe_wait(pec, slave, &p_entry); p_entry; ec_soe_wait(pec, slave, &p_entry)) {
+        ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data); 
 
-        if (!left_len) {
-            // wait for answer
-            for (p_entry = NULL; !p_entry; ec_soe_wait(pec, slave, &p_entry)) {}
-            ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data); 
-
-            // check for correct op_code
-            if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
-                ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
-                pool_put(slv->mbx.message_pool_free, p_entry);
-                continue; // TODO handle unexpected answer
-            }
-        
+        // check for correct op_code
+        if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
+            ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
             pool_put(slv->mbx.message_pool_free, p_entry);
-            break;
+            continue; // TODO handle unexpected answer
         }
+
+        pool_put(slv->mbx.message_pool_free, p_entry);
+        break;
     }
 
     pthread_mutex_unlock(&slv->mbx.lock);

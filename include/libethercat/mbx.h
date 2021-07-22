@@ -82,8 +82,7 @@ typedef struct PACKED ec_mbx_buffer {
 
 typedef struct ec_mbx {
     uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
-    pthread_cond_t recv_cond;   //!< \brief Sync condition for handler wait.
-    pthread_mutex_t recv_mutex; //!< \brief Sync mutex for handler flags.
+    pthread_mutex_t sync_mutex; //!< \brief Sync mutex for handler flags.
     sem_t sync_sem;
 
     int handler_running;        //!< \brief Mailbox handler thread running flag.
@@ -107,13 +106,13 @@ typedef struct ec_mbx {
                                  */
 
 
-    pool_t *message_pool_free;
-    pool_t *message_pool_queued;
+    pool_t *message_pool_free;  //!< \brief Pool with free mailbox buffers.
+    pool_t *message_pool_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
-    ec_coe_t coe;
-    ec_soe_t soe;
-    ec_foe_t foe;
-    ec_eoe_t eoe;
+    ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
+    ec_soe_t soe;               //!< \brief Structure for Servodrive over EtherCAT mailbox.
+    ec_foe_t foe;               //!< \brief Structure for File over EtherCAT mailbox.
+    ec_eoe_t eoe;               //!< \brief Strucutre for Ethernet over EtherCAT mailbox.
     
     uint8_t *sm_state;          //!< Sync manager state of read mailbox.
                                 /*!<
@@ -160,7 +159,7 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave);
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
 //! \brief Enqueue mailbox message to send queue.
 /*!

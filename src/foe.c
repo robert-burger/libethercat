@@ -176,7 +176,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
     ec_log(10, __func__, "start reading file \"%s\"\n", file_name);
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     *file_data_len = 0;
 
@@ -235,7 +235,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         write_buf_ack->packet_nr         = packet_nr;
 
         // send request
-        ec_mbx_enqueue(pec, slave, p_entry);
+        ec_mbx_enqueue_head(pec, slave, p_entry);
 
         // compare length + mbx_hdr_size with mailbox size
         if ((read_data_length + 6) < slv->sm[1].len) {
@@ -286,7 +286,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     memcpy(write_buf->file_name, file_name, file_name_len);
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     // wait for answer
     for (p_entry = NULL; !p_entry; ec_foe_wait(pec, slave, &p_entry)) {}
@@ -346,7 +346,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         write_buf_data->packet_nr         = ++packet_nr;
 
         // send request
-        ec_mbx_enqueue(pec, slave, p_entry);
+        ec_mbx_enqueue_head(pec, slave, p_entry);
 
         // wait for answer
         for (ec_foe_wait(pec, slave, &p_entry); p_entry; ec_foe_wait(pec, slave, &p_entry)) {

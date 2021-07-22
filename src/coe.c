@@ -256,7 +256,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->sdo_hdr.sub_index = sub_index;
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     // wait for answer
     for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
@@ -267,7 +267,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
         {
             ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-            ec_log(100, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
+            ec_log(100, __func__, "slave %2d: got sdo abort request on idx %#X, subidx %d, "
                     "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
             *abort_code = abort_buf->abort_code;
@@ -360,7 +360,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         memcpy(&exp_write_buf->sdo_data.ldata[0], buf, len);
 
         // send request
-        ec_mbx_enqueue(pec, slave, p_entry);
+        ec_mbx_enqueue_head(pec, slave, p_entry);
 
         // wait for answer
         for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
@@ -400,7 +400,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     tmp += seg_len;
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     // wait for answer
     for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
@@ -464,7 +464,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         tmp += seg_len;
 
         // send request
-        ec_mbx_enqueue(pec, slave, p_entry);
+        ec_mbx_enqueue_head(pec, slave, p_entry);
 
         // wait for answer
         for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
@@ -549,7 +549,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
     write_buf->list_type            = 0x01;
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     int val = 0, frag_left = 0;
 
@@ -633,7 +633,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->index                = index;
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     // wait for answer
     for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
@@ -713,7 +713,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     write_buf->value_info           = value_info;
 
     // send request
-    ec_mbx_enqueue(pec, slave, p_entry);
+    ec_mbx_enqueue_head(pec, slave, p_entry);
 
     // wait for answer
     for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
