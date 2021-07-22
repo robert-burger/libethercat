@@ -35,7 +35,7 @@
 #define NSEC_PER_SEC                1000000000
 
 #define EC_SHORT_TIMEOUT_MBX        10000000
-#define EC_DEFAULT_TIMEOUT_MBX      100000000
+#define EC_DEFAULT_TIMEOUT_MBX      1000000000
 #define EC_DEFAULT_DELAY            2000000
 
 #include <stdint.h>

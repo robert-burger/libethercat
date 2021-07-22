@@ -73,7 +73,7 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
         return;
     }
 
-    ec_log(10, __func__, "slave %d: initilizing mailbox\n", slave);
+    ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
 
     pool_open(&slv->mbx.message_pool_free, 8, 1518);
     pool_open(&slv->mbx.message_pool_queued, 0, 1518);
@@ -109,7 +109,7 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
         return;
     }
 
-    ec_log(10, __func__, "slave %d: deinitilizing mailbox\n", slave);
+    ec_log(10, __func__, "slave %2d: deinitilizing mailbox\n", slave);
 
     slv->mbx.handler_running = 0;
     pthread_join(slv->mbx.handler_tid, NULL);
@@ -391,7 +391,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
     ec_timer_t timeout;
     pool_entry_t *p_entry = NULL;
 
-    ec_log(10, __func__, "slave %d: started mailbox handler\n", slave);
+    ec_log(10, __func__, "slave %2d: started mailbox handler\n", slave);
 
     while (slv->mbx.handler_running) {
         // wait for mailbox event
@@ -419,19 +419,19 @@ void ec_mbx_handler(ec_t *pec, int slave) {
             if (flags & MBX_HANDLER_FLAGS_RECV) {
                 flags &= ~MBX_HANDLER_FLAGS_RECV;
                 
-                ec_log(100, __func__, "slave %d: mailbox needs to be read\n", slave);
+                ec_log(100, __func__, "slave %2d: mailbox needs to be read\n", slave);
 
                 do {
                     pool_get(pec->slaves[slave].mbx.message_pool_free, &p_entry, NULL);
                     if (!p_entry) {
-                        ec_log(1, __func__, "slave %d: out of mailbox buffers\n", slave);
+                        ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
                         break;
                     }
                     memset(p_entry->data, 0, p_entry->data_size);
 
                     if (ec_mbx_receive(pec, slave, p_entry->data, 
                                 min(p_entry->data_size, slv->sm[MAILBOX_READ].len), 0)) {
-                        ec_log(100, __func__, "slave %d: got one mailbox message\n", slave);
+                        ec_log(100, __func__, "slave %2d: got one mailbox message\n", slave);
 
                         ec_mbx_header_t *hdr = (ec_mbx_header_t *)p_entry->data;
                         switch (hdr->mbxtype) {
@@ -468,11 +468,11 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                 flags &= ~MBX_HANDLER_FLAGS_SEND;
 
                 // need to send a message to write mailbox
-                ec_log(100, __func__, "slave %d: mailbox needs to be written\n", slave);
+                ec_log(100, __func__, "slave %2d: mailbox needs to be written\n", slave);
                 pool_get(slv->mbx.message_pool_queued, &p_entry, NULL);
 
                 if (p_entry) {
-                    ec_log(100, __func__, "slave %d: got mailbox buffer to write\n", slave);
+                    ec_log(100, __func__, "slave %2d: got mailbox buffer to write\n", slave);
                     int retry_cnt = 10;
 
                     do {
@@ -481,7 +481,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                     } while ((!wkc) && (--retry_cnt > 0));
 
                     if (!wkc) {
-                        ec_log(1, __func__, "error on writing send mailbox -> requeue\n");
+                        ec_log(1, __func__, "slave %2d: error on writing send mailbox -> requeue\n", slave);
                         ec_mbx_enqueue_head(pec, slave, p_entry);
                     } else {                    
                         // all done
@@ -499,7 +499,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
         }
     }
 
-    ec_log(10, __func__, "slave %d: stopped mailbox handler\n", slave);
+    ec_log(10, __func__, "slave %2d: stopped mailbox handler\n", slave);
 }
 
 
