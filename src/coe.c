@@ -214,16 +214,6 @@ void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     }
 }
 
-#define CHECK_POOL_GET(pool, entry, timeout, lock) { \
-    pool_get((pool), &(entry), (timeout)); \
-    if (!(entry)) { \
-        ec_log(1, __func__, "slave %d: out of mailbox buffers\n", slave); \
-        if (lock) { pthread_mutex_unlock((lock)); } \
-        return -1; \
-    } \
-    memset(p_entry->data, 0, p_entry->data_size); \
-}
-
 // read coe sdo 
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
@@ -239,7 +229,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_normal_upload_req_t *write_buf = (ec_sdo_normal_upload_req_t *)(p_entry->data);
 
@@ -301,13 +291,13 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
                     (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
             ret = EC_ERROR_MAILBOX_READ;
         
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             p_entry = NULL;
         }
     }
 
     if (p_entry) {
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
     }
 
     // returning index and ulock 
@@ -330,7 +320,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_normal_download_req_t *write_buf = (ec_sdo_normal_download_req_t *)(p_entry->data);
 
@@ -379,7 +369,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                 goto exit; 
             } else if (read_buf->coe_hdr.service == EC_COE_SDORES) {
                 // everthing is fine
-                pool_put(slv->mbx.message_pool_free, p_entry);
+                ec_mbx_return_free_buffer(pec, slave, p_entry);
                 p_entry = NULL;
                 goto exit;
             } else {
@@ -387,7 +377,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                         (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
 
-                pool_put(slv->mbx.message_pool_free, p_entry);
+                ec_mbx_return_free_buffer(pec, slave, p_entry);
                 p_entry = NULL;
             }
         }
@@ -419,7 +409,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
             goto exit; 
         } else if (read_buf->coe_hdr.service == EC_COE_SDORES) {
             // everthing is fine
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             seg_len += (EC_SDO_NORMAL_HDR_LEN - EC_SDO_SEG_HDR_LEN);
             break;
         } else {
@@ -427,7 +417,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                     (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
             ret = EC_ERROR_MAILBOX_READ;
         
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             p_entry = NULL;
         }
     }
@@ -435,7 +425,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     uint8_t toggle = 1;
 
     while (rest_len) {
-        CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
+        ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock);
         MESSAGE_POOL_DEBUG(free);
         ec_sdo_seg_download_req_t *seg_write_buf = (void *)(p_entry->data);
 
@@ -483,7 +473,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                 goto exit; 
             } else if (read_buf->coe_hdr.service == EC_COE_SDORES) {
                 // everthing is fine
-                pool_put(slv->mbx.message_pool_free, p_entry);
+                ec_mbx_return_free_buffer(pec, slave, p_entry);
                 p_entry = NULL;
                 break;
             } else {
@@ -491,7 +481,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                         (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
 
-                pool_put(slv->mbx.message_pool_free, p_entry);
+                ec_mbx_return_free_buffer(pec, slave, p_entry);
                 p_entry = NULL;
             }
         }
@@ -499,7 +489,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
 
 exit:
     if (p_entry) {
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
     }
 
     pthread_mutex_unlock(&slv->mbx.coe.lock);
@@ -535,7 +525,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_odlist_req_t *write_buf = (ec_sdo_odlist_req_t *)(p_entry->data);
 
@@ -583,7 +573,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
 
             frag_left = read_buf->sdo_info_hdr.fragments_left;
 
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             p_entry = NULL;
             break;
         }
@@ -619,7 +609,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
     
     pool_entry_t *p_entry;
-    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_desc_req_t *write_buf = (ec_sdo_desc_req_t *)(p_entry->data);
 
@@ -659,7 +649,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     }
 
     if (p_entry) {
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
     }
 
     pthread_mutex_unlock(&slv->mbx.coe.lock);
@@ -697,7 +687,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_entry_desc_req_t *write_buf = (ec_sdo_entry_desc_req_t *)(p_entry->data);
 
@@ -743,7 +733,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     }
 
     if (p_entry) {        
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
     }
 
     pthread_mutex_unlock(&slv->mbx.coe.lock);
@@ -889,6 +879,6 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) 
     ec_timer_gettime(&qmsg->timestamp);
     TAILQ_INSERT_TAIL(&slv->mbx.coe.emergencies, qmsg, qh);
 
-    pool_put(slv->mbx.message_pool_free, p_entry);
+    ec_mbx_return_free_buffer(pec, slave, p_entry);
 }
 

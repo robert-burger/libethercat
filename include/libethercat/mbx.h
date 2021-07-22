@@ -182,6 +182,21 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  */
 void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
 
+
+#define ec_mbx_get_free_buffer(pec, slave, entry, timeout, lock) { \
+    pool_get(pec->slaves[slave].mbx.message_pool_free, &(entry), (timeout)); \
+    if (!(entry)) { \
+        ec_log(1, __func__, "slave %d: out of mailbox buffers\n", slave); \
+        pthread_mutex_unlock((lock)); \
+        return -1; \
+    } \
+    memset((entry)->data, 0, (entry)->data_size); \
+}
+
+#define ec_mbx_return_free_buffer(pec, slave, entry) { \
+    pool_put(pec->slaves[slave].mbx.message_pool_free, (entry)); \
+}
+
 #if 0 
 {
 #endif

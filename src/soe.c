@@ -162,9 +162,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
-    MESSAGE_POOL_DEBUG(free);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
 
     ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
@@ -191,7 +189,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_READ_RES) {
             ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
         }
 
@@ -202,7 +200,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             left_len -= read_len;
         }
     
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
 
         if (/*(left_len < 0) ||*/ !read_buf->soe_hdr.incomplete)
             break;
@@ -231,9 +229,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             slave, atn, idn, elements, buf, len, left_len, mbx_len);
 
     while (left_len) {
-        pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-        memset(p_entry->data, 0, p_entry->data_size);
-
+        ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
         ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
         // mailbox header
@@ -270,11 +266,11 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
             ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
         }
 
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
         break;
     }
 

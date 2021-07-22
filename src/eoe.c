@@ -268,7 +268,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     ec_log(10, __func__, "slave %2d: set ip parameter\n", slave);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.eoe.lock);
     memset(p_entry->data, 0, p_entry->data_size);
 
     ec_eoe_set_ip_parameter_request_t *write_buf = (ec_eoe_set_ip_parameter_request_t *)(p_entry->data);
@@ -313,7 +313,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         ec_eoe_set_ip_parameter_response_t *read_buf = (ec_eoe_set_ip_parameter_response_t *)(p_entry->data);
 
         ret = read_buf->sip_hdr.result;
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
         break;
     }
 
@@ -362,12 +362,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         ec_timer_t timeout;
         ec_timer_gettime(&timeout);
         timeout.sec += 10;
-        pool_get(slv->mbx.message_pool_free, &p_entry, &timeout);
-        if (!p_entry) {
-            ec_log(1, __func__, "slave %2d: out of mailbox messages\n", slave);
-            ret = -1;
-            break;
-        }
+        ec_mbx_get_free_buffer(pec, slave, p_entry, &timeout, &slv->mbx.eoe.lock);
 
         // send sync callback
         p_entry->user_cb = ec_eoe_send_sync;
@@ -419,8 +414,6 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     pool_get(slv->mbx.eoe.eth_frames_free_pool, &p_eth_entry, NULL);
     eth_frame_t *eth_frame = (eth_frame_t *)(p_eth_entry->data);
     
-//    pthread_mutex_lock(&slv->mbx.eoe.lock);
-    
     // get first received EoE frame, should be start of ethernet frame
     pool_get(slv->mbx.eoe.recv_pool, &p_entry, NULL);
     if (!p_entry) { return; }
@@ -431,7 +424,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
                 slave, read_buf->eoe_hdr.fragment_number);
 
         // proceed with next EoE message until queue is empty
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
         return ec_eoe_process_recv(pec, slave);
     }
 
@@ -469,7 +462,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
             }
 
             if (p_entry) {        
-                pool_put(slv->mbx.message_pool_free, p_entry);
+                ec_mbx_return_free_buffer(pec, slave, p_entry);
             }
         }
     } else {
@@ -484,10 +477,9 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     }
         
     if (p_entry) {        
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
     }
 
-//    pthread_mutex_unlock(&slv->mbx.eoe.lock);
     return;
 }
 

@@ -154,9 +154,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
     pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
-    MESSAGE_POOL_DEBUG(free);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
 
     ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry->data);
 
@@ -202,14 +200,14 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
             }
 
             wkc = -1;
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             MESSAGE_POOL_DEBUG(free);
             goto exit;
         }
 
         if (read_buf_data->foe_hdr.op_code != EC_FOE_OP_CODE_DATA_REQUEST) {
             ec_log(10, __func__, "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             MESSAGE_POOL_DEBUG(free);
             continue;
         }
@@ -239,7 +237,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
 
         // compare length + mbx_hdr_size with mailbox size
         if ((read_data_length + 6) < slv->sm[1].len) {
-            pool_put(slv->mbx.message_pool_free, p_entry);
+            ec_mbx_return_free_buffer(pec, slave, p_entry);
             break;
         }
     }
@@ -266,9 +264,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
-    MESSAGE_POOL_DEBUG(free);
+    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
 
     ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry->data);
 
@@ -312,7 +308,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     }
     
     // returning ack message
-    pool_put(slv->mbx.message_pool_free, p_entry);
+    ec_mbx_return_free_buffer(pec, slave, p_entry);
 
     // mailbox len - mailbox hdr (6) - foe header (6)
     size_t data_len = slv->sm[1].len - 6 - 6;
@@ -320,8 +316,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     int packet_nr = 0;
 
     while (1) {
-        pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-        memset(p_entry->data, 0, p_entry->data_size);
+        ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
 
         ec_foe_data_request_t *write_buf_data = (ec_foe_data_request_t *)p_entry->data;
 
@@ -356,7 +351,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
                 ec_log(10, __func__,
                         "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %d, data_len %d, packet_nr %d\n", 
                         read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
-                pool_put(slv->mbx.message_pool_free, p_entry);
+                ec_mbx_return_free_buffer(pec, slave, p_entry);
                 goto exit;
             }
 
@@ -371,7 +366,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
             goto exit;
         }
             
-        pool_put(slv->mbx.message_pool_free, p_entry);
+        ec_mbx_return_free_buffer(pec, slave, p_entry);
         
         if (last_pkt) {
             break;
