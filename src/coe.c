@@ -214,6 +214,16 @@ void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     }
 }
 
+#define CHECK_POOL_GET(pool, entry, timeout, lock) { \
+    pool_get((pool), &(entry), (timeout)); \
+    if (!(entry)) { \
+        ec_log(1, __func__, "slave %d: out of mailbox buffers\n", slave); \
+        if (lock) { pthread_mutex_unlock((lock)); } \
+        return -1; \
+    } \
+    memset(p_entry->data, 0, p_entry->data_size); \
+}
+
 // read coe sdo 
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
@@ -229,8 +239,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
+    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_normal_upload_req_t *write_buf = (ec_sdo_normal_upload_req_t *)(p_entry->data);
 
@@ -321,8 +330,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
+    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_normal_download_req_t *write_buf = (ec_sdo_normal_download_req_t *)(p_entry->data);
 
@@ -427,8 +435,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
     uint8_t toggle = 1;
 
     while (rest_len) {
-        pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-        memset(p_entry->data, 0, p_entry->data_size);
+        CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
         MESSAGE_POOL_DEBUG(free);
         ec_sdo_seg_download_req_t *seg_write_buf = (void *)(p_entry->data);
 
@@ -528,8 +535,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
+    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_odlist_req_t *write_buf = (ec_sdo_odlist_req_t *)(p_entry->data);
 
@@ -613,8 +619,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
     
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
+    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_desc_req_t *write_buf = (ec_sdo_desc_req_t *)(p_entry->data);
 
@@ -692,8 +697,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
     pool_entry_t *p_entry;
-    pool_get(slv->mbx.message_pool_free, &p_entry, NULL);
-    memset(p_entry->data, 0, p_entry->data_size);
+    CHECK_POOL_GET(slv->mbx.message_pool_free, p_entry, NULL, &slv->mbx.coe.lock);
 
     ec_sdo_entry_desc_req_t *write_buf = (ec_sdo_entry_desc_req_t *)(p_entry->data);
 
