@@ -71,20 +71,6 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
     }
 }
 
-int ec_master_state_set(ec_t *pec, ec_state_t state) {
-    uint16_t wkc = 0;
-    uint16_t value = (uint16_t)state;
-    ec_bwr(pec, EC_REG_ALCTL, &value, sizeof(value), &wkc); 
-    return wkc;
-}
-
-
-int ec_coe_calc_pd_len(ec_t *pec, uint16_t slave, uint16_t pdo_reg) {
-//    ec_coe_sdo_read(pec, slave, pdo_reg, 0, buf, 
-    return 0;
-}
-
-
 //! create process data groups
 /*!
  * \param pec ethercat master pointer
