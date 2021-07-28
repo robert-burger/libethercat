@@ -314,8 +314,16 @@ typedef struct ec_slave {
                                  * machine from INIT to OP.
                                  */
                 
-    worker_arg_t worker_arg;
-    pthread_t worker_tid;
+    worker_arg_t worker_arg;    //!< Set state worker thread arguments.
+                                /*!< 
+                                 * These arguments are used for worker thread 
+                                 * when threaded startup is used.
+                                 */
+    pthread_t worker_tid;       //!< Set state worker thread handle.
+                                /*!<
+                                 * Handle to spawned worker thread if threaded
+                                 * startup is used.
+                                 */
 } ec_slave_t;
 
 #ifdef __cplusplus

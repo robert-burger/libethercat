@@ -459,13 +459,11 @@ void ec_create_logical_mapping(ec_t *pec, int group) {
 }
 
 void *prepare_state_transition_wrapper(void *arg) {
-    worker_arg_t *tmp = 
-        (worker_arg_t *)arg;
+    worker_arg_t *tmp = (worker_arg_t *)arg;
     
     ec_log(100, get_state_string(tmp->state), 
             "prepare state transition for slave %d\n", tmp->slave);
-    ec_slave_prepare_state_transition(
-            tmp->pec, tmp->slave, tmp->state);
+    ec_slave_prepare_state_transition(tmp->pec, tmp->slave, tmp->state);
 
     ec_log(100, get_state_string(tmp->state), 
             "generate mapping for slave %d\n", tmp->slave);
@@ -474,8 +472,7 @@ void *prepare_state_transition_wrapper(void *arg) {
 }
 
 void *set_state_wrapper(void *arg) {
-    worker_arg_t *tmp = 
-        (worker_arg_t *)arg;
+    worker_arg_t *tmp = (worker_arg_t *)arg;
 
     ec_log(100, get_state_string(tmp->state), 
             "setting state for slave %d\n", tmp->slave);
@@ -869,10 +866,12 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     pec->dc.rtc_count       = 0;
     pec->dc.act_diff        = 0;
     
+    pec->tun_fd             = 0;
+    pec->tun_ip             = 0;
+    pec->tun_running        = 0;
+    
     pec->dc.p_de_dc         = NULL;
     pec->dc.p_idx_dc        = NULL;
-
-    FD_ZERO(&pec->mbx_fds);
 
     // eeprom logging level
     pec->eeprom_log         = eeprom_log;

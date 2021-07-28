@@ -52,7 +52,7 @@ typedef struct ec_slave ec_slave_t;
     
 //! process data group structure
 typedef struct ec_pd_group {
-    uint32_t log;                   //!< locical address
+    uint32_t log;                   //!< logical address
                                     /*!<
                                      * This defines the logical start address
                                      * for the process data group. It is used
@@ -161,10 +161,8 @@ typedef struct ec {
 
     int threaded_startup;           //!< running state machine in threads for slave
     
-    pool_entry_t *p_de_state;   //!< EtherCAT datagram from pool for ec_state read
+    pool_entry_t *p_de_state;       //!< EtherCAT datagram from pool for ec_state read
     idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
-
-    fd_set mbx_fds;
 } ec_t;
 
 #ifdef __cplusplus
@@ -176,26 +174,35 @@ extern void (*ec_log_func)(int lvl, void *user, const char *format, ...);
 
 void ec_log(int lvl, const char *pre, const char *format, ...);
 
-//! open ethercat master
+//! \brief Open ethercat master.
 /*!
- * \param ppec return value for ethercat master pointer
- * \param ifname ethercat master interface name
- * \param prio receive thread priority
- * \param cpumask receive thread cpumask
- * \param eeprom_log log eeprom to stdout
+ * This function is used as initial call to create the EtherCAT master 
+ * instance. It configures all needed options with default values. A packet 
+ * receive thread is spawned with given priority (@p prio) and affinity (@p affinity). 
+ * Ensure that they meet your realtime requirements.
+ *
+ * After the successfull completion of \link ec_open \endlink an EtherCAT 
+ * scan should be performed with \link ec_scan \endlink.
+ *
+ * \param[out] ppec         Return value for ethercat master pointer.
+ * \param[in]  ifname       Ethercat master interface name.
+ * \param[in]  prio         Receive thread priority.
+ * \param[in]  cpumask      Receive thread cpumask.
+ * \param[in]  eeprom_log   Log eeprom to stdout.
  * \return 0 on succes, otherwise error code
  */
 int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, 
         int eeprom_log);
 
-//! closes ethercat master
+//! \brief Closes ethercat master.
 /*!
- * \param pec pointer to ethercat master
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
  * \return 0 on success 
  */
 int ec_close(ec_t *pec);
 
-//! configures tun device of EtherCAT master, used for EoE slaves.
+//! \brief Configures tun device of EtherCAT master, used for EoE slaves.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
@@ -203,97 +210,108 @@ int ec_close(ec_t *pec);
  */
 void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]);
 
-//! create process data groups
+//! \brief Create process data groups.
 /*!
- * \param pec ethercat master pointer
- * \param pd_group_cnt number of groups to create
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] pd_group_cnt  Number of groups to create.
  * \return 0 on success
  */
 int ec_create_pd_groups(ec_t *pec, int pd_group_cnt);
 
-//! destroy process data groups
+//! \brief Destroy process data groups.
 /*!
- * \param pec ethercat master pointer
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
  * \return 0 on success
  */
 int ec_destroy_pd_groups(ec_t *pec);
 
-//! syncronous ethercat read/write
+//! \brief Syncronous ethercat read/write.
 /*!
- * \param pec pointer to ethercat master
- * \param cmd ethercat command
- * \param adr 32-bit address of slave
- * \param data data buffer to read/write 
- * \param datalen length of data
- * \param wkc return value for working counter
+ * \param[in]  pec          Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in]  cmd          EtherCAT command.
+ * \param[in]  adr          32-bit address of slave.
+ * \param[in]  data         Data buffer to read/write .
+ * \param[in]  datalen      Length of data.
+ * \param[out] wkc          Return value for working counter.
  * \return 0 on succes, otherwise error code
  */
 int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr, 
         uint8_t *data, size_t datalen, uint16_t *wkc);
 
-//! asyncronous ethercat read/write, answer don't care
+//! \brief Asyncronous ethercat read/write, answer don't care.
 /*!
- * \param pec pointer to ethercat master
- * \param cmd ethercat command
- * \param adr 32-bit address of slave
- * \param data data buffer to read/write 
- * \param datalen length of data
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] cmd           Ethercat command.
+ * \param[in] adr           32-bit address of slave.
+ * \param[in] data          Data buffer to read/write.
+ * \param[in] datalen       Length of data.
  * \return 0 on succes, otherwise error code
  */
 int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr, 
         uint8_t *data, size_t datalen);
 
-//! set state on ethercat bus
+//! \brief Set state on ethercat bus.
 /*! 
- * \param pec ethercat master pointer
- * \param state new ethercat state
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] state         New ethercat state.
  * \return 0 on success
  */
 int ec_set_state(ec_t *pec, ec_state_t state);
 
-//! send process data for specific group with logical commands
+//! \brief Send process data for specific group with logical commands.
 /*!
- * \param pec ethercat master pointer
- * \param group group number
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] group         Group number.
  * \return 0 on success
  */
 int ec_send_process_data_group(ec_t *pec, int group);
 
-//! receive process data for specific group with logical commands
+//! \brief Receive process data for specific group with logical commands.
 /*!
- * \param pec ethercat master pointer
- * \param group group number
- * \param timeout for waiting for packet
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] group         Group number.
+ * \param[in] timeout       Timeout for waiting for packet.
  * \return 0 on success
  */
 int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout);
 
-//! send distributed clocks sync datagram
+//! \brief Send distributed clocks sync datagram.
 /*!
- * \param pec ethercat master pointer
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec);
 
-//! receive distributed clocks sync datagram
+//! \brief Receive distributed clocks sync datagram.
 /*!
- * \param pec ethercat master pointer
- * \param timeout absolute timeout
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] timeout       Absolute timeout.
  * \return 0 on success
  */
 int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout);
 
-//! send broadcast read to ec state
+//! \brief Send broadcast read to ec state.
 /*!
- * \param pec ethercat master pointer
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
  * \return 0 on success
  */
 int ec_send_brd_ec_state(ec_t *pec);
 
-//! receive broadcast read to ec_state
+//! \brief Receive broadcast read to ec_state.
 /*!
- * \param pec ethercat master pointer
- * \param timeout for waiting for packet
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] timeout       Timeout for waiting for packet.
  * \return 0 on success
  */
 int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout);

@@ -156,7 +156,7 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
         uint8_t elements, uint8_t *buf, size_t *len) 
 {
-    int wkc = 0;
+    int ret = -1;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
     pthread_mutex_lock(&slv->mbx.lock);
@@ -181,11 +181,10 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     uint8_t *to = buf;
     ssize_t left_len = *len;
 
-    while (1) {
-        // wait for answer
-        for (p_entry = NULL; !p_entry; ec_soe_wait(pec, slave, &p_entry)) {}
+    // wait for answer
+    for (ec_soe_wait(pec, slave, &p_entry); p_entry; ec_soe_wait(pec, slave, &p_entry)) {
         ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data); 
-    
+
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_READ_RES) {
             ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
@@ -199,16 +198,18 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             to += read_len;
             left_len -= read_len;
         }
-    
+
         ec_mbx_return_free_buffer(pec, slave, p_entry);
 
-        if (/*(left_len < 0) ||*/ !read_buf->soe_hdr.incomplete)
-            break;
+        if (/*(left_len < 0) ||*/ !read_buf->soe_hdr.incomplete) {
+            ret = 0;
+            break;            
+        }
     }
     
     pthread_mutex_unlock(&slv->mbx.lock);
     
-    return wkc;
+    return ret;
 }
 
 int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
