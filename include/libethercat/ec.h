@@ -105,7 +105,7 @@ typedef struct ec_pd_group {
 //! ethercat master structure
 typedef struct ec {
     hw_t *phw;                      //!< pointer to hardware interface
-    int tx_sync;                    //!< synchronous call to send frames
+    int tx_sync;                    //!< Synchronous call to send frames.
                                     /*!<
                                      * This defines if the actual call to 
                                      * hardware interface to send a frame (
@@ -114,7 +114,11 @@ typedef struct ec {
                                      * function.
                                      * If not set, the hw_tx() has to be 
                                      * called by the user (e.g. cyclical timer
-                                     * loop).
+                                     * loop).<br>
+                                     * Usually this is needed in states BOOT,
+                                     * INIT and PREOP. When entering SAFEOP (and
+                                     * OP) state the realtime/deterministic mode
+                                     * is started.
                                      */
 
     pool_t *pool;                   //!< datagram pool
