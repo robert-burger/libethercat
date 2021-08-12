@@ -872,20 +872,20 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 if (slv->eoe.subnet) {
                     ec_log(10, get_transition_string(transition), 
                             "slave %2d:         Subnet  %d.%d.%d.%d\n",
-                            slave, slv->eoe.subnet[0], slv->eoe.subnet[1], 
-                            slv->eoe.subnet[2], slv->eoe.subnet[3]);
+                            slave, slv->eoe.subnet[3], slv->eoe.subnet[2], 
+                            slv->eoe.subnet[1], slv->eoe.subnet[0]);
                 }
                 if (slv->eoe.gateway) {
                     ec_log(10, get_transition_string(transition), 
                             "slave %2d:         Gateway %d.%d.%d.%d\n",
-                            slave, slv->eoe.gateway[0], slv->eoe.gateway[1], 
-                            slv->eoe.gateway[2], slv->eoe.gateway[3]);
+                            slave, slv->eoe.gateway[3], slv->eoe.gateway[2], 
+                            slv->eoe.gateway[1], slv->eoe.gateway[0]);
                 }                        
                 if (slv->eoe.dns) {
                     ec_log(10, get_transition_string(transition), 
                             "slave %2d:         DNS     %d.%d.%d.%d\n",
-                            slave, slv->eoe.dns[0], slv->eoe.dns[1], 
-                            slv->eoe.dns[2], slv->eoe.dns[3]);
+                            slave, slv->eoe.dns[3], slv->eoe.dns[2], 
+                            slv->eoe.dns[1], slv->eoe.dns[0]);
                 }
                 if (slv->eoe.dns_name) {
                     ec_log(10, get_transition_string(transition), 
