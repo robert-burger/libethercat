@@ -33,6 +33,80 @@
 #include <string.h>
 #include <errno.h>
 
+static const char *sdo_info_error_0x05030000 = "Toggle bit not changed";
+static const char *sdo_info_error_0x05040000 = "SDO protocol timeout";
+static const char *sdo_info_error_0x05040001 = "Client/Server command specifier not valid or unknown";
+static const char *sdo_info_error_0x05040005 = "Out of memory";
+static const char *sdo_info_error_0x06010000 = "Unsupported access to an object";
+static const char *sdo_info_error_0x06010001 = "Attempt to read to a write only object";
+static const char *sdo_info_error_0x06010002 = "Attempt to write to a read only object";
+static const char *sdo_info_error_0x06010003 = "Subindex cannot be written, SI0 must be 0 for write access";
+static const char *sdo_info_error_0x06010004 = "SDO Complete access not supported for objects of variable length such as ENUM object types";
+static const char *sdo_info_error_0x06010005 = "Object length exceeds mailbox size";
+static const char *sdo_info_error_0x06010006 = "Object mapped to RxPDO, SDO Download blocked";
+static const char *sdo_info_error_0x06020000 = "The object does not exist in the object directory";
+static const char *sdo_info_error_0x06040041 = "The object can not be mapped into the PDO";
+static const char *sdo_info_error_0x06040042 = "The number and length of the objects to be mapped would exceed the PDO length";
+static const char *sdo_info_error_0x06040043 = "General parameter incompatibility reason";
+static const char *sdo_info_error_0x06040047 = "General internal incompatibility in the device";
+static const char *sdo_info_error_0x06060000 = "Access failed due to a hardware error";
+static const char *sdo_info_error_0x06070010 = "Data type does not match, length of service parameter does not match";
+static const char *sdo_info_error_0x06070012 = "Data type does not match, length of service parameter too high";
+static const char *sdo_info_error_0x06070013 = "Data type does not match, length of service parameter too low";
+static const char *sdo_info_error_0x06090011 = "Subindex does not exist";
+static const char *sdo_info_error_0x06090030 = "Value range of parameter exceeded (only for write access)";
+static const char *sdo_info_error_0x06090031 = "Value of parameter written too high";
+static const char *sdo_info_error_0x06090032 = "Value of parameter written too low";
+static const char *sdo_info_error_0x06090036 = "Maximum value is less than minimum value";
+static const char *sdo_info_error_0x08000000 = "General error";
+static const char *sdo_info_error_0x08000020 = "Data cannot be transferred or stored to the application";
+static const char *sdo_info_error_0x08000021 = "Data cannot be transferred or stored to the application because of local control";
+static const char *sdo_info_error_0x08000022 = "Data cannot be transferred or stored to the application because of the present device state";
+static const char *sdo_info_error_0x08000023 = "Object dictionary dynamic generation fails or no object dictionary is present";
+static const char *sdo_info_error_unknown    = "UNKNOWN ERROR";
+
+const char *get_sdo_info_error_string(uint32_t errorcode) {
+    switch (errorcode) {
+        default:
+            break;
+#define ADD_CASE(x) \
+        case (x): \
+            return sdo_info_error_##x;
+        ADD_CASE(0x05030000)
+        ADD_CASE(0x05040000)
+        ADD_CASE(0x05040001)
+        ADD_CASE(0x05040005)
+        ADD_CASE(0x06010000)
+        ADD_CASE(0x06010001)
+        ADD_CASE(0x06010002)
+        ADD_CASE(0x06010003)
+        ADD_CASE(0x06010004)
+        ADD_CASE(0x06010005)
+        ADD_CASE(0x06010006)
+        ADD_CASE(0x06020000)
+        ADD_CASE(0x06040041)
+        ADD_CASE(0x06040042)
+        ADD_CASE(0x06040043)
+        ADD_CASE(0x06040047)
+        ADD_CASE(0x06060000)
+        ADD_CASE(0x06070010)
+        ADD_CASE(0x06070012)
+        ADD_CASE(0x06070013)
+        ADD_CASE(0x06090011)
+        ADD_CASE(0x06090030)
+        ADD_CASE(0x06090031)
+        ADD_CASE(0x06090032)
+        ADD_CASE(0x06090036)
+        ADD_CASE(0x08000000)
+        ADD_CASE(0x08000020)
+        ADD_CASE(0x08000021)
+        ADD_CASE(0x08000022)
+        ADD_CASE(0x08000023)
+    }
+
+    return sdo_info_error_unknown;
+}
+
 typedef struct {
     unsigned number   : 9;
     unsigned reserved : 3;
@@ -602,7 +676,7 @@ typedef struct PACKED ec_sdo_desc_resp {
 
 // read coe sdo description
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
-        ec_coe_sdo_desc_t *desc) {
+        ec_coe_sdo_desc_t *desc, uint32_t *error_code) {
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
 
@@ -628,15 +702,27 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     // wait for answer
     for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
         ec_sdo_desc_resp_t *read_buf = (void *)(p_entry->data); 
-        if (    (read_buf->coe_hdr.service == EC_COE_SDOINFO) &&
-                (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP)) {
-            // transfer was successfull
-            desc->data_type         = read_buf->sdo_info_data.wdata[1];
-            desc->max_subindices    = read_buf->sdo_info_data.bdata[4];
-            desc->obj_code          = read_buf->sdo_info_data.bdata[5];
-            desc->name_len          = read_buf->mbx_hdr.length - 6 - 6;
-            desc->name              = (char *)malloc(desc->name_len); // must be freed by caller
-            memcpy(desc->name, &read_buf->sdo_info_data.bdata[6], desc->name_len);
+        if (read_buf->coe_hdr.service == EC_COE_SDOINFO) {
+            if  (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP) {
+                // transfer was successfull
+                desc->data_type         = read_buf->sdo_info_data.wdata[1];
+                desc->max_subindices    = read_buf->sdo_info_data.bdata[4];
+                desc->obj_code          = read_buf->sdo_info_data.bdata[5];
+                desc->name_len          = read_buf->mbx_hdr.length - 6 - 6;
+                desc->name              = (char *)malloc(desc->name_len); // must be freed by caller
+                memcpy(desc->name, &read_buf->sdo_info_data.bdata[6], desc->name_len);
+            } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
+                uint32_t ecode = *(uint32_t *)&read_buf->sdo_info_data;
+
+                ec_log(1, __func__, "slave %2d: got sdo info error request on idx %#X, "
+                        "error_code %X, message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
+
+                if (error_code) {
+                    *error_code = ecode;
+                }
+
+                ret = EC_ERROR_MAILBOX_ABORT;
+            }
         } else {
             // not our answer, print out this message
             ec_coe_print_msg(1, __func__, slave, "unexpected coe answer", 
@@ -680,7 +766,8 @@ typedef struct PACKED ec_sdo_entry_desc_resp {
         
 // read coe sdo entry description
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc) {
+        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
+        uint32_t *error_code) {
     int ret = EC_ERROR_MAILBOX_READ;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
     
@@ -709,18 +796,30 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     for (ec_coe_wait(pec, slave, &p_entry); p_entry; ec_coe_wait(pec, slave, &p_entry)) {
         ec_sdo_entry_desc_resp_t *read_buf = (void *)(p_entry->data); 
 
-        if (    (read_buf->coe_hdr.service == EC_COE_SDOINFO) &&
-                (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP)) {
-            // transfer was successfull
-            desc->value_info    = read_buf->value_info;
-            desc->data_type     = read_buf->data_type;
-            desc->bit_length    = read_buf->bit_length;
-            desc->obj_access    = read_buf->obj_access;
-            desc->data_len      = read_buf->mbx_hdr.length - 6 - 10;
+        if (read_buf->coe_hdr.service == EC_COE_SDOINFO) {
+            if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP) {
+                // transfer was successfull
+                desc->value_info    = read_buf->value_info;
+                desc->data_type     = read_buf->data_type;
+                desc->bit_length    = read_buf->bit_length;
+                desc->obj_access    = read_buf->obj_access;
+                desc->data_len      = read_buf->mbx_hdr.length - 6 - 10;
 
-            if (!desc->data) { desc->data = malloc(desc->data_len); }
-            memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
-            ret = 0;
+                if (!desc->data) { desc->data = malloc(desc->data_len); }
+                memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
+                ret = 0;
+            } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
+                uint32_t ecode = *(uint32_t *)&read_buf->index;
+
+                ec_log(1, __func__, "slave %2d: got sdo info error request on idx %#X, "
+                        "error_code %X, message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
+
+                if (error_code) {
+                    *error_code = ecode;
+                }
+
+                ret = EC_ERROR_MAILBOX_ABORT;
+            }
         } else {
             // not our answer, print out this message
             ec_coe_print_msg(1, __func__, slave, "unexpected coe answer", 

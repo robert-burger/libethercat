@@ -87,6 +87,7 @@ enum {
     EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP,   //!< object description response
     EC_COE_SDO_INFO_GET_ENTRY_DESC_REQ,     //!< entry description request
     EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP,    //!< entry description response
+    EC_COE_SDO_INFO_ERROR_REQUEST,          //!< error request
 };
 
 #define DEFTYPE_PDOMAPPING          0x0021
@@ -203,11 +204,12 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
  *                          (usually the n'th slave attached).
  * \param[in] index         CoE SDO index number.
  * \param[out] desc         Returns CoE SDO description.
+ * \param[out] error_code   Returns the error code if we got one.
  *
  * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        ec_coe_sdo_desc_t *desc);
+        ec_coe_sdo_desc_t *desc, uint32_t *error_code);
 
 //! Read CoE SDO entry description
 /*!
@@ -220,11 +222,13 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
  * \param[in] sub_index     CoE SDO sub index number.
  * \param[in] value_info    Bitset which description values you want to get
  * \param[in] desc          Return CoE entry description.
+ * \param[out] error_code   Returns the error code if we got one.
  *
  * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
-        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc);
+        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
+        uint32_t *error_code);
 
 //! Read CoE object dictionary list
 /*!
@@ -272,6 +276,13 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  *                      mailbox message from slave.
  */
 void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+
+//! \brief Get SDO INFO error string.
+/*!
+ * \param[in] error_code    Error code number.
+ * \return string with decoded error.
+ */
+const char *get_sdo_info_error_string(uint32_t errorcode);
 
 #if 0 
 {
