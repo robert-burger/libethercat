@@ -106,8 +106,9 @@ typedef struct ec_mbx {
                                  */
 
 
-    pool_t *message_pool_free;  //!< \brief Pool with free mailbox buffers.
-    pool_t *message_pool_queued;//!< \brief Pool with mailbox buffers ready to be sent.
+    pool_t *message_pool_recv_free; 
+    pool_t *message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
+    pool_t *message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
     ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
     ec_soe_t soe;               //!< \brief Structure for Servodrive over EtherCAT mailbox.
@@ -182,9 +183,12 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  */
 void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
 
+#define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) { \
+    pool_get(pec->slaves[slave].mbx.message_pool_recv_free, &(entry), (timeout)); \
+}
 
-#define ec_mbx_get_free_buffer(pec, slave, entry, timeout, lock) { \
-    pool_get(pec->slaves[slave].mbx.message_pool_free, &(entry), (timeout)); \
+#define ec_mbx_get_free_send_buffer(pec, slave, entry, timeout, lock) { \
+    pool_get(pec->slaves[slave].mbx.message_pool_send_free, &(entry), (timeout)); \
     if (!(entry)) { \
         ec_log(1, __func__, "slave %d: out of mailbox buffers\n", slave); \
         pthread_mutex_unlock((lock)); \
@@ -193,9 +197,14 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
     memset((entry)->data, 0, (entry)->data_size); \
 }
 
-#define ec_mbx_return_free_buffer(pec, slave, entry) { \
-    pool_put(pec->slaves[slave].mbx.message_pool_free, (entry)); \
+#define ec_mbx_return_free_send_buffer(pec, slave, entry) { \
+    pool_put(pec->slaves[slave].mbx.message_pool_send_free, (entry)); \
 }
+
+#define ec_mbx_return_free_recv_buffer(pec, slave, entry) { \
+    pool_put(pec->slaves[slave].mbx.message_pool_recv_free, (entry)); \
+}
+
 
 #if 0 
 {

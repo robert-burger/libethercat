@@ -162,7 +162,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     pthread_mutex_lock(&slv->mbx.lock);
 
     pool_entry_t *p_entry;
-    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
+    ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
 
     ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
@@ -188,7 +188,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_READ_RES) {
             ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
-            ec_mbx_return_free_buffer(pec, slave, p_entry);
+            ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
         }
 
@@ -199,7 +199,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             left_len -= read_len;
         }
 
-        ec_mbx_return_free_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
 
         if (/*(left_len < 0) ||*/ !read_buf->soe_hdr.incomplete) {
             ret = 0;
@@ -230,7 +230,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             slave, atn, idn, elements, buf, len, left_len, mbx_len);
 
     while (left_len) {
-        ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
+        ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
         ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
         // mailbox header
@@ -267,11 +267,11 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
             ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
-            ec_mbx_return_free_buffer(pec, slave, p_entry);
+            ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
         }
 
-        ec_mbx_return_free_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
         break;
     }
 

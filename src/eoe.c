@@ -268,7 +268,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     ec_log(10, __func__, "slave %2d: set ip parameter\n", slave);
 
     pool_entry_t *p_entry;
-    ec_mbx_get_free_buffer(pec, slave, p_entry, NULL, &slv->mbx.eoe.lock);
+    ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.eoe.lock);
     memset(p_entry->data, 0, p_entry->data_size);
 
     ec_eoe_set_ip_parameter_request_t *write_buf = (ec_eoe_set_ip_parameter_request_t *)(p_entry->data);
@@ -313,7 +313,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         ec_eoe_set_ip_parameter_response_t *read_buf = (ec_eoe_set_ip_parameter_response_t *)(p_entry->data);
 
         ret = read_buf->sip_hdr.result;
-        ec_mbx_return_free_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
         break;
     }
 
@@ -362,7 +362,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         ec_timer_t timeout;
         ec_timer_gettime(&timeout);
         timeout.sec += 10;
-        ec_mbx_get_free_buffer(pec, slave, p_entry, &timeout, &slv->mbx.eoe.lock);
+        ec_mbx_get_free_send_buffer(pec, slave, p_entry, &timeout, &slv->mbx.eoe.lock);
 
         // send sync callback
         p_entry->user_cb = ec_eoe_send_sync;
@@ -424,7 +424,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
                 slave, read_buf->eoe_hdr.fragment_number);
 
         // proceed with next EoE message until queue is empty
-        ec_mbx_return_free_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
         return ec_eoe_process_recv(pec, slave);
     }
 
@@ -436,6 +436,8 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     frame_offset += frag_len;
 
     if (!read_buf->eoe_hdr.last_fragment) {
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+
         // proceed with next fragment
         for (ec_eoe_wait(pec, slave, &p_entry); p_entry; ec_eoe_wait(pec, slave, &p_entry)) {
             ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
@@ -457,12 +459,13 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
                     pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                 }
 
+                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 p_eth_entry = NULL;
                 break;
             }
 
             if (p_entry) {        
-                ec_mbx_return_free_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             }
         }
     } else {
@@ -477,7 +480,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     }
         
     if (p_entry) {        
-        ec_mbx_return_free_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
     }
 
     return;
