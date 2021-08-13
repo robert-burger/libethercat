@@ -849,7 +849,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             // write state to slave
             if (transition == INIT_2_BOOT) {
                 wkc = ec_slave_set_state(pec, slave, EC_STATE_BOOT);
-                break;
+//                break;
             } else
                 wkc = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
                 
