@@ -674,6 +674,13 @@ typedef struct PACKED ec_sdo_desc_resp {
     ec_data_t           sdo_info_data;
 } PACKED ec_sdo_desc_resp_t;
 
+typedef struct PACKED ec_sdo_info_error_resp {
+    ec_mbx_header_t      mbx_hdr;
+    ec_coe_header_t      coe_hdr;
+    ec_sdoinfoheader_t  sdo_info_hdr;
+    ec_data_t           sdo_info_data;
+} PACKED ec_sdo_info_error_resp_t;
+
 // read coe sdo description
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ec_coe_sdo_desc_t *desc, uint32_t *error_code) {
@@ -712,7 +719,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
                 desc->name              = (char *)malloc(desc->name_len); // must be freed by caller
                 memcpy(desc->name, &read_buf->sdo_info_data.bdata[6], desc->name_len);
             } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
-                uint32_t ecode = *(uint32_t *)&read_buf->sdo_info_data;
+                uint32_t ecode = read_buf->sdo_info_data.ldata[0];
 
                 ec_log(1, __func__, "slave %2d: got sdo info error request on idx %#X, "
                         "error_code %X, message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
@@ -809,7 +816,9 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
                 memcpy(desc->data, read_buf->desc_data.bdata, desc->data_len);
                 ret = 0;
             } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
-                uint32_t ecode = *(uint32_t *)&read_buf->index;
+                ec_sdo_info_error_resp_t *read_buf_error = (void *)(p_entry->data);
+
+                uint32_t ecode = read_buf_error->sdo_info_data.ldata[0];
 
                 ec_log(1, __func__, "slave %2d: got sdo info error request on idx %#X, "
                         "error_code %X, message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
