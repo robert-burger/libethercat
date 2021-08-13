@@ -513,7 +513,8 @@ void ec_eoe_tun_handler(ec_t *pec) {
         FD_ZERO(&rd_set);
         FD_SET(pec->tun_fd, &rd_set);
 
-        ret = select(pec->tun_fd + 1, &rd_set, NULL, NULL, NULL);
+        struct timeval tv = {0, 100000};   // sleep for 100 ms
+        ret = select(pec->tun_fd + 1, &rd_set, NULL, NULL, &tv);
 
         if (ret < 0 && errno == EINTR){
             printf("select returned %d, errno %d\n", ret, errno);
