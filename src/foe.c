@@ -39,43 +39,43 @@
 #include <errno.h>
 
 //! FoE header
-typedef struct ec_foe_header {
+typedef struct PACKED ec_foe_header {
     uint8_t op_code;            //!< FoE op code
     uint8_t reserved;           //!< FoE reserved 
-} ec_foe_header_t;
+} PACKED ec_foe_header_t;
 
 //! read/write request
-typedef struct ec_foe_rw_request {
+typedef struct PACKED ec_foe_rw_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
     uint32_t        password;   //!< FoE password
     char            file_name[MAX_FILE_NAME_SIZE];
                                 //!< FoE filename to read/write
-} ec_foe_rw_request_t;
+} PACKED ec_foe_rw_request_t;
 
 //! data packet
-typedef struct ec_foe_data_request {
+typedef struct PACKED ec_foe_data_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
     uint32_t        packet_nr;  //!< FoE segmented packet number
     ec_data_t       data;       //!< FoE segmented packet data
-} ec_foe_data_request_t;
+} PACKED ec_foe_data_request_t;
 
 //! acknowledge data packet
-typedef struct ec_foe_ack_request {
+typedef struct PACKED ec_foe_ack_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
     uint32_t        packet_nr;  //!< FoE segmented packet number
-} ec_foe_ack_request_t;
+} PACKED ec_foe_ack_request_t;
 
 //! error request
-typedef struct ec_foe_error_request {
+typedef struct PACKED ec_foe_error_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
     uint32_t        error_code; //!< error code
     char            error_text[MAX_ERROR_TEXT_SIZE];
                                 //!< error text
-} ec_foe_error_request_t;
+} PACKED ec_foe_error_request_t;
 
 //! initialize FoE structure 
 /*!
@@ -221,6 +221,9 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         int packet_nr = read_buf_data->packet_nr;
         int read_data_length = read_buf_data->mbx_hdr.length;
     
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
+
         memset(p_entry->data, 0, p_entry->data_size);
         ec_foe_ack_request_t *write_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
 
@@ -249,12 +252,30 @@ exit:
     return wkc;
 }
 
+#include <stdio.h>
+
+#define MSG_BUF_LEN     256
+static char msg_buf[MSG_BUF_LEN];
+
+void ec_foe_print_msg(int level, const char *ctx, int slave, const char *msg, uint8_t *buf, size_t buflen) {
+    char *tmp = msg_buf;
+    size_t pos = 0;
+    size_t max_pos = min(MSG_BUF_LEN, buflen);
+    for (int u = 0; (u < max_pos) && ((MSG_BUF_LEN-pos) > 0); ++u) {
+        pos += snprintf(tmp + pos, MSG_BUF_LEN - pos, "%02X ", buf[u]);
+    }
+
+    ec_log(level, ctx, "slave %d: %s - %s\n", slave, msg, msg_buf);
+}
+
 // write file over foe
 int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         char file_name[MAX_FILE_NAME_SIZE], uint8_t *file_data, 
         ssize_t file_data_len, char **error_message) {
     int ret = 0;
     ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+
+    ec_log(10, __func__, "password: %08X\n", password);
 
     if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
         ec_log(10, __func__, "no FOE support on slave %d\n", slave);
@@ -301,6 +322,8 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
                 error_text[text_len] = '\0';
                 ec_log(10, __func__, "error_text: %s\n", error_text);
             }
+
+            ec_foe_print_msg(1, __func__, slave, "got message: ", (void *)read_buf_error, read_buf_ack->mbx_hdr.length + 6);
         } else
             ec_log(10, __func__, "got no ack on foe write request, got 0x%X\n", 
                     read_buf_ack->foe_hdr.op_code);
@@ -348,9 +371,26 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
             ec_foe_ack_request_t *read_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
 
             if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
-                ec_log(10, __func__,
-                        "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %d, data_len %d, packet_nr %d\n", 
-                        read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
+                if (read_buf_ack->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
+                    ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry->data);
+
+                    ec_log(10, __func__, "got foe error code 0x%X\n", read_buf_error->error_code);
+
+                    ssize_t text_len = (read_buf_ack->mbx_hdr.length - 6);
+                    if (text_len > 0) {
+                        char *error_text = malloc(text_len + 1);
+                        strncpy(error_text, read_buf_error->error_text, text_len);
+                        error_text[text_len] = '\0';
+                        ec_log(10, __func__, "error_text: %s\n", error_text);
+                    }
+            
+                    ec_foe_print_msg(1, __func__, slave, "got message: ", (void *)read_buf_error, read_buf_ack->mbx_hdr.length + 6);
+                } else {
+                    ec_log(10, __func__,
+                            "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %d, data_len %d, packet_nr %d\n", 
+                            read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
+                }
+
                 ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 goto exit;
             }

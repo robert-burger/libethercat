@@ -427,13 +427,14 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                     pool_get(pec->slaves[slave].mbx.message_pool_recv_free, &p_entry, NULL);
                     if (!p_entry) {
                         ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
-                        break;
+                        exit(-1);
+                        //break;
                     }
                     memset(p_entry->data, 0, p_entry->data_size);
 
                     if (ec_mbx_receive(pec, slave, p_entry->data, 
                                 min(p_entry->data_size, slv->sm[MAILBOX_READ].len), 0)) {
-                        ec_log(100, __func__, "slave %2d: got one mailbox message\n", slave);
+                        ec_log(10, __func__, "slave %2d: got one mailbox message\n", slave);
 
                         ec_mbx_header_t *hdr = (ec_mbx_header_t *)p_entry->data;
                         switch (hdr->mbxtype) {
@@ -474,7 +475,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                 pool_get(slv->mbx.message_pool_send_queued, &p_entry, NULL);
 
                 if (p_entry) {
-                    ec_log(100, __func__, "slave %2d: got mailbox buffer to write\n", slave);
+                    ec_log(10, __func__, "slave %2d: got mailbox buffer to write\n", slave);
                     int retry_cnt = 10;
 
                     do {
