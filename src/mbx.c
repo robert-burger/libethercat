@@ -410,7 +410,11 @@ void ec_mbx_handler(ec_t *pec, int slave) {
         if (!flags && (ret != 0)) {
             if ((errno == ETIMEDOUT)) {
                 // check receive mailbox on timeout if PREOP or lower
-                flags = MBX_HANDLER_FLAGS_RECV | MBX_HANDLER_FLAGS_SEND;
+                flags |= MBX_HANDLER_FLAGS_SEND;
+
+                if (slv->act_state != EC_STATE_OP) {
+                    flags |= MBX_HANDLER_FLAGS_RECV;
+                }
             } else {
                 continue;
             }
