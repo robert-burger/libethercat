@@ -91,6 +91,7 @@ int ec_create_pd_groups(ec_t *pec, int pd_group_cnt) {
         pec->pd_groups[i].pdout_len = 0;
         pec->pd_groups[i].pdin_len  = 0;
         pec->pd_groups[i].use_lrw   = 1;
+        pec->pd_groups[i].recv_missed = 0;
     }
 
     return 0;
@@ -561,9 +562,13 @@ void ec_scan(ec_t *pec) {
     ec_bwr(pec, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
 
     if (pec->slaves) {
+        int cnt = pec->slave_cnt;
+        pec->slave_cnt = 0;
+
         // free resources
-        for (i = 0; i < pec->slave_cnt; ++i)
+        for (i = 0; i < cnt; ++i) {
             ec_slave_free(pec, i);
+        }
 
         free_resource(pec->slaves);
     }
@@ -755,6 +760,8 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case OP_2_PREOP:
         case OP_2_SAFEOP:
             ec_state_transition_loop(pec, EC_STATE_SAFEOP, 0);
+    
+            pec->master_state = EC_STATE_SAFEOP;
 
             if (state == EC_STATE_SAFEOP)
                 break;
@@ -775,11 +782,14 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             pec->dc.rtc_count       = 0;
             pec->dc.act_diff        = 0;
 
+            pec->master_state = EC_STATE_PREOP;
+
             if (state == EC_STATE_PREOP)
                 break;
         case PREOP_2_BOOT:
         case PREOP_2_INIT:
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
+            pec->master_state = EC_STATE_INIT;
             ec_scan(pec);
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
 
@@ -839,6 +849,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
     pec->pd_groups          = NULL;
     pec->tx_sync            = 1;
     pec->threaded_startup   = 0;
+    pec->consecutive_max_miss   = 10;
     pec->state_transition_pending = 0;
 
     // init values for distributed clocks
@@ -896,8 +907,12 @@ int ec_close(ec_t *pec) {
 
     if (pec->slaves) {
         int slave;
-        for (slave = 0; slave < pec->slave_cnt; ++slave)
+        int cnt = pec->slave_cnt;
+        pec->slave_cnt = 0;
+
+        for (slave = 0; slave < cnt; ++slave) {
             ec_slave_free(pec, slave);
+        }
 
         free(pec->slaves);
     }
@@ -1129,11 +1144,22 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
     struct timespec ts = { timeout->sec, timeout->nsec };
     ret = sem_timedwait(&pd->p_idx->waiter, &ts);
     if (ret == -1) {
-        ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                "sem_timedwait group id %d: %s\n", group, strerror(errno));
+        if (++pd->recv_missed < pec->consecutive_max_miss) {
+            ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+                "sem_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
+                pd->recv_missed, pec->consecutive_max_miss);
+        } else {
+            ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+                    "too much missed receive frames, falling back to INIT!\n");
+            ec_set_state(pec, EC_STATE_INIT);
+        }
+    
         goto local_exit;
     }
-        
+    
+    // reset consecutive missed counter
+    pd->recv_missed = 0;
+
     wkc = ec_datagram_wkc(p_dg);
     if (pd->pd) {
         if (pd->use_lrw) {

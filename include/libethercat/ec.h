@@ -98,6 +98,8 @@ typedef struct ec_pd_group {
                                      * reads and writes data by 3.
                                      */
     
+    int recv_missed;                //!< missed continues ethercat frames 
+
     pool_entry_t *p_entry;          //!< EtherCAT datagram from pool
     idx_entry_t *p_idx;             //!< EtherCAT datagram index from pool
 } ec_pd_group_t;
@@ -165,6 +167,8 @@ typedef struct ec {
 
     int threaded_startup;           //!< running state machine in threads for slave
     
+    int consecutive_max_miss;       //!< max missed counter for receive frames before falling back to init
+
     pool_entry_t *p_de_state;       //!< EtherCAT datagram from pool for ec_state read
     idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
 } ec_t;
