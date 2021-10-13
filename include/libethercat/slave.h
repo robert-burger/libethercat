@@ -326,6 +326,11 @@ typedef struct ec_slave {
                                  */
 } ec_slave_t;
 
+
+#define ec_slave_ptr(ptr, pec, slave) \
+    ec_slave_t *(ptr) = (ec_slave_t *)&pec->slaves[slave]; \
+    assert((ptr) != NULL);
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -23,6 +23,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/ec.h"
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
@@ -32,6 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 static const char *sdo_info_error_0x05030000 = "Toggle bit not changed";
 static const char *sdo_info_error_0x05040000 = "SDO protocol timeout";
@@ -224,7 +227,10 @@ void ec_coe_print_msg(int level, const char *ctx, int slave, const char *msg, ui
  *                          (usually the n'th slave attached).
  */
 void ec_coe_init(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     pool_open(&slv->mbx.coe.recv_pool, 0, 1518);
     pthread_mutex_init(&slv->mbx.coe.lock, NULL);
                 
@@ -240,7 +246,10 @@ void ec_coe_init(ec_t *pec, uint16_t slave) {
  *                          (usually the n'th slave attached).
  */
 void ec_coe_deinit(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     
     pthread_mutex_destroy(&slv->mbx.coe.lock);
     pool_close(slv->mbx.coe.recv_pool);
@@ -257,7 +266,11 @@ void ec_coe_deinit(ec_t *pec, uint16_t slave) {
  *                      mailbox message from slave.
  */
 void ec_coe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(pp_entry != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     ec_mbx_sched_read(pec, slave);
 
@@ -278,7 +291,11 @@ void ec_coe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  *                      mailbox message from slave.
  */
 void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(p_entry != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     ec_coe_header_t *coe_hdr = (ec_coe_header_t *)(p_entry->data);
 
     if (coe_hdr->service == EC_COE_EMERGENCY) {
@@ -292,9 +309,14 @@ void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
         uint32_t *abort_code) 
-{
+{ 
+    assert(pec != NULL);
+    assert(buf != NULL);
+    assert(len != NULL);
+    assert(slave < pec->slave_cnt);
+
     int ret = -1;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
     // default error return
     (*abort_code) = 0;
@@ -385,8 +407,12 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         uint8_t sub_index, int complete, uint8_t *buf, size_t len,
         uint32_t *abort_code) 
 {
+    assert(pec != NULL);
+    assert(buf != NULL);
+    assert(slave < pec->slave_cnt);
+
     int ret = 0;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
     // default error return
     (*abort_code) = 0;
@@ -593,8 +619,13 @@ typedef struct PACKED ec_sdo_odlist_resp {
 
 // read coe object dictionary list
 int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
+    assert(pec != NULL);
+    assert(buf != NULL);
+    assert(len != NULL);
+    assert(slave < pec->slave_cnt);
+
     int ret = 0;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
@@ -684,8 +715,12 @@ typedef struct PACKED ec_sdo_info_error_resp {
 // read coe sdo description
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         ec_coe_sdo_desc_t *desc, uint32_t *error_code) {
+    assert(pec != NULL);
+    assert(desc != NULL);
+    assert(slave < pec->slave_cnt);
+
     int ret = 0;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
     
@@ -774,9 +809,14 @@ typedef struct PACKED ec_sdo_entry_desc_resp {
 // read coe sdo entry description
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
         uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
-        uint32_t *error_code) {
+        uint32_t *error_code) 
+{
+    assert(pec != NULL);
+    assert(desc != NULL);
+    assert(slave < pec->slave_cnt);
+
     int ret = EC_ERROR_MAILBOX_READ;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
     
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
@@ -849,10 +889,13 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 }
 
 int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     int ret = 0;
     uint8_t *buf = NULL;
     uint16_t start_adr; 
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
     if (slv->sm[0].adr > slv->sm[1].adr)
         start_adr = slv->sm[0].adr + slv->sm[0].len;
@@ -969,7 +1012,11 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
  * \param slave slave number
  */
 void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(p_entry != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     // get length and queue this message    
     ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);

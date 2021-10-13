@@ -27,10 +27,15 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/mbx.h"
 #include "libethercat/ec.h"
 #include "libethercat/timer.h"
 
+#include "internals.h"
+
+#include <assert.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
@@ -67,7 +72,10 @@ void *ec_mbx_handler_thread(void *arg) {
  *                          (usually the n'th slave attached).
  */
 void ec_mbx_init(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = &pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     if (slv->mbx.handler_running) {
         return;
@@ -104,7 +112,10 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
  *                          (usually the n'th slave attached).
  */
 void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = &pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     if (!slv->mbx.handler_running) {
         return;
@@ -145,6 +156,9 @@ int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     uint16_t wkc = 0;
     uint8_t sm_state = 0;
 
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     ec_timer_t timer;
     ec_timer_init(&timer, nsec);
 
@@ -177,6 +191,9 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     uint16_t wkc = 0;
     uint8_t sm_state = 0;
 
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     ec_timer_t timer;
     ec_timer_init(&timer, nsec);
 
@@ -206,7 +223,11 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
  */
 int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
     uint16_t wkc = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
+
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
 
     ec_timer_t timer;
     ec_timer_init(&timer, nsec);
@@ -247,8 +268,12 @@ int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_
  */
 int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
     uint16_t wkc = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
+    
     ec_timer_t timer;
     ec_timer_init(&timer, EC_DEFAULT_TIMEOUT_MBX);
 
@@ -329,7 +354,11 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
 void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
-    ec_slave_t *slv = &pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(p_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
 
     pool_put_head(slv->mbx.message_pool_send_queued, p_entry);
     
@@ -350,7 +379,11 @@ void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
 void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
-    ec_slave_t *slv = &pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(p_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
 
     pool_put(slv->mbx.message_pool_send_queued, p_entry);
     
@@ -370,7 +403,10 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
  *                      (usually the n'th slave attached).
  */
 void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = &pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     
     pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
@@ -389,7 +425,11 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
  */
 void ec_mbx_handler(ec_t *pec, int slave) {
     int ret = 0, wkc;
-    ec_slave_t *slv = &pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     ec_timer_t timeout;
     pool_entry_t *p_entry = NULL;
 

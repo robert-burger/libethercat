@@ -106,6 +106,8 @@ typedef struct ec_pd_group {
 
 //! ethercat master structure
 typedef struct ec {
+    pthread_mutex_t ec_lock;        //!< lock ec struct 
+
     hw_t *phw;                      //!< pointer to hardware interface
     int tx_sync;                    //!< Synchronous call to send frames.
                                     /*!<
@@ -172,6 +174,7 @@ typedef struct ec {
     pool_entry_t *p_de_state;       //!< EtherCAT datagram from pool for ec_state read
     idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
 } ec_t;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -323,6 +326,13 @@ int ec_send_brd_ec_state(ec_t *pec);
  * \return 0 on success
  */
 int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout);
+
+//! \brief Return current slave count.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure.
+ * \return cnt current slave count.
+ */
+int ec_get_slave_count(ec_t *pec);
 
 #ifdef __cplusplus
 };

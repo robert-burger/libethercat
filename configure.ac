@@ -36,6 +36,7 @@ AC_CHECK_LIB([rt], [sem_init])
 # AX_GCC_ARCHFLAG([PORTABLE?], [], [])
 
 # Checks for header files.
+AC_HEADER_ASSERT
 AC_CHECK_HEADERS([arpa/inet.h net/if.h net/bpf.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

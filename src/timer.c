@@ -29,7 +29,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/timer.h"
+#include <assert.h>
 #include <stdio.h>
 
 #define timer_cmp(a, b, CMP)          \
@@ -64,6 +67,8 @@ void ec_sleep(uint64_t nsec) {
 
 //! gets timer 
 int ec_timer_gettime(ec_timer_t *timer) {
+    assert(timer != NULL);
+
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         perror("clock_gettime");
@@ -90,6 +95,8 @@ void ec_timer_init(ec_timer_t *timer, uint64_t timeout) {
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
         perror("clock_gettime");
 
+    assert(timer != NULL);
+
     ec_timer_t a, b;
     a.sec = ts.tv_sec;
     a.nsec = ts.tv_nsec;
@@ -104,6 +111,8 @@ void ec_timer_init(ec_timer_t *timer, uint64_t timeout) {
 int ec_timer_expired(ec_timer_t *timer) {
     ec_timer_t act = { 0, 0 };
     ec_timer_gettime(&act);    
+
+    assert(timer != NULL);
 
     return !timer_cmp(&act, timer, <);
 }

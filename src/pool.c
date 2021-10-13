@@ -28,9 +28,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/pool.h"
 #include "libethercat/common.h"
+#include "libethercat/ec.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <time.h>
 #include <string.h>
@@ -46,6 +50,8 @@
  * \return 0 or negative error code
  */
 int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
+    assert(pp != NULL);
+
     (*pp) = (pool_t *)malloc(sizeof(pool_t));
     if (!(*pp)) {
         return -ENOMEM;
@@ -81,9 +87,9 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
  * \return 0 or negative error code
  */
 int pool_close(pool_t *pp) {
-    if (!pp) {
-        return -EINVAL;
-    }
+    ec_log(10, __func__, "pool %p\n", pp);
+
+    assert(pp != NULL);
     
     pthread_mutex_lock(&pp->_pool_lock);
 
@@ -91,6 +97,7 @@ int pool_close(pool_t *pp) {
     while ((entry = TAILQ_FIRST(&pp->avail)) != NULL) {
         TAILQ_REMOVE(&pp->avail, entry, qh);
         if (entry->data) { free(entry->data); entry->data = NULL; }
+        ec_log(10, __func__, "  entry %p\n", entry);
         free(entry);
     }
     
@@ -114,9 +121,9 @@ int pool_close(pool_t *pp) {
  */
 int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
     int ret = ENODATA;
-    if (!pp || !entry) {
-        return (ret = EINVAL);
-    }
+
+    assert(pp != NULL);
+    assert(entry != NULL);
 
     struct timespec ts;
 
@@ -167,9 +174,8 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
  * \return 0 or negative error code
  */
 int pool_peek(pool_t *pp, pool_entry_t **entry) {
-    if (!pp || !entry) {
-        return EINVAL;
-    }
+    assert(pp != NULL);
+    assert(entry != NULL);
     
     pthread_mutex_lock(&pp->_pool_lock);
     *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
@@ -186,9 +192,8 @@ int pool_peek(pool_t *pp, pool_entry_t **entry) {
  * \return 0 or negative error code
  */
 int pool_put(pool_t *pp, pool_entry_t *entry) {
-    if (!pp || !entry) {
-        return -EINVAL;
-    }
+    assert(pp != NULL);
+    assert(entry != NULL);
     
     pthread_mutex_lock(&pp->_pool_lock);
 
@@ -208,9 +213,8 @@ int pool_put(pool_t *pp, pool_entry_t *entry) {
  * \return 0 or negative error code
  */
 int pool_put_head(pool_t *pp, pool_entry_t *entry) {
-    if (!pp || !entry) {
-        return -EINVAL;
-    }
+    assert(pp != NULL);
+    assert(entry != NULL);
     
     pthread_mutex_lock(&pp->_pool_lock);
 

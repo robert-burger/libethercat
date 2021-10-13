@@ -26,6 +26,8 @@
  * along with robotkernel.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
 #include "libethercat/coe.h"
@@ -36,6 +38,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 static const char transition_string_boot_to_init[]     = "BOOT_2_INIT";
 static const char transition_string_init_to_boot[]     = "INIT_2_BOOT";
@@ -105,7 +108,8 @@ static const char *get_transition_string(ec_state_transition_t transition) {
 // allocate init command structure
 static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) {
+        char *data, size_t datalen) 
+{
     ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(COE_INIT_CMD_SIZE);
 
     if (cmd == NULL) {
@@ -136,21 +140,24 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
 
 // freeing init command strucuture
 void ec_slave_mailbox_coe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
-    if (cmd) {
-        if (cmd->type == EC_MBX_COE) {
-            ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
+    assert(cmd != NULL);
+        
+    if (cmd->type == EC_MBX_COE) {
+        ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
 
-            if (coe->data) { free(coe->data); }
-        }
-
-        free (cmd);
+        if (coe->data) { free(coe->data); }
     }
+
+    free (cmd);
 }
 
 // add master init command
 void ec_slave_add_coe_init_cmd(ec_t *pec, uint16_t slave,
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) {
+        char *data, size_t datalen) 
+{
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
 
     ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_coe_init_cmd_alloc(
             transition, id, si_el, ca_atn, data, datalen);
@@ -176,9 +183,10 @@ void ec_slave_add_coe_init_cmd(ec_t *pec, uint16_t slave,
 // allocate init command structure
 static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) {
+        char *data, size_t datalen) 
+{
     ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(SOE_INIT_CMD_SIZE);
-
+    
     if (cmd == NULL) {
         ec_log(10, __func__, "malloc error %s\n", strerror(errno));
         return NULL;
@@ -207,21 +215,24 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
 
 // freeing init command strucuture
 void ec_slave_mailbox_soe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
-    if (cmd) {
-        if (cmd->type == EC_MBX_SOE) {
-            ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
+    assert(cmd != NULL);
+    
+    if (cmd->type == EC_MBX_SOE) {
+        ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
 
-            if (soe->data) { free(soe->data); }
-        }
-
-        free (cmd);
+        if (soe->data) { free(soe->data); }
     }
+
+    free (cmd);
 }
 
 // add master init command
 void ec_slave_add_soe_init_cmd(ec_t *pec, uint16_t slave,
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) {
+        char *data, size_t datalen) 
+{
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
 
     ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_soe_init_cmd_alloc(
             transition, id, si_el, ca_atn, data, datalen);
@@ -246,6 +257,8 @@ void ec_slave_add_soe_init_cmd(ec_t *pec, uint16_t slave,
 
 // freeing init command strucuture
 void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
+    assert(cmd != NULL);
+
     switch(cmd->type) {
         case EC_MBX_COE:
             ec_slave_mailbox_coe_init_cmd_free(cmd);
@@ -262,7 +275,11 @@ void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
 // Set Distributed Clocks config to slave
 void ec_slave_set_dc_config(struct ec *pec, uint16_t slave, 
         int use_dc, int type, uint32_t cycle_time_0, 
-        uint32_t cycle_time_1, uint32_t cycle_shift) {
+        uint32_t cycle_time_1, uint32_t cycle_shift) 
+{
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     pec->slaves[slave].dc.use_dc        = use_dc;
     pec->slaves[slave].dc.type          = type;
     pec->slaves[slave].dc.cycle_time_0  = cycle_time_0;
@@ -513,6 +530,10 @@ const char *ecat_state_2_string(int state) {
 // Set EtherCAT state on slave 
 int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc = 0, act_state, value;
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     ec_fpwr(pec, pec->slaves[slave].fixed_address, 
             EC_REG_ALCTL, &state, sizeof(state), &wkc); 
 
@@ -569,9 +590,14 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
 
 // get ethercat state from slave 
 int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, 
-        uint16_t *alstatcode) {
+        uint16_t *alstatcode) 
+{
     uint16_t wkc = 0, value = 0;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     ec_fprd(pec, pec->slaves[slave].fixed_address, 
             EC_REG_ALSTAT, &value, sizeof(value), &wkc);
 
@@ -592,7 +618,10 @@ int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state,
 
 // generate pd mapping
 int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     if (slv->sm_set_by_user)
         return 0; // we're already done
@@ -658,10 +687,15 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
 
 // prepare state transition on ethercat slave
 int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, 
-        ec_state_t state) {
+        ec_state_t state) 
+{
     uint16_t wkc;
     ec_state_t act_state = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     // check error state
     wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
@@ -719,7 +753,10 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
 
 // free slave resources
 void ec_slave_free(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = &pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     ec_mbx_deinit(pec, slave);
 
@@ -763,7 +800,11 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
 int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc;
     ec_state_t act_state = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
 #define ec_reg_read(reg, buf, buflen) {                                 \
     uint16_t wkc;                                                       \
@@ -1121,7 +1162,10 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
         uint8_t *mac, uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
         uint8_t *dns, char *dns_name) {
-    ec_slave_t *slv = &pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     slv->eoe.use_eoe = 1;
 

@@ -45,6 +45,7 @@
 
 #include <pthread.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
@@ -164,6 +165,8 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
                 "not allowed to open a raw socket\n");
     }
 #endif
+
+    assert(pphw != NULL);
 
     (*pphw) = (hw_t *) malloc(sizeof(hw_t));
     if (!(*pphw))
@@ -367,6 +370,8 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
  * \return 0 or negative error code
  */
 int hw_close(hw_t *phw) {
+    assert(phw != NULL);
+
     // stop receiver thread
     phw->rxthreadrunning = 0;
     pthread_join(phw->rxthread, NULL);
@@ -382,6 +387,8 @@ int hw_close(hw_t *phw) {
 }
 
 void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
+    assert(phw != NULL);
+
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
         ec_log(1, "RX_THREAD",
@@ -424,6 +431,8 @@ void *hw_rx_thread(void *arg) {
     ec_frame_t *pframe = (ec_frame_t *) recv_frame;
     struct sched_param param;
     int policy;
+
+    assert(phw != NULL);
 
     // thread settings
     if (pthread_getschedparam(pthread_self(), &policy, &param) != 0)
@@ -541,6 +550,8 @@ struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
     struct tpacket_hdr *header;
     struct pollfd pollset;
 
+    assert(phw != NULL);
+
     header = (void *)phw->tx_ring + (phw->tx_ring_offset * getpagesize());
 
     while (header->tp_status != TP_STATUS_AVAILABLE) {
@@ -572,6 +583,8 @@ int hw_tx(hw_t *phw) {
     static uint8_t send_frame[ETH_FRAME_LEN];
     struct tpacket_hdr *header = NULL;
     ec_frame_t *pframe;
+
+    assert(phw != NULL);
 
     pthread_mutex_lock(&phw->hw_lock);
 

@@ -29,7 +29,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <string.h>
+#include <assert.h>
 
 #include "libethercat/regs.h"
 #include "libethercat/datagram.h"
@@ -40,6 +43,9 @@
  */
 int ec_frame_init(ec_frame_t *frame) {
     int i;
+
+    assert(frame != NULL);
+
     memset(frame, 0, 1518);
     for (i = 0; i < 6; ++i) {
         frame->mac_dest[i] = 0xFF;      
@@ -65,6 +71,8 @@ int ec_frame_init(ec_frame_t *frame) {
  */
 int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint16_t adp, uint16_t ado, uint8_t *payload, size_t payload_len) {
+    assert(frame != NULL);
+    assert(payload != NULL);
 
     // get address to first datagram
     ec_datagram_t *d = (ec_datagram_t *)((uint8_t *)frame + 
@@ -99,27 +107,10 @@ int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
  */
 int ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint32_t adr, uint8_t *payload, size_t payload_len) {
+    assert(frame != NULL);
+    assert(payload != NULL);
+
     return ec_frame_add_datagram_phys(frame, cmd, idx, adr & 0x0000FFFF, 
             (adr & 0xFFFF0000) >> 16, payload, payload_len);
-}
-
-//! fill datagram with aprd datagram
-/*!
- * \param pdg pointer to datagram
- * \param adp auto inc address
- * \param ado physical mem address
- * \param idx datagram index
- * \param data pointer to data
- * \param datalen length of data
- */
-void ec_datagram_fill_aprd(ec_datagram_t *pdg, uint16_t adp, uint16_t ado, 
-        uint8_t idx, uint8_t *data, size_t datalen) {
-    memset(pdg, 0, sizeof(ec_datagram_t));
-    pdg->cmd = EC_CMD_APRD;
-    pdg->idx = idx;
-    pdg->adp = adp;
-    pdg->ado = ado;
-    pdg->len = datalen;
-    pdg->irq = 0;
 }
 

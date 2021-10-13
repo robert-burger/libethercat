@@ -75,18 +75,6 @@ typedef struct __attribute__((__packed__)) ec_datagram {
 extern "C" {
 #endif
 
-//! fill datagram with aprd datagram
-/*!
- * \param pdg pointer to datagram
- * \param adp auto inc address
- * \param ado physical mem address
- * \param idx datagram index
- * \param data pointer to data
- * \param datalen length of data
- */
-void ec_datagram_fill_aprd(ec_datagram_t *pdg, uint16_t adp, uint16_t ado, 
-        uint8_t idx, uint8_t *data, size_t datalen);
-
 //! initialize empty frame
 /*/
  * \param frame pointer to frame

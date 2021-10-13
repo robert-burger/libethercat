@@ -23,12 +23,15 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"
@@ -36,6 +39,8 @@
 #include "libethercat/coe.h"
 #include "libethercat/dc.h"
 #include "libethercat/eeprom.h"
+
+#include "internals.h"
 
 #define DC_DCSOFF_SAMPLES 1000
 
@@ -78,6 +83,8 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
  * \return 0 on success
  */
 int ec_create_pd_groups(ec_t *pec, int pd_group_cnt) {
+    assert(pec != NULL);
+
     int i;
     ec_destroy_pd_groups(pec);
 
@@ -103,6 +110,8 @@ int ec_create_pd_groups(ec_t *pec, int pd_group_cnt) {
  * \return 0 on success
  */
 int ec_destroy_pd_groups(ec_t *pec) {
+    assert(pec != NULL);
+
     int i;
 
     if (pec->pd_groups) {
@@ -140,6 +149,9 @@ const char *get_state_string(ec_state_t state) {
 }
 
 void ec_create_logical_mapping_lrw(ec_t *pec, int group) {
+    assert(pec != NULL);
+    assert(group < pec->pd_group_cnt);
+
     int i, k;
     ec_pd_group_t *pd = &pec->pd_groups[group];
     pd->pdout_len = pd->pdin_len = 0;
@@ -303,6 +315,9 @@ void ec_create_logical_mapping_lrw(ec_t *pec, int group) {
 }
 
 void ec_create_logical_mapping(ec_t *pec, int group) {
+    assert(pec != NULL);
+    assert(group < pec->pd_group_cnt);
+
     int i, k;
     ec_pd_group_t *pd = &pec->pd_groups[group];
     pd->pdout_len = pd->pdin_len = 0;
@@ -474,6 +489,8 @@ void *set_state_wrapper(void *arg) {
  * \param state new state to set
  */
 void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
+    assert(pec != NULL);
+
     if (pec->threaded_startup) {
         for (int slave = 0; slave < pec->slave_cnt; ++slave) {
             if (pec->slaves[slave].assigned_pd_group == -1)
@@ -517,6 +534,8 @@ void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
  * \param with_group if set, only slaves with assigned group are processed
  */
 void ec_state_transition_loop(ec_t *pec, ec_state_t state, uint8_t with_group) {
+    assert(pec != NULL);
+
     if (pec->threaded_startup) {
         for (int slave = 0; slave < pec->slave_cnt; ++slave) {
             if (with_group && (pec->slaves[slave].assigned_pd_group == -1))
@@ -556,6 +575,8 @@ void ec_state_transition_loop(ec_t *pec, ec_state_t state, uint8_t with_group) {
  * \param pec ethercat master pointer
  */
 void ec_scan(ec_t *pec) {
+    assert(pec != NULL);
+
     uint16_t fixed = 1000, wkc = 0, val = 0, i;
 
     ec_state_t init_state = EC_STATE_INIT | EC_STATE_RESET;
@@ -589,7 +610,7 @@ void ec_scan(ec_t *pec) {
         if (wkc == 0)
             break;  // break here, cause there seems to be no more slave
 
-        ec_log(100, "EC_OPEN", "slave %2d: auto inc %3d, fixed %d\n", 
+        ec_log(100, __func__, "slave %2d: auto inc %3d, fixed %d\n", 
                 i, auto_inc, fixed);
 
         pec->slaves[i].assigned_pd_group = -1;
@@ -607,7 +628,7 @@ void ec_scan(ec_t *pec) {
         ec_apwr(pec, auto_inc, EC_REG_STADR, (uint8_t *)&fixed, 
                 sizeof(fixed), &wkc); 
         if (wkc == 0)
-            ec_log(1, "EC_OPEN", "slave %2d: error writing fixed "
+            ec_log(1, __func__, "slave %2d: error writing fixed "
                     "address %d\n", i, fixed);
 
         // set eeprom to pdi, some slaves need this
@@ -619,10 +640,10 @@ void ec_scan(ec_t *pec) {
         fixed++;
     }
 
-    ec_log(10, "EC_OPEN", "found %d ethercat slaves\n", i);
+    ec_log(10, __func__, "found %d ethercat slaves\n", i);
 
     for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-        ec_slave_t *slv = &pec->slaves[slave]; 
+        ec_slave_ptr(slv, pec, slave); 
         slv->link_cnt = 0;
         slv->active_ports = 0;
 
@@ -670,7 +691,7 @@ void ec_scan(ec_t *pec) {
             while (tmp_slave >= 0);
         }
 
-        ec_log(100, "EC_OPEN", "slave %2d has parent %d\n", 
+        ec_log(100, __func__, "slave %2d has parent %d\n", 
                 slave, slv->parent);
     }
 }
@@ -682,7 +703,11 @@ void ec_scan(ec_t *pec) {
  * \return 0 on success
  */
 int ec_set_state(ec_t *pec, ec_state_t state) {
-    ec_log(10, "SET MASTER STATE", "switch to from %s to %s\n", 
+    assert(pec != NULL);
+
+    pthread_mutex_lock(&pec->ec_lock);
+
+    ec_log(10, __func__, "switch to from %s to %s\n", 
             get_state_string(pec->master_state), get_state_string(state));
 
     pec->state_transition_pending = 1;
@@ -759,6 +784,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case OP_2_INIT:
         case OP_2_PREOP:
         case OP_2_SAFEOP:
+            ec_log(10, __func__, "switching to SAFEOP\n");
             ec_state_transition_loop(pec, EC_STATE_SAFEOP, 0);
     
             pec->master_state = EC_STATE_SAFEOP;
@@ -768,6 +794,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case SAFEOP_2_BOOT:
         case SAFEOP_2_INIT:
         case SAFEOP_2_PREOP:
+            ec_log(10, __func__, "switching to PREOP\n");
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
 
             // reset dc
@@ -788,8 +815,10 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                 break;
         case PREOP_2_BOOT:
         case PREOP_2_INIT:
+            ec_log(10, __func__, "switching to INIT\n");
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             pec->master_state = EC_STATE_INIT;
+            ec_log(10, __func__, "doing rescan\n");
             ec_scan(pec);
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
 
@@ -805,6 +834,8 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         
     pec->master_state = state;
     pec->state_transition_pending = 0;
+
+    pthread_mutex_unlock(&pec->ec_lock);
 
     return pec->master_state;
 }
@@ -832,6 +863,9 @@ void *ec_tx_thread(void *arg) {
  */
 int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
         int eeprom_log) {
+    assert(ppec != NULL);
+    assert(ifname != NULL);
+
     //int i;
     ec_t *pec = malloc(sizeof(ec_t)); 
     (*ppec) = pec;
@@ -896,15 +930,24 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask,
  * \return 0 on success 
  */
 int ec_close(ec_t *pec) {
+    assert(pec != NULL);
+
+    ec_log(10, __func__, "detroying tun device...\n");
+
     ec_eoe_destroy_tun(pec);
 
-    ec_async_message_pool_destroy(pec->async_loop);
-    hw_close(pec->phw);
-    pool_close(pec->pool);
+    ec_log(10, __func__, "destroying async message pool\n");
+    if (pec->async_loop) { ec_async_message_pool_destroy(pec->async_loop);}
+    ec_log(10, __func__, "closing hardware handle\n");
+    if (pec->phw) { hw_close(pec->phw);}
+    ec_log(10, __func__, "freeing frame pool\n");
+    if (pec->pool) { pool_close(pec->pool); }
 
+    ec_log(10, __func__, "destroying pd_groups\n");
     ec_index_deinit(&pec->idx_q);
     ec_destroy_pd_groups(pec);
 
+    ec_log(10, __func__, "destroying slaves\n");
     if (pec->slaves) {
         int slave;
         int cnt = pec->slave_cnt;
@@ -917,8 +960,10 @@ int ec_close(ec_t *pec) {
         free(pec->slaves);
     }
 
+    ec_log(10, __func__, "freeing master instance\n");
     free(pec);
 
+    ec_log(10, __func__, "all done!\n");
     return 0;
 }
 
@@ -940,6 +985,9 @@ static void cb_block(void *user_arg, struct pool_entry *p) {
  */
 int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr, 
         uint8_t *data, size_t datalen, uint16_t *wkc) {
+    assert(pec != NULL);
+    assert(data != NULL);
+
     pool_entry_t *p_entry;
     ec_datagram_t *p_dg;
     idx_entry_t *p_idx;
@@ -1015,6 +1063,9 @@ static void cb_no_reply(void *user_arg, struct pool_entry *p) {
  */
 int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr, 
         uint8_t *data, size_t datalen) {
+    assert(pec != NULL);
+    assert(data != NULL);
+
     pool_entry_t *p_entry;
     ec_datagram_t *p_dg;
     idx_entry_t *p_idx;
@@ -1065,6 +1116,8 @@ int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr,
  * \return 0 on success
  */
 int ec_send_process_data_group(ec_t *pec, int group) {
+    assert(pec != NULL);
+
     ec_pd_group_t *pd = &pec->pd_groups[group];
     ec_datagram_t *p_dg;
     unsigned pd_len = 0;
@@ -1124,6 +1177,9 @@ int ec_send_process_data_group(ec_t *pec, int group) {
  * \return 0 on success
  */
 int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
+    assert(pec != NULL);
+    assert(timeout != NULL);
+
     static int wkc_mismatch_cnt = 0;
     int ret = 0;
     ec_datagram_t *p_dg;
@@ -1187,7 +1243,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
     }
 
     for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-        ec_slave_t *slv = &pec->slaves[slave];
+        ec_slave_ptr(slv, pec, slave);
         if (slv->assigned_pd_group != group) { continue; }
 
         if (slv->eeprom.mbx_supported && slv->mbx.sm_state) {
@@ -1216,6 +1272,8 @@ pthread_mutex_t send_dc_lock = PTHREAD_MUTEX_INITIALIZER;
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
+    assert(pec != NULL);
+
     ec_datagram_t *p_dg = NULL;
 
     if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
@@ -1313,6 +1371,9 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
  * \return 0 on success
  */
 int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
+    assert(pec != NULL);
+    assert(timeout != NULL);
+
     uint16_t wkc; 
     ec_datagram_t *p_dg = NULL;
 
@@ -1465,6 +1526,8 @@ dc_exit:
  * \return 0 on success
  */
 int ec_send_brd_ec_state(ec_t *pec) {
+    assert(pec != NULL);
+
     ec_datagram_t *p_dg = NULL;
 
     if (ec_index_get(&pec->idx_q, &pec->p_idx_state) != 0) {
@@ -1503,6 +1566,9 @@ int ec_send_brd_ec_state(ec_t *pec) {
  * \return 0 on success
  */
 int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
+    assert(pec != NULL);
+    assert(timeout != NULL);
+
     static int wkc_mismatch_cnt_ec_state = 0;
     static int ec_state_mismatch_cnt = 0;
 
@@ -1563,6 +1629,20 @@ local_exit:
  * \param[in] ip_address    IP address to be set for tun device.
  */
 void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]) {
+    assert(pec != NULL);
+
     memcpy(&pec->tun_ip, &ip_address[0], 4);
     ec_eoe_setup_tun(pec);
 }
+
+//! \brief Return current slave count.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure.
+ * \return cnt current slave count.
+ */
+int ec_get_slave_count(ec_t *pec) {
+    assert(pec != NULL);
+
+    return pec->slave_cnt;
+}
+

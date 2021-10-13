@@ -31,6 +31,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
+#include <assert.h>
+
 #include "libethercat/dc.h"
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
@@ -53,9 +57,12 @@
  */
 void ec_dc_sync0(ec_t *pec, uint16_t slave, int active, 
         uint32_t cycle_time, int32_t cycle_shift) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     uint16_t wkc = 0;
     uint64_t rel_rtc_time = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
     if (!(slv->features & 0x04)) // dc not available
         return;
 
@@ -129,9 +136,12 @@ void ec_dc_sync0(ec_t *pec, uint16_t slave, int active,
  */
 void ec_dc_sync01(ec_t *pec, uint16_t slave, int active, 
         uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     uint16_t wkc;
     uint64_t rel_rtc_time = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
     if (!(slv->features & 0x04)) // dc not available
         return;
 
@@ -202,6 +212,9 @@ void ec_dc_sync01(ec_t *pec, uint16_t slave, int active,
 
 // get port time or 0
 static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     if (port < 4)
         return pec->slaves[slave].dc.receive_times[port];
 
@@ -210,6 +223,9 @@ static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
 
 //! calculate previous active port of a slave, starting at port
 static inline uint8_t ec_dc_prevport(ec_t *pec, uint16_t slave, uint8_t port) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     switch(port) {
 #define eval_port(...) { \
             int port_idx[] = { __VA_ARGS__ }; \
@@ -235,6 +251,8 @@ static inline uint8_t ec_dc_prevport(ec_t *pec, uint16_t slave, uint8_t port) {
 
 //! search for available port and return
 static inline uint8_t ec_dc_parentport(ec_t *pec, uint16_t parent) {
+    assert(pec != NULL);
+
     // search order is important, here 3 - 1 - 2 - 0, read et1100 docs
     int port_idx[] = { 3, 1, 2, 0 };
     uint8_t parentport = 0;
@@ -277,6 +295,8 @@ static inline uint8_t ec_dc_parentport(ec_t *pec, uint16_t parent) {
  * \return supported dc
  */
 int ec_dc_config(struct ec *pec) {
+    assert(pec != NULL);
+
     int i, parent, child;
     int parenthold = 0;
     int32_t delay_childs, delay_previous_slaves, delay_slave_with_childs;
@@ -292,7 +312,7 @@ int ec_dc_config(struct ec *pec) {
     int prev = -1;
 
     for (int slave = 0; slave < pec->slave_cnt; slave++) {        
-        ec_slave_t *slv = &pec->slaves[slave];
+        ec_slave_ptr(slv, pec, slave);
         slv->dc.available_ports = slv->active_ports;
 
         if (!(slv->dc.use_dc && (slv->features & 0x04))) { // dc available

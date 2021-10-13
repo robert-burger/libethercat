@@ -30,9 +30,14 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/mii.h"
 #include "libethercat/ec.h"
 
+#include "internals.h"
+
+#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -61,6 +66,10 @@ int ec_miiread(struct ec *pec, uint16_t slave,
     uint16_t wkc;
     uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
     uint16_t ctrl_stat = 0;
+
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(data != NULL);
 
     // write phy address amd regoster
     fp_check(wr, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg));
@@ -106,6 +115,10 @@ int ec_miiwrite(struct ec *pec, uint16_t slave,
     uint16_t wkc;
     uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
     uint16_t ctrl_stat = 0;
+
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(data != NULL);
 
     // write phy address, register and data
     fp_check(wr, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg));      

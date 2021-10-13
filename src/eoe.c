@@ -21,11 +21,16 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/ec.h"
 #include "libethercat/eoe.h"
 #include "libethercat/timer.h"
 #include "libethercat/error_codes.h"
 
+#include "internals.h"
+
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -151,7 +156,10 @@ void eoe_debug_print(char *msg, uint8_t *frame, size_t frame_len) {
  *                          (usually the n'th slave attached).
  */
 void ec_eoe_init(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     pthread_mutex_init(&slv->mbx.eoe.lock, NULL);
 
@@ -172,7 +180,10 @@ void ec_eoe_init(ec_t *pec, uint16_t slave) {
  *                          (usually the n'th slave attached).
  */
 void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     
     pthread_mutex_lock(&slv->mbx.eoe.lock);
 
@@ -196,7 +207,11 @@ void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
  *                      mailbox message from slave.
  */
 void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(pp_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
 
     ec_mbx_sched_read(pec, slave);
 
@@ -217,7 +232,11 @@ void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  *                      mailbox message from slave.
  */
 void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(pp_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
 
     ec_mbx_sched_read(pec, slave);
 
@@ -238,7 +257,11 @@ void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  *                      mailbox message from slave.
  */
 void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(p_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
     
     ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
     ec_log(100, __func__, "slave %2d: got eoe frame type 0x%X\n", slave, 
@@ -259,9 +282,13 @@ void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 // read coe sdo 
 int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
-        uint8_t *dns, char *dns_name) {
+        uint8_t *dns, char *dns_name) 
+{
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     int ret = 0;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
     pthread_mutex_lock(&slv->mbx.eoe.lock);
 
@@ -343,9 +370,14 @@ void ec_eoe_send_sync(void *user_arg, struct pool_entry *p) {
  * \return 0 on success, otherwise error code.
  */
 int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
-        size_t frame_len) {
+        size_t frame_len) 
+{
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(frame != NULL);
+
     int ret = 0;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
     size_t max_frag_len = (slv->sm[MAILBOX_WRITE].len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
     ALIGN_32BIT_BLOCKS(max_frag_len);
@@ -409,7 +441,10 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
  *                          (usually the n'th slave attached).
  */
 void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry = NULL, *p_eth_entry = NULL;
     pool_get(slv->mbx.eoe.eth_frames_free_pool, &p_eth_entry, NULL);
     eth_frame_t *eth_frame = (eth_frame_t *)(p_eth_entry->data);
@@ -492,6 +527,8 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
  *                          which you got from \link ec_open \endlink.
  */
 void ec_eoe_tun_handler(ec_t *pec) {
+    assert(pec != NULL);
+
     eth_frame_t tmp_frame;
     struct sched_param param;
     int policy;
@@ -537,7 +574,7 @@ void ec_eoe_tun_handler(ec_t *pec) {
                 int is_broadcast = (memcmp(broadcast_mac, dst_mac, 6) == 0);
 
                 for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
-                    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+                    ec_slave_ptr(slv, pec, slave);
                     if (    !slv->eoe.use_eoe || 
                             (slv->act_state == EC_STATE_INIT)   ||
                             (slv->act_state == EC_STATE_BOOT)) {
@@ -572,6 +609,8 @@ void *ec_eoe_tun_handler_wrapper(void *arg) {
  *                          which you got from \link ec_open \endlink.
  */
 int ec_eoe_setup_tun(ec_t *pec) {
+    assert(pec != NULL);
+
     // open tun device
     pec->tun_fd = open("/dev/net/tun", O_RDWR);
     if (pec->tun_fd == -1) {
@@ -637,6 +676,8 @@ int ec_eoe_setup_tun(ec_t *pec) {
  *                          which you got from \link ec_open \endlink.
  */
 void ec_eoe_destroy_tun(ec_t *pec) {
+    assert(pec != NULL);
+
     if (!pec->tun_running) {
         return;
     }

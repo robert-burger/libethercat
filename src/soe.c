@@ -28,11 +28,16 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
 #include "libethercat/soe.h"
 #include "libethercat/timer.h"
 
+#include "internals.h"
+
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -74,7 +79,10 @@ enum {
  *                          (usually the n'th slave attached).
  */
 void ec_soe_init(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     pool_open(&slv->mbx.soe.recv_pool, 0, 1518);
 }
 
@@ -87,7 +95,10 @@ void ec_soe_init(ec_t *pec, uint16_t slave) {
  *                          (usually the n'th slave attached).
  */
 void ec_soe_deinit(ec_t *pec, uint16_t slave) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
     pool_close(slv->mbx.soe.recv_pool);
 }
 
@@ -102,7 +113,11 @@ void ec_soe_deinit(ec_t *pec, uint16_t slave) {
  *                      mailbox message from slave.
  */
 void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(pp_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
 
     ec_mbx_sched_read(pec, slave);
 
@@ -123,7 +138,11 @@ void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  *                      mailbox message from slave.
  */
 void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(p_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
     pool_put(slv->mbx.soe.recv_pool, p_entry);
 }
 
@@ -157,7 +176,13 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         uint8_t elements, uint8_t *buf, size_t *len) 
 {
     int ret = -1;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
+    assert(len != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -215,7 +240,12 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
         uint8_t elements, uint8_t *buf, size_t len) {
     int wkc = 0;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
 
     pthread_mutex_lock(&slv->mbx.lock);
@@ -284,6 +314,10 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
         uint16_t idn, int *bitsize) {
     int ret = 0, i;
     uint16_t *idn_value = NULL;
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(bitsize != NULL);
 
     *bitsize = 16; // control and status word are always present
 
@@ -332,7 +366,11 @@ exit:
 
 int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
     int atn;
-    ec_slave_t *slv = (ec_slave_t *)&pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     uint16_t idn_at = 16;
     int at_bits = 0, at_sm = 3;

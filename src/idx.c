@@ -27,7 +27,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <string.h>
+#include <assert.h>
 
 #include "libethercat/idx.h"
 #include "libethercat/ec.h"
@@ -40,6 +43,9 @@
  */
 int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
     int ret = -1;
+
+    assert(idx_q != NULL);
+    assert(entry != NULL);
 
     pthread_mutex_lock(&idx_q->lock);
 
@@ -65,8 +71,8 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
  * \return 0 on succes, otherwise error code
  */
 int ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
-    if (!idx_q || !entry)
-        return -1;
+    assert(idx_q != NULL);
+    assert(entry != NULL);
 
     pthread_mutex_lock(&idx_q->lock);
     TAILQ_INSERT_TAIL(&idx_q->q, entry, qh);
@@ -84,6 +90,9 @@ int ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
  */
 int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
     int i;
+
+    assert(idx_q != NULL);
+
     pthread_mutex_init(&idx_q->lock, NULL);
     
     // fill index queue
@@ -107,6 +116,8 @@ int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
  * \param idx_q pointer to index queue structure
  */
 void ec_index_deinit(idx_queue_t *idx_q) {
+    assert(idx_q != NULL);
+
     idx_entry_t *idx;
     while ((idx = TAILQ_FIRST(&idx_q->q)) != NULL) {
         TAILQ_REMOVE(&idx_q->q, idx, qh);
