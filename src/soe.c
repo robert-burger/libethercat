@@ -35,8 +35,6 @@
 #include "libethercat/soe.h"
 #include "libethercat/timer.h"
 
-#include "internals.h"
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

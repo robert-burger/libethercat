@@ -35,8 +35,6 @@
 #include "libethercat/ec.h"
 #include "libethercat/foe.h"
 
-#include "internals.h"
-
 #include <assert.h>
 #include <string.h>
 #include <sys/stat.h>

@@ -33,8 +33,6 @@
 #include "libethercat/ec.h"
 #include "libethercat/timer.h"
 
-#include "internals.h"
-
 #include <assert.h>
 #include <string.h>
 #include <errno.h>

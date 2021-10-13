@@ -40,8 +40,6 @@
 #include "libethercat/dc.h"
 #include "libethercat/eeprom.h"
 
-#include "internals.h"
-
 #define DC_DCSOFF_SAMPLES 1000
 
 #ifndef max

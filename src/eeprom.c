@@ -35,8 +35,6 @@
 #include "libethercat/eeprom.h"
 #include "libethercat/ec.h"
 
-#include "internals.h"
-
 #include <assert.h>
 #include <string.h>
 

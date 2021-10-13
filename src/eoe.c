@@ -28,8 +28,6 @@
 #include "libethercat/timer.h"
 #include "libethercat/error_codes.h"
 
-#include "internals.h"
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

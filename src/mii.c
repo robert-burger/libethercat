@@ -35,8 +35,6 @@
 #include "libethercat/mii.h"
 #include "libethercat/ec.h"
 
-#include "internals.h"
-
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>

@@ -34,8 +34,6 @@
 #include "libethercat/slave.h"
 #include "libethercat/message_pool.h"
 
-#include "internals.h"
-
 #include <assert.h>
 #include <errno.h>
 #include <time.h>
