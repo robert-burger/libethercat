@@ -582,13 +582,13 @@ void ec_scan(ec_t *pec) {
 
     if (pec->slaves) {
         int cnt = pec->slave_cnt;
-        pec->slave_cnt = 0;
 
         // free resources
         for (i = 0; i < cnt; ++i) {
             ec_slave_free(pec, i);
         }
 
+        pec->slave_cnt = 0;
         free_resource(pec->slaves);
     }
     
@@ -703,8 +703,6 @@ void ec_scan(ec_t *pec) {
 int ec_set_state(ec_t *pec, ec_state_t state) {
     assert(pec != NULL);
 
-    pthread_mutex_lock(&pec->ec_lock);
-
     ec_log(10, __func__, "switch to from %s to %s\n", 
             get_state_string(pec->master_state), get_state_string(state));
 
@@ -806,6 +804,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             pec->dc.rtc_cycle       = 0;
             pec->dc.rtc_count       = 0;
             pec->dc.act_diff        = 0;
+            pec->tx_sync            = 1;
 
             pec->master_state = EC_STATE_PREOP;
 
@@ -832,8 +831,6 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         
     pec->master_state = state;
     pec->state_transition_pending = 0;
-
-    pthread_mutex_unlock(&pec->ec_lock);
 
     return pec->master_state;
 }
@@ -949,12 +946,12 @@ int ec_close(ec_t *pec) {
     if (pec->slaves) {
         int slave;
         int cnt = pec->slave_cnt;
-        pec->slave_cnt = 0;
 
         for (slave = 0; slave < cnt; ++slave) {
             ec_slave_free(pec, slave);
         }
 
+        pec->slave_cnt = 0;
         free(pec->slaves);
     }
 
@@ -1205,7 +1202,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
         } else {
             ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
                     "too much missed receive frames, falling back to INIT!\n");
-            ec_set_state(pec, EC_STATE_INIT);
+            ret = -2;
         }
     
         goto local_exit;

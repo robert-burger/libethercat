@@ -106,8 +106,6 @@ typedef struct ec_pd_group {
 
 //! ethercat master structure
 typedef struct ec {
-    pthread_mutex_t ec_lock;        //!< lock ec struct 
-
     hw_t *phw;                      //!< pointer to hardware interface
     int tx_sync;                    //!< Synchronous call to send frames.
                                     /*!<

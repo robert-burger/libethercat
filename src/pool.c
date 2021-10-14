@@ -87,8 +87,6 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
  * \return 0 or negative error code
  */
 int pool_close(pool_t *pp) {
-    ec_log(10, __func__, "pool %p\n", pp);
-
     assert(pp != NULL);
     
     pthread_mutex_lock(&pp->_pool_lock);
@@ -97,7 +95,6 @@ int pool_close(pool_t *pp) {
     while ((entry = TAILQ_FIRST(&pp->avail)) != NULL) {
         TAILQ_REMOVE(&pp->avail, entry, qh);
         if (entry->data) { free(entry->data); entry->data = NULL; }
-        ec_log(10, __func__, "  entry %p\n", entry);
         free(entry);
     }
     

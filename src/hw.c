@@ -376,9 +376,12 @@ int hw_close(hw_t *phw) {
     phw->rxthreadrunning = 0;
     pthread_join(phw->rxthread, NULL);
 
-    pthread_mutex_destroy(&phw->hw_lock);
+    pthread_mutex_lock(&phw->hw_lock);
     pool_close(phw->tx_high);
     pool_close(phw->tx_low);
+
+    pthread_mutex_unlock(&phw->hw_lock);
+    pthread_mutex_destroy(&phw->hw_lock);
 
     if (phw)
         free(phw);
