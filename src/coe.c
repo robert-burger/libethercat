@@ -394,6 +394,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (p_entry) {
         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        p_entry = NULL;
     }
 
     // returning index and ulock 
@@ -590,6 +591,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
 exit:
     if (p_entry) {
         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        p_entry = NULL;
     }
 
     pthread_mutex_unlock(&slv->mbx.coe.lock);
@@ -778,6 +780,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (p_entry) {
         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        p_entry = NULL;
     }
 
     pthread_mutex_unlock(&slv->mbx.coe.lock);
@@ -882,6 +885,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (p_entry) {        
         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        p_entry = NULL;
     }
 
     pthread_mutex_unlock(&slv->mbx.coe.lock);
