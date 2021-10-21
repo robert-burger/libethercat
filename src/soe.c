@@ -110,7 +110,7 @@ void ec_soe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -181,6 +181,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     assert(len != NULL);
 
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_SOE, SoE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -238,13 +239,14 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
         uint8_t elements, uint8_t *buf, size_t len) {
     int wkc = 0;
+    pool_entry_t *p_entry;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-    pool_entry_t *p_entry;
+    ec_mbx_check(EC_EEPROM_MBX_SOE, SoE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -369,6 +371,7 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_SOE, SoE);
 
     uint16_t idn_at = 16;
     int at_bits = 0, at_sm = 3;

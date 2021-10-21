@@ -265,7 +265,7 @@ void ec_coe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_coe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_coe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(pp_entry != NULL);
     assert(slave < pec->slave_cnt);
@@ -317,6 +317,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     int ret = -1;
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_COE, CoE);
 
     // default error return
     (*abort_code) = 0;
@@ -414,6 +415,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
 
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_COE, CoE);
 
     // default error return
     (*abort_code) = 0;
@@ -628,6 +630,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len) {
 
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_COE, CoE);
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
@@ -723,6 +726,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_COE, CoE);
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
     
@@ -820,6 +824,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     int ret = EC_ERROR_MAILBOX_READ;
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_COE, CoE);
     
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
@@ -900,6 +905,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
     uint8_t *buf = NULL;
     uint16_t start_adr; 
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_COE, CoE);
 
     if (slv->sm[0].adr > slv->sm[1].adr)
         start_adr = slv->sm[0].adr + slv->sm[0].len;

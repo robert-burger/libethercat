@@ -204,7 +204,7 @@ void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -229,7 +229,7 @@ void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -287,6 +287,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
 
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_EOE, EoE);
 
     pthread_mutex_lock(&slv->mbx.eoe.lock);
 
@@ -376,6 +377,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
 
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
+    ec_mbx_check(EC_EEPROM_MBX_EOE, EoE);
 
     size_t max_frag_len = (slv->sm[MAILBOX_WRITE].len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
     ALIGN_32BIT_BLOCKS(max_frag_len);
