@@ -211,7 +211,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_READ_RES) {
-            ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
+            ec_log(5, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
             ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
         }
@@ -296,7 +296,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
-            ec_log(10, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
+            ec_log(5, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
             ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
         }

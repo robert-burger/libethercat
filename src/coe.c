@@ -464,7 +464,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
             {
                 ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                ec_log(100, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                ec_log(10, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
                         "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                 *abort_code = abort_buf->abort_code;
@@ -476,7 +476,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                 p_entry = NULL;
                 goto exit;
             } else {
-                ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
+                ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
                         (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
 
@@ -504,7 +504,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         {
             ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-            ec_log(100, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
+            ec_log(10, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
                     "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
             *abort_code = abort_buf->abort_code;
@@ -516,7 +516,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
             seg_len += (EC_SDO_NORMAL_HDR_LEN - EC_SDO_SEG_HDR_LEN);
             break;
         } else {
-            ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
+            ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
                     (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
             ret = EC_ERROR_MAILBOX_READ;
         
@@ -568,7 +568,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
             {
                 ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                ec_log(100, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                ec_log(10, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
                         "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                 *abort_code = abort_buf->abort_code;
@@ -580,7 +580,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
                 p_entry = NULL;
                 break;
             } else {
-                ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
+                ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
                         (uint8_t *)(p_entry->data), 6 + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
 
@@ -762,7 +762,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
             } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
                 uint32_t ecode = read_buf->sdo_info_data.ldata[0];
 
-                ec_log(1, __func__, "slave %2d: got sdo info error request on idx %#X, "
+                ec_log(5, __func__, "slave %2d: got sdo info error request on idx %#X, "
                         "error_code %X, message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
 
                 if (error_code) {
@@ -773,7 +773,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
             }
         } else {
             // not our answer, print out this message
-            ec_coe_print_msg(1, __func__, slave, "unexpected coe answer", 
+            ec_coe_print_msg(5, __func__, slave, "unexpected coe answer", 
                     (uint8_t *)read_buf, 6 + read_buf->mbx_hdr.length);
             memset(desc, 0, sizeof(ec_coe_sdo_desc_t));
             ret = EC_ERROR_MAILBOX_READ;
@@ -868,7 +868,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
                 uint32_t ecode = read_buf_error->sdo_info_data.ldata[0];
 
-                ec_log(1, __func__, "slave %2d: got sdo info error request on idx %#X, "
+                ec_log(5, __func__, "slave %2d: got sdo info error request on idx %#X, "
                         "error_code %X, message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
 
                 if (error_code) {
@@ -879,7 +879,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
             }
         } else {
             // not our answer, print out this message
-            ec_coe_print_msg(1, __func__, slave, "unexpected coe answer", 
+            ec_coe_print_msg(5, __func__, slave, "unexpected coe answer", 
                     (uint8_t *)read_buf, 6 + read_buf->mbx_hdr.length);
             memset(desc, 0, sizeof(ec_coe_sdo_entry_desc_t));
             ret = EC_ERROR_MAILBOX_READ;
@@ -924,7 +924,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
         buf = (uint8_t *)&entry_cnt;
         if ((ret = ec_coe_sdo_read(pec, slave, idx, 0, 0, &buf, 
                 &entry_cnt_size, &abort_code)) != 0) {
-            ec_log(1, "GENERATE_MAPPING COE", "slave %2d: sm%d reading "
+            ec_log(5, "GENERATE_MAPPING COE", "slave %2d: sm%d reading "
                     "0x%04X/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
             continue;
         }
@@ -941,7 +941,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             buf = (uint8_t *)&entry_idx;
             if ((ret = ec_coe_sdo_read(pec, slave, idx, i, 0, 
                     &buf, &entry_size, &abort_code)) != 0) {
-                ec_log(1, "GENERATE_MAPPING COE", "            "
+                ec_log(5, "GENERATE_MAPPING COE", "            "
                         "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
                         idx, i, ret);
                 continue;
@@ -960,7 +960,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             buf = (uint8_t *)&entry_cnt_2;
             if ((ret = ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, 
                     &buf, &entry_cnt_size, &abort_code)) != 0) {
-                ec_log(1, "GENERATE_MAPPING COE", "             "
+                ec_log(5, "GENERATE_MAPPING COE", "             "
                         "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
                         entry_idx, 0, ret);
                 continue;
@@ -975,7 +975,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
                 buf = (uint8_t *)&entry;
                 if ((ret = ec_coe_sdo_read(pec, slave, entry_idx, j, 0, &buf,
                             &entry_size, &abort_code)) != 0) {
-                    ec_log(1, "GENERATE_MAPPING COE", "                "
+                    ec_log(5, "GENERATE_MAPPING COE", "                "
                             "reading 0x%04X/%d failed, error code 0x%X\n", 
                             entry_idx, j, ret);
                     continue;

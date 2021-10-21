@@ -123,7 +123,7 @@ void ec_foe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
