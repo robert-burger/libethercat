@@ -958,7 +958,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                             slave, slv->dc.cycle_time_0, 
                             slv->dc.cycle_time_1, slv->dc.cycle_shift);
 
-                    ec_dc_sync01(pec, slave, 1, slv->dc.cycle_time_0, 
+                    ec_dc_sync(pec, slave, 7, slv->dc.cycle_time_0, 
                             slv->dc.cycle_time_1, slv->dc.cycle_shift);
                 } else {
                     ec_log(10, get_transition_string(transition), 
@@ -966,11 +966,11 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                             "cycle_time %d, cycle_shift %d\n", slave,
                             slv->dc.cycle_time_0, slv->dc.cycle_shift);
 
-                    ec_dc_sync0(pec, slave, 1, slv->dc.cycle_time_0, 
+                    ec_dc_sync(pec, slave, 3, slv->dc.cycle_time_0, 0, 
                             slv->dc.cycle_shift);
                 }
             } else
-                ec_dc_sync0(pec, slave, 0, 0, 0);
+                ec_dc_sync(pec, slave, 0, 0, 0, 0);
 
             int start_sm = slv->eeprom.mbx_supported ? 2 : 0;
 
