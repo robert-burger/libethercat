@@ -81,7 +81,7 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t dc_active,
     // has to be a multiple of cycle time.  
     switch (pec->dc.mode) {
         case dc_mode_master_clock:
-            if (active) 
+            if (dc_active) 
                 while ((pec->dc.act_diff == 0) || (pec->dc.timer_prev == 0)) {
                     // wait until dc's are ready
                     ec_sleep(1000000);

@@ -230,7 +230,7 @@ typedef struct ec_slave {
     
     int entry_port;             //!< entry port from parent slave
     int parent;                 //!< parent slave number
-    int parentport;             //!< port attached on parent slave 
+    int port_on_parent;         //!< port attached on parent slave 
 
     int sm_set_by_user;         //!< sm set by user
                                 /*!<
