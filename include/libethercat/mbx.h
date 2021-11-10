@@ -183,6 +183,12 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  */
 void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
 
+#define ec_mbx_check(mbx_flag, mbx_string)                                          \
+    if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {                  \
+        ec_log(10, __func__, "no " # mbx_string " support on slave %d\n", slave);   \
+        return -1;                                                                  \
+    }
+
 #define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) { \
     pool_get(pec->slaves[slave].mbx.message_pool_recv_free, &(entry), (timeout)); \
 }

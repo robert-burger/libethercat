@@ -123,7 +123,7 @@ void ec_foe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -167,11 +167,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
     assert(file_data_len != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-
-    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
-        ec_log(10, __func__, "no FOE support on slave %d\n", slave);
-        return -1;
-    }
+    ec_mbx_check(EC_EEPROM_MBX_FOE, FoE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -300,13 +296,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     assert(file_data != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-
-    ec_log(10, __func__, "password: %08X\n", password);
-
-    if (!(slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
-        ec_log(10, __func__, "no FOE support on slave %d\n", slave);
-        return -1;
-    }
+    ec_mbx_check(EC_EEPROM_MBX_FOE, FoE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 

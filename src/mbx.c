@@ -81,18 +81,26 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
 
     ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
 
-    pool_open(&slv->mbx.message_pool_recv_free, 24, 1518);
-    pool_open(&slv->mbx.message_pool_send_free, 24, 1518);
-    pool_open(&slv->mbx.message_pool_send_queued, 0, 1518);
+    pool_open(&slv->mbx.message_pool_recv_free, 1024, slv->sm[MAILBOX_READ].len);
+    pool_open(&slv->mbx.message_pool_send_free, 1024, slv->sm[MAILBOX_WRITE].len);
+    pool_open(&slv->mbx.message_pool_send_queued, 0, slv->sm[MAILBOX_WRITE].len);
 
     pthread_mutex_init(&slv->mbx.sync_mutex, NULL);
     sem_init(&slv->mbx.sync_sem, 0, 0);
     pthread_mutex_init(&slv->mbx.lock, NULL);
 
-    ec_coe_init(pec, slave);
-    ec_soe_init(pec, slave);
-    ec_foe_init(pec, slave);
-    ec_eoe_init(pec, slave);
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
+        ec_coe_init(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
+        ec_soe_init(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
+        ec_foe_init(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
+        ec_eoe_init(pec, slave);
+    }
 
     // start mailbox handler thread
     slv->mbx.handler_running = 1;
@@ -124,10 +132,18 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
     slv->mbx.handler_running = 0;
     pthread_join(slv->mbx.handler_tid, NULL);
     
-    ec_coe_deinit(pec, slave);
-    ec_soe_deinit(pec, slave);
-    ec_foe_deinit(pec, slave);
-    ec_eoe_deinit(pec, slave);
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
+        ec_coe_deinit(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
+        ec_soe_deinit(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
+        ec_foe_deinit(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
+        ec_eoe_deinit(pec, slave);
+    }
 
     pthread_mutex_destroy(&slv->mbx.lock);
     sem_destroy(&slv->mbx.sync_sem);
@@ -466,7 +482,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                 ec_log(100, __func__, "slave %2d: mailbox needs to be read\n", slave);
 
                 do {
-                    pool_get(pec->slaves[slave].mbx.message_pool_recv_free, &p_entry, NULL);
+                    pool_get(slv->mbx.message_pool_recv_free, &p_entry, NULL);
                     if (!p_entry) {
                         ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
                         exit(-1);
@@ -481,20 +497,36 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                         ec_mbx_header_t *hdr = (ec_mbx_header_t *)p_entry->data;
                         switch (hdr->mbxtype) {
                             case EC_MBX_COE:
-                                ec_coe_enqueue(pec, slave, p_entry);
-                                p_entry = NULL;
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
+                                    ec_coe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got CoE frame, but slave has no support!\n", slave);
+                                }
                                 break;
                             case EC_MBX_SOE:
-                                ec_soe_enqueue(pec, slave, p_entry);
-                                p_entry = NULL;
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
+                                    ec_soe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got SoE frame, but slave has no support!\n", slave);
+                                }
                                 break;
                             case EC_MBX_FOE:
-                                ec_foe_enqueue(pec, slave, p_entry);
-                                p_entry = NULL;
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
+                                    ec_foe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got FoE frame, but slave has no support!\n", slave);
+                                }
                                 break;
                             case EC_MBX_EOE:
-                                ec_eoe_enqueue(pec, slave, p_entry);
-                                p_entry = NULL;
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
+                                    ec_eoe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got EoE frame, but slave has no support!\n", slave);
+                                }
                                 break;
                             default:
                                 break;

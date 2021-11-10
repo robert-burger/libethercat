@@ -92,18 +92,6 @@ void ec_soe_init(ec_t *pec, uint16_t slave);
  */
 void ec_soe_deinit(ec_t *pec, uint16_t slave);
 
-//! \brief Wait for SoE message received from slave.
-/*!
- * \param[in] pec       Pointer to ethercat master structure, 
- *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
- *                      (usually the n'th slave attached).
- * \param[in] pp_entry  Returns pointer to pool entry containing received
- *                      mailbox message from slave.
- */
-void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry);
-
 //! \brief Enqueue SoE message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 
