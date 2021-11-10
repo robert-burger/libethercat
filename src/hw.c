@@ -383,8 +383,7 @@ int hw_close(hw_t *phw) {
     pthread_mutex_unlock(&phw->hw_lock);
     pthread_mutex_destroy(&phw->hw_lock);
 
-    if (phw)
-        free(phw);
+    free(phw);
 
     return 0;
 }
@@ -583,9 +582,10 @@ struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
  * \return 0 or error code
  */
 int hw_tx(hw_t *phw) {
-    static uint8_t send_frame[ETH_FRAME_LEN];
     struct tpacket_hdr *header = NULL;
     ec_frame_t *pframe;
+    uint8_t send_frame[ETH_FRAME_LEN];
+    size_t len;
 
     assert(phw != NULL);
 
@@ -606,7 +606,6 @@ int hw_tx(hw_t *phw) {
     pframe->len = sizeof(ec_frame_t);
 
     ec_datagram_t *pdg = ec_datagram_first(pframe), *pdg_prev = NULL;
-    size_t len;
 
     pool_t *pools[] = {
             phw->tx_high, phw->tx_low};
