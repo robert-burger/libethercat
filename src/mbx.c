@@ -81,9 +81,9 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
 
     ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
 
-    pool_open(&slv->mbx.message_pool_recv_free, 24, 1518);
-    pool_open(&slv->mbx.message_pool_send_free, 24, 1518);
-    pool_open(&slv->mbx.message_pool_send_queued, 0, 1518);
+    pool_open(&slv->mbx.message_pool_recv_free, 1024, slv->sm[MAILBOX_READ].len);
+    pool_open(&slv->mbx.message_pool_send_free, 1024, slv->sm[MAILBOX_WRITE].len);
+    pool_open(&slv->mbx.message_pool_send_queued, 0, slv->sm[MAILBOX_WRITE].len);
 
     pthread_mutex_init(&slv->mbx.sync_mutex, NULL);
     sem_init(&slv->mbx.sync_sem, 0, 0);
