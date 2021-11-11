@@ -56,13 +56,13 @@
  * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
  * \param cycle_shift shift of first sync0 start in [ns]
  */
-void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t dc_active, 
+void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active, 
         uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    uint8_t dc_cuc = 0;
+    uint8_t dc_cuc = 0, dc_active = 0;
     uint16_t wkc = 0;
     uint64_t rel_rtc_time = 0;
     int64_t dc_start = 0, dc_time = 0, tmp_time = 0;
@@ -72,9 +72,9 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t dc_active,
     }
 
     // deactivate DC's to stop cyclic operation, enable write access of dc's
-    dc_active = 0, dc_cuc = 0;
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
     ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
+    dc_active = active;
 
     // Calculate DC start time as a sum of the actual EtherCAT master time,
     // the generic first sync delay and the cycle shift. the first sync delay 
