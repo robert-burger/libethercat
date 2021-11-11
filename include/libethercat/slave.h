@@ -36,6 +36,7 @@
 #include "libethercat/common.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/dc.h"
+#include "libethercat/mbx.h"
 
 //! EtherCAT slave state transitions
 typedef enum ec_state_transition {
@@ -70,31 +71,6 @@ typedef enum ec_state_transition {
     OP_2_SAFEOP      = 0x0804,  //!< OP to SAFEOP state transition,
     OP_2_OP          = 0x0808,  //!< OP to OP state transition,
 } ec_state_transition_t;
-
-//! EtherCAT slave mailbox settings
-typedef struct ec_slave_mbx {
-    uint8_t  sm_nr;             //!< mailbox sync manager numer
-                                /*!<
-                                 * This specifies the assign sync manager
-                                 * for the mailbox access.
-                                 */
-
-    uint8_t *sm_state;          //!< sync manager state
-                                /*!<
-                                 * The field is used to receive the mailbox 
-                                 * sync manager state. This is useful to 
-                                 * determine if the mailbox is full or empty
-                                 * without the need to poll the state manually.
-                                 */
-
-    uint8_t *buf;               //!< mailbox buffer
-                                /*!<
-                                 * Receive or Transmit buffer for mailbox 
-                                 * messages.
-                                 */
-
-    uint8_t  skip_next;         //!< set if next message should be skipped
-} ec_slave_mbx_t;
 
 //! slave sync manager settings
 typedef struct PACKED ec_slave_sm {
@@ -184,7 +160,7 @@ typedef struct ec_slave_mailbox_init_cmd {
                                  * can be one of \link EC_MBX_COE \endlink, 
                                  * \link EC_MBX_SOE \endlink, ... 
                                  */
-
+    
     int transition;             //!< ECat transition
                                 /*!< 
                                  * This defines at which EtherCAT state machine 
@@ -194,6 +170,12 @@ typedef struct ec_slave_mailbox_init_cmd {
                                  * target state. (e.g. 0x24 -> PRE to SAFE, ..)
                                  */
 
+    LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
+
+    uint8_t cmd[0];
+} ec_slave_mailbox_init_cmd_t;
+
+typedef struct {
     int id;                     //!< index 
                                 /*!< 
                                  * This depends of which Mailbox protocol is 
@@ -219,8 +201,10 @@ typedef struct ec_slave_mailbox_init_cmd {
     char *data;                 //!< new id data
     size_t datalen;             //!< new id data length
 
-    LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
-} ec_slave_mailbox_init_cmd_t;
+} ec_coe_init_cmd_t, ec_soe_init_cmd_t;
+
+#define COE_INIT_CMD_SIZE       (sizeof(ec_slave_mailbox_init_cmd_t) + sizeof(ec_coe_init_cmd_t))
+#define SOE_INIT_CMD_SIZE       (sizeof(ec_slave_mailbox_init_cmd_t) + sizeof(ec_soe_init_cmd_t))
     
 LIST_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
 
@@ -229,18 +213,6 @@ typedef struct worker_arg {
     int slave;
     ec_state_t state;
 } worker_arg_t;
-
-//! Message queue qentry
-typedef struct ec_emergency_message_entry {
-    TAILQ_ENTRY(ec_emergency_message_entry) qh;
-                                //!< handle to message entry queue
-    ec_timer_t timestamp;       //!< timestamp, when emergency was received
-    size_t msg_len;             //!< length
-    uint8_t msg[1];             //!< message itself
-} ec_emergency_message_entry_t;
-
-TAILQ_HEAD(ec_emergency_message_queue, ec_emergency_message_entry);
-typedef struct ec_emergency_message_queue ec_emergency_message_queue_t;
 
 typedef struct ec_slave {
     int16_t auto_inc_address;   //!< physical bus address
@@ -258,7 +230,7 @@ typedef struct ec_slave {
     
     int entry_port;             //!< entry port from parent slave
     int parent;                 //!< parent slave number
-    int parentport;             //!< port attached on parent slave 
+    int port_on_parent;         //!< port attached on parent slave 
 
     int sm_set_by_user;         //!< sm set by user
                                 /*!<
@@ -286,18 +258,6 @@ typedef struct ec_slave {
                                  * \endlink.
                                  */
 
-    pthread_mutex_t mbx_lock;   //!< mailbox lock
-                                /*!<
-                                 * Only one simoultaneous access to the 
-                                 * EtherCAT slave mailbox is possible at the 
-                                 * moment.
-                                 */
-
-    ec_slave_mbx_t mbx_read;    //!< read mailbox 
-    ec_slave_mbx_t mbx_write;   //!< write mailbox
-    ec_emergency_message_queue_t 
-        mbx_coe_emergencies;    //!< message pool queue
-
     int assigned_pd_group;
     ec_pd_t pdin;               //!< input process data 
                                 /*!<
@@ -307,7 +267,6 @@ typedef struct ec_slave {
                                  * defined by the slave (\link subdevs 
                                  * \endlink)
                                  */
-    size_t pdin_len;
 
     ec_pd_t pdout;              //!< output process data
                                 /*!<
@@ -317,7 +276,6 @@ typedef struct ec_slave {
                                  * defined by the slave (\link subdevs 
                                  * \endlink)
                                  */
-    size_t pdout_len;
 
     size_t subdev_cnt;          //!< count of sub devices
                                 /*!< 
@@ -335,10 +293,15 @@ typedef struct ec_slave {
                                  * axes per slave, ...
                                  */
 
+    ec_mbx_t mbx;               //!< EtherCAT mailbox structure */
+
     eeprom_info_t eeprom;       //!< EtherCAT slave EEPROM data
     ec_dc_info_slave_t dc;      //!< Distributed Clock settings
+
+    ec_eoe_slave_config_t eoe;  //!< EoE config
     
     ec_state_t expected_state;  //!< Master expected slave state
+    ec_state_t act_state;       //!< Actual/Last read slave state.
 
     struct ec_slave_mailbox_init_cmds init_cmds;
                                 //!< EtherCAT slave init commands
@@ -351,9 +314,22 @@ typedef struct ec_slave {
                                  * machine from INIT to OP.
                                  */
                 
-    worker_arg_t worker_arg;
-    pthread_t worker_tid;
+    worker_arg_t worker_arg;    //!< Set state worker thread arguments.
+                                /*!< 
+                                 * These arguments are used for worker thread 
+                                 * when threaded startup is used.
+                                 */
+    pthread_t worker_tid;       //!< Set state worker thread handle.
+                                /*!<
+                                 * Handle to spawned worker thread if threaded
+                                 * startup is used.
+                                 */
 } ec_slave_t;
+
+
+#define ec_slave_ptr(ptr, pec, slave) \
+    ec_slave_t *(ptr) = (ec_slave_t *)&pec->slaves[slave]; \
+    assert((ptr) != NULL);
 
 #ifdef __cplusplus
 extern "C" {
@@ -469,8 +445,6 @@ int ec_slave_state_transition(struct ec *pec, uint16_t slave,
  * \param[in] slave         Number of ethercat slave. this depends on 
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
- * \param[in] type          Type of init command. This should be one of 
- *                          \p EC_MBX_COE, \p EC_MBX_SOE, ...
  * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
  *                          the state we are coming from and 'b' is the state 
  *                          we want to get.
@@ -481,8 +455,31 @@ int ec_slave_state_transition(struct ec *pec, uint16_t slave,
  *                          be transfered.
  * \param[in] datalen       Length of \p data
  */
-void ec_slave_add_init_cmd(struct ec *pec, uint16_t slave,
-        int type, int transition, int id, int si_el, int ca_atn,
+void ec_slave_add_coe_init_cmd(struct ec *pec, uint16_t slave,
+        int transition, int id, int si_el, int ca_atn,
+        char *data, size_t datalen);
+
+//! Add master init command.
+/*!
+ * This adds an EtherCAT slave init command. 
+ *
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
+ *                          the state we are coming from and 'b' is the state 
+ *                          we want to get.
+ * \param[in] id            Either CoE Index number or the ServoDrive IDN.
+ * \param[in] si_el         Either CoE SubIndex or ServoDrive element number.
+ * \param[in] ca_atn        Either CoE complete access or ServoDrive ATN.
+ * \param[in] data          Pointer to memory buffer with data which should 
+ *                          be transfered.
+ * \param[in] datalen       Length of \p data
+ */
+void ec_slave_add_soe_init_cmd(struct ec *pec, uint16_t slave,
+        int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen);
 
 //! Set Distributed Clocks config to slave
@@ -507,6 +504,24 @@ void ec_slave_set_dc_config(struct ec *pec, uint16_t slave,
  * \param[in] cmd           Pointer to init command which willed be freed.
  */
 void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
+
+//! Adds master EoE settings.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] mac           Pointer to 6 byte MAC address (mandatory).
+ * \param[in] ip_address    Pointer to 4 byte IP address (optional maybe NULL).
+ * \param[in] subnet        Pointer to 4 byte subnet address (optional maybe NULL).
+ * \param[in] gateway       Pointer to 4 byte gateway address (optional maybe NULL).
+ * \param[in] dns           Pointer to 4 byte DNS address (optional maybe NULL).
+ * \param[in] dns_name      Null-terminated domain name server string.
+ */
+void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
+        uint8_t *mac, uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
+        uint8_t *dns, char *dns_name);
 
 #if 0 
 {

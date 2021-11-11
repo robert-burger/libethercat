@@ -28,10 +28,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"
 #include "libethercat/message_pool.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <time.h>
 #include <string.h>
@@ -43,8 +46,9 @@
 static int ec_async_message_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, ec_timer_t *timeout) {
     int ret = ENODATA;
-    if (!ppool || !msg)
-        return (ret = EINVAL);
+
+    assert(ppool != NULL);
+    assert(msg != NULL);
 
     if (timeout) {
         struct timespec ts = { timeout->sec, timeout->nsec };
@@ -73,11 +77,9 @@ static int ec_async_message_loop_get(ec_message_pool_t *ppool,
 // return a message to message pool
 static int ec_async_message_loop_put(ec_message_pool_t *ppool, 
         ec_message_entry_t *msg) {
-    int ret = 0;
+    assert(ppool != NULL);
+    assert(msg != NULL);
 
-    if (!ppool || !msg)
-        return (ret = EINVAL);
-    
     pthread_mutex_lock(&ppool->lock);
 
     TAILQ_INSERT_TAIL(&ppool->queue, msg, qh);
@@ -92,6 +94,11 @@ static int ec_async_message_loop_put(ec_message_pool_t *ppool,
 static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) {
     ec_state_t state = 0;
     uint16_t alstatcode = 0;
+    
+    assert(paml != NULL);
+    assert(paml->pec != NULL);
+    assert(slave != paml->pec->slave_cnt);
+
     int wkc = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
 
     if (!wkc) {
@@ -131,6 +138,9 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
 // async loop thread
 static void *ec_async_message_loop_thread(void *arg) {
     ec_async_message_loop_t *paml = (ec_async_message_loop_t *)arg;
+    
+    assert(paml != NULL);
+    assert(paml->pec != NULL);
 
     while (paml->loop_running) {
         ec_timer_t timeout;
@@ -172,6 +182,9 @@ static void *ec_async_message_loop_thread(void *arg) {
 void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
     ec_timer_t act;
     ec_timer_gettime(&act);
+    
+    assert(paml != NULL);
+    
     if (ec_timer_cmp(&act, &paml->next_check_group, <)) {
         return; // no need to check now
     }
@@ -197,6 +210,9 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
 int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
     int i, ret = 0;
     
+    assert(ppaml != NULL);
+    assert(pec != NULL);
+
     // create memory for async message loop
     (*ppaml) = (ec_async_message_loop_t *)malloc(
             sizeof(ec_async_message_loop_t));
@@ -238,8 +254,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
 
 // destroys async message loop
 int ec_async_message_pool_destroy(ec_async_message_loop_t *paml) {
-    if (!paml)
-        return EINVAL;
+    assert(paml != NULL);
     
     // stop async thread
     paml->loop_running = 0;

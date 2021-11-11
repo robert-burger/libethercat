@@ -39,8 +39,10 @@ void *malloc();
 // allocate an n-byte block of memory from the heap.
 // if n is zero, allocate a 1-byte block.
 void *rpl_malloc(size_t n) {
-  if (n == 0)
-    n = 1;
+  if (n == 0u) {
+    n = 1u;
+  }
+
   return malloc(n);
 }
 
@@ -55,8 +57,10 @@ char *strndup(const char *s, size_t n) {
     size_t i = 0;
     while(*cp) {
         i++;
-        if(i >= n)
+        if(i >= n) {
             break; // enough chars
+        }
+
         cp++;
     }
     i ++;

@@ -32,7 +32,32 @@
 #define __LIBETHERCAT_COE_H__
 
 #include "libethercat/common.h"
-#include "libethercat/ec.h"
+#include "libethercat/idx.h"
+#include "libethercat/pool.h"
+
+//! Message queue qentry
+typedef struct ec_coe_emergency_message_entry {
+    TAILQ_ENTRY(ec_coe_emergency_message_entry) qh;
+                                //!< handle to message entry queue
+    ec_timer_t timestamp;       //!< timestamp, when emergency was received
+    size_t msg_len;             //!< length
+    uint8_t msg[1];             //!< message itself
+} ec_coe_emergency_message_entry_t;
+
+TAILQ_HEAD(ec_coe_emergency_message_queue, ec_coe_emergency_message_entry);
+typedef struct ec_coe_emergency_message_queue ec_coe_emergency_message_queue_t;
+
+typedef struct ec_coe {
+    pool_t *recv_pool;
+    
+    pthread_mutex_t lock;       //!< \brief CoE mailbox lock.
+                                /*!<
+                                 * Only one simoultaneous access to the 
+                                 * EtherCAT slave CoE mailbox is possible 
+                                 */
+
+    ec_coe_emergency_message_queue_t emergencies;    //!< message pool queue
+} ec_coe_t;
 
 //! CoE mailbox types
 enum {
@@ -62,6 +87,7 @@ enum {
     EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP,   //!< object description response
     EC_COE_SDO_INFO_GET_ENTRY_DESC_REQ,     //!< entry description request
     EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP,    //!< entry description response
+    EC_COE_SDO_INFO_ERROR_REQUEST,          //!< error request
 };
 
 #define DEFTYPE_PDOMAPPING          0x0021
@@ -95,12 +121,36 @@ typedef struct PACKED ec_coe_sdo_entry_desc {
 #define EC_COE_SDO_VALUE_INFO_MIN_VALUE          0x20
 #define EC_COE_SDO_VALUE_INFO_MAX_VALUE          0x40
 
+// forward declarations
+struct ec;
+typedef struct ec ec_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
 }
 #endif
+
+//! initialize CoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_coe_init(ec_t *pec, uint16_t slave);
+
+//! deinitialize CoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_coe_deinit(ec_t *pec, uint16_t slave);
 
 //! Read CoE service data object (SDO) 
 /*!
@@ -154,11 +204,12 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
  *                          (usually the n'th slave attached).
  * \param[in] index         CoE SDO index number.
  * \param[out] desc         Returns CoE SDO description.
+ * \param[out] error_code   Returns the error code if we got one.
  *
  * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        ec_coe_sdo_desc_t *desc);
+        ec_coe_sdo_desc_t *desc, uint32_t *error_code);
 
 //! Read CoE SDO entry description
 /*!
@@ -171,11 +222,13 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
  * \param[in] sub_index     CoE SDO sub index number.
  * \param[in] value_info    Bitset which description values you want to get
  * \param[in] desc          Return CoE entry description.
+ * \param[out] error_code   Returns the error code if we got one.
  *
  * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
-        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc);
+        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
+        uint32_t *error_code);
 
 //! Read CoE object dictionary list
 /*!
@@ -210,7 +263,26 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave);
  * \param pec pointer to ethercat master
  * \param slave slave number
  */
-void ec_coe_queue_emergency(ec_t *pec, uint16_t slave);
+void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+
+//! \brief Enqueue CoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+
+//! \brief Get SDO INFO error string.
+/*!
+ * \param[in] error_code    Error code number.
+ * \return string with decoded error.
+ */
+const char *get_sdo_info_error_string(uint32_t errorcode);
 
 #if 0 
 {

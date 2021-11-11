@@ -27,26 +27,151 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/mbx.h"
 #include "libethercat/ec.h"
 #include "libethercat/timer.h"
 
+#include <assert.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/eventfd.h>  
 
+#ifndef max
+#define max(a, b)  ((a) > (b) ? (a) : (b))
+#endif
 
-//! check if mailbox is full
+#define MBX_HANDLER_FLAGS_SEND  ((uint32_t)0x00000001u)
+#define MBX_HANDLER_FLAGS_RECV  ((uint32_t)0x00000002u)
+
+// forward declarations
+int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
+int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
+void ec_mbx_handler(ec_t *pec, int slave);
+int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
+int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
+
+//! \brief Mailbox handler thread wrapper
+void *ec_mbx_handler_thread(void *arg) {
+    ec_mbx_t *pmbx = (ec_mbx_t *)arg;
+    ec_mbx_handler(pmbx->pec, pmbx->slave);
+    return NULL;
+}
+
+//! \brief Initialize mailbox structure.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param mbx_nr number of mailbox
- * \param nsec timeout in nanoseconds
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_mbx_init(ec_t *pec, uint16_t slave) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
+
+    if (slv->mbx.handler_running) {
+        return;
+    }
+
+    ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
+
+    pool_open(&slv->mbx.message_pool_recv_free, 1024, slv->sm[MAILBOX_READ].len);
+    pool_open(&slv->mbx.message_pool_send_free, 1024, slv->sm[MAILBOX_WRITE].len);
+    pool_open(&slv->mbx.message_pool_send_queued, 0, slv->sm[MAILBOX_WRITE].len);
+
+    pthread_mutex_init(&slv->mbx.sync_mutex, NULL);
+    sem_init(&slv->mbx.sync_sem, 0, 0);
+    pthread_mutex_init(&slv->mbx.lock, NULL);
+
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
+        ec_coe_init(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
+        ec_soe_init(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
+        ec_foe_init(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
+        ec_eoe_init(pec, slave);
+    }
+
+    // start mailbox handler thread
+    slv->mbx.handler_running = 1;
+    slv->mbx.pec = pec;
+    slv->mbx.slave = slave;
+    pthread_create(&slv->mbx.handler_tid, NULL, ec_mbx_handler_thread, &slv->mbx);
+}
+
+//! \brief Deinit mailbox structure
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
+
+    if (!slv->mbx.handler_running) {
+        return;
+    }
+
+    ec_log(10, __func__, "slave %2d: deinitilizing mailbox\n", slave);
+
+    slv->mbx.handler_running = 0;
+    pthread_join(slv->mbx.handler_tid, NULL);
+    
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
+        ec_coe_deinit(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
+        ec_soe_deinit(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
+        ec_foe_deinit(pec, slave);
+    }
+    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
+        ec_eoe_deinit(pec, slave);
+    }
+
+    pthread_mutex_destroy(&slv->mbx.lock);
+    sem_destroy(&slv->mbx.sync_sem);
+    pthread_mutex_destroy(&slv->mbx.sync_mutex);
+     
+    pool_close(slv->mbx.message_pool_recv_free);
+    pool_close(slv->mbx.message_pool_send_free);
+    pool_close(slv->mbx.message_pool_send_queued);
+
+}
+
+//! \brief Check if mailbox is full.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] mbx_nr    Number of mailbox to be checked.
+ * \param[in] nsec      Timeout in nanoseconds.
  * \return full (1) or empty (0)
  */
 int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     uint16_t wkc = 0;
     uint8_t sm_state = 0;
+
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
 
     ec_timer_t timer;
     ec_timer_init(&timer, nsec);
@@ -65,17 +190,23 @@ int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     return 0;
 }
 
-//! check if mailbox is empty
+//! \brief Check if mailbox is empty.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param mbx_nr number of mailbox
- * \param nsec timeout in nanoseconds
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] mbx_nr    Number of mailbox to be checked.
+ * \param[in] nsec      Timeout in nanoseconds.
  * \return full (0) or empty (1)
  */
 int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     uint16_t wkc = 0;
     uint8_t sm_state = 0;
+
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
 
     ec_timer_t timer;
     ec_timer_init(&timer, nsec);
@@ -94,113 +225,110 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     return 0;
 }
 
-//! clears mailbox buffers 
+//! \brief write mailbox to slave.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param read read mailbox (1) or write mailbox (0)
- */
-void ec_mbx_clear(ec_t *pec, uint16_t slave, int read) {
-    ec_slave_t *slv = &pec->slaves[slave];
-
-    if (read)
-        memset(slv->mbx_read.buf, 0, slv->sm[slv->mbx_read.sm_nr].len);
-    else
-        memset(slv->mbx_write.buf, 0, slv->sm[slv->mbx_write.sm_nr].len);
-}
-
-//! write mailbox to slave
-/*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param nsec timeout in nanoseconds
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_send(ec_t *pec, uint16_t slave, uint32_t nsec) {
+int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
     uint16_t wkc = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
-    if (!slv->sm[slv->mbx_write.sm_nr].len) {
-        ec_log(1, __func__, "write mailbox on slave %d not available\n", 
-                slave);
-        return 0;
-    }
-    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
+
     ec_timer_t timer;
     ec_timer_init(&timer, nsec);
 
     // wait for send mailbox available 
-    if (!ec_mbx_is_empty(pec, slave, slv->mbx_write.sm_nr, nsec)) {
-        ec_log(1, __func__, "slave %d waiting for empty send "
-                "mailbox failed!\n", slave);
+    if (!ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec)) {
+        ec_log(1, __func__, "slave %d: waiting for empty send mailbox failed!\n", slave);
         return 0;
     }
 
     // send request
     do {
-        ec_fpwr(pec, slv->fixed_address, slv->sm[slv->mbx_write.sm_nr].adr, 
-                slv->mbx_write.buf, slv->sm[slv->mbx_write.sm_nr].len, &wkc);
+        ec_log(100, __func__, "slave %d: writing mailbox\n", slave);
+        ec_fpwr(pec, slv->fixed_address, slv->sm[MAILBOX_WRITE].adr, buf, buf_len, &wkc);
 
-        if (wkc)
+        if (wkc) {
             return wkc;
+        }
 
         ec_sleep(EC_DEFAULT_DELAY);
     } while (!ec_timer_expired(&timer));
 
-    ec_log(1, __func__, "slave %d did not respond "
-            "on writing to write mailbox\n", slave);
+    ec_log(1, __func__, "slave %d: did not respond on writing to write mailbox\n", slave);
 
     return 0;
 }
 
-//! read mailbox from slave
+//! \brief Read mailbox from slave.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param nsec timeout in nanoseconds
+ *
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec) {
+int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
     uint16_t wkc = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    ec_slave_ptr(slv, pec, slave);
 
-    if (!slv->sm[slv->mbx_read.sm_nr].len)
-        return 0;
-
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
+    
     ec_timer_t timer;
     ec_timer_init(&timer, EC_DEFAULT_TIMEOUT_MBX);
 
     // wait for receive mailbox available 
-    if (!ec_mbx_is_full(pec, slave, slv->mbx_read.sm_nr, nsec)) {
+    if (!ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec)) {
         return 0;
     }
 
     // receive answer
     do {
-        ec_fprd(pec, slv->fixed_address, slv->sm[slv->mbx_read.sm_nr].adr,
-                slv->mbx_read.buf, slv->sm[slv->mbx_read.sm_nr].len, &wkc);
+        ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr,
+                buf, buf_len, &wkc);
 
-        if (wkc)
+        if (wkc) {
+            // reset mailbox state 
+            if (slv->mbx.sm_state) {
+                *slv->mbx.sm_state = 0;
+            }
+
             return wkc;
-        else {
+        } else {
             // lost receive mailbox ?
+            ec_log(10, __func__, "slave %d: lost receive mailbox ?\n", slave);
+
             uint16_t sm_status = 0;
             uint8_t sm_control = 0;
             
             ec_fprd(pec, slv->fixed_address, EC_REG_SM0STAT + 
-                    (slv->mbx_read.sm_nr * 8),
+                    (MAILBOX_READ * 8),
                     &sm_status, sizeof(sm_status), &wkc);
 
             sm_status ^= 0x0200; // toggle repeat request
             
             ec_fpwr(pec, slv->fixed_address, EC_REG_SM0STAT + 
-                    (slv->mbx_read.sm_nr * 8),
+                    (MAILBOX_READ * 8),
                     &sm_status, sizeof(sm_status), &wkc);
 
             do { 
                 // wait for toggle ack
                 ec_fprd(pec, slv->fixed_address, EC_REG_SM0CONTR + 
-                        (slv->mbx_read.sm_nr * 8),
+                        (MAILBOX_READ * 8),
                     &sm_control, sizeof(sm_control), &wkc);
 
                 if (wkc && ((sm_control & 0x02) == 
@@ -214,7 +342,7 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec) {
             }
 
             // wait for receive mailbox available 
-            if (!ec_mbx_is_full(pec, slave, slv->mbx_read.sm_nr, nsec)) {
+            if (!ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec)) {
                 ec_log(1, __func__, "slave %d waiting for full receive "
                         "mailbox failed!\n", slave);
                 return 0;
@@ -230,11 +358,225 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec) {
     return 0;
 }
 
-//! push current received mailbox to received queue
+//! \brief Enqueue mailbox message to send queue.
 /*!
- * \param[in] pec pointer to ethercat master
- * \param[in] slave slave number
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_push(ec_t *pec, uint16_t slave) {
+void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(p_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
+
+    pool_put_head(slv->mbx.message_pool_send_queued, p_entry);
+    
+    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+    slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
+    
+    sem_post(&slv->mbx.sync_sem);
+    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
+
+//! \brief Enqueue mailbox message to send queue.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
+ */
+void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(p_entry != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
+
+    pool_put(slv->mbx.message_pool_send_queued, p_entry);
+    
+    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+    slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
+    
+    sem_post(&slv->mbx.sync_sem);
+    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+}
+
+//! \brief Trigger read of mailbox.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ */
+void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
+    
+    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+    slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
+
+    sem_post(&slv->mbx.sync_sem);
+    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+}
+
+//! \brief Mailbox handler for one slave
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ */
+void ec_mbx_handler(ec_t *pec, int slave) {
+    int ret = 0, wkc;
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
+    ec_timer_t timeout;
+    pool_entry_t *p_entry = NULL;
+
+    ec_log(10, __func__, "slave %2d: started mailbox handler\n", slave);
+
+    while (slv->mbx.handler_running) {
+        // wait for mailbox event
+        ec_timer_init(&timeout, 1000000);
+        struct timespec ts = { timeout.sec, timeout.nsec };
+
+        ret = sem_timedwait(&slv->mbx.sync_sem, &ts);
+        
+        pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+        uint32_t flags = slv->mbx.handler_flags;
+        slv->mbx.handler_flags = 0;
+        pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+
+        if (!flags && (ret != 0)) {
+            if ((errno == ETIMEDOUT)) {
+                // check receive mailbox on timeout if PREOP or lower
+                flags |= MBX_HANDLER_FLAGS_SEND;
+
+                if (slv->act_state != EC_STATE_OP) {
+                    flags |= MBX_HANDLER_FLAGS_RECV;
+                }
+            } else {
+                continue;
+            }
+        }
+
+        while (flags) {
+            // check event
+            if (flags & MBX_HANDLER_FLAGS_RECV) {
+                flags &= ~MBX_HANDLER_FLAGS_RECV;
+                
+                ec_log(100, __func__, "slave %2d: mailbox needs to be read\n", slave);
+
+                do {
+                    pool_get(slv->mbx.message_pool_recv_free, &p_entry, NULL);
+                    if (!p_entry) {
+                        ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
+                        exit(-1);
+                        //break;
+                    }
+                    memset(p_entry->data, 0, p_entry->data_size);
+
+                    if (ec_mbx_receive(pec, slave, p_entry->data, 
+                                min(p_entry->data_size, slv->sm[MAILBOX_READ].len), 0)) {
+                        ec_log(100, __func__, "slave %2d: got one mailbox message\n", slave);
+
+                        ec_mbx_header_t *hdr = (ec_mbx_header_t *)p_entry->data;
+                        switch (hdr->mbxtype) {
+                            case EC_MBX_COE:
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
+                                    ec_coe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got CoE frame, but slave has no support!\n", slave);
+                                }
+                                break;
+                            case EC_MBX_SOE:
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
+                                    ec_soe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got SoE frame, but slave has no support!\n", slave);
+                                }
+                                break;
+                            case EC_MBX_FOE:
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
+                                    ec_foe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got FoE frame, but slave has no support!\n", slave);
+                                }
+                                break;
+                            case EC_MBX_EOE:
+                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
+                                    ec_eoe_enqueue(pec, slave, p_entry);
+                                    p_entry = NULL;
+                                } else {
+                                    ec_log(1, __func__, "slave %2d: got EoE frame, but slave has no support!\n", slave);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    if (p_entry) {
+                        // returning to free pool
+                        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                    }
+
+                } while (ec_mbx_is_full(pec, slave, MAILBOX_READ, 0));
+            }
+            
+            if (flags & MBX_HANDLER_FLAGS_SEND) {
+                flags &= ~MBX_HANDLER_FLAGS_SEND;
+
+                // need to send a message to write mailbox
+                ec_log(100, __func__, "slave %2d: mailbox needs to be written\n", slave);
+                pool_get(slv->mbx.message_pool_send_queued, &p_entry, NULL);
+
+                if (p_entry) {
+                    ec_log(100, __func__, "slave %2d: got mailbox buffer to write\n", slave);
+                    int retry_cnt = 10;
+
+                    do {
+                        wkc = ec_mbx_send(pec, slave, p_entry->data, 
+                                min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
+                    } while ((!wkc) && (--retry_cnt > 0));
+
+                    if (!wkc) {
+                        ec_log(1, __func__, "slave %2d: error on writing send mailbox -> requeue\n", slave);
+                        ec_mbx_enqueue_head(pec, slave, p_entry);
+                    } else {                    
+                        // all done
+                        if (p_entry->user_cb) {
+                            (*p_entry->user_cb)(p_entry->user_arg, p_entry);
+
+                            p_entry->user_cb = NULL;
+                            p_entry->user_arg = NULL;
+                        }
+
+                        ec_mbx_return_free_send_buffer(pec, slave, p_entry);
+                    }
+                }
+            } 
+        }
+    }
+
+    ec_log(10, __func__, "slave %2d: stopped mailbox handler\n", slave);
+}
+
 

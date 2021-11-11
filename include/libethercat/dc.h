@@ -35,7 +35,7 @@
 
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
-#include "libethercat/datagram_pool.h"
+#include "libethercat/pool.h"
 
 typedef struct ec_dc_info_slave {
     int use_dc;                 //!< flag, whether to use dc
@@ -86,7 +86,7 @@ typedef struct ec_dc_info {
         dc_mode_master_as_ref_clock
     } mode;
 
-    datagram_entry_t *p_de_dc;
+    pool_entry_t *p_de_dc;
     idx_entry_t *p_idx_dc;
 } ec_dc_info_t;
 
@@ -116,22 +116,6 @@ extern "C" {
  */
 int ec_dc_config(struct ec *pec);
 
-//! Configure EtherCAT slave for distributed clock sync0 pulse
-/*!
- * This function writes the cycle time, calculates the DC first start time 
- * wrt the cycle shift 
- * and enables sync0 pulse generation on the corresponding device. It can also
- * be use to disable DC's on the EtherCAT slave.
- *
- * \param pec ethercat master pointer 
- * \param slave slave number
- * \param active dc active flag
- * \param cycle_time cycle time to program to fire sync0 in [ns]
- * \param cycle_shift shift of first sync0 start in [ns]
- */
-void ec_dc_sync0(struct ec *pec, uint16_t slave, int active, 
-        uint32_t cycle_time, int32_t cycle_shift);
-
 //! Configure EtherCAT slave for distributed clock sync0 and sync1 pulse
 /*!
  * This function writes the cycle time, calculates the DC first start time 
@@ -141,12 +125,12 @@ void ec_dc_sync0(struct ec *pec, uint16_t slave, int active,
  * 
  * \param pec ethercat master pointer 
  * \param slave slave number
- * \param active dc active flag
+ * \param dc_active dc active flag
  * \param cycle_time_0 cycle time to program to fire sync0 in [ns]
  * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
  * \param cycle_shift shift of first sync0 start in [ns]
  */
-void ec_dc_sync01(struct ec *pec, uint16_t slave, int active, 
+void ec_dc_sync(struct ec *pec, uint16_t slave, uint8_t dc_active, 
         uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift);
 
 #ifdef __cplusplus

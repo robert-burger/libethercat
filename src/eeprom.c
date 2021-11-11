@@ -30,9 +30,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "libethercat/eeprom.h"
 #include "libethercat/ec.h"
 
+#include <assert.h>
 #include <string.h>
 
 #define SII_REG(ac, adr, val)                                          \
@@ -46,6 +49,9 @@ int ec_eeprom_to_pdi(ec_t *pec, uint16_t slave) {
     uint16_t wkc, cnt = 10;
     uint8_t eepctl = 2;
 
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
     eepctl = 1; 
     SII_REG(wr, EC_REG_EEPCFG, eepctl);
 
@@ -56,6 +62,9 @@ int ec_eeprom_to_pdi(ec_t *pec, uint16_t slave) {
 int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
     uint16_t wkc, cnt = 10;
     uint8_t eepctl = 2;
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
 
     SII_REG(rd, EC_REG_EEPCFG, eepctl);
     if (cnt == 0) {
@@ -93,6 +102,10 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
 int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     int ret = 0, retry_cnt = 100;
     uint16_t wkc = 0, eepcsr = 0x0100; // read access
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(data != NULL);
    
     if ((ret = ec_eeprom_to_ec(pec, slave)) != 0)
         return ret;
@@ -175,6 +188,10 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr,
     
     int ret = 0, retry_cnt = 100;
     uint16_t wkc = 0, eepcsr = 0x0100; // write access
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(data != NULL);
 
     // 1. Check if the Busy bit of the EEPROM Status register is 
     // cleared (0x0502[15]=0) and the EEPROM interface is not busy, 
@@ -296,6 +313,10 @@ func_exit:
 int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
         uint8_t *buf, size_t buflen) {
     unsigned offset = 0, i, ret;
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
 
     while (offset < buflen) {
         uint32_t val;
@@ -315,6 +336,10 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
 int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
         uint8_t *buf, size_t buflen) {
     unsigned offset = 0, i, ret;
+
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(buf != NULL);
 
     while (offset < buflen/2) {
         uint16_t val;
@@ -339,7 +364,11 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     int cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
     uint16_t size, cat_len, cat_type = 0;
     uint32_t value32 = 0;
-    ec_slave_t *slv = &pec->slaves[slave];
+    
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+
+    ec_slave_ptr(slv, pec, slave);
 
     if (slv->eeprom.read_eeprom == 1)
         return;

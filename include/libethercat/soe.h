@@ -34,6 +34,10 @@
 
 #include "libethercat/common.h"
 
+typedef struct ec_soe {
+    pool_t *recv_pool;
+} ec_soe_t;
+
 //! ServoDrive attributes of an IDN
 typedef struct PACKED ec_soe_idn_attribute {
     uint32_t evafactor   :16;       //!< Evalution factor .
@@ -67,6 +71,38 @@ extern "C" {
 #if 0
 }
 #endif
+
+//! initialize SoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_soe_init(ec_t *pec, uint16_t slave);
+
+//! deinitialize SoE structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ */
+void ec_soe_deinit(ec_t *pec, uint16_t slave);
+
+//! \brief Enqueue SoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
 //! Read elements of soe ID number
 /*!

@@ -28,7 +28,7 @@ void propagation_delays(ec_t *pec) {
 
     ec_create_pd_groups(pec, 1);
     
-    for(slave = 0; slave < pec->slave_cnt; ++slave) {
+    for(slave = 0; slave < ec_get_slave_count(pec); ++slave) {
 #define print_prefix() {                                    \
         int tmp_parent = pec->slaves[slave].parent;         \
         while (tmp_parent >= 0) {                           \

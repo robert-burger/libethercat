@@ -28,37 +28,101 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_MBX_H__
-#define __LIBETHERCAT_MBX_H__
+#ifndef LIBETHERCAT_MBX_H
+#define LIBETHERCAT_MBX_H
 
 #include "libethercat/common.h"
-#include "libethercat/ec.h"
+#include "libethercat/coe.h"
+#include "libethercat/soe.h"
+#include "libethercat/foe.h"
+#include "libethercat/eoe.h"
+#include "libethercat/pool.h"
+
+#define MAILBOX_WRITE   (0)
+#define MAILBOX_READ    (1)
+
+// forward declarations
+struct ec;
+typedef struct ec ec_t;
+    
+#define MESSAGE_POOL_DEBUG(type) {}
+
+#define _MESSAGE_POOL_DEBUG(type) \
+{                                                                                       \
+    int avail = 0;                                                                      \
+    sem_getvalue(&slv->mbx.message_pool_ ## type->avail_cnt, &avail);                   \
+    ec_log(10, __func__, "slave %d: " #type " pool avail %d\n", slave, avail);          \
+}
 
 //! mailbox types
 enum {
-    EC_MBX_ERR = 0x00,   //!< error mailbox
-    EC_MBX_AOE,          //!< ADS       over EtherCAT mailbox
-    EC_MBX_EOE,          //!< Ethernet  over EtherCAT mailbox
-    EC_MBX_COE,          //!< CANopen   over EtherCAT mailbox
-    EC_MBX_FOE,          //!< File      over EtherCAT mailbox
-    EC_MBX_SOE,          //!< Servo     over EtherCAT mailbox
-    EC_MBX_VOE = 0x0f    //!< Vendor    over EtherCAT mailbox
+    EC_MBX_ERR = 0x00,          //!< \brief error mailbox
+    EC_MBX_AOE,                 //!< \brief ADS       over EtherCAT mailbox
+    EC_MBX_EOE,                 //!< \brief Ethernet  over EtherCAT mailbox
+    EC_MBX_COE,                 //!< \brief CANopen   over EtherCAT mailbox
+    EC_MBX_FOE,                 //!< \brief File      over EtherCAT mailbox
+    EC_MBX_SOE,                 //!< \brief Servo     over EtherCAT mailbox
+    EC_MBX_VOE = 0x0f           //!< \brief Vendor    over EtherCAT mailbox
 };
 
 //! ethercat mailbox header
 typedef struct PACKED ec_mbx_header {
-    uint16_t  length;       //!< mailbox length
-    uint16_t  address;      //!< mailbox address
-    uint8_t   priority;     //!< priority
-    unsigned  mbxtype : 4;  //!< mailbox type
-    unsigned  counter : 4;  //!< counter
+    uint16_t  length;           //!< \brief mailbox length
+    uint16_t  address;          //!< \brief mailbox address
+    uint8_t   priority;         //!< \brief priority
+    unsigned  mbxtype : 4;      //!< \brief mailbox type
+    unsigned  counter : 4;      //!< \brief counter
 } PACKED ec_mbx_header_t;
 
 //! ethercat mailbox data
-typedef struct PACKED ec_mbx {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_data_t      mbx_data;    //!< mailbox data
-} PACKED ec_mbx_t;
+typedef struct PACKED ec_mbx_buffer {
+    ec_mbx_header_t mbx_hdr;    //!< \brief mailbox header
+    ec_data_t      mbx_data;    //!< \brief mailbox data
+} PACKED ec_mbx_buffer_t;
+
+typedef struct ec_mbx {
+    uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
+    pthread_mutex_t sync_mutex; //!< \brief Sync mutex for handler flags.
+    sem_t sync_sem;
+
+    int handler_running;        //!< \brief Mailbox handler thread running flag.
+    ec_t *pec;                  //!< \brief Pointer to ethercat master structure.
+                                /*!< 
+                                 * Used by handler thread wrapper to call mailbox
+                                 * handler function.
+                                 */
+    int slave;                  //!< \brief Number of EtherCAT slave.
+                                /*!< 
+                                 * Used by handler thread wrapper to call mailbox
+                                 * handler function.
+                                 */
+    pthread_t handler_tid;      //!< \brief Mailbox handler thread handle.
+    
+    pthread_mutex_t lock;       //!< mailbox lock
+                                /*!<
+                                 * Only one simoultaneous access to the 
+                                 * EtherCAT slave mailbox is possible at the 
+                                 * moment.
+                                 */
+
+
+    pool_t *message_pool_recv_free; 
+    pool_t *message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
+    pool_t *message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
+
+    ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
+    ec_soe_t soe;               //!< \brief Structure for Servodrive over EtherCAT mailbox.
+    ec_foe_t foe;               //!< \brief Structure for File over EtherCAT mailbox.
+    ec_eoe_t eoe;               //!< \brief Strucutre for Ethernet over EtherCAT mailbox.
+    
+    uint8_t *sm_state;          //!< Sync manager state of read mailbox.
+                                /*!<
+                                 * The field is used to receive the mailbox 
+                                 * sync manager state. This is useful to 
+                                 * determine if the mailbox is full or empty
+                                 * without the need to poll the state manually.
+                                 */
+} ec_mbx_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,58 +131,86 @@ extern "C" {
 }
 #endif
 
-//! check if mailbox is empty
+//! \brief Initialize mailbox structure.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param mbx_nr number of mailbox
- * \param nsec timeout in nanoseconds
- * \return full (0) or empty (1)
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
  */
-int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
+void ec_mbx_init(ec_t *pec, uint16_t slave);
 
-//! check if mailbox is full
+//! \brief Deinit mailbox structure
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param mbx_nr number of mailbox
- * \param nsec timeout in nanoseconds
- * \return full (1) or empty (0)
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
  */
-int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
+void ec_mbx_deinit(ec_t *pec, uint16_t slave);
 
-//! clears mailbox buffers 
+//! \brief Enqueue mailbox message to send queue.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param read read mailbox (1) or write mailbox (0)
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_clear(ec_t *pec, uint16_t slave, int read);
+void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
-//! write mailbox to slave
+//! \brief Enqueue mailbox message to send queue.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param nsec timeout in nanoseconds
- * \return working counter
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-int ec_mbx_send(ec_t *pec, uint16_t slave, uint32_t nsec);
+void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
 
-//! read mailbox from slave
+//! \brief Trigger read of mailbox.
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
- * \param nsec timeout in nanoseconds
- * \return working counter
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
  */
-int ec_mbx_receive(ec_t *pec, uint16_t slave, uint32_t nsec);
+void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
 
-//! push current received mailbox to received queue
-/*!
- * \param[in] pec pointer to ethercat master
- * \param[in] slave slave number
- */
-void ec_mbx_push(ec_t *pec, uint16_t slave);
+#define ec_mbx_check(mbx_flag, mbx_string)                                          \
+    if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {                  \
+        ec_log(10, __func__, "no " # mbx_string " support on slave %d\n", slave);   \
+        return -1;                                                                  \
+    }
+
+#define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) { \
+    pool_get(pec->slaves[slave].mbx.message_pool_recv_free, &(entry), (timeout)); \
+}
+
+#define ec_mbx_get_free_send_buffer(pec, slave, entry, timeout, lock) { \
+    pool_get(pec->slaves[slave].mbx.message_pool_send_free, &(entry), (timeout)); \
+    if (!(entry)) { \
+        ec_log(1, __func__, "slave %d: out of mailbox buffers\n", slave); \
+        pthread_mutex_unlock((lock)); \
+        return -1; \
+    } \
+    memset((entry)->data, 0, (entry)->data_size); \
+}
+
+#define ec_mbx_return_free_send_buffer(pec, slave, entry) { \
+    pool_put(pec->slaves[slave].mbx.message_pool_send_free, (entry)); \
+}
+
+#define ec_mbx_return_free_recv_buffer(pec, slave, entry) { \
+    pool_put(pec->slaves[slave].mbx.message_pool_recv_free, (entry)); \
+}
+
 
 #if 0 
 {
@@ -127,5 +219,5 @@ void ec_mbx_push(ec_t *pec, uint16_t slave);
 }
 #endif
 
-#endif // __MBX_H__
+#endif // LIBETHERCAT_MBX_H
 

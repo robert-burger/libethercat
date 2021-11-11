@@ -28,17 +28,24 @@ class MainProject(ConanFile):
         autotools.libs=[]
         autotools.include_paths=[]
         autotools.library_paths=[]
+
+        args = []
+
         if self.settings.build_type == "Debug":
             autotools.flags = ["-O0", "-g"]
+            args.append("--enable-assert")
         else:
             autotools.flags = ["-O2"]
+            args.append("--disable-assert")
 
         if self.options.shared:
-            args = ["--enable-shared", "--disable-static"]
+            args.append("--enable-shared")
+            args.append("--disable-static")
         else:
-            args = ["--disable-shared", "--enable-static"]
+            args.append("--disable-shared")
+            args.append("--enable-static")
 
-        autotools.configure(configure_dir=".")
+        autotools.configure(configure_dir=".", args=args)
         autotools.make()
 
     def package(self):
