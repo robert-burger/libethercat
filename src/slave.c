@@ -566,7 +566,7 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
         }
     
         if (ec_timer_expired(&timeout)) {
-            ec_log(10, "EC_STATE_SET", "slave %2d: did not respond on state "
+            ec_log(1, "EC_STATE_SET", "slave %2d: did not respond on state "
                     "switch to %d\n", slave, state);
             wkc = 0;
             break;
