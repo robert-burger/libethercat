@@ -492,9 +492,9 @@ void ec_mbx_handler(ec_t *pec, int slave) {
 
                     if (ec_mbx_receive(pec, slave, p_entry->data, 
                                 min(p_entry->data_size, slv->sm[MAILBOX_READ].len), 0)) {
-                        ec_log(100, __func__, "slave %2d: got one mailbox message\n", slave);
-
                         ec_mbx_header_t *hdr = (ec_mbx_header_t *)p_entry->data;
+                        ec_log(100, __func__, "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
+
                         switch (hdr->mbxtype) {
                             case EC_MBX_COE:
                                 if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {

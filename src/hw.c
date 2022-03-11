@@ -237,11 +237,11 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     ifr.ifr_flags = 0;
     ioctl((*pphw)->sockfd, SIOCGIFFLAGS, &ifr);
     ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
-    int ret = ioctl((*pphw)->sockfd, SIOCSIFFLAGS, &ifr);
-    if (ret != 0) {
-        ec_log(1, __func__, "error setting interface %s: %s\n", devname, strerror(errno));
-        goto error_exit;
-    }
+    /*int ret =*/ ioctl((*pphw)->sockfd, SIOCSIFFLAGS, &ifr);
+//    if (ret != 0) {
+//        ec_log(1, __func__, "error setting interface %s: %s\n", devname, strerror(errno));
+//        goto error_exit;
+//    }
 
     ec_log(10, __func__, "binding raw socket to %s\n", devname);
 

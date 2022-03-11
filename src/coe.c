@@ -296,12 +296,16 @@ void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_coe_header_t *coe_hdr = (ec_coe_header_t *)(p_entry->data);
+    ec_coe_header_t *coe_hdr = (ec_coe_header_t *)(p_entry->data + sizeof(ec_mbx_header_t));
+
+    ec_log(100, __func__, "got service: %0X\n", coe_hdr->service);
 
     if (coe_hdr->service == EC_COE_EMERGENCY) {
         ec_coe_emergency_enqueue(pec, slave, p_entry);
-    } else {
+    } else if ((coe_hdr->service >= 0x01) && (coe_hdr->service <= 0x08)) {
         pool_put(slv->mbx.coe.recv_pool, p_entry);
+    } else {
+	ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
     }
 }
 
