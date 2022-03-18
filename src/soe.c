@@ -171,7 +171,7 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
  * \return 0 on successs
  */
 int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
-        uint8_t elements, uint8_t *buf, size_t *len) 
+        uint8_t *elements, uint8_t **buf, size_t *len) 
 {
     int ret = -1;
     
