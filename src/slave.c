@@ -742,6 +742,26 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                                     slave, ret);
                         } 
                     }
+                    case EC_MBX_SOE: {
+                        ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
+
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d: sending SoE init cmd 0x%04X:%d, "
+                                "atn %d, datalen %d, datap %p\n", slave, soe->id, 
+                                soe->si_el, soe->ca_atn, soe->datalen, soe->data);
+
+                        uint8_t *buf = (uint8_t *)soe->data;
+                        size_t buf_len = soe->datalen;
+
+                        int ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, 
+                              soe->si_el, buf, buf_len);
+
+                        if (ret != 0) {
+                            ec_log(10, get_transition_string(transition), 
+                                    "slave %2d: writing SoE failed: error code 0x%X!\n", 
+                                    slave, ret);
+                        } 
+                    }
                 }
             }
 

@@ -196,14 +196,15 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     // soe header
     write_buf->soe_hdr.op_code    = EC_SOE_READ_REQ;
     write_buf->soe_hdr.atn        = atn;
-    write_buf->soe_hdr.elements   = elements;
+    write_buf->soe_hdr.elements   = *elements;
     write_buf->soe_hdr.idn        = idn;
 
     // send request
     ec_mbx_enqueue_head(pec, slave, p_entry);
 
-    uint8_t *to = buf;
+    uint8_t *to = *buf;
     ssize_t left_len = *len;
+    uint8_t first_fragment = 1;
 
     // wait for answer
     for (ec_soe_wait(pec, slave, &p_entry); p_entry; ec_soe_wait(pec, slave, &p_entry)) {
@@ -214,6 +215,27 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             ec_log(5, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
             ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
+        }
+
+        if (first_fragment) {
+            // return elements we got from slave
+            *elements = read_buf->soe_hdr.elements;
+
+            if (left_len == 0) {
+                *len = read_buf->mbx_hdr.length - sizeof(ec_soe_header_t);
+
+                if (read_buf->soe_hdr.fragments_left != 0) {
+                    *len = (read_buf->soe_hdr.fragments_left + 1) * *len;
+                    left_len = *len;
+                }
+            }
+
+            if (*buf == NULL) {
+                *buf = malloc(*len);
+                to = *buf;
+            }
+
+            first_fragment = 0;
         }
 
         if (left_len > 0) {
@@ -314,6 +336,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
         uint16_t idn, int *bitsize) {
     int ret = 0, i;
     uint16_t *idn_value = NULL;
+    uint8_t elements; 
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -323,9 +346,11 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
 
     // read size of mapping idn first
     uint16_t idn_len[2];
+    uint8_t *buf = (uint8_t *)&idn_len[0];
     size_t idn_len_size = sizeof(idn_len);
-    if (ec_soe_read(pec, slave, atn, idn, EC_SOE_VALUE, 
-                (uint8_t *)idn_len, &idn_len_size) != 1) {
+    elements = EC_SOE_VALUE;
+    if (ec_soe_read(pec, slave, atn, idn, &elements, 
+                &buf, &idn_len_size) != 0) {
         ret = -1;
         goto exit;
     }
@@ -333,8 +358,9 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
     // read mapping idn
     size_t idn_size = (idn_len[0] + 4);// / 2;
     idn_value = malloc(idn_size);
-    if (ec_soe_read(pec, slave, atn, idn, EC_SOE_VALUE, 
-                (uint8_t *)idn_value, &idn_size) != 1) {
+    elements = EC_SOE_VALUE;
+    if (ec_soe_read(pec, slave, atn, idn, &elements, 
+                (uint8_t **)&idn_value, &idn_size) != 0) {
         ret = -1;
         goto exit;
     }
@@ -344,12 +370,14 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
     for (i = 0; i < (idn_len[0]/2); ++i) {
         uint16_t sub_idn = idn_value[i+2];
         ec_soe_idn_attribute_t sub_idn_attr;
+        uint8_t *buf = (uint8_t *)&sub_idn_attr;
         size_t sub_idn_attr_size = sizeof(sub_idn_attr);
+        elements = EC_SOE_ATTRIBUTE;
 
         ec_log(100, __func__, "atn %d, read mapped idn %d\n", atn, sub_idn);
 
-        if (ec_soe_read(pec, slave, atn, sub_idn, EC_SOE_ATTRIBUTE, 
-                    (uint8_t*)&sub_idn_attr, &sub_idn_attr_size) != 1)
+        if (ec_soe_read(pec, slave, atn, sub_idn, &elements, 
+                    &buf, &sub_idn_attr_size) != 0)
             continue;
 
         // 0 = 8 bit, 1 = 16 bit, ...
