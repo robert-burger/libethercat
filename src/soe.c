@@ -141,7 +141,35 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     assert(p_entry != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-    pool_put(slv->mbx.soe.recv_pool, p_entry);
+        
+    ec_mbx_header_t *mbx_hdr = (ec_mbx_header_t *)(p_entry->data);
+    ec_soe_header_t *soe_hdr = (ec_soe_header_t *)(p_entry->data + sizeof(ec_mbx_header_t)); 
+
+    // check for correct op_code
+    if (soe_hdr->op_code == EC_SOE_NOTIFICATION) {
+        static char soe_log_buf[1024];
+        int soe_log_pos = 0;
+
+        soe_log_pos += snprintf(soe_log_buf, 1024, "SoE Notification: opcode %d, incomplete %d, error %d, "
+                "atn %d, elements %d, idn %d", soe_hdr->op_code, soe_hdr->incomplete, soe_hdr->error, 
+                soe_hdr->atn, soe_hdr->elements, soe_hdr->idn);
+
+        if ((mbx_hdr->length - sizeof(ec_soe_header_t)) > 0) {
+            soe_log_pos += snprintf(soe_log_buf + soe_log_pos, 1024 - soe_log_pos, ", payload: ");
+            ec_data_t *payload = (ec_data_t *)(p_entry->data + sizeof(ec_mbx_header_t) + sizeof(ec_soe_header_t));
+
+            for (int i = 0; i < (mbx_hdr->length - sizeof(ec_soe_header_t)); ++i) {
+                soe_log_pos += snprintf(soe_log_buf + soe_log_pos, 1024 - soe_log_pos, 
+                    "%02X", payload->bdata[i]);
+            }
+        }
+        
+        ec_log(10, __func__, "%s\n", soe_log_buf);
+
+        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+    } else {
+        pool_put(slv->mbx.soe.recv_pool, p_entry);
+    }
 }
 
 //! Read elements of soe ID number
@@ -212,7 +240,9 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
         // check for correct op_code
         if (read_buf->soe_hdr.op_code != EC_SOE_READ_RES) {
-            ec_log(5, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
+            ec_log(5, __func__, "got unexpected response: opcode %d, incomplete %d, error %d, "
+                "atn %d, elements %d, idn %d\n", read_buf->soe_hdr.op_code, read_buf->soe_hdr.incomplete, read_buf->soe_hdr.error, 
+                read_buf->soe_hdr.atn, read_buf->soe_hdr.elements, read_buf->soe_hdr.idn);
             ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             continue; // TODO handle unexpected answer
         }
