@@ -310,6 +310,16 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, "
             "len %d, left %d, mbx_len %d\n", 
             slave, atn, idn, elements, buf, len, left_len, mbx_len);
+        
+    static char soe_log_buf[1024];
+    int soe_log_pos = 0;
+
+    for (int i = 0; i < len; ++i) {
+        soe_log_pos += snprintf(soe_log_buf + soe_log_pos, 1024 - soe_log_pos, 
+                "%02X", buf[i]);
+    }
+        
+    ec_log(100, __func__, "%s\n", soe_log_buf);
 
     while (left_len) {
         ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
@@ -330,6 +340,9 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         from += send_len;
         left_len -= send_len;
 
+        ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d: sending fragment len %d (left %d)\n",
+                slave, atn, idn, elements, send_len, left_len);
+
         if (left_len) {
             write_buf->soe_hdr.incomplete = 1;
             write_buf->soe_hdr.fragments_left = left_len / mbx_len + 1;
@@ -340,21 +353,25 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry);
-    }
     
-    // wait for answer
-    for (ec_soe_wait(pec, slave, &p_entry); p_entry; ec_soe_wait(pec, slave, &p_entry)) {
-        ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data); 
+        // wait for answer
+        for (ec_soe_wait(pec, slave, &p_entry); p_entry; ec_soe_wait(pec, slave, &p_entry)) {
+            ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data); 
 
-        // check for correct op_code
-        if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
-            ec_log(5, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
+            ec_log(100, __func__, "got response: opcode %d, incomplete %d, error %d, "
+                    "atn %d, elements %d, idn %d\n", read_buf->soe_hdr.op_code, read_buf->soe_hdr.incomplete, read_buf->soe_hdr.error, 
+                    read_buf->soe_hdr.atn, read_buf->soe_hdr.elements, read_buf->soe_hdr.idn);
+
+            // check for correct op_code
+            if (read_buf->soe_hdr.op_code != EC_SOE_WRITE_RES) {
+                ec_log(5, __func__, "got unexpected response %d\n", read_buf->soe_hdr.op_code);
+                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                continue; // TODO handle unexpected answer
+            }
+
             ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
-            continue; // TODO handle unexpected answer
+            break;
         }
-
-        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
-        break;
     }
 
     pthread_mutex_unlock(&slv->mbx.lock);
