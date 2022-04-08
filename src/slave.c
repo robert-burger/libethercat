@@ -741,6 +741,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                                     "slave %2d: writing sdo failed: error code 0x%X!\n", 
                                     slave, ret);
                         } 
+                        break;
                     }
                     case EC_MBX_SOE: {
                         ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
@@ -761,6 +762,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                                     "slave %2d: writing SoE failed: error code 0x%X!\n", 
                                     slave, ret);
                         } 
+                        break;
                     }
                 }
             }
