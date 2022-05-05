@@ -219,7 +219,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
 
     // set timeouts
     timeout.tv_sec = 0;
-    timeout.tv_usec = 10000;
+    timeout.tv_usec = 1;
     setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout,
                sizeof(timeout));
     setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout,
