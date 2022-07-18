@@ -156,11 +156,11 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 
         if ((mbx_hdr->length - sizeof(ec_soe_header_t)) > 0) {
             soe_log_pos += snprintf(soe_log_buf + soe_log_pos, 1024 - soe_log_pos, ", payload: ");
-            ec_data_t *payload = (ec_data_t *)(p_entry->data + sizeof(ec_mbx_header_t) + sizeof(ec_soe_header_t));
+            uint8_t *payload = (uint8_t *)(p_entry->data + sizeof(ec_mbx_header_t) + sizeof(ec_soe_header_t));
 
             for (int i = 0; i < (mbx_hdr->length - sizeof(ec_soe_header_t)); ++i) {
                 soe_log_pos += snprintf(soe_log_buf + soe_log_pos, 1024 - soe_log_pos, 
-                    "%02X", payload->bdata[i]);
+                    "%02X", payload[i]);
             }
         }
         
@@ -209,7 +209,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     assert(len != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_mbx_check(EC_EEPROM_MBX_SOE, SoE);
+    ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -298,7 +298,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     assert(buf != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_mbx_check(EC_EEPROM_MBX_SOE, SoE);
+    ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -446,7 +446,7 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_mbx_check(EC_EEPROM_MBX_SOE, SoE);
+    ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE);
 
     uint16_t idn_at = 16;
     int at_bits = 0, at_sm = 3;

@@ -10,7 +10,6 @@
  * These are EtherCAT datagram specific configuration functions.
  */
 
-
 /*
  * This file is part of libethercat.
  *
@@ -26,7 +25,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -46,13 +45,13 @@ int ec_frame_init(ec_frame_t *frame) {
 
     assert(frame != NULL);
 
-    memset(frame, 0, 1518);
+    (void)memset(frame, 0, 1518);
     for (i = 0; i < 6; ++i) {
-        frame->mac_dest[i] = 0xFF;      
+        frame->mac_dest[i] = 0xFFu;
         frame->mac_src[i] = i;
     }
 
-    frame->ethertype = 0x88A4;
+    frame->ethertype = 0x88A4u;
     frame->len = sizeof(ec_frame_t);
     frame->type = 4;
 
@@ -75,21 +74,24 @@ int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
     assert(payload != NULL);
 
     // get address to first datagram
-    ec_datagram_t *d = (ec_datagram_t *)((uint8_t *)frame + 
-            sizeof(ec_frame_t));
+    // cppcheck-suppress misra-c2012-11.3
+    ec_datagram_t *d = (ec_datagram_t *)&((uint8_t *)frame)[sizeof(ec_frame_t)];
 
-    while (((uint8_t *)d < ((uint8_t *)frame + frame->len)) && d->next)
-        d = (ec_datagram_t *)((uint8_t *)d + ec_datagram_length(d));
+    while (((uint8_t *)d < (&((uint8_t *)frame)[frame->len])) && d->next) {
+        // cppcheck-suppress misra-c2012-11.3
+        d = (ec_datagram_t *)&((uint8_t *)d)[ec_datagram_length(d)];
+    }
 
     // get next 
     d->next = 1;
-    d = (ec_datagram_t *)((uint8_t *)d + ec_datagram_length(d));
+    // cppcheck-suppress misra-c2012-11.3
+    d = (ec_datagram_t *)&((uint8_t *)d)[ec_datagram_length(d)];
 
     d->cmd = cmd; 
     d->idx = idx;
     d->adp = adp;
     d->ado = ado;
-    memcpy((uint8_t *)d + sizeof(ec_datagram_t), payload, payload_len);
+    (void)memcpy(&((uint8_t *)d)[sizeof(ec_datagram_t)], payload, payload_len);
     d->len = payload_len;
 
     frame->len += ec_datagram_length(d);
@@ -110,7 +112,7 @@ int ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
     assert(frame != NULL);
     assert(payload != NULL);
 
-    return ec_frame_add_datagram_phys(frame, cmd, idx, adr & 0x0000FFFF, 
-            (adr & 0xFFFF0000) >> 16, payload, payload_len);
+    return ec_frame_add_datagram_phys(frame, cmd, idx, (uint16_t)(adr & 0x0000FFFFu), 
+            (uint16_t)((adr & 0xFFFF0000u) >> 16u), payload, payload_len);
 }
 

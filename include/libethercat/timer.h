@@ -29,8 +29,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_TIMER_H__
-#define __LIBETHERCAT_TIMER_H__
+#ifndef LIBETHERCAT_TIMER_H
+#define LIBETHERCAT_TIMER_H
 
 #define NSEC_PER_SEC                1000000000
 
@@ -39,13 +39,14 @@
 #define EC_DEFAULT_DELAY            2000000
 
 #include <stdint.h>
+// cppcheck-suppress misra-c2012-21.10
 #include <time.h>
 #include <sys/time.h>
 
 //! timer structure
 typedef struct ec_timer {
-    uint64_t sec;       //!< seconds
-    uint64_t nsec;      //!< nanoseconds
+    int64_t sec;       //!< seconds
+    int64_t nsec;      //!< nanoseconds
 } ec_timer_t;
 
 # define ec_timer_add(a, b, result)                                 \
@@ -72,7 +73,7 @@ extern "C" {
 /*!
  * \param[in] nsec      Time to sleep in nanoseconds.
  */
-void ec_sleep(uint64_t nsec);
+void ec_sleep(int64_t nsec);
 
 //! Gets filled timer struct with current time.
 /*!
@@ -88,7 +89,7 @@ int ec_timer_gettime(ec_timer_t *timer);
 /*!
  * \return              Current timer in nanosecond.
  */
-uint64_t ec_timer_gettime_nsec();
+int64_t ec_timer_gettime_nsec(void);
 
 //! Initialize timer with timeout.
 /*!
@@ -97,7 +98,7 @@ uint64_t ec_timer_gettime_nsec();
  * \param[in] timeout   Timeout in nanoseconds. If set to 0, then this function
  *                      will do the same as \link ec_timer_gettime \endlink.
  */
-void ec_timer_init(ec_timer_t *timer, uint64_t timeout);
+void ec_timer_init(ec_timer_t *timer, int64_t timeout);
 
 //! Checks if timer is expired.
 /*!
@@ -112,5 +113,5 @@ int ec_timer_expired(ec_timer_t *timer);
 }
 #endif
 
-#endif // __LIBETHERCAT_TIMER_H__
+#endif // LIBETHERCAT_TIMER_H
 

@@ -28,8 +28,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_SLAVE_H__
-#define __LIBETHERCAT_SLAVE_H__
+#ifndef LIBETHERCAT_SLAVE_H
+#define LIBETHERCAT_SLAVE_H
 
 #include <stdint.h>
 
@@ -530,5 +530,5 @@ void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
 }
 #endif
 
-#endif // __LIBETHERCAT_SLAVE_H__
+#endif // LIBETHERCAT_SLAVE_H
 

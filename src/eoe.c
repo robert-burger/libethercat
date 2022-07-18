@@ -287,7 +287,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
 
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
-    ec_mbx_check(EC_EEPROM_MBX_EOE, EoE);
+    ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE);
 
     pthread_mutex_lock(&slv->mbx.eoe.lock);
 
@@ -308,7 +308,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     write_buf->eoe_hdr.last_fragment      = 0x01;
 
     memset(&(write_buf->sip_hdr), 0, sizeof(write_buf->sip_hdr));
-    uint8_t *buf = &write_buf->data.bdata[0];
+    uint8_t *buf = &write_buf->data[0];
 
 #define EOE_SIZEOF_MAC          6
 #define EOE_SIZEOF_IP_ADDRESS   4
@@ -377,7 +377,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
 
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
-    ec_mbx_check(EC_EEPROM_MBX_EOE, EoE);
+    ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE);
 
     size_t max_frag_len = (slv->sm[MAILBOX_WRITE].len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
     ALIGN_32BIT_BLOCKS(max_frag_len);
@@ -419,7 +419,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame,
         else                         { write_buf->eoe_hdr.complete_size  = (frame_offset) >> 5;   }
     
         // copy fragment
-        memcpy(&write_buf->data.bdata[0], &frame[frame_offset], frag_len);
+        memcpy(&write_buf->data[0], &frame[frame_offset], frag_len);
         frame_offset += frag_len;
         frag_number++;
 
@@ -467,7 +467,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     size_t frag_len       = read_buf->mbx_hdr.length - 4;
     off_t frame_offset    = 0;
 
-    memcpy(&(eth_frame->frame_data[frame_offset]), &read_buf->data.bdata[0], frag_len);
+    memcpy(&(eth_frame->frame_data[frame_offset]), &read_buf->data[0], frag_len);
     frame_offset += frag_len;
 
     if (!read_buf->eoe_hdr.last_fragment) {
@@ -483,7 +483,7 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
             }
 
             frag_len = read_buf->mbx_hdr.length - 4;
-            memcpy(&(eth_frame->frame_data[frame_offset]), &(read_buf->data.bdata[0]), frag_len);
+            memcpy(&(eth_frame->frame_data[frame_offset]), &(read_buf->data[0]), frag_len);
             frame_offset += frag_len;
 
             if (read_buf->eoe_hdr.last_fragment) {

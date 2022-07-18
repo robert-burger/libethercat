@@ -47,7 +47,7 @@ typedef struct pool_entry {
 
     TAILQ_ENTRY(pool_entry) qh;                             //!< \brief Queue handle of pool objects.
     
-    void *data;                                             //!< \brief Data entry.
+    uint8_t *data;                                          //!< \brief Data entry.
     size_t data_size;
 } pool_entry_t;
 
@@ -108,19 +108,15 @@ int pool_peek(pool_t *pp, pool_entry_t **entry);
 /*!
  * \param[in]   pp          Pointer to pool.
  * \param[out]  entry       Entry to put back in pool.
- *
- * \return 0 or negative error code
  */
-int pool_put(pool_t *pp, pool_entry_t *entry);
+void pool_put(pool_t *pp, pool_entry_t *entry);
 
 //! \brief Put entry back to pool in front.
 /*!
  * \param[in]   pp          Pointer to pool.
  * \param[out]  entry       Entry to put back in pool.
- *
- * \return 0 or negative error code
  */
-int pool_put_head(pool_t *pp, pool_entry_t *entry);
+void pool_put_head(pool_t *pp, pool_entry_t *entry);
 
 #ifdef __cplusplus
 }

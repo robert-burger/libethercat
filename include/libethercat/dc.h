@@ -30,8 +30,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_DC_H__
-#define __LIBETHERCAT_DC_H__
+#ifndef LIBETHERCAT_DC_H
+#define LIBETHERCAT_DC_H
 
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
@@ -137,5 +137,5 @@ void ec_dc_sync(struct ec *pec, uint16_t slave, uint8_t dc_active,
 }
 #endif
 
-#endif // __LIBETHERCAT_DC_H__
+#endif // LIBETHERCAT_DC_H
 

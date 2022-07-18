@@ -27,8 +27,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_IDX_H__
-#define __LIBETHERCAT_IDX_H__
+#ifndef LIBETHERCAT_IDX_H
+#define LIBETHERCAT_IDX_H
 
 #include <sys/queue.h>
 #include <semaphore.h>
@@ -100,5 +100,5 @@ int ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry);
 }
 #endif
 
-#endif // __LIBETHERCAT_IDX_H__
+#endif // LIBETHERCAT_IDX_H
 

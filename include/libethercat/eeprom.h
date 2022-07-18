@@ -29,8 +29,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_EEPROM_H__
-#define __LIBETHERCAT_EEPROM_H__
+#ifndef LIBETHERCAT_EEPROM_H
+#define LIBETHERCAT_EEPROM_H
 
 #include "libethercat/common.h"
 #include <stdlib.h>
@@ -160,48 +160,40 @@ typedef struct eeprom_info {
     ec_eeprom_cat_dc_t *dcs;        //!< array of distributed clocks settings
 } eeprom_info_t;
 
-enum ec_eeprom_mbx {
-    EC_EEPROM_MBX_AOE = 0x01,       //! AoE mailbox support
-    EC_EEPROM_MBX_EOE = 0x02,       //! EoE mailbox support
-    EC_EEPROM_MBX_COE = 0x04,       //! CoE mailbox support
-    EC_EEPROM_MBX_FOE = 0x08,       //! FoE mailbox support
-    EC_EEPROM_MBX_SOE = 0x10,       //! SoE mailbox support
-    EC_EEPROM_MBX_VOE = 0x20,       //! VoE mailbox support
-};
+#define EC_EEPROM_MBX_AOE                   (0x01u)     //!< \brief AoE mailbox support
+#define EC_EEPROM_MBX_EOE                   (0x02u)     //!< \brief EoE mailbox support
+#define EC_EEPROM_MBX_COE                   (0x04u)     //!< \brief CoE mailbox support
+#define EC_EEPROM_MBX_FOE                   (0x08u)     //!< \brief FoE mailbox support
+#define EC_EEPROM_MBX_SOE                   (0x10u)     //!< \brief SoE mailbox support
+#define EC_EEPROM_MBX_VOE                   (0x20u)     //!< \brief VoE mailbox support
 
-enum ec_eeprom_address {
-    EC_EEPROM_ADR_VENDOR_ID          = 0x0008,  //!< offset vendor id
-    EC_EEPROM_ADR_PRODUCT_CODE       = 0x000A,  //!< offset product code
-    EC_EEPROM_ADR_BOOT_MBX_RECV_OFF  = 0x0014,  //!< offset mbx receive off
-    EC_EEPROM_ADR_BOOT_MBX_RECV_SIZE = 0x0015,  //!< offset mbx receive size
-    EC_EEPROM_ADR_BOOT_MBX_SEND_OFF  = 0x0016,  //!< offset mbx send off
-    EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE = 0x0017,  //!< offset mbx send size
-    EC_EEPROM_ADR_STD_MBX_RECV_OFF   = 0x0018,  //!< offset boot mbx rcv off
-    EC_EEPROM_ADR_STD_MBX_RECV_SIZE  = 0x0019,  //!< offset boot mbx rcv size
-    EC_EEPROM_ADR_STD_MBX_SEND_OFF   = 0x001A,  //!< offset boot mbx send off
-    EC_EEPROM_ADR_STD_MBX_SEND_SIZE  = 0x001B,  //!< offset boot mbx send size
-    EC_EEPROM_ADR_MBX_SUPPORTED      = 0x001C,  //!< offset mailbox supported
-    EC_EEPROM_ADR_SIZE               = 0x003E,  //!< offset eeprom size
-    EC_EEPROM_ADR_CAT_OFFSET         = 0x0040,  //!< offset start of categories
-};
+#define EC_EEPROM_ADR_VENDOR_ID             (0x0008u)   //!< \brief offset vendor id
+#define EC_EEPROM_ADR_PRODUCT_CODE          (0x000Au)   //!< \brief offset product code
+#define EC_EEPROM_ADR_BOOT_MBX_RECV_OFF     (0x0014u)   //!< \brief offset mbx receive off
+#define EC_EEPROM_ADR_BOOT_MBX_RECV_SIZE    (0x0015u)   //!< \brief offset mbx receive size
+#define EC_EEPROM_ADR_BOOT_MBX_SEND_OFF     (0x0016u)   //!< \brief offset mbx send off
+#define EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE    (0x0017u)   //!< \brief offset mbx send size
+#define EC_EEPROM_ADR_STD_MBX_RECV_OFF      (0x0018u)   //!< \brief offset boot mbx rcv off
+#define EC_EEPROM_ADR_STD_MBX_RECV_SIZE     (0x0019u)   //!< \brief offset boot mbx rcv size
+#define EC_EEPROM_ADR_STD_MBX_SEND_OFF      (0x001Au)   //!< \brief offset boot mbx send off
+#define EC_EEPROM_ADR_STD_MBX_SEND_SIZE     (0x001Bu)   //!< \brief offset boot mbx send size
+#define EC_EEPROM_ADR_MBX_SUPPORTED         (0x001Cu)   //!< \brief offset mailbox supported
+#define EC_EEPROM_ADR_SIZE                  (0x003Eu)   //!< \brief offset eeprom size
+#define EC_EEPROM_ADR_CAT_OFFSET            (0x0040u)   //!< \brief offset start of categories
 
-enum ec_eeprom_category {
-    EC_EEPROM_CAT_NOP       = 0,            //!< category do nothing
-    EC_EEPROM_CAT_STRINGS   = 10,           //!< category strings
-    EC_EEPROM_CAT_DATATYPES = 20,           //!< category datatypes
-    EC_EEPROM_CAT_GENERAL   = 30,           //!< category general
-    EC_EEPROM_CAT_FMMU      = 40,           //!< category fmmus
-    EC_EEPROM_CAT_SM        = 41,           //!< category sync managers
-    EC_EEPROM_CAT_TXPDO     = 50,           //!< category TXPDOs
-    EC_EEPROM_CAT_RXPDO     = 51,           //!< category RXPDOs
-    EC_EEPROM_CAT_DC        = 60,           //!< category distributed clocks
-    EC_EEPROM_CAT_END       = 0xFFFF        //!< category end identifier
-};
+#define EC_EEPROM_CAT_NOP                   (     0u)   //!< \brief category do nothing
+#define EC_EEPROM_CAT_STRINGS               (    10u)   //!< \brief category strings
+#define EC_EEPROM_CAT_DATATYPES             (    20u)   //!< \brief category datatypes
+#define EC_EEPROM_CAT_GENERAL               (    30u)   //!< \brief category general
+#define EC_EEPROM_CAT_FMMU                  (    40u)   //!< \brief category fmmus
+#define EC_EEPROM_CAT_SM                    (    41u)   //!< \brief category sync managers
+#define EC_EEPROM_CAT_TXPDO                 (    50u)   //!< \brief category TXPDOs
+#define EC_EEPROM_CAT_RXPDO                 (    51u)   //!< \brief category RXPDOs
+#define EC_EEPROM_CAT_DC                    (    60u)   //!< \brief category distributed clocks
+#define EC_EEPROM_CAT_END                   (0xFFFFu)   //!< \brief category end identifier
 
 #ifdef __cplusplus
 extern "C" {
-#elif defined my_little_dummy
-}
 #endif
 
 // forward decl
@@ -304,11 +296,9 @@ int ec_eepromwrite_len(struct ec *pec, uint16_t slave,
  */
 void ec_eeprom_dump(struct ec *pec, uint16_t slave);
 
-#ifdef my_little_dummy
-{
-#elif defined __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif // __LIBETHERCAT_EEPROM_H__
+#endif // LIBETHERCAT_EEPROM_H
 

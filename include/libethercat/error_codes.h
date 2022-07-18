@@ -10,7 +10,6 @@
  * 
  */
 
-
 /*
  * This file is part of libethercat.
  *
@@ -26,16 +25,19 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_ERROR_CODES_H__
-#define __LIBETHERCAT_ERROR_CODES_H__
+#ifndef LIBETHERCAT_ERROR_CODES_H
+#define LIBETHERCAT_ERROR_CODES_H
 
 #include "libethercat/common.h"
 #include "libethercat/mbx.h"
 
+#define EC_OK                                   0
+
 #define EC_ERROR_MAILBOX_MASK                   0x00010000
+
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_AOE)
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_EOE)
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_COE      (EC_ERROR_MAILBOX_MASK | EC_MBX_FOE)
@@ -46,9 +48,14 @@
 #define EC_ERROR_MAILBOX_READ_IS_NULL           (EC_ERROR_MAILBOX_MASK | 0x00000010)
 #define EC_ERROR_MAILBOX_WRITE_IS_NULL          (EC_ERROR_MAILBOX_MASK | 0x00000020)
 
+#define EC_ERROR_MAILBOX_TIMEOUT                (EC_ERROR_MAILBOX_MASK | 0x00001000)
+#define EC_ERROR_MAILBOX_ABORT                  (EC_ERROR_MAILBOX_MASK | 0x00002000)
 #define EC_ERROR_MAILBOX_READ                   (EC_ERROR_MAILBOX_MASK | 0x00004000)
 #define EC_ERROR_MAILBOX_WRITE                  (EC_ERROR_MAILBOX_MASK | 0x00008000)
-#define EC_ERROR_MAILBOX_ABORT                  (EC_ERROR_MAILBOX_MASK | 0x00002000)
 
-#endif // __LIBETHERCAT_ERROR_CODES_H__
+#define EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS    (EC_ERROR_MAILBOX_MASK | 0x00010000)
+#define EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS   (EC_ERROR_MAILBOX_MASK | 0x00020000)
+#define EC_ERROR_MAILBOX_BUFFER_TOO_SMALL       (EC_ERROR_MAILBOX_MASK | 0x00040000)
+
+#endif // LIBETHERCAT_ERROR_CODES_H
 

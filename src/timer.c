@@ -26,13 +26,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
 #include "config.h"
 
 #include "libethercat/timer.h"
 #include <assert.h>
+    
+// cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 
 #define timer_cmp(a, b, CMP)          \
@@ -52,14 +54,15 @@
   } while (0)
 
 // sleep in nanoseconds
-void ec_sleep(uint64_t nsec) {
-    struct timespec ts = { 
-        (nsec / NSEC_PER_SEC), (nsec % NSEC_PER_SEC) }, rest;
+void ec_sleep(int64_t nsec) {
+    struct timespec ts = { (nsec / NSEC_PER_SEC), (nsec % NSEC_PER_SEC) };
+    struct timespec rest;
     
     while (1) {
         int ret = nanosleep(&ts, &rest);
-        if (ret == 0)
+        if (ret == 0) {
             break;
+        }
 
         ts = rest;
     }
@@ -68,36 +71,44 @@ void ec_sleep(uint64_t nsec) {
 //! gets timer 
 int ec_timer_gettime(ec_timer_t *timer) {
     assert(timer != NULL);
+    int ret = 0;
 
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         perror("clock_gettime");
-        return -1;
+        ret = -1;
+    } else {
+        timer->sec = ts.tv_sec;
+        timer->nsec = ts.tv_nsec;
     }
 
-    timer->sec = ts.tv_sec;
-    timer->nsec = ts.tv_nsec;
-
-    return 0;
+    return ret;
 }
 
 // gets time in nanoseconds
-uint64_t ec_timer_gettime_nsec() {
+int64_t ec_timer_gettime_nsec(void) {
+    int64_t ret = 0;
     ec_timer_t tmr = { 0, 0 };
-    ec_timer_gettime(&tmr);
+    ret = ec_timer_gettime(&tmr);
 
-    return (tmr.sec * 1E9 + tmr.nsec);
+    if (ret == 0) {
+        ret = ((tmr.sec * 1E9) + tmr.nsec);
+    }
+
+    return ret;
 }
 
 // initialize timer with timeout 
-void ec_timer_init(ec_timer_t *timer, uint64_t timeout) {
+void ec_timer_init(ec_timer_t *timer, int64_t timeout) {
     struct timespec ts;
-    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         perror("clock_gettime");
+    }
 
     assert(timer != NULL);
 
-    ec_timer_t a, b;
+    ec_timer_t a;
+    ec_timer_t b;
     a.sec = ts.tv_sec;
     a.nsec = ts.tv_nsec;
 
@@ -110,10 +121,17 @@ void ec_timer_init(ec_timer_t *timer, uint64_t timeout) {
 // checks if timer is expired
 int ec_timer_expired(ec_timer_t *timer) {
     ec_timer_t act = { 0, 0 };
-    ec_timer_gettime(&act);    
+    int ret = 0;
+    ret = ec_timer_gettime(&act);    
 
     assert(timer != NULL);
 
-    return !timer_cmp(&act, timer, <);
+    if (ret == 0) {
+        if (timer_cmp(&act, timer, <) == 0) {
+            ret = 1;
+        }
+    } 
+
+    return ret;
 }
 

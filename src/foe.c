@@ -167,7 +167,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
     assert(file_data_len != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_mbx_check(EC_EEPROM_MBX_FOE, FoE);
+    ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -233,7 +233,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         size_t len = read_buf_data->mbx_hdr.length - 6;
         *file_data = realloc(*file_data, *file_data_len + len);
         memcpy(*file_data + *file_data_len, 
-                &read_buf_data->data.bdata[0], len); 
+                &read_buf_data->data[0], len); 
         *file_data_len += len;
 
         int packet_nr = read_buf_data->packet_nr;
@@ -296,7 +296,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     assert(file_data != NULL);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_mbx_check(EC_EEPROM_MBX_FOE, FoE);
+    ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE);
 
     pthread_mutex_lock(&slv->mbx.lock);
 
@@ -362,7 +362,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         int last_pkt = 0;
 
         int bytes_read = min(file_data_len - file_offset, data_len);
-        memcpy(&write_buf_data->data.bdata[0], file_data + file_offset, bytes_read);
+        memcpy(&write_buf_data->data[0], file_data + file_offset, bytes_read);
         if (bytes_read < data_len) {
             last_pkt = 1;
         }

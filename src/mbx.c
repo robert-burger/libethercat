@@ -1,4 +1,4 @@
-/**
+/*
  * \file mbx.c
  *
  * \author Robert Burger <robert.burger@dlr.de>
@@ -48,14 +48,14 @@
 #define MBX_HANDLER_FLAGS_RECV  ((uint32_t)0x00000002u)
 
 // forward declarations
-int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
-int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
-void ec_mbx_handler(ec_t *pec, int slave);
-int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
-int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
+static int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
+static int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
+static void ec_mbx_handler(ec_t *pec, uint16_t slave);
+static int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
+static int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
 
 //! \brief Mailbox handler thread wrapper
-void *ec_mbx_handler_thread(void *arg) {
+static void *ec_mbx_handler_thread(void *arg) {
     ec_mbx_t *pmbx = (ec_mbx_t *)arg;
     ec_mbx_handler(pmbx->pec, pmbx->slave);
     return NULL;
@@ -75,38 +75,37 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
 
-    if (slv->mbx.handler_running) {
-        return;
-    }
+    if (slv->mbx.handler_running == 0) {
+        ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
 
-    ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
+        check_ret(pool_open(&slv->mbx.message_pool_recv_free, 1024, slv->sm[MAILBOX_READ].len));
+        check_ret(pool_open(&slv->mbx.message_pool_send_free, 1024, slv->sm[MAILBOX_WRITE].len));
+        check_ret(pool_open(&slv->mbx.message_pool_send_queued, 0, slv->sm[MAILBOX_WRITE].len));
 
-    pool_open(&slv->mbx.message_pool_recv_free, 1024, slv->sm[MAILBOX_READ].len);
-    pool_open(&slv->mbx.message_pool_send_free, 1024, slv->sm[MAILBOX_WRITE].len);
-    pool_open(&slv->mbx.message_pool_send_queued, 0, slv->sm[MAILBOX_WRITE].len);
+        pthread_mutex_init(&slv->mbx.sync_mutex, NULL);
+        sem_init(&slv->mbx.sync_sem, 0, 0);
+        pthread_mutex_init(&slv->mbx.lock, NULL);
 
-    pthread_mutex_init(&slv->mbx.sync_mutex, NULL);
-    sem_init(&slv->mbx.sync_sem, 0, 0);
-    pthread_mutex_init(&slv->mbx.lock, NULL);
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
+            ec_coe_init(pec, slave);
+        }
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {
+            ec_soe_init(pec, slave);
+        }
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
+            ec_foe_init(pec, slave);
+        }
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {
+            ec_eoe_init(pec, slave);
+        }
 
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
-        ec_coe_init(pec, slave);
-    }
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
-        ec_soe_init(pec, slave);
-    }
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
-        ec_foe_init(pec, slave);
-    }
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
-        ec_eoe_init(pec, slave);
-    }
+        // start mailbox handler thread
+        slv->mbx.handler_running = 1;
+        slv->mbx.pec = pec;
+        slv->mbx.slave = slave;
 
-    // start mailbox handler thread
-    slv->mbx.handler_running = 1;
-    slv->mbx.pec = pec;
-    slv->mbx.slave = slave;
-    pthread_create(&slv->mbx.handler_tid, NULL, ec_mbx_handler_thread, &slv->mbx);
+        pthread_create(&slv->mbx.handler_tid, NULL, ec_mbx_handler_thread, &slv->mbx);
+    }
 }
 
 //! \brief Deinit mailbox structure
@@ -123,36 +122,55 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
 
-    if (!slv->mbx.handler_running) {
-        return;
+    if (slv->mbx.handler_running != 0) {
+        ec_log(10, __func__, "slave %2d: deinitilizing mailbox\n", slave);
+
+        slv->mbx.handler_running = 0;
+        pthread_join(slv->mbx.handler_tid, NULL);
+
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
+            ec_coe_deinit(pec, slave);
+        }
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {
+            ec_soe_deinit(pec, slave);
+        }
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
+            ec_foe_deinit(pec, slave);
+        }
+        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {
+            ec_eoe_deinit(pec, slave);
+        }
+
+        pthread_mutex_destroy(&slv->mbx.lock);
+        sem_destroy(&slv->mbx.sync_sem);
+        pthread_mutex_destroy(&slv->mbx.sync_mutex);
+
+        check_ret(pool_close(slv->mbx.message_pool_recv_free));
+        check_ret(pool_close(slv->mbx.message_pool_send_free));
+        check_ret(pool_close(slv->mbx.message_pool_send_queued));
+    }
+}
+
+//! \brief Checks if mailbox protocol is supported by slave
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] mbx_flag  Mailbox protocol flag to be checked
+ *
+ * \return 1 if supported, 0 otherwise
+ */
+int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag) {
+    char mbx_string[] = "TODO";
+
+    if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {
+        ec_log(10, __func__, "no %s support on slave %d\n", mbx_string, slave); 
+        return 0;
     }
 
-    ec_log(10, __func__, "slave %2d: deinitilizing mailbox\n", slave);
-
-    slv->mbx.handler_running = 0;
-    pthread_join(slv->mbx.handler_tid, NULL);
-    
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
-        ec_coe_deinit(pec, slave);
-    }
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
-        ec_soe_deinit(pec, slave);
-    }
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
-        ec_foe_deinit(pec, slave);
-    }
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
-        ec_eoe_deinit(pec, slave);
-    }
-
-    pthread_mutex_destroy(&slv->mbx.lock);
-    sem_destroy(&slv->mbx.sync_sem);
-    pthread_mutex_destroy(&slv->mbx.sync_mutex);
-     
-    pool_close(slv->mbx.message_pool_recv_free);
-    pool_close(slv->mbx.message_pool_send_free);
-    pool_close(slv->mbx.message_pool_send_queued);
-
+    return 1;
 }
 
 //! \brief Check if mailbox is full.
@@ -169,6 +187,7 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
 int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     uint16_t wkc = 0;
     uint8_t sm_state = 0;
+    int ret = 0;
 
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -177,17 +196,19 @@ int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     ec_timer_init(&timer, nsec);
 
     do {
-        ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                EC_REG_SM0STAT + (mbx_nr * 8), 
-                &sm_state, sizeof(sm_state), &wkc);
+        check_ret(ec_fprd(pec, pec->slaves[slave].fixed_address, 
+                (uint16_t)(EC_REG_SM0STAT + ((uint16_t)mbx_nr << 3u)), 
+                &sm_state, sizeof(sm_state), &wkc));
 
-        if (wkc && ((sm_state & 0x08) == 0x08)) 
-            return 1;
+        if (wkc && ((sm_state & 0x08u) == 0x08u)) {
+            ret = 1;
+            break;
+        }
 
         ec_sleep(EC_DEFAULT_DELAY);
     } while (!ec_timer_expired(&timer));
 
-    return 0;
+    return ret;
 }
 
 //! \brief Check if mailbox is empty.
@@ -204,6 +225,7 @@ int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
 int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     uint16_t wkc = 0;
     uint8_t sm_state = 0;
+    int ret = 0;
 
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -212,17 +234,19 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
     ec_timer_init(&timer, nsec);
 
     do {
-        ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                EC_REG_SM0STAT + (mbx_nr * 8), 
-                &sm_state, sizeof(sm_state), &wkc);
+        check_ret(ec_fprd(pec, pec->slaves[slave].fixed_address, 
+                (uint16_t)(EC_REG_SM0STAT + ((uint16_t)mbx_nr << 3u)), 
+                &sm_state, sizeof(sm_state), &wkc));
 
-        if (wkc && ((sm_state & 0x08) == 0x00)) 
-            return 1;
+        if (wkc && ((sm_state & 0x08u) == 0x00u)) {
+            ret = 1;
+            break;
+        }
 
         ec_sleep(EC_DEFAULT_DELAY);
     } while (!ec_timer_expired(&timer));
 
-    return 0;
+    return ret;
 }
 
 //! \brief write mailbox to slave.
@@ -237,6 +261,7 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
  */
 int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
     uint16_t wkc = 0;
+    int ret = 0;
     ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
@@ -249,24 +274,26 @@ int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_
     // wait for send mailbox available 
     if (!ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec)) {
         ec_log(1, __func__, "slave %d: waiting for empty send mailbox failed!\n", slave);
-        return 0;
+    } else {
+        // send request
+        do {
+            ec_log(100, __func__, "slave %d: writing mailbox\n", slave);
+            check_ret(ec_fpwr(pec, slv->fixed_address, slv->sm[MAILBOX_WRITE].adr, buf, buf_len, &wkc));
+
+            if (wkc != 0u) {
+                ret = wkc;
+                break;
+            }
+
+            ec_sleep(EC_DEFAULT_DELAY);
+        } while (!ec_timer_expired(&timer));
+
+        if (ret == 0) {
+            ec_log(1, __func__, "slave %d: did not respond on writing to write mailbox\n", slave);
+        }
     }
 
-    // send request
-    do {
-        ec_log(100, __func__, "slave %d: writing mailbox\n", slave);
-        ec_fpwr(pec, slv->fixed_address, slv->sm[MAILBOX_WRITE].adr, buf, buf_len, &wkc);
-
-        if (wkc) {
-            return wkc;
-        }
-
-        ec_sleep(EC_DEFAULT_DELAY);
-    } while (!ec_timer_expired(&timer));
-
-    ec_log(1, __func__, "slave %d: did not respond on writing to write mailbox\n", slave);
-
-    return 0;
+    return ret;
 }
 
 //! \brief Read mailbox from slave.
@@ -282,6 +309,7 @@ int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_
  */
 int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
     uint16_t wkc = 0;
+    int ret = 0;
     ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
@@ -292,70 +320,71 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint
     ec_timer_init(&timer, EC_DEFAULT_TIMEOUT_MBX);
 
     // wait for receive mailbox available 
-    if (!ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec)) {
-        return 0;
+    if (ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec) != 0) {
+        // receive answer
+        do {
+            check_ret(ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr,
+                        buf, buf_len, &wkc));
+
+            if (wkc != 0u) {
+                // reset mailbox state 
+                if (slv->mbx.sm_state != NULL) {
+                    *slv->mbx.sm_state = 0u;
+                }
+
+                ret = wkc;
+                break;
+            } else {
+                // lost receive mailbox ?
+                ec_log(10, __func__, "slave %d: lost receive mailbox ?\n", slave);
+
+                uint16_t sm_status = 0u;
+                uint8_t sm_control = 0u;
+
+                check_ret(ec_fprd(pec, slv->fixed_address, 
+                            (uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
+                            &sm_status, sizeof(sm_status), &wkc));
+
+                sm_status ^= 0x0200; // toggle repeat request
+
+                check_ret(ec_fpwr(pec, slv->fixed_address, 
+                            (uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
+                            &sm_status, sizeof(sm_status), &wkc));
+
+                do { 
+                    // wait for toggle ack
+                    check_ret(ec_fprd(pec, slv->fixed_address, 
+                                (uint16_t)(EC_REG_SM0CONTR + (MAILBOX_READ << 3u)),
+                                &sm_control, sizeof(sm_control), &wkc));
+
+                    if (wkc && ((sm_control & 0x02u) == 
+                                ((sm_status & 0x0200u) >> 8u)))
+                        break;
+                } while (!ec_timer_expired(&timer) && !wkc);
+
+                if (ec_timer_expired(&timer) != 0) {
+                    ec_log(1, __func__, "slave %d timeout waiting for toggle ack\n", slave);
+                    break;
+                }
+
+                // wait for receive mailbox available 
+                if (!ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec)) {
+                    ec_log(1, __func__, "slave %d waiting for full receive "
+                            "mailbox failed!\n", slave);
+                    break;
+                }
+            }
+
+            ec_sleep(EC_DEFAULT_DELAY);
+        } while (!ec_timer_expired(&timer));
+
+        if (ec_timer_expired(&timer) != 0) {
+            ec_log(1, __func__, "slave %d did not respond "
+                    "on reading from receive mailbox\n", slave);
+        }
     }
 
-    // receive answer
-    do {
-        ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr,
-                buf, buf_len, &wkc);
-
-        if (wkc) {
-            // reset mailbox state 
-            if (slv->mbx.sm_state) {
-                *slv->mbx.sm_state = 0;
-            }
-
-            return wkc;
-        } else {
-            // lost receive mailbox ?
-            ec_log(10, __func__, "slave %d: lost receive mailbox ?\n", slave);
-
-            uint16_t sm_status = 0;
-            uint8_t sm_control = 0;
-            
-            ec_fprd(pec, slv->fixed_address, EC_REG_SM0STAT + 
-                    (MAILBOX_READ * 8),
-                    &sm_status, sizeof(sm_status), &wkc);
-
-            sm_status ^= 0x0200; // toggle repeat request
-            
-            ec_fpwr(pec, slv->fixed_address, EC_REG_SM0STAT + 
-                    (MAILBOX_READ * 8),
-                    &sm_status, sizeof(sm_status), &wkc);
-
-            do { 
-                // wait for toggle ack
-                ec_fprd(pec, slv->fixed_address, EC_REG_SM0CONTR + 
-                        (MAILBOX_READ * 8),
-                    &sm_control, sizeof(sm_control), &wkc);
-
-                if (wkc && ((sm_control & 0x02) == 
-                            ((sm_status & 0x0200) >> 8)))
-                    break;
-            } while (!ec_timer_expired(&timer) && !wkc);
-
-            if (ec_timer_expired(&timer)) {
-                ec_log(1, __func__, "slave %d timeout waiting for toggle ack\n", slave);
-                return 0;
-            }
-
-            // wait for receive mailbox available 
-            if (!ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec)) {
-                ec_log(1, __func__, "slave %d waiting for full receive "
-                        "mailbox failed!\n", slave);
-                return 0;
-            }
-        }
-
-        ec_sleep(EC_DEFAULT_DELAY);
-    } while (!ec_timer_expired(&timer));
-                
-    ec_log(1, __func__, "slave %d did not respond "
-            "on reading from receive mailbox\n", slave);
-
-    return 0;
+    return ret;
 }
 
 //! \brief Enqueue mailbox message to send queue.
@@ -437,8 +466,9 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
  */
-void ec_mbx_handler(ec_t *pec, int slave) {
-    int ret = 0, wkc;
+void ec_mbx_handler(ec_t *pec, uint16_t slave) {
+    int ret = 0;
+    int wkc = 0;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -449,7 +479,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
 
     ec_log(10, __func__, "slave %2d: started mailbox handler\n", slave);
 
-    while (slv->mbx.handler_running) {
+    while (slv->mbx.handler_running != 0) {
         // wait for mailbox event
         ec_timer_init(&timeout, 1000000);
         struct timespec ts = { timeout.sec, timeout.nsec };
@@ -474,30 +504,30 @@ void ec_mbx_handler(ec_t *pec, int slave) {
             }
         }
 
-        while (flags) {
+        while (flags != 0u) {
             // check event
-            if (flags & MBX_HANDLER_FLAGS_RECV) {
+            if ((flags & MBX_HANDLER_FLAGS_RECV) != 0u) {
                 flags &= ~MBX_HANDLER_FLAGS_RECV;
                 
                 ec_log(100, __func__, "slave %2d: mailbox needs to be read\n", slave);
 
                 do {
-                    pool_get(slv->mbx.message_pool_recv_free, &p_entry, NULL);
+                    check_ret(pool_get(slv->mbx.message_pool_recv_free, &p_entry, NULL));
                     if (!p_entry) {
                         ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
                         exit(-1);
                         //break;
                     }
-                    memset(p_entry->data, 0, p_entry->data_size);
-
+                    (void)memset(p_entry->data, 0, p_entry->data_size);
+    
                     if (ec_mbx_receive(pec, slave, p_entry->data, 
-                                min(p_entry->data_size, slv->sm[MAILBOX_READ].len), 0)) {
-                        ec_mbx_header_t *hdr = (ec_mbx_header_t *)p_entry->data;
+                                min(p_entry->data_size, (size_t)slv->sm[MAILBOX_READ].len), 0) != 0) {
+                        ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
                         ec_log(100, __func__, "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
 
                         switch (hdr->mbxtype) {
                             case EC_MBX_COE:
-                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) {
+                                if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
                                     ec_coe_enqueue(pec, slave, p_entry);
                                     p_entry = NULL;
                                 } else {
@@ -505,7 +535,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                                 }
                                 break;
                             case EC_MBX_SOE:
-                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) {
+                                if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {
                                     ec_soe_enqueue(pec, slave, p_entry);
                                     p_entry = NULL;
                                 } else {
@@ -513,7 +543,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                                 }
                                 break;
                             case EC_MBX_FOE:
-                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE) {
+                                if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
                                     ec_foe_enqueue(pec, slave, p_entry);
                                     p_entry = NULL;
                                 } else {
@@ -521,7 +551,7 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                                 }
                                 break;
                             case EC_MBX_EOE:
-                                if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE) {
+                                if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {
                                     ec_eoe_enqueue(pec, slave, p_entry);
                                     p_entry = NULL;
                                 } else {
@@ -533,36 +563,37 @@ void ec_mbx_handler(ec_t *pec, int slave) {
                         }
                     }
 
-                    if (p_entry) {
+                    if (NULL != p_entry) {
                         // returning to free pool
                         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                     }
 
-                } while (ec_mbx_is_full(pec, slave, MAILBOX_READ, 0));
+                } while (ec_mbx_is_full(pec, slave, MAILBOX_READ, 0) != 0);
             }
             
-            if (flags & MBX_HANDLER_FLAGS_SEND) {
+            if ((flags & MBX_HANDLER_FLAGS_SEND) != 0u) {
                 flags &= ~MBX_HANDLER_FLAGS_SEND;
 
                 // need to send a message to write mailbox
                 ec_log(100, __func__, "slave %2d: mailbox needs to be written\n", slave);
-                pool_get(slv->mbx.message_pool_send_queued, &p_entry, NULL);
+                check_ret(pool_get(slv->mbx.message_pool_send_queued, &p_entry, NULL));
 
-                if (p_entry) {
+                if (p_entry != NULL) {
                     ec_log(100, __func__, "slave %2d: got mailbox buffer to write\n", slave);
                     int retry_cnt = 10;
 
                     do {
                         wkc = ec_mbx_send(pec, slave, p_entry->data, 
                                 min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
-                    } while ((!wkc) && (--retry_cnt > 0));
+                        --retry_cnt;
+                    } while ((wkc == 0) && (retry_cnt > 0));
 
                     if (!wkc) {
                         ec_log(1, __func__, "slave %2d: error on writing send mailbox -> requeue\n", slave);
                         ec_mbx_enqueue_head(pec, slave, p_entry);
                     } else {                    
                         // all done
-                        if (p_entry->user_cb) {
+                        if (p_entry->user_cb != NULL) {
                             (*p_entry->user_cb)(p_entry->user_arg, p_entry);
 
                             p_entry->user_cb = NULL;

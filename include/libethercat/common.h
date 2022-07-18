@@ -29,18 +29,17 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_COMMON_H__
-#define __LIBETHERCAT_COMMON_H__
+#ifndef LIBETHERCAT_COMMON_H
+#define LIBETHERCAT_COMMON_H
 
 #include <stdint.h>
 #include <pthread.h>
 
 #define PACKED __attribute__((__packed__))
 
-#ifdef min
-#undef min
-#endif
+#ifndef min
 #define min(a, b)  ((a) < (b) ? (a) : (b))
+#endif
 
 #define free_resource(a) {  \
     if ((a)) {              \
@@ -53,13 +52,15 @@
         (a) = (type *)malloc((len));        \
         memset((a), 0, (len)); } }
 
-#define EC_MAX_DATA 4096
+#define EC_MAX_DATA 4096u
 
-typedef union ec_data {
-    uint8_t bdata[EC_MAX_DATA]; /* variants for easy data access */
-    uint16_t wdata[EC_MAX_DATA];
-    uint32_t ldata[EC_MAX_DATA];
-} ec_data_t;
+//typedef union ec_data {
+//    uint8_t  bdata[EC_MAX_DATA]; /* variants for easy data access */
+//    uint16_t wdata[EC_MAX_DATA>>1u];
+//    uint32_t ldata[EC_MAX_DATA>>2u];
+//} ec_data_t;
+
+typedef uint8_t ec_data_t[EC_MAX_DATA]; /* variants for easy data access */
 
 //! process data structure
 typedef struct ec_pd {
@@ -68,19 +69,21 @@ typedef struct ec_pd {
 } ec_pd_t;
 
 typedef uint16_t ec_state_t;
-#define EC_STATE_UNKNOWN     0x00       //!< unknown state
-#define EC_STATE_INIT        0x01       //!< EtherCAT INIT state
-#define EC_STATE_PREOP       0x02       //!< EtherCAT PREOP state
-#define EC_STATE_BOOT        0x03       //!< EtherCAT BOOT state
-#define EC_STATE_SAFEOP      0x04       //!< EtherCAT SAFEOP state
-#define EC_STATE_OP          0x08       //!< EtherCAT OP state
-#define EC_STATE_MASK        0x0F       //!< EtherCAT state mask
-#define EC_STATE_ERROR       0x10       //!< EtherCAT ERROR
-#define EC_STATE_RESET       0x10       //!< EtherCAT ERROR reset
+#define EC_STATE_UNKNOWN     (0x0000u)       //!< \brief unknown state
+#define EC_STATE_INIT        (0x0001u)       //!< \brief EtherCAT INIT state
+#define EC_STATE_PREOP       (0x0002u)       //!< \brief EtherCAT PREOP state
+#define EC_STATE_BOOT        (0x0003u)       //!< \brief EtherCAT BOOT state
+#define EC_STATE_SAFEOP      (0x0004u)       //!< \brief EtherCAT SAFEOP state
+#define EC_STATE_OP          (0x0008u)       //!< \brief EtherCAT OP state
+#define EC_STATE_MASK        (0x000Fu)       //!< \brief EtherCAT state mask
+#define EC_STATE_ERROR       (0x0010u)       //!< \brief EtherCAT ERROR
+#define EC_STATE_RESET       (0x0010u)       //!< \brief EtherCAT ERROR reset
 
 #ifdef __VXWORKS__ 
 char *strndup(const char *s, size_t n);
 #endif
 
-#endif // __LIBETHERCAT_COMMON_H__
+#define check_ret(cmd) { if ((cmd) != 0) { ec_log(1, __func__, #cmd " returned error\n"); } }
+
+#endif // LIBETHERCAT_COMMON_H
 

@@ -158,8 +158,7 @@ static void *ec_async_message_loop_thread(void *arg) {
                 // do something
                 int slave;
                 for (slave = 0; slave < paml->pec->slave_cnt; ++slave) {
-                    if (paml->pec->slaves[slave].assigned_pd_group != 
-                            me->msg.payload.group_id)
+                    if (paml->pec->slaves[slave].assigned_pd_group != me->msg.payload)
                         continue;
 
                     ec_async_check_slave(paml, slave);
@@ -167,7 +166,7 @@ static void *ec_async_message_loop_thread(void *arg) {
                 break;
             }
             case EC_MSG_CHECK_SLAVE:
-                ec_async_check_slave(paml, me->msg.payload.slave_id);
+                ec_async_check_slave(paml, me->msg.payload);
                 break;
         };
 
@@ -200,7 +199,7 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
         return; // got no message buffer
 
     me->msg.id = EC_MSG_CHECK_GROUP;
-    me->msg.payload.group_id = gid;
+    me->msg.payload = gid;
     ec_async_message_loop_put(&paml->exec, me);
     
     ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);

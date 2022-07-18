@@ -28,8 +28,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_ASYNC_MESSAGE_LOOP_H__
-#define __LIBETHERCAT_ASYNC_MESSAGE_LOOP_H__
+#ifndef LIBETHERCAT_MESSAGE_POOL_H
+#define LIBETHERCAT_MESSAGE_POOL_H
 
 #include <sys/queue.h>
 #include <stdlib.h>
@@ -47,12 +47,7 @@ typedef enum ec_async_message_id {
     EC_MSG_CHECK_SLAVE              //!< message type check slave
 } ec_async_message_id_t;
     
-//! Message payload
-typedef union ec_async_message_payload {
-    void *ptr;                      //!< pointer to payload
-    uint32_t group_id;              //!< group index
-    uint32_t slave_id;              //!< slave index
-} ec_async_message_payload_t;
+typedef uint32_t ec_async_message_payload_t;
 
 //! Message for asynchronous loop
 typedef struct ec_message {
@@ -126,5 +121,5 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid);
 }
 #endif
 
-#endif // __LIBETHERCAT_ASYNC_MESSAGE_LOOP_H__
+#endif // LIBETHERCAT_ASYNC_MESSAGE_LOOP_H
 

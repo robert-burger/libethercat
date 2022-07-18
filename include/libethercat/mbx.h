@@ -38,8 +38,8 @@
 #include "libethercat/eoe.h"
 #include "libethercat/pool.h"
 
-#define MAILBOX_WRITE   (0)
-#define MAILBOX_READ    (1)
+#define MAILBOX_WRITE   (uint16_t)(0u)
+#define MAILBOX_READ    (uint16_t)(1u)
 
 // forward declarations
 struct ec;
@@ -47,7 +47,7 @@ typedef struct ec ec_t;
     
 #define MESSAGE_POOL_DEBUG(type) {}
 
-#define _MESSAGE_POOL_DEBUG(type) \
+#define N_MESSAGE_POOL_DEBUG(type) \
 {                                                                                       \
     int avail = 0;                                                                      \
     sem_getvalue(&slv->mbx.message_pool_ ## type->avail_cnt, &avail);                   \
@@ -70,8 +70,8 @@ typedef struct PACKED ec_mbx_header {
     uint16_t  length;           //!< \brief mailbox length
     uint16_t  address;          //!< \brief mailbox address
     uint8_t   priority;         //!< \brief priority
-    unsigned  mbxtype : 4;      //!< \brief mailbox type
-    unsigned  counter : 4;      //!< \brief counter
+    uint8_t   mbxtype : 4;      //!< \brief mailbox type
+    uint8_t   counter : 4;      //!< \brief counter
 } PACKED ec_mbx_header_t;
 
 //! ethercat mailbox data
@@ -127,9 +127,6 @@ typedef struct ec_mbx {
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if 0
-}
-#endif
 
 //! \brief Initialize mailbox structure.
 /*!
@@ -183,38 +180,32 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  */
 void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
 
-#define ec_mbx_check(mbx_flag, mbx_string)                                          \
-    if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {                  \
-        ec_log(10, __func__, "no " # mbx_string " support on slave %d\n", slave);   \
-        return -1;                                                                  \
-    }
+//! \brief Checks if mailbox protocol is supported by slave
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] mbx_flag  Mailbox protocol flag to be checked
+ *
+ * \return 1 if supported, 0 otherwise
+ */
+int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag);
 
-#define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) { \
-    pool_get(pec->slaves[slave].mbx.message_pool_recv_free, &(entry), (timeout)); \
-}
+#define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) \
+    pool_get((pec)->slaves[(slave)].mbx.message_pool_recv_free, &(entry), (timeout))
 
-#define ec_mbx_get_free_send_buffer(pec, slave, entry, timeout, lock) { \
-    pool_get(pec->slaves[slave].mbx.message_pool_send_free, &(entry), (timeout)); \
-    if (!(entry)) { \
-        ec_log(1, __func__, "slave %d: out of mailbox buffers\n", slave); \
-        pthread_mutex_unlock((lock)); \
-        return -1; \
-    } \
-    memset((entry)->data, 0, (entry)->data_size); \
-}
+#define ec_mbx_get_free_send_buffer(pec, slave, entry, timeout, lock) \
+    pool_get((pec)->slaves[(slave)].mbx.message_pool_send_free, &(entry), (timeout))
 
-#define ec_mbx_return_free_send_buffer(pec, slave, entry) { \
-    pool_put(pec->slaves[slave].mbx.message_pool_send_free, (entry)); \
-}
+#define ec_mbx_return_free_send_buffer(pec, slave, entry) \
+    pool_put((pec)->slaves[(slave)].mbx.message_pool_send_free, (entry)) 
 
-#define ec_mbx_return_free_recv_buffer(pec, slave, entry) { \
-    pool_put(pec->slaves[slave].mbx.message_pool_recv_free, (entry)); \
-}
+#define ec_mbx_return_free_recv_buffer(pec, slave, entry) \
+    pool_put((pec)->slaves[(slave)].mbx.message_pool_recv_free, (entry))
 
 
-#if 0 
-{
-#endif
 #ifdef __cplusplus
 }
 #endif

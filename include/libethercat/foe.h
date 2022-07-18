@@ -29,8 +29,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_FOE_H__
-#define __LIBETHERCAT_FOE_H__
+#ifndef LIBETHERCAT_FOE_H
+#define LIBETHERCAT_FOE_H
 
 #include "libethercat/common.h"
 
@@ -47,7 +47,7 @@ typedef struct ec_fw_update {
     uint16_t size;              //!< size of data
     uint16_t address_low;       //!< destination/source address low WORD
     uint16_t address_high;      //!< destination/source address high WORD
-    uint16_t data[(EC_MAX_DATA-8)>>1];
+    uint16_t data[(EC_MAX_DATA-8u)>>1u];
                                 //!< firmware data bytes
 } ec_fw_update_t;
 
@@ -183,5 +183,5 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
 }
 #endif
 
-#endif // __LIBETHERCAT_COE_H__
+#endif // LIBETHERCAT_COE_H
 

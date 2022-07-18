@@ -29,8 +29,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_SOE_H__
-#define __LIBETHERCAT_SOE_H__
+#ifndef LIBETHERCAT_SOE_H
+#define LIBETHERCAT_SOE_H
 
 #include "libethercat/common.h"
 
@@ -179,5 +179,5 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave);
 }
 #endif
 
-#endif // __LIBETHERCAT_SOE_H__
+#endif // LIBETHERCAT_SOE_H
 

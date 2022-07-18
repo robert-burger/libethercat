@@ -28,8 +28,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_EC_H__
-#define __LIBETHERCAT_EC_H__
+#ifndef LIBETHERCAT_EC_H
+#define LIBETHERCAT_EC_H
 
 #include <pthread.h>
 #include <stdint.h>
@@ -141,10 +141,10 @@ typedef struct ec {
                                      * again by the master.
                                      */
 
-    int slave_cnt;                  //!< count of found EtherCAT slaves
+    uint16_t slave_cnt;                  //!< count of found EtherCAT slaves
     ec_slave_t *slaves;             //!< array with EtherCAT slaves
 
-    int pd_group_cnt;               //!< count of process data groups
+    uint16_t pd_group_cnt;               //!< count of process data groups
     ec_pd_group_t *pd_groups;       //!< array with process data groups
 
     ec_dc_info_t dc;                //!< distributed clocks master settings
@@ -337,41 +337,41 @@ int ec_get_slave_count(ec_t *pec);
 #endif
 
 #define ec_to_adr(ado, adp) \
-    ((uint32_t)(adp) << 16) | ((ado) & 0xFFFF)
+    ((uint32_t)(adp) << 16u) | ((ado) & 0xFFFFu)
 
 #define ec_brd(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BRD, ((uint32_t)(ado) << 16), \
+    ec_transceive((pec), EC_CMD_BRD, ((uint32_t)(ado) << 16u), \
             (uint8_t *)(data), (datalen), (wkc))
 #define ec_bwr(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BWR, ((uint32_t)(ado) << 16), \
+    ec_transceive((pec), EC_CMD_BWR, ((uint32_t)(ado) << 16u), \
             (uint8_t *)(data), (datalen), (wkc))
 #define ec_brw(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BRW, ((uint32_t)(ado) << 16), \
+    ec_transceive((pec), EC_CMD_BRW, ((uint32_t)(ado) << 16u), \
             (uint8_t *)(data), (datalen), (wkc))
 
 #define ec_aprd(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APRD, ((uint32_t)(ado) << 16) | \
-            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APRD, ((uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_apwr(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APWR, ((uint32_t)(ado) << 16) | \
-            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APWR, ((uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_aprw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APRW, ((uint32_t)(ado) << 16) | \
-            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APRW, ((uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 
 #define ec_fprd(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPRD, ((uint32_t)(ado) << 16) | \
-            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPRD, ((uint32_t)(ado) << 16lu) | \
+            (uint32_t)((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_fpwr(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPWR, ((uint32_t)(ado) << 16) | \
-            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPWR, ((uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_fprw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPRW, ((uint32_t)(ado) << 16) | \
-            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPRW, ((uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 
 #define ec_frmw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FRMW, ((uint32_t)(ado) << 16) | \
-            ((adp) & 0xFFFF), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FRMW, ((uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 
-#endif // __LIBETHERCAT_EC_H__
+#endif // LIBETHERCAT_EC_H
 

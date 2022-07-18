@@ -28,8 +28,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_COE_H__
-#define __LIBETHERCAT_COE_H__
+#ifndef LIBETHERCAT_COE_H
+#define LIBETHERCAT_COE_H
 
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
@@ -92,25 +92,24 @@ enum {
 
 #define DEFTYPE_PDOMAPPING          0x0021
 
-#define CANOPEN_MAXNAME 40
+#define CANOPEN_MAXNAME             40u
     
 //! CanOpen over EtherCAT sdo descriptor
 typedef struct PACKED ec_coe_sdo_desc {
-    uint16_t data_type;             //!< element data type
-    uint8_t  obj_code;              //!< object type
-    uint8_t  max_subindices;        //!< maximum number of subindices
-    char    *name;                  //!< element name (allocated by callee, 
-                                    // freed by caller)
-    size_t   name_len;              //!< element name len
+    uint16_t data_type;             //!< \brief element data type
+    uint8_t  obj_code;              //!< \brief object type
+    uint8_t  max_subindices;        //!< \brief maximum number of subindices
+    char     name[CANOPEN_MAXNAME]; //!< \brief element name
+    size_t   name_len;              //!< \brief element name len
 } PACKED ec_coe_sdo_desc_t;
 
 typedef struct PACKED ec_coe_sdo_entry_desc {
-    uint8_t  value_info;            //!< valueinfo, how to interpret data
-    uint16_t data_type;             //!< entry data type
-    uint16_t bit_length;            //!< entry bit length
-    uint16_t obj_access;            //!< object access
-    uint8_t *data;                  //!< data pointer
-    size_t   data_len;              //!< length of data
+    uint8_t  value_info;            //!< \brief valueinfo, how to interpret data
+    uint16_t data_type;             //!< \brief entry data type
+    uint16_t bit_length;            //!< \brief entry bit length
+    uint16_t obj_access;            //!< \brief object access
+    char     name[CANOPEN_MAXNAME]; //!< \brief entry name
+    size_t   name_len;              //!< \brief length of name
 } PACKED ec_coe_sdo_entry_desc_t;
 
 #define EC_COE_SDO_VALUE_INFO_ACCESS_RIGHTS      0x01
@@ -162,17 +161,17 @@ void ec_coe_deinit(ec_t *pec, uint16_t slave);
  * \param[in] index         CoE SDO index number.
  * \param[in] sub_index     CoE SDO sub index number.
  * \param[in] complete      SDO Complete access (only if \p sub_index == 0)
- * \param[out] buf          Buffer where to store the answer. Either a user supplied
- *                          pointer to a buffer or the call to \link ec_coe_sdo_read 
- *                          \endlink will allocate a big enough buffer. In last case
- *                          the buffer has to be freed by the user.
+ * \param[out] buf          Buffer where to store the answer. User supplied
+ *                          pointer to a buffer. If buffer is too small an
+ *                          error code is returned and the needed length
+ *                          is stored in 'len'.
  * \param[in,out] len       Length of buffer, outputs read length.
  * \param[out] abort_code   Returns the abort code if we got abort request
  *
  * \return 0 on success, otherwise error code.
  */
 int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t **buf, size_t *len, 
+        uint8_t sub_index, int complete, uint8_t *buf, size_t *len, 
         uint32_t *abort_code);
 
 //! Write CoE service data object (SDO)
@@ -237,14 +236,12 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
  * \param[in] slave         Number of ethercat slave. this depends on 
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
- * \param[out] buf          Pointer to either a preallocated buffer or the buffer 
- *                          will be allocated by the \link ec_coe_odlist_read \endlink
- *                          call. In second case it has to be freed by caller.
+ * \param[out] buf          Pointer to a preallocated buffer.
  * \param[in,out] len       Length of buffer, outputs read length.
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t **buf, size_t *len);
+int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len);
 
 //! generate sync manager process data mapping via coe
 /*!
@@ -291,5 +288,5 @@ const char *get_sdo_info_error_string(uint32_t errorcode);
 }
 #endif
 
-#endif // __LIBETHERCAT_COE_H__
+#endif // LIBETHERCAT_COE_H
 

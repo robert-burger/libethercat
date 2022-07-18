@@ -28,8 +28,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_HW_H__
-#define __LIBETHERCAT_HW_H__
+#ifndef LIBETHERCAT_HW_H
+#define LIBETHERCAT_HW_H
 
 #include <pthread.h>
 
@@ -94,5 +94,5 @@ int hw_tx(hw_t *phw);
 }
 #endif
 
-#endif // __LIBETHERCAT_HW_H__
+#endif // LIBETHERCAT_HW_H
 

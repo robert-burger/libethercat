@@ -28,23 +28,23 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_DATAGRAM_H__
-#define __LIBETHERCAT_DATAGRAM_H__
+#ifndef LIBETHERCAT_DATAGRAM_H
+#define LIBETHERCAT_DATAGRAM_H
 
 #include <stdint.h>
 #include <stdlib.h>
 #include "libethercat/common.h"
 
-#define EC_WKC_SIZE     2
+#define EC_WKC_SIZE     2u
 
 typedef struct __attribute__((__packed__)) ec_frame {
     uint8_t mac_dest[6];        //!< destination mac address 
     uint8_t mac_src[6];         //!< source mac addres
     uint16_t ethertype;         //!< ethertype, should be 0x88A4
     
-    unsigned len        : 11;   //!< frame length
-    unsigned reserved   : 1;    //!< not used
-    unsigned type       : 4;    //!< protocol type, 4 - EtherCAT command
+    uint16_t len        : 11;   //!< frame length
+    uint16_t reserved   : 1;    //!< not used
+    uint16_t type       : 4;    //!< protocol type, 4 - EtherCAT command
 } ec_frame_t;
 
 #define ec_frame_hdr_length     (sizeof(ec_frame_t))
@@ -61,9 +61,9 @@ typedef struct __attribute__((__packed__)) ec_datagram {
         };
         uint32_t adr;           //!< logical address
     };
-    unsigned len        : 11;   //!< datagram length
-    unsigned reserved   : 4;    //!< not used
-    unsigned next       : 1;    //!< 0 - last datagram, 1 - more follow
+    uint16_t len        : 11;   //!< datagram length
+    uint16_t reserved   : 4;    //!< not used
+    uint16_t next       : 1;    //!< 0 - last datagram, 1 - more follow
     uint16_t irq;               //!< reserved for future use
 } ec_datagram_t;
 
@@ -120,5 +120,5 @@ int ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
 }
 #endif
 
-#endif /* __LIBETHERCAT_DATAGRAM_H__ */
+#endif /* LIBETHERCAT_DATAGRAM_H */
 
