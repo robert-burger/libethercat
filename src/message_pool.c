@@ -31,6 +31,7 @@
 #include "config.h"
 
 #include "libethercat/ec.h"
+#include "libethercat/error_codes.h"
 #include "libethercat/slave.h"
 #include "libethercat/message_pool.h"
 
