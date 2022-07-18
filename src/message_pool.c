@@ -25,7 +25,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -45,31 +45,35 @@
 // get a message from a message pool
 static int ec_async_message_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, ec_timer_t *timeout) {
-    int ret = ENODATA;
+    int ret = EC_OK;
 
     assert(ppool != NULL);
     assert(msg != NULL);
 
-    if (timeout) {
+    if (timeout != NULL) {
         struct timespec ts = { timeout->sec, timeout->nsec };
         ret = sem_timedwait(&ppool->avail_cnt, &ts);
         if (ret != 0) {
-            if (errno != ETIMEDOUT)
+            if (errno != ETIMEDOUT) {
                 perror("sem_timedwait");
+            }
 
-            return (ret = errno);
+            ret = errno;
         }
     }
 
-    pthread_mutex_lock(&ppool->lock);
+    if (ret == EC_OK) {
+        ret = ENODATA;
+        pthread_mutex_lock(&ppool->lock);
 
-    *msg = (ec_message_entry_t *)TAILQ_FIRST(&ppool->queue);
-    if (*msg) {
-        TAILQ_REMOVE(&ppool->queue, *msg, qh);
-        ret = 0;
+        *msg = (ec_message_entry_t *)TAILQ_FIRST(&ppool->queue);
+        if ((*msg) != NULL) {
+            TAILQ_REMOVE(&ppool->queue, *msg, qh);
+            ret = EC_OK;
+        }
+
+        pthread_mutex_unlock(&ppool->lock);
     }
-    
-    pthread_mutex_unlock(&ppool->lock);
 
     return ret;
 }
@@ -105,7 +109,7 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
         ec_log(10, "ec_async_thread", "slave %2d: wkc error on "
                 "getting slave state, possible slave lost, try to reconfigure\n", slave);
         
-        ec_set_state(paml->pec, EC_STATE_INIT);
+        (void)ec_set_state(paml->pec, EC_STATE_INIT);
     } else {
         // if state != expected_state -> repair
         if (state != paml->pec->slaves[slave].expected_state) {
@@ -114,52 +118,58 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
             
             uint16_t wkc2;
             uint8_t rx_error_counters[16];
-            ec_fprd(paml->pec, paml->pec->slaves[slave].fixed_address, 
-                0x300, &rx_error_counters[0], 16, &wkc2);
+            if (ec_fprd(paml->pec, paml->pec->slaves[slave].fixed_address, 
+                0x300, &rx_error_counters[0], 16, &wkc2) == 0) {
 
-            if (wkc2) {
-                int i, pos = 0;
-                char msg[128];
-                char *buf = msg;
+                if (wkc2 != 0u) {
+                    int i;
+                    int pos = 0;
+                    char msg[128];
+                    char *buf = msg;
 
-                for (i = 0; i < 16; ++i)
-                    pos += snprintf(buf + pos, 128 - pos, "%02X ", rx_error_counters[i]);
+                    for (i = 0; i < 16; ++i) {
+                        pos += snprintf(&buf[pos], 128 - pos, "%02X ", rx_error_counters[i]);
+                    }
 
-                ec_log(10, "ec_async_thread", "slave %2d: error counters %s\n", 
-                        slave, msg);
+                    ec_log(10, "ec_async_thread", "slave %2d: error counters %s\n", 
+                            slave, msg);
+                }
+
+                wkc = ec_slave_state_transition(paml->pec, slave, 
+                        paml->pec->slaves[slave].expected_state);
             }
-
-            wkc = ec_slave_state_transition(paml->pec, slave, 
-                    paml->pec->slaves[slave].expected_state);
         }
     }
 }
 
 // async loop thread
 static void *ec_async_message_loop_thread(void *arg) {
+    // cppcheck-suppress misra-c2012-11.5
     ec_async_message_loop_t *paml = (ec_async_message_loop_t *)arg;
     
     assert(paml != NULL);
     assert(paml->pec != NULL);
 
-    while (paml->loop_running) {
+    while (paml->loop_running == 1) {
         ec_timer_t timeout;
         ec_timer_init(&timeout, 100000000 );
         ec_message_entry_t *me = NULL;
 
         int ret = ec_async_message_loop_get(&paml->exec, &me, &timeout);
-        if (ret != 0)
+        if (ret != 0) {
             continue; // e.g. timeout
+        }
 
         switch (me->msg.id) {
             default: 
                 break;
             case EC_MSG_CHECK_GROUP: {
                 // do something
-                int slave;
-                for (slave = 0; slave < paml->pec->slave_cnt; ++slave) {
-                    if (paml->pec->slaves[slave].assigned_pd_group != me->msg.payload)
+                uint16_t slave;
+                for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
+                    if (paml->pec->slaves[slave].assigned_pd_group != me->msg.payload) {
                         continue;
+                    }
 
                     ec_async_check_slave(paml, slave);
                 }
@@ -171,7 +181,7 @@ static void *ec_async_message_loop_thread(void *arg) {
         };
 
         // return message to pool
-        ec_async_message_loop_put(&paml->avail, me);
+        if (ec_async_message_loop_put(&paml->avail, me) == 0) {};
     }
 
     return NULL;
@@ -180,75 +190,80 @@ static void *ec_async_message_loop_thread(void *arg) {
 // execute asynchronous check group
 void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
     ec_timer_t act;
-    ec_timer_gettime(&act);
-    
     assert(paml != NULL);
-    
-    if (ec_timer_cmp(&act, &paml->next_check_group, <)) {
-        return; // no need to check now
+
+    if (ec_timer_gettime(&act) == 0) {
+        if (ec_timer_cmp(&act, &paml->next_check_group, <)) {
+            // no need to check now
+        } else {
+            ec_timer_t interval = { 5, 0 };
+            ec_timer_add(&act, &interval, &paml->next_check_group);
+
+            ec_timer_t timeout;
+            ec_timer_init(&timeout, 1000);
+            ec_message_entry_t *me = NULL;
+            int ret = ec_async_message_loop_get(&paml->avail, &me, &timeout);
+            if (ret == -1) {
+                // got no message buffer
+            } else {
+                me->msg.id = EC_MSG_CHECK_GROUP;
+                me->msg.payload = gid;
+                if (ec_async_message_loop_put(&paml->exec, me) == 0) {
+                    ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);
+                }
+            }
+        }
     }
-
-    ec_timer_t interval = { 5, 0 };
-    ec_timer_add(&act, &interval, &paml->next_check_group);
-
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, 1000);
-    ec_message_entry_t *me = NULL;
-    int ret = ec_async_message_loop_get(&paml->avail, &me, &timeout);
-    if (ret == -1)
-        return; // got no message buffer
-
-    me->msg.id = EC_MSG_CHECK_GROUP;
-    me->msg.payload = gid;
-    ec_async_message_loop_put(&paml->exec, me);
-    
-    ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);
 }
 
 // creates a new async message loop
 int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
-    int i, ret = 0;
+    int i = 0;
+    int ret = EC_OK;
     
     assert(ppaml != NULL);
     assert(pec != NULL);
 
     // create memory for async message loop
-    (*ppaml) = (ec_async_message_loop_t *)malloc(
-            sizeof(ec_async_message_loop_t));
-    if (!(*ppaml))
-        return (ret = ENOMEM);
+    // cppcheck-suppress misra-c2012-21.3
+    (*ppaml) = (ec_async_message_loop_t *)malloc(sizeof(ec_async_message_loop_t));
+    if (!(*ppaml)) {
+        ret = ENOMEM;
+    } else {
 
-    // initiale pre-alocated async messages in avail queue
-    pthread_mutex_init(&(*ppaml)->avail.lock, NULL);
-    pthread_mutex_lock(&(*ppaml)->avail.lock);
-    memset(&(*ppaml)->avail.avail_cnt, 0, sizeof(sem_t));
-    sem_init(&(*ppaml)->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
-    TAILQ_INIT(&(*ppaml)->avail.queue);
-    
-    for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
-        ec_message_entry_t *me = 
-            (ec_message_entry_t *)malloc(sizeof(ec_message_entry_t));
-        memset(me, 0, sizeof(ec_message_entry_t));
-        TAILQ_INSERT_TAIL(&(*ppaml)->avail.queue, me, qh);
+        // initiale pre-alocated async messages in avail queue
+        pthread_mutex_init(&(*ppaml)->avail.lock, NULL);
+        pthread_mutex_lock(&(*ppaml)->avail.lock);
+        (void)memset(&(*ppaml)->avail.avail_cnt, 0, sizeof(sem_t));
+        sem_init(&(*ppaml)->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
+        TAILQ_INIT(&(*ppaml)->avail.queue);
+
+        for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
+            // cppcheck-suppress misra-c2012-21.3
+            ec_message_entry_t *me = (ec_message_entry_t *)malloc(sizeof(ec_message_entry_t));
+            (void)memset(me, 0, sizeof(ec_message_entry_t));
+            TAILQ_INSERT_TAIL(&(*ppaml)->avail.queue, me, qh);
+        }
+
+        pthread_mutex_unlock(&(*ppaml)->avail.lock);
+
+        // initialize execute queue
+        pthread_mutex_init(&(*ppaml)->exec.lock, NULL);
+        pthread_mutex_lock(&(*ppaml)->exec.lock);
+        (void)memset(&(*ppaml)->exec.avail_cnt, 0, sizeof(sem_t));
+        sem_init(&(*ppaml)->exec.avail_cnt, 0, 0);
+        TAILQ_INIT(&(*ppaml)->exec.queue);
+        pthread_mutex_unlock(&(*ppaml)->exec.lock);
+
+        (*ppaml)->pec = pec;
+        (*ppaml)->loop_running = 1;
+        if (ec_timer_gettime(&(*ppaml)->next_check_group) == 0) { 
+            pthread_create(&(*ppaml)->loop_tid, NULL, 
+                    ec_async_message_loop_thread, (*ppaml));
+        }
     }
 
-    pthread_mutex_unlock(&(*ppaml)->avail.lock);
-
-    // initialize execute queue
-    pthread_mutex_init(&(*ppaml)->exec.lock, NULL);
-    pthread_mutex_lock(&(*ppaml)->exec.lock);
-    memset(&(*ppaml)->exec.avail_cnt, 0, sizeof(sem_t));
-    sem_init(&(*ppaml)->exec.avail_cnt, 0, 0);
-    TAILQ_INIT(&(*ppaml)->exec.queue);
-    pthread_mutex_unlock(&(*ppaml)->exec.lock);
-
-    (*ppaml)->pec = pec;
-    (*ppaml)->loop_running = 1;
-    ec_timer_gettime(&(*ppaml)->next_check_group);
-    pthread_create(&(*ppaml)->loop_tid, NULL, 
-            ec_async_message_loop_thread, (*ppaml));
-
-    return 0;
+    return ret;
 }
 
 // destroys async message loop
@@ -260,23 +275,31 @@ int ec_async_message_pool_destroy(ec_async_message_loop_t *paml) {
     pthread_join(paml->loop_tid, NULL);
 
     // destroy message pools
-    ec_message_entry_t *me;
     pthread_mutex_lock(&paml->avail.lock);
-    while ((me = TAILQ_FIRST(&paml->avail.queue)) != NULL) {
+    ec_message_entry_t *me = TAILQ_FIRST(&paml->avail.queue);
+    while (me != NULL) {
         TAILQ_REMOVE(&paml->avail.queue, me, qh);
+        // cppcheck-suppress misra-c2012-21.3
         free(me);
+
+        me = TAILQ_FIRST(&paml->avail.queue);
     }
     pthread_mutex_unlock(&paml->avail.lock);
     pthread_mutex_destroy(&paml->avail.lock);
 
     pthread_mutex_lock(&paml->exec.lock);
-    while ((me = TAILQ_FIRST(&paml->exec.queue)) != NULL) {
+    me = TAILQ_FIRST(&paml->exec.queue);
+    while (me != NULL) {
         TAILQ_REMOVE(&paml->exec.queue, me, qh);
+        // cppcheck-suppress misra-c2012-21.3
         free(me);
+    
+        me = TAILQ_FIRST(&paml->exec.queue);
     }
     pthread_mutex_unlock(&paml->exec.lock);
     pthread_mutex_destroy(&paml->exec.lock);
 
+    // cppcheck-suppress misra-c2012-21.3
     free(paml);
     
     return 0;
