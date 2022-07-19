@@ -38,8 +38,11 @@
 
 #define EC_ERROR_GENERAL_MASK                   0x00020000
 
+#define EC_ERROR_OUT_OF_MEMORY                  (EC_ERROR_GENERAL_MASK | 0x00000001)
 #define EC_ERROR_OUT_OF_INDICES                 (EC_ERROR_GENERAL_MASK | 0x00000010)
 #define EC_ERROR_OUT_OF_DATAGRAMS               (EC_ERROR_GENERAL_MASK | 0x00000020)
+#define EC_ERROR_TIMEOUT                        (EC_ERROR_GENERAL_MASK | 0x00000040)
+#define EC_ERROR_UNAVAILABLE                    (EC_ERROR_GENERAL_MASK | 0x00000080)
 
 #define EC_ERROR_MAILBOX_MASK                   0x00010000
 

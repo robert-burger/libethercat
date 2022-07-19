@@ -49,15 +49,16 @@
  * \param[in]   cnt         Number of entries in pool.
  * \param[in]   data_size   Size of data stored in each entry.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
     assert(pp != NULL);
-    int ret = 0;
+    int ret = EC_OK;
 
+    // cppcheck-suppress misra-c2012-21.3
     (*pp) = (pool_t *)malloc(sizeof(pool_t));
     if (!(*pp)) {
-        ret = -ENOMEM;
+        ret = EC_ERROR_OUT_OF_MEMORY;
     } else {
         pthread_mutex_init(&(*pp)->_pool_lock, NULL);
         pthread_mutex_lock(&(*pp)->_pool_lock);
@@ -68,10 +69,12 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
 
         size_t i;
         for (i = 0; i < cnt; ++i) {
+            // cppcheck-suppress misra-c2012-21.3
             pool_entry_t *entry = (pool_entry_t *)malloc(sizeof(pool_entry_t));
             (void)memset(entry, 0, sizeof(pool_entry_t));
 
             entry->data_size = data_size;
+            // cppcheck-suppress misra-c2012-21.3
             entry->data = (void *)malloc(data_size);
             (void)memset(entry->data, 0, data_size);
             TAILQ_INSERT_TAIL(&(*pp)->avail, entry, qh);
@@ -87,7 +90,7 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
 /*!
  * \param[in]   pp          Pointer to pool.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_close(pool_t *pp) {
     assert(pp != NULL);
@@ -98,10 +101,12 @@ int pool_close(pool_t *pp) {
     while (entry != NULL) {
         TAILQ_REMOVE(&pp->avail, entry, qh);
         if (entry->data != NULL) { 
+            // cppcheck-suppress misra-c2012-21.3
             free(entry->data); 
             entry->data = NULL; 
         }
 
+        // cppcheck-suppress misra-c2012-21.3
         free(entry);
 
         entry = TAILQ_FIRST(&pp->avail);
@@ -112,9 +117,10 @@ int pool_close(pool_t *pp) {
     
     sem_destroy(&pp->avail_cnt);
 
+    // cppcheck-suppress misra-c2012-21.3
     free(pp);
     
-    return 0;
+    return EC_OK;
 }
 
 //! \brief Get a datagram from pool.
@@ -123,10 +129,10 @@ int pool_close(pool_t *pp) {
  * \param[out]  entry       Returns pointer to pool entry.
  * \param[in]   timeout     Timeout waiting for free entry.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
-    int ret = ENODATA;
+    int ret = EC_ERROR_TIMEOUT;
 
     assert(pp != NULL);
     assert(entry != NULL);
@@ -145,20 +151,23 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
 
     while (1) {
         ret = sem_timedwait(&pp->avail_cnt, &ts);
+        int tmp_errno = errno;
         if (ret != 0) {
-            if (errno != ETIMEDOUT) {
+            if (tmp_errno != ETIMEDOUT) {
                 perror("sem_timedwait");
                 continue;
             }
 
             *entry = NULL;
-            ret = errno;
+            ret = EC_ERROR_TIMEOUT;
+        } else {
+            ret = EC_OK;
         }
 
         break;
     }
 
-    if (ret == 0) {
+    if (ret == EC_OK) {
         pthread_mutex_lock(&pp->_pool_lock);
 
         *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
@@ -178,25 +187,28 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
  * \param[out]  entry       Returns pointer to pool entry. Be 
  *                          carefull, entry relies still in pool.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_peek(pool_t *pp, pool_entry_t **entry) {
     assert(pp != NULL);
     assert(entry != NULL);
+    int ret = EC_OK;
     
     pthread_mutex_lock(&pp->_pool_lock);
     *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
     pthread_mutex_unlock(&pp->_pool_lock);
 
-    return ENODATA;
+    if ((*entry) == NULL) {
+        ret = EC_ERROR_UNAVAILABLE;
+    }
+
+    return ret;
 }
     
 //! \brief Put entry back to pool.
 /*!
  * \param[in]   pp          Pointer to pool.
  * \param[out]  entry       Entry to put back in pool.
- *
- * \return 0 or negative error code
  */
 void pool_put(pool_t *pp, pool_entry_t *entry) {
     assert(pp != NULL);
@@ -214,8 +226,6 @@ void pool_put(pool_t *pp, pool_entry_t *entry) {
 /*!
  * \param[in]   pp          Pointer to pool.
  * \param[out]  entry       Entry to put back in pool.
- *
- * \return 0 or negative error code
  */
 void pool_put_head(pool_t *pp, pool_entry_t *entry) {
     assert(pp != NULL);
@@ -228,3 +238,4 @@ void pool_put_head(pool_t *pp, pool_entry_t *entry) {
     
     pthread_mutex_unlock(&pp->_pool_lock);
 }
+

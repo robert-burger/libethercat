@@ -72,7 +72,7 @@ extern "C" {
  * \param[in]   cnt         Number of entries in pool.
  * \param[in]   data_size   Size of data stored in each entry.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_open(pool_t **pp, size_t cnt, size_t data_size);
 
@@ -80,7 +80,7 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size);
 /*!
  * \param[in]   pp          Pointer to pool.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_close(pool_t *pp);
 
@@ -90,7 +90,7 @@ int pool_close(pool_t *pp);
  * \param[out]  entry       Returns pointer to pool entry.
  * \param[in]   timeout     Timeout waiting for free entry.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout);
 
@@ -100,7 +100,7 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout);
  * \param[out]  entry       Returns pointer to pool entry. Be 
  *                          carefull, entry relies still in pool.
  *
- * \return 0 or negative error code
+ * \return EC_OK or error code
  */
 int pool_peek(pool_t *pp, pool_entry_t **entry);
     

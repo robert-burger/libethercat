@@ -48,8 +48,8 @@
 #define MBX_HANDLER_FLAGS_RECV  ((uint32_t)0x00000002u)
 
 // forward declarations
-static int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
-static int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buflen, uint32_t nsec);
+static int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec);
+static int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec);
 static void ec_mbx_handler(ec_t *pec, uint16_t slave);
 static int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
 static int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
@@ -474,7 +474,6 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
  *                      (usually the n'th slave attached).
  */
 void ec_mbx_handler(ec_t *pec, uint16_t slave) {
-    int ret = 0;
     int wkc = 0;
     
     assert(pec != NULL);
@@ -487,6 +486,8 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
     ec_log(10, __func__, "slave %2d: started mailbox handler\n", slave);
 
     while (slv->mbx.handler_running != 0) {
+        int ret;
+
         // wait for mailbox event
         ec_timer_init(&timeout, 1000000);
         struct timespec ts = { timeout.sec, timeout.nsec };
