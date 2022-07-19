@@ -60,40 +60,39 @@ typedef struct idx_queue {
 extern "C" {
 #endif
 
-
-//! initialize index queue structure
+//! Initialize index queue structure.
 /*!
- * initialize index queue structure and fill in 256 indicex for ethercat frames
+ * Initialize index queue structure and fill in 256 indicex for ethercat frames.
  *
- * \param idx_q pointer to index queue structure
- * \return 0 on success
+ * \param[in]   idx_q   Pointer to index queue structure.
+ *
+ * \return EC_OK 0 on success, oherwise error code
  */
 int ec_index_init(idx_queue_t *idx_q, size_t max_index);
 
-//! deinitialize index queue structure
+//! Deinitialize index queue structure.
 /*!
- * deinitialize index queue structure and
- * clear all indicex for ethercat frames
+ * Deinitialize index queue structure and clear all indicex for ethercat frames.
  *
- * \param idx_q pointer to index queue structure
+ * \param[in]   idx_q   Pointer to index queue structure.
  */
 void ec_index_deinit(idx_queue_t *idx_q);
 
-//! get next free index entry
+//! Get next free index entry.
 /*!
- * \param idx_q pointer to index queue structure
- * \param entry return entry of next free index 
- * \return 0 on succes, otherwise error code
+ * \param[in]   idx_q   Pointer to index queue.
+ * \param[out]  entry   Return entry of next free index.
+ *
+ * \return EC_OK on succes, otherwise error code
  */
 int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry);
 
-//! returns index entry
+//! Returns index entry
 /*!
- * \param idx_q pointer to index queue structure
- * \param entry return index entry 
- * \return 0 on succes, otherwise error code
+ * \param[in]  idx_q    Pointer to index queue.
+ * \param[in]  entry    Return index entry.
  */
-int ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry);
+void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry);
 
 
 #ifdef __cplusplus

@@ -34,15 +34,17 @@
 
 #include "libethercat/idx.h"
 #include "libethercat/ec.h"
+#include "libethercat/error_codes.h"
 
-//! get next free index entry
+//! Get next free index entry.
 /*!
- * \param idx_q pointer to index queue
- * \param entry return entry of next free index 
- * \return 0 on succes, otherwise error code
+ * \param[in]   idx_q   Pointer to index queue.
+ * \param[out]  entry   Return entry of next free index.
+ *
+ * \return EC_OK on succes, otherwise error code
  */
 int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
-    int ret = -1;
+    int ret = EC_ERROR_OUT_OF_INDICES;
 
     assert(idx_q != NULL);
     assert(entry != NULL);
@@ -52,7 +54,7 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
     *entry = (idx_entry_t *)TAILQ_FIRST(&idx_q->q);
     if ((*entry) != NULL) {
         TAILQ_REMOVE(&idx_q->q, *entry, qh);
-        ret = 0;
+        ret = EC_OK;
     
         while (sem_trywait(&(*entry)->waiter) == 0) {
             ;
@@ -65,32 +67,31 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
     return ret;
 }
 
-//! returns index entry
+//! Returns index entry
 /*!
- * \param idx_q pointer to index queue
- * \param entry return index entry 
- * \return 0 on succes, otherwise error code
+ * \param[in]  idx_q    Pointer to index queue.
+ * \param[in]  entry    Return index entry.
  */
-int ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
+void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
     assert(idx_q != NULL);
     assert(entry != NULL);
 
     pthread_mutex_lock(&idx_q->lock);
     TAILQ_INSERT_TAIL(&idx_q->q, entry, qh);
     pthread_mutex_unlock(&idx_q->lock);
-
-    return 0;
 }
 
-//! initialize index queue structure
+//! Initialize index queue structure.
 /*!
- * initialize index queue structure and fill in 256 indicex for ethercat frames
+ * Initialize index queue structure and fill in 256 indicex for ethercat frames.
  *
- * \param idx_q pointer to index queue structure
- * \return 0 on success
+ * \param[in]   idx_q   Pointer to index queue structure.
+ *
+ * \return EC_OK 0 on success, oherwise error code
  */
 int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
     uint32_t i;
+    int ret = EC_OK;
 
     assert(idx_q != NULL);
 
@@ -101,21 +102,29 @@ int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
     for (i = 0; i < max_index; ++i) {
         // cppcheck-suppress misra-c2012-21.3
         idx_entry_t *entry = (idx_entry_t *)malloc(sizeof(idx_entry_t));
+        if (entry == NULL) {
+            ret = EC_ERROR_OUT_OF_MEMORY;
+            break;
+        }
+
         entry->idx = i;
         (void)memset(&entry->waiter, 0, sizeof(sem_t));
         sem_init(&entry->waiter, 0, 0);
         (void)ec_index_put(idx_q, entry);
     }
 
-    return 0;
+    if (ret != EC_OK) {
+        ec_index_deinit(idx_q);
+    }
+
+    return ret;
 }
 
-//! deinitialize index queue structure
+//! Deinitialize index queue structure.
 /*!
- * deinitialize index queue structure and
- * clear all indicex for ethercat frames
+ * Deinitialize index queue structure and clear all indicex for ethercat frames.
  *
- * \param idx_q pointer to index queue structure
+ * \param[in]   idx_q   Pointer to index queue structure.
  */
 void ec_index_deinit(idx_queue_t *idx_q) {
     assert(idx_q != NULL);
