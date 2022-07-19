@@ -28,7 +28,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
 /* autoconf header goes first */
@@ -62,61 +62,60 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    uint8_t dc_cuc = 0, dc_active = 0;
+    uint8_t dc_cuc = 0;
+    uint8_t dc_active = 0;
     uint16_t wkc = 0;
     uint64_t rel_rtc_time = 0;
     int64_t dc_start = 0, dc_time = 0, tmp_time = 0;
     ec_slave_ptr(slv, pec, slave);
-    if (!(slv->features & 0x04)) { // dc not available
-        return;
-    }
-
-    // deactivate DC's to stop cyclic operation, enable write access of dc's
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
-    dc_active = active;
-
-    // Calculate DC start time as a sum of the actual EtherCAT master time,
-    // the generic first sync delay and the cycle shift. the first sync delay 
-    // has to be a multiple of cycle time.  
-    switch (pec->dc.mode) {
-        case dc_mode_master_clock:
-            if (dc_active) 
-                while ((pec->dc.act_diff == 0) || (pec->dc.timer_prev == 0)) {
-                    // wait until dc's are ready
-                    ec_sleep(1000000);
-                }
-
-            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) - pec->dc.act_diff;
-            break;
-        case dc_mode_ref_clock:
-            rel_rtc_time = (pec->dc.timer_prev - pec->dc.rtc_sto) + 10000;
-            break;
-        case dc_mode_master_as_ref_clock:
-            rel_rtc_time = pec->dc.timer_prev; 
-            break;
-    }
-    
-    // program first trigger time and cycle time
-    ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
-    tmp_time = ((dc_time - rel_rtc_time) / pec->dc.timer_override) + 1000;
-    dc_start = rel_rtc_time + tmp_time * pec->dc.timer_override + cycle_shift;
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
-    ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
-    
-    if (dc_active) {
-        // activate distributed clock on slave
+    if ((slv->features & 0x04u) != 0u) { // dc available
+        // deactivate DC's to stop cyclic operation, enable write access of dc's
         ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
-    
-        ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
-                "%lld, slv dc_time %lld\n", slave, rel_rtc_time, dc_start, dc_time);
-        ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
-                "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
-    } else {
-        // if not active, the DC's stay inactive
-        ec_log(100, "DISTRIBUTED_CLOCK", 
-                "slave %2hu: disabled distributed clocks\n", slave);
+        ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
+        dc_active = active;
+
+        // Calculate DC start time as a sum of the actual EtherCAT master time,
+        // the generic first sync delay and the cycle shift. the first sync delay 
+        // has to be a multiple of cycle time.  
+        switch (pec->dc.mode) {
+            case dc_mode_master_clock:
+                if (dc_active) 
+                    while ((pec->dc.act_diff == 0) || (pec->dc.timer_prev == 0)) {
+                        // wait until dc's are ready
+                        ec_sleep(1000000);
+                    }
+
+                rel_rtc_time = (uint64_t)((pec->dc.timer_prev - pec->dc.rtc_sto) - pec->dc.act_diff);
+                break;
+            case dc_mode_ref_clock:
+                rel_rtc_time = (uint64_t)(pec->dc.timer_prev - pec->dc.rtc_sto) + 10000u;
+                break;
+            case dc_mode_master_as_ref_clock:
+                rel_rtc_time = (uint64_t)pec->dc.timer_prev; 
+                break;
+        }
+
+        // program first trigger time and cycle time
+        ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
+        tmp_time = ((dc_time - (int64_t)rel_rtc_time) / (int64_t)pec->dc.timer_override) + 1000;
+        dc_start = (int64_t)rel_rtc_time + tmp_time * (int64_t)pec->dc.timer_override + cycle_shift;
+        ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
+        ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
+        ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
+
+        if (dc_active) {
+            // activate distributed clock on slave
+            ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
+
+            ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
+                    "%lld, slv dc_time %lld\n", slave, rel_rtc_time, dc_start, dc_time);
+            ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
+                    "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
+        } else {
+            // if not active, the DC's stay inactive
+            ec_log(100, "DISTRIBUTED_CLOCK", 
+                    "slave %2hu: disabled distributed clocks\n", slave);
+        }
     }
 }
 
@@ -125,11 +124,22 @@ static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    if (port < 4) {
+    if (port < 4u) {
         return pec->slaves[slave].dc.receive_times[port];
     }
 
     return 0;
+}
+
+static uint8_t eval_port(ec_t *pec, uint16_t slave, uint8_t a, uint8_t b, uint8_t c, uint8_t def) {
+    uint8_t port_idx[] = { a, b, c }; 
+    for (uint8_t i = 0u; i < 3u; ++i) { 
+        if (pec->slaves[slave].active_ports & (1u << port_idx[i])) { 
+            return port_idx[i]; 
+        } 
+    }
+
+    return def;
 }
 
 //! determine previous active port, starting at port
@@ -138,27 +148,25 @@ static inline uint8_t ec_dc_previous_port(ec_t *pec, uint16_t slave, uint8_t por
     assert(slave < pec->slave_cnt);
 
     switch(port) {
-#define eval_port(...) { \
-            int port_idx[] = { __VA_ARGS__ }; \
-            for (int i = 0; i < 3; ++i) { \
-                if(pec->slaves[slave].active_ports & (1 << port_idx[i])) { \
-                    return port_idx[i]; } } }
         case 0: {
-            eval_port(2, 1, 3);
+            port = eval_port(pec, slave, 2, 1, 3, port);
             break;
         }
         case 1: {
-            eval_port(3, 0, 2);
+            port = eval_port(pec, slave, 3, 0, 2, port);
             break;
         }
         case 2: {
-            eval_port(1, 3, 0);
+            port = eval_port(pec, slave, 1, 3, 0, port);
             break;
         }
         case 3: {
-            eval_port(0, 2, 1);
+            port = eval_port(pec, slave, 0, 2, 1, port);
             break;
         }      
+        default: {
+            break;
+        }
     }
 
     return port;
@@ -167,7 +175,7 @@ static inline uint8_t ec_dc_previous_port(ec_t *pec, uint16_t slave, uint8_t por
 //! search for available port and return
 static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
     // read et1100 docs about port order
-    int port_idx[] = { 3, 1, 2, 0 };
+    uint8_t port_idx[] = { 3, 1, 2, 0 };
     uint8_t port_on_parent = 0;
     
     assert(pec != NULL);
@@ -177,12 +185,12 @@ static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
             parent, pec->slaves[parent].dc.available_ports);
 
     for (int i = 0; i < 4; ++i) {
-        int port = port_idx[i];
+        uint8_t port = port_idx[i];
 
-        if (pec->slaves[parent].dc.available_ports & (1 << port)) {
+        if (pec->slaves[parent].dc.available_ports & (1u << port)) {
             // mask it out for next port search
             port_on_parent = port;
-            pec->slaves[parent].dc.available_ports &= ~(1 << port);
+            pec->slaves[parent].dc.available_ports &= ~(1u << port);
             break;
         }
     }
@@ -212,7 +220,9 @@ static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
 int ec_dc_config(struct ec *pec) {
     assert(pec != NULL);
 
-    int i, parent, child;
+    int i;
+    int parent;
+    int child;
     int parenthold = 0;
     int32_t delay_childs, delay_previous_slaves, delay_slave_with_childs;
     uint16_t wkc;
@@ -281,7 +291,7 @@ int ec_dc_config(struct ec *pec) {
             ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0 + (i * sizeof(int32_t)), 
                     &slv->dc.receive_times[i], sizeof(slv->dc.receive_times[i]), &wkc);
 
-            if (slv->active_ports & (1 << i)) {
+            if (slv->active_ports & (1u << i)) {
                 if (slv->dc.receive_times[i] < slv->dc.receive_times[slv->entry_port]) {
                     // port with smallest value is entry port
                     slv->entry_port = i; 
@@ -295,7 +305,7 @@ int ec_dc_config(struct ec *pec) {
         // remove entry_port from available ports
         ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: available_ports 0x%X, "
                 "entry_port %d\n", slave, slv->dc.available_ports, slv->entry_port);
-        slv->dc.available_ports &= (uint8_t)~(1 << slv->entry_port);
+        slv->dc.available_ports &= (uint8_t)~(1u << slv->entry_port);
 
         // read out distributed clock slave offset and use as offset 
         // to set local time to 0

@@ -42,7 +42,7 @@ typedef struct ec_dc_info_slave {
     int next;                   //!< marker for next dc slave
     int prev;                   //!< marker for previous dc slave
 
-    int available_ports;        //!< available ports for dc config
+    uint8_t available_ports;    //!< available ports for dc config
     int32_t receive_times[4];   //!< latched port receive times
             
     int type;                   //!< dc type, 0 = sync0, 1 = sync01
@@ -63,7 +63,7 @@ typedef struct ec_dc_info {
     int32_t dc_cycle_cnt;
     int64_t dc_sto;
 
-    uint64_t rtc_sto;
+    int64_t rtc_sto;
     uint64_t rtc_time;
     uint64_t rtc_cycle_sum;
     uint64_t rtc_cycle;

@@ -39,38 +39,38 @@
 #include "libethercat/mbx.h"
 
 //! EtherCAT slave state transitions
-typedef enum ec_state_transition {
-    BOOT_2_BOOT      = 0x0303,  //!< BOOT to BOOT state transition
-    BOOT_2_INIT      = 0x0301,  //!< BOOT to INIT state transition
-    BOOT_2_PREOP     = 0x0302,  //!< BOOT to PREOP state transition,
-    BOOT_2_SAFEOP    = 0x0304,  //!< BOOT to SAFEOP state transition,
-    BOOT_2_OP        = 0x0308,  //!< BOOT to OP state transition,
-    UNKNOWN_2_BOOT   = 0x0003,  //!< UNKNOWN to BOOT state transition
-    UNKNOWN_2_INIT   = 0x0001,  //!< UNKNOWN to INIT state transition,
-    UNKNOWN_2_PREOP  = 0x0002,  //!< UNKNOWN to PREOP state transition,
-    UNKNOWN_2_SAFEOP = 0x0004,  //!< UNKNOWN to SAFEOP state transition,
-    UNKNOWN_2_OP     = 0x0008,  //!< UNKNOWN to OP state transition,
-    INIT_2_BOOT      = 0x0103,  //!< INIT to BOOT state transition
-    INIT_2_INIT      = 0x0101,  //!< INIT to INIT state transition,
-    INIT_2_PREOP     = 0x0102,  //!< INIT to PREOP state transition,
-    INIT_2_SAFEOP    = 0x0104,  //!< INIT to SAFEOP state transition,
-    INIT_2_OP        = 0x0108,  //!< INIT to OP state transition,
-    PREOP_2_BOOT     = 0x0203,  //!< PREOP to BOOT state transition,
-    PREOP_2_INIT     = 0x0201,  //!< PREOP to INIT state transition,
-    PREOP_2_PREOP    = 0x0202,  //!< PREOP to PREOP state transition,
-    PREOP_2_SAFEOP   = 0x0204,  //!< PREOP to SAFEOP state transition,
-    PREOP_2_OP       = 0x0208,  //!< PREOP to OP state transition,
-    SAFEOP_2_BOOT    = 0x0403,  //!< SAFEOP to BOOT state transition,
-    SAFEOP_2_INIT    = 0x0401,  //!< SAFEOP to INIT state transition,
-    SAFEOP_2_PREOP   = 0x0402,  //!< SAFEOP to PREOP state transition,
-    SAFEOP_2_SAFEOP  = 0x0404,  //!< SAFEOP to SAFEOP state transition,
-    SAFEOP_2_OP      = 0x0408,  //!< SAFEOP to OP state transition,
-    OP_2_BOOT        = 0x0803,  //!< OP to BOOT state transition,
-    OP_2_INIT        = 0x0801,  //!< OP to INIT state transition,
-    OP_2_PREOP       = 0x0802,  //!< OP to PREOP state transition,
-    OP_2_SAFEOP      = 0x0804,  //!< OP to SAFEOP state transition,
-    OP_2_OP          = 0x0808,  //!< OP to OP state transition,
-} ec_state_transition_t;
+#define BOOT_2_BOOT      0x0303u  //!< \brief BOOT to BOOT state transition
+#define BOOT_2_INIT      0x0301u  //!< \brief BOOT to INIT state transition
+#define BOOT_2_PREOP     0x0302u  //!< \brief BOOT to PREOP state transition,
+#define BOOT_2_SAFEOP    0x0304u  //!< \brief BOOT to SAFEOP state transition,
+#define BOOT_2_OP        0x0308u  //!< \brief BOOT to OP state transition,
+#define UNKNOWN_2_BOOT   0x0003u  //!< \brief UNKNOWN to BOOT state transition
+#define UNKNOWN_2_INIT   0x0001u  //!< \brief UNKNOWN to INIT state transition,
+#define UNKNOWN_2_PREOP  0x0002u  //!< \brief UNKNOWN to PREOP state transition,
+#define UNKNOWN_2_SAFEOP 0x0004u  //!< \brief UNKNOWN to SAFEOP state transition,
+#define UNKNOWN_2_OP     0x0008u  //!< \brief UNKNOWN to OP state transition,
+#define INIT_2_BOOT      0x0103u  //!< \brief INIT to BOOT state transition
+#define INIT_2_INIT      0x0101u  //!< \brief INIT to INIT state transition,
+#define INIT_2_PREOP     0x0102u  //!< \brief INIT to PREOP state transition,
+#define INIT_2_SAFEOP    0x0104u  //!< \brief INIT to SAFEOP state transition,
+#define INIT_2_OP        0x0108u  //!< \brief INIT to OP state transition,
+#define PREOP_2_BOOT     0x0203u  //!< \brief PREOP to BOOT state transition,
+#define PREOP_2_INIT     0x0201u  //!< \brief PREOP to INIT state transition,
+#define PREOP_2_PREOP    0x0202u  //!< \brief PREOP to PREOP state transition,
+#define PREOP_2_SAFEOP   0x0204u  //!< \brief PREOP to SAFEOP state transition,
+#define PREOP_2_OP       0x0208u  //!< \brief PREOP to OP state transition,
+#define SAFEOP_2_BOOT    0x0403u  //!< \brief SAFEOP to BOOT state transition,
+#define SAFEOP_2_INIT    0x0401u  //!< \brief SAFEOP to INIT state transition,
+#define SAFEOP_2_PREOP   0x0402u  //!< \brief SAFEOP to PREOP state transition,
+#define SAFEOP_2_SAFEOP  0x0404u  //!< \brief SAFEOP to SAFEOP state transition,
+#define SAFEOP_2_OP      0x0408u  //!< \brief SAFEOP to OP state transition,
+#define OP_2_BOOT        0x0803u  //!< \brief OP to BOOT state transition,
+#define OP_2_INIT        0x0801u  //!< \brief OP to INIT state transition,
+#define OP_2_PREOP       0x0802u  //!< \brief OP to PREOP state transition,
+#define OP_2_SAFEOP      0x0804u  //!< \brief OP to SAFEOP state transition,
+#define OP_2_OP          0x0808u  //!< \brief OP to OP state transition,
+
+typedef uint16_t ec_state_transition_t;
 
 //! slave sync manager settings
 typedef struct PACKED ec_slave_sm {
@@ -220,7 +220,7 @@ typedef struct ec_slave {
 
     uint8_t sm_ch;              //!< number of sync manager channels
     uint8_t fmmu_ch;            //!< number of fmmu channels
-    int ram_size;               //!< ram size in bytes
+    uint32_t ram_size;               //!< ram size in bytes
     uint16_t features;          //!< fmmu operation, dc available
     uint16_t pdi_ctrl;          //!< configuration of process data interface
     uint8_t link_cnt;           //!< link count

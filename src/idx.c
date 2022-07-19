@@ -24,7 +24,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -50,12 +50,13 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
     pthread_mutex_lock(&idx_q->lock);
 
     *entry = (idx_entry_t *)TAILQ_FIRST(&idx_q->q);
-    if (*entry) {
+    if ((*entry) != NULL) {
         TAILQ_REMOVE(&idx_q->q, *entry, qh);
         ret = 0;
     
-        while (sem_trywait(&(*entry)->waiter) == 0)
+        while (sem_trywait(&(*entry)->waiter) == 0) {
             ;
+        }
     }
 
     
@@ -89,7 +90,7 @@ int ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
  * \return 0 on success
  */
 int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
-    int i;
+    uint32_t i;
 
     assert(idx_q != NULL);
 
@@ -98,11 +99,12 @@ int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
     // fill index queue
     TAILQ_INIT(&idx_q->q);
     for (i = 0; i < max_index; ++i) {
+        // cppcheck-suppress misra-c2012-21.3
         idx_entry_t *entry = (idx_entry_t *)malloc(sizeof(idx_entry_t));
         entry->idx = i;
-        memset(&entry->waiter, 0, sizeof(sem_t));
+        (void)memset(&entry->waiter, 0, sizeof(sem_t));
         sem_init(&entry->waiter, 0, 0);
-        ec_index_put(idx_q, entry);
+        (void)ec_index_put(idx_q, entry);
     }
 
     return 0;
@@ -118,12 +120,14 @@ int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
 void ec_index_deinit(idx_queue_t *idx_q) {
     assert(idx_q != NULL);
 
-    idx_entry_t *idx;
-    while ((idx = TAILQ_FIRST(&idx_q->q)) != NULL) {
+    idx_entry_t *idx = TAILQ_FIRST(&idx_q->q);
+    while (idx != NULL) {
         TAILQ_REMOVE(&idx_q->q, idx, qh);
         sem_destroy(&idx->waiter);
 
+        // cppcheck-suppress misra-c2012-21.3
         free(idx);
+        idx = TAILQ_FIRST(&idx_q->q);
     }
 
     pthread_mutex_destroy(&idx_q->lock);

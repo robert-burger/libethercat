@@ -42,15 +42,15 @@
 #endif
 
 #define free_resource(a) {  \
-    if ((a)) {              \
-        free((a));          \
+    if ((a) != NULL) {      \
+        (void)free((a));          \
         (a) = NULL;         \
     } }
 
 #define alloc_resource(a, type, len) {      \
-    if ((len) > 0) {                        \
+    if ((len) > 0u) {                       \
         (a) = (type *)malloc((len));        \
-        memset((a), 0, (len)); } }
+        (void)memset((a), 0u, (len)); } }
 
 #define EC_MAX_DATA 4096u
 
@@ -83,7 +83,7 @@ typedef uint16_t ec_state_t;
 char *strndup(const char *s, size_t n);
 #endif
 
-#define check_ret(cmd) { if ((cmd) != 0) { ec_log(1, __func__, #cmd " returned error\n"); } }
+//#define check_ret(cmd) { if ((cmd) != 0) { ec_log(1, __func__, #cmd " returned error\n"); } }
 
 #endif // LIBETHERCAT_COMMON_H
 

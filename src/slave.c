@@ -23,7 +23,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with robotkernel.  If not, see <http://www.gnu.org/licenses/>.
+ * along with robotkernel.  If not, see <www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -35,74 +35,97 @@
 #include "libethercat/foe.h"
 #include "libethercat/mbx.h"
 #include "libethercat/dc.h"
+#include "libethercat/error_codes.h"
 
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
 
-static const char transition_string_boot_to_init[]     = "BOOT_2_INIT";
-static const char transition_string_init_to_boot[]     = "INIT_2_BOOT";
-static const char transition_string_init_to_init[]     = "INIT_2_INIT";
-static const char transition_string_init_to_preop[]    = "INIT_2_PREOP";
-static const char transition_string_init_to_safeop[]   = "INIT_2_SAFEOP";
-static const char transition_string_init_to_op[]       = "INIT_2_OP";
-static const char transition_string_preop_to_init[]    = "PREOP_2_INIT";
-static const char transition_string_preop_to_preop[]   = "PREOP_2_PREOP";
-static const char transition_string_preop_to_safeop[]  = "PREOP_2_SAFEOP";
-static const char transition_string_preop_to_op[]      = "PREOP_2_OP";
-static const char transition_string_safeop_to_init[]   = "SAFEOP_2_INIT";
-static const char transition_string_safeop_to_preop[]  = "SAFEOP_2_PREOP";
-static const char transition_string_safeop_to_safeop[] = "SAFEOP_2_SAFEOP";
-static const char transition_string_safeop_to_op[]     = "SAFEOP_2_OP";
-static const char transition_string_op_to_init[]       = "OP_2_INIT";
-static const char transition_string_op_to_preop[]      = "OP_2_PREOP";
-static const char transition_string_op_to_safeop[]     = "OP_2_SAFEOP";
-static const char transition_string_op_to_op[]         = "OP_2_OP";
-static const char transition_string_unknown[]          = "UNKNOWN";
 
 static const char *get_transition_string(ec_state_transition_t transition) {
+    static const char transition_string_boot_to_init[]     = "BOOT_2_INIT";
+    static const char transition_string_init_to_boot[]     = "INIT_2_BOOT";
+    static const char transition_string_init_to_init[]     = "INIT_2_INIT";
+    static const char transition_string_init_to_preop[]    = "INIT_2_PREOP";
+    static const char transition_string_init_to_safeop[]   = "INIT_2_SAFEOP";
+    static const char transition_string_init_to_op[]       = "INIT_2_OP";
+    static const char transition_string_preop_to_init[]    = "PREOP_2_INIT";
+    static const char transition_string_preop_to_preop[]   = "PREOP_2_PREOP";
+    static const char transition_string_preop_to_safeop[]  = "PREOP_2_SAFEOP";
+    static const char transition_string_preop_to_op[]      = "PREOP_2_OP";
+    static const char transition_string_safeop_to_init[]   = "SAFEOP_2_INIT";
+    static const char transition_string_safeop_to_preop[]  = "SAFEOP_2_PREOP";
+    static const char transition_string_safeop_to_safeop[] = "SAFEOP_2_SAFEOP";
+    static const char transition_string_safeop_to_op[]     = "SAFEOP_2_OP";
+    static const char transition_string_op_to_init[]       = "OP_2_INIT";
+    static const char transition_string_op_to_preop[]      = "OP_2_PREOP";
+    static const char transition_string_op_to_safeop[]     = "OP_2_SAFEOP";
+    static const char transition_string_op_to_op[]         = "OP_2_OP";
+    static const char transition_string_unknown[]          = "UNKNOWN";
+
+    const char *ret = transition_string_unknown;
+
     switch (transition) {
         default:
-            return transition_string_unknown;
+            ret = transition_string_unknown;
+            break;
         case BOOT_2_INIT:
-            return transition_string_boot_to_init;
+            ret = transition_string_boot_to_init;
+            break;
         case INIT_2_BOOT:
-            return transition_string_init_to_boot;
+            ret = transition_string_init_to_boot;
+            break;
         case INIT_2_INIT:
-            return transition_string_init_to_init;
+            ret = transition_string_init_to_init;
+            break;
         case INIT_2_PREOP:
-            return transition_string_init_to_preop;
+            ret = transition_string_init_to_preop;
+            break;
         case INIT_2_SAFEOP:
-            return transition_string_init_to_safeop;
+            ret = transition_string_init_to_safeop;
+            break;
         case INIT_2_OP:
-            return transition_string_init_to_op;
+            ret = transition_string_init_to_op;
+            break;
         case PREOP_2_INIT:
-            return transition_string_preop_to_init;
+            ret = transition_string_preop_to_init;
+            break;
         case PREOP_2_PREOP:
-            return transition_string_preop_to_preop;
+            ret = transition_string_preop_to_preop;
+            break;
         case PREOP_2_SAFEOP:
-            return transition_string_preop_to_safeop;
+            ret = transition_string_preop_to_safeop;
+            break;
         case PREOP_2_OP:
-            return transition_string_preop_to_op;
+            ret = transition_string_preop_to_op;
+            break;
         case SAFEOP_2_INIT:
-            return transition_string_safeop_to_init;
+            ret = transition_string_safeop_to_init;
+            break;
         case SAFEOP_2_PREOP:
-            return transition_string_safeop_to_preop;
+            ret = transition_string_safeop_to_preop;
+            break;
         case SAFEOP_2_SAFEOP:
-            return transition_string_safeop_to_safeop;
+            ret = transition_string_safeop_to_safeop;
+            break;
         case SAFEOP_2_OP:
-            return transition_string_safeop_to_op;
+            ret = transition_string_safeop_to_op;
+            break;
         case OP_2_INIT:
-            return transition_string_op_to_init;
+            ret = transition_string_op_to_init;
+            break;
         case OP_2_PREOP:
-            return transition_string_op_to_preop;
+            ret = transition_string_op_to_preop;
+            break;
         case OP_2_SAFEOP:
-            return transition_string_op_to_safeop;
+            ret = transition_string_op_to_safeop;
+            break;
         case OP_2_OP:
-            return transition_string_op_to_op;
+            ret = transition_string_op_to_op;
+            break;
     }
 
-    return transition_string_unknown;
+    return ret;
 }
 
 // allocate init command structure
@@ -110,44 +133,48 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
         int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen) 
 {
+    // cppcheck-suppress misra-c2012-21.3
     ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(COE_INIT_CMD_SIZE);
 
     if (cmd == NULL) {
         ec_log(10, __func__, "malloc error %s\n", strerror(errno));
-        return NULL;
-    }
+    } else {
+        cmd->type       = EC_MBX_COE;
+        cmd->transition = transition;
 
-    cmd->type       = EC_MBX_COE;
-    cmd->transition = transition;
-    
-    ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
-    coe->id         = id; 
-    coe->si_el      = si_el;
-    coe->ca_atn     = ca_atn;
-    coe->data       = (char *)malloc(datalen);
-    coe->datalen    = datalen;
-    
-    if (coe->data == NULL) {
-        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
-        free(cmd);
-        return NULL;
-    }
+        ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
+        coe->id         = id; 
+        coe->si_el      = si_el;
+        coe->ca_atn     = ca_atn;
+        // cppcheck-suppress misra-c2012-21.3
+        coe->data       = (char *)malloc(datalen);
+        coe->datalen    = datalen;
 
-    memcpy(coe->data, data, datalen);
+        if (coe->data == NULL) {
+            ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+            // cppcheck-suppress misra-c2012-21.3
+            free(cmd);
+            cmd = NULL;
+        } else {
+            (void)memcpy(coe->data, data, datalen);
+        }
+    }
 
     return cmd;
 }
 
 // freeing init command strucuture
-void ec_slave_mailbox_coe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
+static void ec_slave_mailbox_coe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
     assert(cmd != NULL);
         
     if (cmd->type == EC_MBX_COE) {
         ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
 
-        if (coe->data) { free(coe->data); }
+        // cppcheck-suppress misra-c2012-21.3
+        if (coe->data != NULL) { free(coe->data); }
     }
 
+    // cppcheck-suppress misra-c2012-21.3
     free (cmd);
 }
 
@@ -162,22 +189,22 @@ void ec_slave_add_coe_init_cmd(ec_t *pec, uint16_t slave,
     ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_coe_init_cmd_alloc(
             transition, id, si_el, ca_atn, data, datalen);
 
-    if (!cmd)
-        return;
+    if (!cmd) {
+    } else {
+        ec_slave_mailbox_init_cmd_t *last_cmd = 
+            LIST_FIRST(&pec->slaves[slave].init_cmds);
 
-    ec_slave_mailbox_init_cmd_t *last_cmd = 
-        LIST_FIRST(&pec->slaves[slave].init_cmds);
+        while ( (last_cmd != NULL) && 
+                (LIST_NEXT(last_cmd, le) != NULL)) {
+            last_cmd = LIST_NEXT(last_cmd, le);
+        }
 
-    while (
-            (last_cmd != NULL) && 
-            (LIST_NEXT(last_cmd, le) != NULL)) {
-        last_cmd = LIST_NEXT(last_cmd, le);
+        if (last_cmd != NULL) {
+            LIST_INSERT_AFTER(last_cmd, cmd, le);
+        } else {
+            LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
+        }
     }
-
-    if (last_cmd)
-        LIST_INSERT_AFTER(last_cmd, cmd, le);
-    else 
-        LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
 }
 
 // allocate init command structure
@@ -185,44 +212,48 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
         int transition, int id, int si_el, int ca_atn,
         char *data, size_t datalen) 
 {
+    // cppcheck-suppress misra-c2012-21.3
     ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(SOE_INIT_CMD_SIZE);
-    
+
     if (cmd == NULL) {
         ec_log(10, __func__, "malloc error %s\n", strerror(errno));
-        return NULL;
-    }
+    } else {
+        cmd->type       = EC_MBX_SOE;
+        cmd->transition = transition;
 
-    cmd->type       = EC_MBX_SOE;
-    cmd->transition = transition;
-    
-    ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
-    soe->id         = id; 
-    soe->si_el      = si_el;
-    soe->ca_atn     = ca_atn;
-    soe->data       = (char *)malloc(datalen);
-    soe->datalen    = datalen;
-    
-    if (soe->data == NULL) {
-        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
-        free(cmd);
-        return NULL;
-    }
+        ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
+        soe->id         = id; 
+        soe->si_el      = si_el;
+        soe->ca_atn     = ca_atn;
+        // cppcheck-suppress misra-c2012-21.3
+        soe->data       = (char *)malloc(datalen);
+        soe->datalen    = datalen;
 
-    memcpy(soe->data, data, datalen);
+        if (soe->data == NULL) {
+            ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+            // cppcheck-suppress misra-c2012-21.3
+            free(cmd);
+            cmd = NULL;
+        } else {
+            (void)memcpy(soe->data, data, datalen);
+        }
+    }
 
     return cmd;
 }
 
 // freeing init command strucuture
-void ec_slave_mailbox_soe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
+static void ec_slave_mailbox_soe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
     assert(cmd != NULL);
     
     if (cmd->type == EC_MBX_SOE) {
         ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
 
-        if (soe->data) { free(soe->data); }
+        // cppcheck-suppress misra-c2012-21.3
+        if (soe->data != NULL) { free(soe->data); }
     }
 
+    // cppcheck-suppress misra-c2012-21.3
     free (cmd);
 }
 
@@ -237,22 +268,22 @@ void ec_slave_add_soe_init_cmd(ec_t *pec, uint16_t slave,
     ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_soe_init_cmd_alloc(
             transition, id, si_el, ca_atn, data, datalen);
 
-    if (!cmd)
-        return;
+    if (!cmd) {
+    } else {
+        ec_slave_mailbox_init_cmd_t *last_cmd = 
+            LIST_FIRST(&pec->slaves[slave].init_cmds);
 
-    ec_slave_mailbox_init_cmd_t *last_cmd = 
-        LIST_FIRST(&pec->slaves[slave].init_cmds);
+        while ( (last_cmd != NULL) && 
+                (LIST_NEXT(last_cmd, le) != NULL)) {
+            last_cmd = LIST_NEXT(last_cmd, le);
+        }
 
-    while (
-            (last_cmd != NULL) && 
-            (LIST_NEXT(last_cmd, le) != NULL)) {
-        last_cmd = LIST_NEXT(last_cmd, le);
+        if (last_cmd != NULL) {
+            LIST_INSERT_AFTER(last_cmd, cmd, le);
+        } else {
+            LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
+        }
     }
-
-    if (last_cmd)
-        LIST_INSERT_AFTER(last_cmd, cmd, le);
-    else 
-        LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
 }
 
 // freeing init command strucuture
@@ -267,6 +298,7 @@ void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
             ec_slave_mailbox_soe_init_cmd_free(cmd);
             break;
         default: 
+            // cppcheck-suppress misra-c2012-21.3
             free(cmd);
             break;
     }
@@ -340,251 +372,323 @@ void ec_slave_set_dc_config(struct ec *pec, uint16_t slave,
 #define AL_STATUS_CODE__EE_ERROR                       0x0051 
 #define AL_STATUS_CODE__EXT_HARDWARE_NOT_READY         0x0052 
 
-const static char *_AL_STATUS_CODE__NOERROR                       = "no error"; 
-const static char *_AL_STATUS_CODE__UNSPECIFIEDERROR              = "unspecified error"; 
-const static char *_AL_STATUS_CODE__NOMEMORY                      = "no memory"; 
-const static char *_AL_STATUS_CODE__FW_SII_NOT_MATCH              = "firmware sii not match"; 
-const static char *_AL_STATUS_CODE__FW_UPDATE_FAILED              = "firmware update failed"; 
-const static char *_AL_STATUS_CODE__INVALIDALCONTROL              = "invalid al control"; 
-const static char *_AL_STATUS_CODE__UNKNOWNALCONTROL              = "unknown al control"; 
-const static char *_AL_STATUS_CODE__BOOTNOTSUPP                   = "boot not supported"; 
-const static char *_AL_STATUS_CODE__NOVALIDFIRMWARE               = "no valid firmware"; 
-const static char *_AL_STATUS_CODE__INVALIDMBXCFGINBOOT           = "invalid mailbox config in boot"; 
-const static char *_AL_STATUS_CODE__INVALIDMBXCFGINPREOP          = "invalid mailbox config in prepop"; 
-const static char *_AL_STATUS_CODE__INVALIDSMCFG                  = "invalid sync manager config"; 
-const static char *_AL_STATUS_CODE__NOVALIDINPUTS                 = "invalid inputs"; 
-const static char *_AL_STATUS_CODE__NOVALIDOUTPUTS                = "invalid outputs"; 
-const static char *_AL_STATUS_CODE__SYNCERROR                     = "sync error"; 
-const static char *_AL_STATUS_CODE__SMWATCHDOG                    = "sync manager watchdog"; 
-const static char *_AL_STATUS_CODE__SYNCTYPESNOTCOMPATIBLE        = "sync types not compatible"; 
-const static char *_AL_STATUS_CODE__INVALIDSMOUTCFG               = "invalid sync manager out config"; 
-const static char *_AL_STATUS_CODE__INVALIDSMINCFG                = "invalid sync manager in config"; 
-const static char *_AL_STATUS_CODE__INVALIDWDCFG                  = "invalid watchdog config"; 
-const static char *_AL_STATUS_CODE__WAITFORCOLDSTART              = "wait for cold start"; 
-const static char *_AL_STATUS_CODE__WAITFORINIT                   = "wait for init"; 
-const static char *_AL_STATUS_CODE__WAITFORPREOP                  = "wait for preop"; 
-const static char *_AL_STATUS_CODE__WAITFORSAFEOP                 = "wait for safeop"; 
-const static char *_AL_STATUS_CODE__INVALIDINPUTMAPPING           = "invalid input mapping"; 
-const static char *_AL_STATUS_CODE__INVALIDOUTPUTMAPPING          = "invalid output mapping"; 
-const static char *_AL_STATUS_CODE__INCONSISTENTSETTINGS          = "inconsistent settings"; 
-const static char *_AL_STATUS_CODE__FREERUNNOTSUPPORTED           = "freerun not supported"; 
-const static char *_AL_STATUS_CODE__SYNCHRONNOTSUPPORTED          = "synchron not supported"; 
-const static char *_AL_STATUS_CODE__FREERUNNEEDS3BUFFERMODE       = "freerun needs 3 buffer mode"; 
-const static char *_AL_STATUS_CODE__BACKGROUNDWATCHDOG            = "background watchdog"; 
-const static char *_AL_STATUS_CODE__NOVALIDINPUTSANDOUTPUTS       = "no valid inputs and outputs"; 
-const static char *_AL_STATUS_CODE__FATALSYNCERROR                = "fatal sync error"; 
-const static char *_AL_STATUS_CODE__NOSYNCERROR                   = "no sync error"; 
-const static char *_AL_STATUS_CODE__CYCLETIMETOOSMALL             = "cycletime too small"; 
-const static char *_AL_STATUS_CODE__DCINVALIDSYNCCFG              = "dc invalid sync config"; 
-const static char *_AL_STATUS_CODE__DCINVALIDLATCHCFG             = "dc invalid latch config"; 
-const static char *_AL_STATUS_CODE__DCPLLSYNCERROR                = "dc pll sync error"; 
-const static char *_AL_STATUS_CODE__DCSYNCIOERROR                 = "dc sync io error"; 
-const static char *_AL_STATUS_CODE__DCSYNCMISSEDERROR             = "dc sync missed error"; 
-const static char *_AL_STATUS_CODE__DCINVALIDSYNCCYCLETIME        = "dc invalid sync cycletime"; 
-const static char *_AL_STATUS_CODE__DCSYNC0CYCLETIME              = "dc sync0 cycletime"; 
-const static char *_AL_STATUS_CODE__DCSYNC1CYCLETIME              = "dc sync1 cycletime"; 
-const static char *_AL_STATUS_CODE__MBX_AOE                       = "mailbox aoe"; 
-const static char *_AL_STATUS_CODE__MBX_EOE                       = "mailbox eoe"; 
-const static char *_AL_STATUS_CODE__MBX_COE                       = "mailbox coe"; 
-const static char *_AL_STATUS_CODE__MBX_FOE                       = "mailbox foe"; 
-const static char *_AL_STATUS_CODE__MBX_SOE                       = "mailbox soe"; 
-const static char *_AL_STATUS_CODE__MBX_VOE                       = "mailbox voe"; 
-const static char *_AL_STATUS_CODE__EE_NOACCESS                   = "ee no access"; 
-const static char *_AL_STATUS_CODE__EE_ERROR                      = "ee error"; 
-const static char *_AL_STATUS_CODE__EXT_HARDWARE_NOT_READY        = "ext hardware not ready"; 
+static const char *al_status_code_2_string(int code) {
+    const static char *AL_STATUS_CODE_STRING__NOERROR                       = "no error"; 
+    const static char *AL_STATUS_CODE_STRING__UNSPECIFIEDERROR              = "unspecified error"; 
+    const static char *AL_STATUS_CODE_STRING__NOMEMORY                      = "no memory"; 
+    const static char *AL_STATUS_CODE_STRING__FW_SII_NOT_MATCH              = "firmware sii not match"; 
+    const static char *AL_STATUS_CODE_STRING__FW_UPDATE_FAILED              = "firmware update failed"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDALCONTROL              = "invalid al control"; 
+    const static char *AL_STATUS_CODE_STRING__UNKNOWNALCONTROL              = "unknown al control"; 
+    const static char *AL_STATUS_CODE_STRING__BOOTNOTSUPP                   = "boot not supported"; 
+    const static char *AL_STATUS_CODE_STRING__NOVALIDFIRMWARE               = "no valid firmware"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDMBXCFGINBOOT           = "invalid mailbox config in boot"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDMBXCFGINPREOP          = "invalid mailbox config in prepop"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDSMCFG                  = "invalid sync manager config"; 
+    const static char *AL_STATUS_CODE_STRING__NOVALIDINPUTS                 = "invalid inputs"; 
+    const static char *AL_STATUS_CODE_STRING__NOVALIDOUTPUTS                = "invalid outputs"; 
+    const static char *AL_STATUS_CODE_STRING__SYNCERROR                     = "sync error"; 
+    const static char *AL_STATUS_CODE_STRING__SMWATCHDOG                    = "sync manager watchdog"; 
+    const static char *AL_STATUS_CODE_STRING__SYNCTYPESNOTCOMPATIBLE        = "sync types not compatible"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDSMOUTCFG               = "invalid sync manager out config"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDSMINCFG                = "invalid sync manager in config"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDWDCFG                  = "invalid watchdog config"; 
+    const static char *AL_STATUS_CODE_STRING__WAITFORCOLDSTART              = "wait for cold start"; 
+    const static char *AL_STATUS_CODE_STRING__WAITFORINIT                   = "wait for init"; 
+    const static char *AL_STATUS_CODE_STRING__WAITFORPREOP                  = "wait for preop"; 
+    const static char *AL_STATUS_CODE_STRING__WAITFORSAFEOP                 = "wait for safeop"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDINPUTMAPPING           = "invalid input mapping"; 
+    const static char *AL_STATUS_CODE_STRING__INVALIDOUTPUTMAPPING          = "invalid output mapping"; 
+    const static char *AL_STATUS_CODE_STRING__INCONSISTENTSETTINGS          = "inconsistent settings"; 
+    const static char *AL_STATUS_CODE_STRING__FREERUNNOTSUPPORTED           = "freerun not supported"; 
+    const static char *AL_STATUS_CODE_STRING__SYNCHRONNOTSUPPORTED          = "synchron not supported"; 
+    const static char *AL_STATUS_CODE_STRING__FREERUNNEEDS3BUFFERMODE       = "freerun needs 3 buffer mode"; 
+    const static char *AL_STATUS_CODE_STRING__BACKGROUNDWATCHDOG            = "background watchdog"; 
+    const static char *AL_STATUS_CODE_STRING__NOVALIDINPUTSANDOUTPUTS       = "no valid inputs and outputs"; 
+    const static char *AL_STATUS_CODE_STRING__FATALSYNCERROR                = "fatal sync error"; 
+    const static char *AL_STATUS_CODE_STRING__NOSYNCERROR                   = "no sync error"; 
+    const static char *AL_STATUS_CODE_STRING__CYCLETIMETOOSMALL             = "cycletime too small"; 
+    const static char *AL_STATUS_CODE_STRING__DCINVALIDSYNCCFG              = "dc invalid sync config"; 
+    const static char *AL_STATUS_CODE_STRING__DCINVALIDLATCHCFG             = "dc invalid latch config"; 
+    const static char *AL_STATUS_CODE_STRING__DCPLLSYNCERROR                = "dc pll sync error"; 
+    const static char *AL_STATUS_CODE_STRING__DCSYNCIOERROR                 = "dc sync io error"; 
+    const static char *AL_STATUS_CODE_STRING__DCSYNCMISSEDERROR             = "dc sync missed error"; 
+    const static char *AL_STATUS_CODE_STRING__DCINVALIDSYNCCYCLETIME        = "dc invalid sync cycletime"; 
+    const static char *AL_STATUS_CODE_STRING__DCSYNC0CYCLETIME              = "dc sync0 cycletime"; 
+    const static char *AL_STATUS_CODE_STRING__DCSYNC1CYCLETIME              = "dc sync1 cycletime"; 
+    const static char *AL_STATUS_CODE_STRING__MBX_AOE                       = "mailbox aoe"; 
+    const static char *AL_STATUS_CODE_STRING__MBX_EOE                       = "mailbox eoe"; 
+    const static char *AL_STATUS_CODE_STRING__MBX_COE                       = "mailbox coe"; 
+    const static char *AL_STATUS_CODE_STRING__MBX_FOE                       = "mailbox foe"; 
+    const static char *AL_STATUS_CODE_STRING__MBX_SOE                       = "mailbox soe"; 
+    const static char *AL_STATUS_CODE_STRING__MBX_VOE                       = "mailbox voe"; 
+    const static char *AL_STATUS_CODE_STRING__EE_NOACCESS                   = "ee no access"; 
+    const static char *AL_STATUS_CODE_STRING__EE_ERROR                      = "ee error"; 
+    const static char *AL_STATUS_CODE_STRING__EXT_HARDWARE_NOT_READY        = "ext hardware not ready"; 
+    const static char *AL_STATUS_CODE_STRING__UNKNOWN                       = "unknown"; 
 
-const char *al_status_code_2_string(int code) {
+    const char *ret = AL_STATUS_CODE_STRING__UNKNOWN;
+
     switch (code) {
+        default:
+            ret = AL_STATUS_CODE_STRING__UNKNOWN;
+            break;
         case AL_STATUS_CODE__NOERROR:
-            return _AL_STATUS_CODE__NOERROR;
+            ret = AL_STATUS_CODE_STRING__NOERROR;
+            break;
         case AL_STATUS_CODE__UNSPECIFIEDERROR:
-            return _AL_STATUS_CODE__UNSPECIFIEDERROR;
+            ret = AL_STATUS_CODE_STRING__UNSPECIFIEDERROR;
+            break;
         case AL_STATUS_CODE__NOMEMORY:
-            return _AL_STATUS_CODE__NOMEMORY;
+            ret = AL_STATUS_CODE_STRING__NOMEMORY;
+            break;
         case AL_STATUS_CODE__FW_SII_NOT_MATCH:
-            return _AL_STATUS_CODE__FW_SII_NOT_MATCH;
+            ret = AL_STATUS_CODE_STRING__FW_SII_NOT_MATCH;
+            break;
         case AL_STATUS_CODE__FW_UPDATE_FAILED:
-            return _AL_STATUS_CODE__FW_UPDATE_FAILED;
+            ret = AL_STATUS_CODE_STRING__FW_UPDATE_FAILED;
+            break;
         case AL_STATUS_CODE__INVALIDALCONTROL:
-            return _AL_STATUS_CODE__INVALIDALCONTROL;
+            ret = AL_STATUS_CODE_STRING__INVALIDALCONTROL;
+            break;
         case AL_STATUS_CODE__UNKNOWNALCONTROL:
-            return _AL_STATUS_CODE__UNKNOWNALCONTROL;
+            ret = AL_STATUS_CODE_STRING__UNKNOWNALCONTROL;
+            break;
         case AL_STATUS_CODE__BOOTNOTSUPP:
-            return _AL_STATUS_CODE__BOOTNOTSUPP;
+            ret = AL_STATUS_CODE_STRING__BOOTNOTSUPP;
+            break;
         case AL_STATUS_CODE__NOVALIDFIRMWARE:
-            return _AL_STATUS_CODE__NOVALIDFIRMWARE;
+            ret = AL_STATUS_CODE_STRING__NOVALIDFIRMWARE;
+            break;
         case AL_STATUS_CODE__INVALIDMBXCFGINBOOT:
-            return _AL_STATUS_CODE__INVALIDMBXCFGINBOOT;
+            ret = AL_STATUS_CODE_STRING__INVALIDMBXCFGINBOOT;
+            break;
         case AL_STATUS_CODE__INVALIDMBXCFGINPREOP:
-            return _AL_STATUS_CODE__INVALIDMBXCFGINPREOP;
+            ret = AL_STATUS_CODE_STRING__INVALIDMBXCFGINPREOP;
+            break;
         case AL_STATUS_CODE__INVALIDSMCFG:
-            return _AL_STATUS_CODE__INVALIDSMCFG;
+            ret = AL_STATUS_CODE_STRING__INVALIDSMCFG;
+            break;
         case AL_STATUS_CODE__NOVALIDINPUTS:
-            return _AL_STATUS_CODE__NOVALIDINPUTS;
+            ret = AL_STATUS_CODE_STRING__NOVALIDINPUTS;
+            break;
         case AL_STATUS_CODE__NOVALIDOUTPUTS:
-            return _AL_STATUS_CODE__NOVALIDOUTPUTS;
+            ret = AL_STATUS_CODE_STRING__NOVALIDOUTPUTS;
+            break;
         case AL_STATUS_CODE__SYNCERROR:
-            return _AL_STATUS_CODE__SYNCERROR;
+            ret = AL_STATUS_CODE_STRING__SYNCERROR;
+            break;
         case AL_STATUS_CODE__SMWATCHDOG:
-            return _AL_STATUS_CODE__SMWATCHDOG;
+            ret = AL_STATUS_CODE_STRING__SMWATCHDOG;
+            break;
         case AL_STATUS_CODE__SYNCTYPESNOTCOMPATIBLE:
-            return _AL_STATUS_CODE__SYNCTYPESNOTCOMPATIBLE;
+            ret = AL_STATUS_CODE_STRING__SYNCTYPESNOTCOMPATIBLE;
+            break;
         case AL_STATUS_CODE__INVALIDSMOUTCFG:
-            return _AL_STATUS_CODE__INVALIDSMOUTCFG;
+            ret = AL_STATUS_CODE_STRING__INVALIDSMOUTCFG;
+            break;
         case AL_STATUS_CODE__INVALIDSMINCFG:
-            return _AL_STATUS_CODE__INVALIDSMINCFG;
+            ret = AL_STATUS_CODE_STRING__INVALIDSMINCFG;
+            break;
         case AL_STATUS_CODE__INVALIDWDCFG:
-            return _AL_STATUS_CODE__INVALIDWDCFG;
+            ret = AL_STATUS_CODE_STRING__INVALIDWDCFG;
+            break;
         case AL_STATUS_CODE__WAITFORCOLDSTART:
-            return _AL_STATUS_CODE__WAITFORCOLDSTART;
+            ret = AL_STATUS_CODE_STRING__WAITFORCOLDSTART;
+            break;
         case AL_STATUS_CODE__WAITFORINIT:
-            return _AL_STATUS_CODE__WAITFORINIT;
+            ret = AL_STATUS_CODE_STRING__WAITFORINIT;
+            break;
         case AL_STATUS_CODE__WAITFORPREOP:
-            return _AL_STATUS_CODE__WAITFORPREOP;
+            ret = AL_STATUS_CODE_STRING__WAITFORPREOP;
+            break;
         case AL_STATUS_CODE__WAITFORSAFEOP:
-            return _AL_STATUS_CODE__WAITFORSAFEOP;
+            ret = AL_STATUS_CODE_STRING__WAITFORSAFEOP;
+            break;
         case AL_STATUS_CODE__INVALIDINPUTMAPPING:
-            return _AL_STATUS_CODE__INVALIDINPUTMAPPING;
+            ret = AL_STATUS_CODE_STRING__INVALIDINPUTMAPPING;
+            break;
         case AL_STATUS_CODE__INVALIDOUTPUTMAPPING:
-            return _AL_STATUS_CODE__INVALIDOUTPUTMAPPING;
+            ret = AL_STATUS_CODE_STRING__INVALIDOUTPUTMAPPING;
+            break;
         case AL_STATUS_CODE__INCONSISTENTSETTINGS:
-            return _AL_STATUS_CODE__INCONSISTENTSETTINGS;
+            ret = AL_STATUS_CODE_STRING__INCONSISTENTSETTINGS;
+            break;
         case AL_STATUS_CODE__FREERUNNOTSUPPORTED:
-            return _AL_STATUS_CODE__FREERUNNOTSUPPORTED;
+            ret = AL_STATUS_CODE_STRING__FREERUNNOTSUPPORTED;
+            break;
         case AL_STATUS_CODE__SYNCHRONNOTSUPPORTED:
-            return _AL_STATUS_CODE__SYNCHRONNOTSUPPORTED;
+            ret = AL_STATUS_CODE_STRING__SYNCHRONNOTSUPPORTED;
+            break;
         case AL_STATUS_CODE__FREERUNNEEDS3BUFFERMODE:
-            return _AL_STATUS_CODE__FREERUNNEEDS3BUFFERMODE;
+            ret = AL_STATUS_CODE_STRING__FREERUNNEEDS3BUFFERMODE;
+            break;
         case AL_STATUS_CODE__BACKGROUNDWATCHDOG:
-            return _AL_STATUS_CODE__BACKGROUNDWATCHDOG;
+            ret = AL_STATUS_CODE_STRING__BACKGROUNDWATCHDOG;
+            break;
         case AL_STATUS_CODE__NOVALIDINPUTSANDOUTPUTS:
-            return _AL_STATUS_CODE__NOVALIDINPUTSANDOUTPUTS;
+            ret = AL_STATUS_CODE_STRING__NOVALIDINPUTSANDOUTPUTS;
+            break;
         case AL_STATUS_CODE__FATALSYNCERROR:
-            return _AL_STATUS_CODE__FATALSYNCERROR;
+            ret = AL_STATUS_CODE_STRING__FATALSYNCERROR;
+            break;
         case AL_STATUS_CODE__NOSYNCERROR:
-            return _AL_STATUS_CODE__NOSYNCERROR;
+            ret = AL_STATUS_CODE_STRING__NOSYNCERROR;
+            break;
         case AL_STATUS_CODE__CYCLETIMETOOSMALL:
-            return _AL_STATUS_CODE__CYCLETIMETOOSMALL;
+            ret = AL_STATUS_CODE_STRING__CYCLETIMETOOSMALL;
+            break;
         case AL_STATUS_CODE__DCINVALIDSYNCCFG:
-            return _AL_STATUS_CODE__DCINVALIDSYNCCFG;
+            ret = AL_STATUS_CODE_STRING__DCINVALIDSYNCCFG;
+            break;
         case AL_STATUS_CODE__DCINVALIDLATCHCFG:
-            return _AL_STATUS_CODE__DCINVALIDLATCHCFG;
+            ret = AL_STATUS_CODE_STRING__DCINVALIDLATCHCFG;
+            break;
         case AL_STATUS_CODE__DCPLLSYNCERROR:
-            return _AL_STATUS_CODE__DCPLLSYNCERROR;
+            ret = AL_STATUS_CODE_STRING__DCPLLSYNCERROR;
+            break;
         case AL_STATUS_CODE__DCSYNCIOERROR:
-            return _AL_STATUS_CODE__DCSYNCIOERROR;
+            ret = AL_STATUS_CODE_STRING__DCSYNCIOERROR;
+            break;
         case AL_STATUS_CODE__DCSYNCMISSEDERROR:
-            return _AL_STATUS_CODE__DCSYNCMISSEDERROR;
+            ret = AL_STATUS_CODE_STRING__DCSYNCMISSEDERROR;
+            break;
         case AL_STATUS_CODE__DCINVALIDSYNCCYCLETIME:
-            return _AL_STATUS_CODE__DCINVALIDSYNCCYCLETIME;
+            ret = AL_STATUS_CODE_STRING__DCINVALIDSYNCCYCLETIME;
+            break;
         case AL_STATUS_CODE__DCSYNC0CYCLETIME:
-            return _AL_STATUS_CODE__DCSYNC0CYCLETIME;
+            ret = AL_STATUS_CODE_STRING__DCSYNC0CYCLETIME;
+            break;
         case AL_STATUS_CODE__DCSYNC1CYCLETIME:
-            return _AL_STATUS_CODE__DCSYNC1CYCLETIME;
+            ret = AL_STATUS_CODE_STRING__DCSYNC1CYCLETIME;
+            break;
         case AL_STATUS_CODE__MBX_AOE:
-            return _AL_STATUS_CODE__MBX_AOE;
+            ret = AL_STATUS_CODE_STRING__MBX_AOE;
+            break;
         case AL_STATUS_CODE__MBX_EOE:
-            return _AL_STATUS_CODE__MBX_EOE;
+            ret = AL_STATUS_CODE_STRING__MBX_EOE;
+            break;
         case AL_STATUS_CODE__MBX_COE:
-            return _AL_STATUS_CODE__MBX_COE;
+            ret = AL_STATUS_CODE_STRING__MBX_COE;
+            break;
         case AL_STATUS_CODE__MBX_FOE:
-            return _AL_STATUS_CODE__MBX_FOE;
+            ret = AL_STATUS_CODE_STRING__MBX_FOE;
+            break;
         case AL_STATUS_CODE__MBX_SOE:
-            return _AL_STATUS_CODE__MBX_SOE;
+            ret = AL_STATUS_CODE_STRING__MBX_SOE;
+            break;
         case AL_STATUS_CODE__MBX_VOE:
-            return _AL_STATUS_CODE__MBX_VOE;
+            ret = AL_STATUS_CODE_STRING__MBX_VOE;
+            break;
         case AL_STATUS_CODE__EE_NOACCESS:
-            return _AL_STATUS_CODE__EE_NOACCESS;
+            ret = AL_STATUS_CODE_STRING__EE_NOACCESS;
+            break;
         case AL_STATUS_CODE__EE_ERROR:
-            return _AL_STATUS_CODE__EE_ERROR;
+            ret = AL_STATUS_CODE_STRING__EE_ERROR;
+            break;
         case AL_STATUS_CODE__EXT_HARDWARE_NOT_READY:
-            return _AL_STATUS_CODE__EXT_HARDWARE_NOT_READY;
+            ret = AL_STATUS_CODE_STRING__EXT_HARDWARE_NOT_READY;
+            break;
     }
 
-    return NULL;
+    return ret;
 }
 
-const static char *_ECAT_STATE_INIT     = "INIT";
-const static char *_ECAT_STATE_PREOP    = "PRE-OPERATIONAL";
-const static char *_ECAT_STATE_SAFEOP   = "SAFE-OPERATIONAL";
-const static char *_ECAT_STATE_OP       = "OPERATIONAL";
-const static char *_ECAT_STATE_BOOT     = "BOOT";
+static const char *ecat_state_2_string(int state) {
+    const static char *ECAT_STATE_STRING_INIT     = "INIT";
+    const static char *ECAT_STATE_STRING_PREOP    = "PRE-OPERATIONAL";
+    const static char *ECAT_STATE_STRING_SAFEOP   = "SAFE-OPERATIONAL";
+    const static char *ECAT_STATE_STRING_OP       = "OPERATIONAL";
+    const static char *ECAT_STATE_STRING_BOOT     = "BOOT";
+    const static char *ECAT_STATE_STRING_UNKNOWN  = "UNKNOWN";
 
-const char *ecat_state_2_string(int state) {
+    const char *ret = ECAT_STATE_STRING_UNKNOWN;
+
     switch (state) {
+        default:
+            break;
         case EC_STATE_INIT:
-            return _ECAT_STATE_INIT;
+            ret = ECAT_STATE_STRING_INIT;
+            break;
         case EC_STATE_PREOP:
-            return _ECAT_STATE_PREOP;
+            ret = ECAT_STATE_STRING_PREOP;
+            break;
         case EC_STATE_SAFEOP:
-            return _ECAT_STATE_SAFEOP;
+            ret = ECAT_STATE_STRING_SAFEOP;
+            break;
         case EC_STATE_OP:
-            return _ECAT_STATE_OP;
+            ret = ECAT_STATE_STRING_OP;
+            break;
         case EC_STATE_BOOT:
-            return _ECAT_STATE_BOOT;
+            ret = ECAT_STATE_STRING_BOOT;
+            break;
     }
 
-    return NULL;
+    return ret;
 }
 
 // Set EtherCAT state on slave 
 int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
-    uint16_t wkc = 0, act_state, value;
+    uint16_t wkc = 0u;
+    uint16_t act_state = 0u;
+    uint16_t value = 0u;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_fpwr(pec, pec->slaves[slave].fixed_address, 
-            EC_REG_ALCTL, &state, sizeof(state), &wkc); 
+    if (ec_fpwr(pec, pec->slaves[slave].fixed_address, 
+            EC_REG_ALCTL, &state, sizeof(state), &wkc) != EC_OK) { 
+        // just return, we got an error from ec_transceive
+    } else if ((state & EC_STATE_RESET) != 0u) {
+        // just return here, we did an error reset
+    } else {
+        ec_log(10, "EC_STATE_SET", "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
 
-    if (state & EC_STATE_RESET)
-        return wkc; // just return here, we did an error reset
+        pec->slaves[slave].expected_state = state;
 
-    ec_log(10, "EC_STATE_SET", "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
+        ec_timer_t timeout;
+        ec_timer_init(&timeout, 10000000000); // 10 second timeout
 
-    pec->slaves[slave].expected_state = state;
+        do {
+            if (ec_fpwr(pec, pec->slaves[slave].fixed_address, 
+                        EC_REG_ALCTL, &state, sizeof(state), &wkc) == EC_OK) { 
+                act_state = 0;
+                wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
 
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, 10000000000); // 10 second timeout
+                if ((act_state & EC_STATE_ERROR) != 0u) {
+                    if (ec_fprd(pec, pec->slaves[slave].fixed_address, 
+                                EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
+                        ec_log(10, "EC_STATE_SET", "slave %2d: state switch to %d failed, "
+                                "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
 
-    do {
-        ec_fpwr(pec, pec->slaves[slave].fixed_address, 
-                EC_REG_ALCTL, &state, sizeof(state), &wkc); 
+                        (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | 
+                                EC_STATE_RESET);
+                        break;
+                    }
+                }
+            }
 
-        act_state = 0;
-        wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
-
-        if (act_state & EC_STATE_ERROR) {
-            ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                    EC_REG_ALSTATCODE, &value, sizeof(value), &wkc);
-            ec_log(10, "EC_STATE_SET", "slave %2d: state switch to %d failed, "
-                    "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
-
-            ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | 
-                    EC_STATE_RESET);
-            break;
-        }
-    
-        if (ec_timer_expired(&timeout)) {
+            ec_sleep(1000000);
+        } while ((act_state != state) && (ec_timer_expired(&timeout) == 0));
+ 
+        if (ec_timer_expired(&timeout) == 1) {
             ec_log(1, "EC_STATE_SET", "slave %2d: did not respond on state "
                     "switch to %d\n", slave, state);
             wkc = 0;
-            break;
         }
 
-        ec_sleep(1000000);
-    } while (act_state != state);
+        ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", 
+                slave, state, act_state, wkc);
 
-    ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", 
-            slave, state, act_state, wkc);
+        if (act_state == state) {    
+            ec_log(10, "EC_STATE_SET", "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
+        } else {
+            ec_log(1, "EC_STATE_SET", "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
+        }
 
-    if (act_state == state) {    
-        ec_log(10, "EC_STATE_SET", "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
-    } else {
-        ec_log(1, "EC_STATE_SET", "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
+        pec->slaves[slave].act_state = act_state;
     }
-            
-    pec->slaves[slave].act_state = act_state;
+
     return wkc;
 }
 
@@ -592,25 +696,28 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
 int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, 
         uint16_t *alstatcode) 
 {
-    uint16_t wkc = 0, value = 0;
+    uint16_t wkc = 0u;
+    uint16_t value = 0u;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_fprd(pec, pec->slaves[slave].fixed_address, 
+    (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
             EC_REG_ALSTAT, &value, sizeof(value), &wkc);
 
-    if (wkc) {
-        slv->act_state = *state = (ec_state_t)value;
+    if (wkc != 0u) {
+        slv->act_state = (ec_state_t)value;
+        *state = slv->act_state;
     }
 
     if (alstatcode && (*state & 0x10)) {
-        ec_fprd(pec, pec->slaves[slave].fixed_address, 
+        (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
                 EC_REG_ALSTATCODE, &value, sizeof(value), &wkc);
 
-        if (wkc)
+        if (wkc != 0u) {
             *alstatcode = value;
+        }
     }
 
     return wkc;
@@ -620,69 +727,72 @@ int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state,
 int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
+    int ret = 0;
 
     ec_slave_ptr(slv, pec, slave);
 
-    if (slv->sm_set_by_user)
-        return 0; // we're already done
+    if (slv->sm_set_by_user != 0) {
+        // we're already done
+    } else {
+        // check sm settings
+        if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) != 0u) {
+            (void)ec_coe_generate_mapping(pec, slave);
+        } else if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
+            (void)ec_soe_generate_mapping(pec, slave);
+        } else {
+            // try eeprom
+            for (uint8_t sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
+                int txpdos_cnt = 0;
+                int rxpdos_cnt = 0;
+                size_t bit_len = 0;
+                ec_eeprom_cat_pdo_t *pdo;
 
-    // check sm settings
-    if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)
-        ec_coe_generate_mapping(pec, slave);
-    else if (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)
-        ec_soe_generate_mapping(pec, slave);
-    else {
-        // try eeprom
-        for (int sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
-            int txpdos_cnt = 0, rxpdos_cnt = 0;
-            size_t bit_len = 0;
-            ec_eeprom_cat_pdo_t *pdo;
+                // inputs and outputs
+                TAILQ_FOREACH(pdo, &slv->eeprom.txpdos, qh) {
+                    if (sm_idx == pdo->sm_nr) {
+                        for (uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
+                            ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
+                                    "txpdo bit_len %d, sm %d\n", slave, 
+                                    pdo->entries[entry_idx].bit_len, pdo->sm_nr);
+                            bit_len += pdo->entries[entry_idx].bit_len;
+                        }
 
-            // inputs and outputs
-            TAILQ_FOREACH(pdo, &slv->eeprom.txpdos, qh) {
-                if (sm_idx == pdo->sm_nr) {
-                    for (int entry_idx = 0; entry_idx < pdo->n_entry; 
-                            ++entry_idx) { 
-                        ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
-                                "txpdo bit_len %d, sm %d\n", slave, 
-                                pdo->entries[entry_idx].bit_len, pdo->sm_nr);
-                        bit_len += pdo->entries[entry_idx].bit_len;
+                        txpdos_cnt++;
                     }
-
-                    txpdos_cnt++;
                 }
-            }
 
-            // outputs
-            TAILQ_FOREACH(pdo, &slv->eeprom.rxpdos, qh) {
-                if (sm_idx == pdo->sm_nr) {
-                    for (int entry_idx = 0; entry_idx < pdo->n_entry; 
-                            ++entry_idx) { 
-                        ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
-                                "rxpdo bit_len %d, sm %d\n", slave, 
-                                pdo->entries[entry_idx].bit_len, pdo->sm_nr);
-                        bit_len += pdo->entries[entry_idx].bit_len;
+                // outputs
+                TAILQ_FOREACH(pdo, &slv->eeprom.rxpdos, qh) {
+                    if (sm_idx == pdo->sm_nr) {
+                        for (uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
+                            ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
+                                    "rxpdo bit_len %d, sm %d\n", slave, 
+                                    pdo->entries[entry_idx].bit_len, pdo->sm_nr);
+                            bit_len += pdo->entries[entry_idx].bit_len;
+                        }
+
+                        rxpdos_cnt++;
                     }
-
-                    rxpdos_cnt++;
                 }
-            }
 
-            ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: txpdos %d, "
-                    "rxpdos %d, bitlen%d %d\n", 
-                    slave, txpdos_cnt, rxpdos_cnt, sm_idx, bit_len);
+                ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: txpdos %d, "
+                        "rxpdos %d, bitlen%d %d\n", 
+                        slave, txpdos_cnt, rxpdos_cnt, sm_idx, bit_len);
 
-            if (bit_len > 0) {
-                ec_log(10, "GENERATE_MAPPING EEP", "slave %2d: sm%d length "
-                        "bits %d, bytes %d\n", 
-                        slave, sm_idx, bit_len, (bit_len + 7) / 8);
+                if (bit_len > 0u) {
+                    ec_log(10, "GENERATE_MAPPING EEP", "slave %2d: sm%d length "
+                            "bits %d, bytes %d\n", 
+                            slave, sm_idx, bit_len, (bit_len + 7u) / 8u);
 
-                slv->sm[sm_idx].len = (bit_len + 7) / 8;
+                    slv->sm[sm_idx].len = (bit_len + 7u) / 8u;
+                }
             }
         }
+
+        ret = 1;
     }
 
-    return 1;
+    return ret;
 }
 
 // prepare state transition on ethercat slave
@@ -691,6 +801,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
 {
     uint16_t wkc;
     ec_state_t act_state = 0;
+    int ret = 0;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -701,76 +812,78 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
     wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
     if (!wkc) {
         ec_log(10, __func__, "slave %2d: error getting state\n", slave);
-        return -1;
-    }
-    
-    // generate transition
-    ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8) | 
-        (state & EC_STATE_MASK); 
+        ret = -1;
+    } else {
+        // generate transition
+        ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | (state & EC_STATE_MASK); 
 
-    switch (transition) {
-        default:
-            break;
-        case INIT_2_SAFEOP:
-        case PREOP_2_SAFEOP:
-            ec_log(10, get_transition_string(transition), "slave %2d: "
-                    "sending init cmds\n", slave);
+        switch (transition) {
+            default:
+                break;
+            case INIT_2_SAFEOP:
+            case PREOP_2_SAFEOP:
+                ec_log(10, get_transition_string(transition), "slave %2d: "
+                        "sending init cmds\n", slave);
 
-            ec_slave_mailbox_init_cmd_t *cmd;
-            LIST_FOREACH(cmd, &slv->init_cmds, le) {
-                if (cmd->transition != 0x24) 
-                    continue;
-
-                switch (cmd->type) {
-                    case EC_MBX_COE: {
-                        ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
-
-                        ec_log(10, get_transition_string(transition), 
-                                "slave %2d: sending CoE init cmd 0x%04X:%d, "
-                                "ca %d, datalen %d, datap %p\n", slave, coe->id, 
-                                coe->si_el, coe->ca_atn, coe->datalen, coe->data);
-
-                        uint8_t *buf = (uint8_t *)coe->data;
-                        size_t buf_len = coe->datalen;
-                        uint32_t abort_code = 0;
-
-                        int ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, 
-                                coe->ca_atn, buf, buf_len, &abort_code);
-                        if (ret != 0) {
-                            ec_log(10, get_transition_string(transition), 
-                                    "slave %2d: writing sdo failed: error code 0x%X!\n", 
-                                    slave, ret);
-                        } 
-                        break;
+                ec_slave_mailbox_init_cmd_t *cmd;
+                LIST_FOREACH(cmd, &slv->init_cmds, le) {
+                    if (cmd->transition != 0x24) {
+                        continue;
                     }
-                    case EC_MBX_SOE: {
-                        ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
 
-                        ec_log(10, get_transition_string(transition), 
-                                "slave %2d: sending SoE init cmd 0x%04X:%d, "
-                                "atn %d, datalen %d, datap %p\n", slave, soe->id, 
-                                soe->si_el, soe->ca_atn, soe->datalen, soe->data);
+                    switch (cmd->type) {
+                        default:
+                            break;
+                        case EC_MBX_COE: {
+                            ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
 
-                        uint8_t *buf = (uint8_t *)soe->data;
-                        size_t buf_len = soe->datalen;
-
-                        int ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, 
-                              soe->si_el, buf, buf_len);
-
-                        if (ret != 0) {
                             ec_log(10, get_transition_string(transition), 
-                                    "slave %2d: writing SoE failed: error code 0x%X!\n", 
-                                    slave, ret);
-                        } 
-                        break;
+                                    "slave %2d: sending CoE init cmd 0x%04X:%d, "
+                                    "ca %d, datalen %d, datap %p\n", slave, coe->id, 
+                                    coe->si_el, coe->ca_atn, coe->datalen, coe->data);
+
+                            uint8_t *buf = (uint8_t *)coe->data;
+                            size_t buf_len = coe->datalen;
+                            uint32_t abort_code = 0;
+
+                            int ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, 
+                                    coe->ca_atn, buf, buf_len, &abort_code);
+                            if (ret != 0) {
+                                ec_log(10, get_transition_string(transition), 
+                                        "slave %2d: writing sdo failed: error code 0x%X!\n", 
+                                        slave, ret);
+                            } 
+                            break;
+                        }
+                        case EC_MBX_SOE: {
+                            ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
+
+                            ec_log(10, get_transition_string(transition), 
+                                    "slave %2d: sending SoE init cmd 0x%04X:%d, "
+                                    "atn %d, datalen %d, datap %p\n", slave, soe->id, 
+                                    soe->si_el, soe->ca_atn, soe->datalen, soe->data);
+
+                            uint8_t *buf = (uint8_t *)soe->data;
+                            size_t buf_len = soe->datalen;
+
+                            int ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, 
+                                    soe->si_el, buf, buf_len);
+
+                            if (ret != 0) {
+                                ec_log(10, get_transition_string(transition), 
+                                        "slave %2d: writing SoE failed: error code 0x%X!\n", 
+                                        slave, ret);
+                            } 
+                            break;
+                        }
                     }
                 }
-            }
 
-            break;
+                break;
+        }
     }
 
-    return 0;
+    return ret;
 }
 
 // free slave resources
@@ -783,38 +896,51 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
     ec_mbx_deinit(pec, slave);
 
     // free resources
-    if (slv->eeprom.strings) {
-        int string;
-        for (string = 0; string < slv->eeprom.strings_cnt; ++string)
+    if (slv->eeprom.strings != NULL) {
+        uint32_t string;
+        for (string = 0; string < slv->eeprom.strings_cnt; ++string) {
+            // cppcheck-suppress misra-c2012-21.3
             free(slv->eeprom.strings[string]);
+        }
 
+        // cppcheck-suppress misra-c2012-21.3
         free(slv->eeprom.strings);
     }
 
     ec_eeprom_cat_pdo_t *pdo;
-    while ((pdo = TAILQ_FIRST(&slv->eeprom.txpdos)) != NULL) {
+    for (pdo = TAILQ_FIRST(&slv->eeprom.txpdos); pdo != NULL; pdo = TAILQ_FIRST(&slv->eeprom.txpdos)) {
         TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
-        if (pdo->entries)
+        if (pdo->entries != NULL) {
+            // cppcheck-suppress misra-c2012-21.3
             free(pdo->entries);
+        }
+        // cppcheck-suppress misra-c2012-21.3
         free(pdo);
     }
 
-    while ((pdo = TAILQ_FIRST(&slv->eeprom.rxpdos)) != NULL) {
+    for (pdo = TAILQ_FIRST(&slv->eeprom.rxpdos); pdo != NULL; pdo = TAILQ_FIRST(&slv->eeprom.rxpdos)) {
         TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
-        if (pdo->entries)
+        if (pdo->entries != NULL) {
+            // cppcheck-suppress misra-c2012-21.3
             free(pdo->entries);
+        }
+        // cppcheck-suppress misra-c2012-21.3
         free(pdo);
     }
 
     ec_slave_mailbox_init_cmd_t *cmd;
-    while ((cmd = LIST_FIRST(&slv->init_cmds)) != NULL) {
+    for (cmd = LIST_FIRST(&slv->init_cmds); cmd != NULL; cmd = LIST_FIRST(&slv->init_cmds)) {
         LIST_REMOVE(cmd, le);
         ec_slave_mailbox_init_cmd_free(cmd);                
     }
 
+    // cppcheck-suppress misra-c2012-21.3
     free_resource(slv->eeprom.sms);
+    // cppcheck-suppress misra-c2012-21.3
     free_resource(slv->eeprom.fmmus);
+    // cppcheck-suppress misra-c2012-21.3
     free_resource(slv->sm);
+    // cppcheck-suppress misra-c2012-21.3
     free_resource(slv->fmmu);
 }
 
@@ -822,6 +948,7 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
 int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc;
     ec_state_t act_state = 0;
+    int ret = 0;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -830,341 +957,359 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
 #define ec_reg_read(reg, buf, buflen) {                                 \
     uint16_t wkc;                                                       \
-    ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),               \
+    (void)ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),         \
             (buf), (buflen), &wkc);                                     \
-    if (!wkc) ec_log(10, __func__,                                      \
-            "reading reg 0x%X : no answer from slave %2d\n", slave); }
+    if (!wkc) { ec_log(10, __func__,                                    \
+            "reading reg 0x%X : no answer from slave %2d\n", slave); } }
 
     // check error state
     wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
     if (!wkc) {
         ec_log(10, "ERROR", "could not get state of slave %d\n", slave);
-        return 0;
-    }
+    } else {
+        if ((act_state & EC_STATE_ERROR) != 0u) { // reset error state first
+            (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+        }
 
-    if (act_state & EC_STATE_ERROR) // reset error state first
-        ec_slave_set_state(pec, slave, 
-                (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+        // generate transition
+        ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | 
+            (state & EC_STATE_MASK); 
 
-    // generate transition
-    ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8) | 
-        (state & EC_STATE_MASK); 
-            
-    switch (transition) {
-        case BOOT_2_PREOP:
-        case BOOT_2_SAFEOP:
-        case BOOT_2_OP: 
-            break;
-        case INIT_2_BOOT:
-        case INIT_2_PREOP:
-        case INIT_2_SAFEOP:
-        case INIT_2_OP: {
-            // init to preop stuff
-            ec_log(10, get_transition_string(transition), 
-                    "slave %2d, vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
-                    slave, 
-                    slv->eeprom.vendor_id, 
-                    slv->eeprom.product_code, 
-                    slv->eeprom.mbx_supported);
+        switch (transition) {
+            case BOOT_2_PREOP:
+            case BOOT_2_SAFEOP:
+            case BOOT_2_OP: 
+                break;
+            case INIT_2_BOOT:
+            case INIT_2_PREOP:
+            case INIT_2_SAFEOP:
+            case INIT_2_OP: {
+                // init to preop stuff
+                ec_log(10, get_transition_string(transition), 
+                        "slave %2d, vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
+                        slave, 
+                        slv->eeprom.vendor_id, 
+                        slv->eeprom.product_code, 
+                        slv->eeprom.mbx_supported);
 
-            // configure mailboxes if any supported
-            if (slv->eeprom.mbx_supported) {
-                // read mailbox
-                if ((transition == INIT_2_BOOT) && 
-                        slv->eeprom.boot_mbx_send_offset) {
-                    slv->sm[MAILBOX_READ].adr = slv->eeprom.boot_mbx_send_offset;
-                    slv->sm[MAILBOX_READ].len = slv->eeprom.boot_mbx_send_size;
-                } else {
-                    slv->sm[MAILBOX_READ].adr = slv->eeprom.mbx_send_offset;
-                    slv->sm[MAILBOX_READ].len = slv->eeprom.mbx_send_size;
+                // configure mailboxes if any supported
+                if (slv->eeprom.mbx_supported != 0u) {
+                    // read mailbox
+                    if ((transition == INIT_2_BOOT) && 
+                            slv->eeprom.boot_mbx_send_offset) {
+                        slv->sm[MAILBOX_READ].adr = slv->eeprom.boot_mbx_send_offset;
+                        slv->sm[MAILBOX_READ].len = slv->eeprom.boot_mbx_send_size;
+                    } else {
+                        slv->sm[MAILBOX_READ].adr = slv->eeprom.mbx_send_offset;
+                        slv->sm[MAILBOX_READ].len = slv->eeprom.mbx_send_size;
+                    }
+                    slv->sm[MAILBOX_READ].flags = 0x00010022;
+                    slv->mbx.sm_state = NULL;
+
+                    // write mailbox
+                    if ((transition == INIT_2_BOOT) && 
+                            slv->eeprom.boot_mbx_receive_offset) {
+                        slv->sm[MAILBOX_WRITE].adr = slv->eeprom.boot_mbx_receive_offset;
+                        slv->sm[MAILBOX_WRITE].len = slv->eeprom.boot_mbx_receive_size;
+                    } else {
+                        slv->sm[MAILBOX_WRITE].adr = slv->eeprom.mbx_receive_offset;
+                        slv->sm[MAILBOX_WRITE].len = slv->eeprom.mbx_receive_size;
+                    }
+
+                    slv->sm[MAILBOX_WRITE].flags = 0x00010026;
+
+                    ec_mbx_init(pec, slave);
+
+                    for (uint32_t sm_idx = 0u; sm_idx < 2u; ++sm_idx) {
+                        ec_log(10, get_transition_string(transition), "slave %2d: "
+                                "sm%u, adr 0x%04X, len %3d, flags 0x%08X\n",
+                                slave, sm_idx, slv->sm[sm_idx].adr, 
+                                slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
+
+                        (void)ec_fpwr(pec, slv->fixed_address, 0x800u + (sm_idx * 8u),
+                                &slv->sm[sm_idx], sizeof(ec_slave_sm_t), &wkc);
+                    }
+
                 }
-                slv->sm[MAILBOX_READ].flags = 0x00010022;
-                slv->mbx.sm_state = NULL;
 
-                // write mailbox
-                if ((transition == INIT_2_BOOT) && 
-                        slv->eeprom.boot_mbx_receive_offset) {
-                    slv->sm[MAILBOX_WRITE].adr = slv->eeprom.boot_mbx_receive_offset;
-                    slv->sm[MAILBOX_WRITE].len = slv->eeprom.boot_mbx_receive_size;
+                (void)ec_eeprom_to_pdi(pec, slave);
+
+                // write state to slave
+                if (transition == INIT_2_BOOT) {
+                    wkc = ec_slave_set_state(pec, slave, EC_STATE_BOOT);
+                    //                break;
                 } else {
-                    slv->sm[MAILBOX_WRITE].adr = slv->eeprom.mbx_receive_offset;
-                    slv->sm[MAILBOX_WRITE].len = slv->eeprom.mbx_receive_size;
+                    wkc = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
                 }
 
-                slv->sm[MAILBOX_WRITE].flags = 0x00010026;
+                // apply eoe settings if any
+                if (slv->eoe.use_eoe != 0) {
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d: applying EoE settings\n", slave);
+                    if (slv->eoe.mac != NULL) {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d:         MAC %02X:%02X:%02X:%02X:%02X:%02X\n",
+                                slave, slv->eoe.mac[0], slv->eoe.mac[1], slv->eoe.mac[2],
+                                slv->eoe.mac[3], slv->eoe.mac[4], slv->eoe.mac[5]);
+                    }
+                    if (slv->eoe.ip_address != NULL) {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d:         IP     %d.%d.%d.%d\n",
+                                slave, slv->eoe.ip_address[3], slv->eoe.ip_address[2], 
+                                slv->eoe.ip_address[1], slv->eoe.ip_address[0]);
+                    }
+                    if (slv->eoe.subnet != NULL) {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d:         Subnet  %d.%d.%d.%d\n",
+                                slave, slv->eoe.subnet[3], slv->eoe.subnet[2], 
+                                slv->eoe.subnet[1], slv->eoe.subnet[0]);
+                    }
+                    if (slv->eoe.gateway != NULL) {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d:         Gateway %d.%d.%d.%d\n",
+                                slave, slv->eoe.gateway[3], slv->eoe.gateway[2], 
+                                slv->eoe.gateway[1], slv->eoe.gateway[0]);
+                    }                        
+                    if (slv->eoe.dns != NULL) {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d:         DNS     %d.%d.%d.%d\n",
+                                slave, slv->eoe.dns[3], slv->eoe.dns[2], 
+                                slv->eoe.dns[1], slv->eoe.dns[0]);
+                    }
+                    if (slv->eoe.dns_name != NULL) {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d:         DNSname %s\n",
+                                slave, slv->eoe.dns_name);
+                    }
 
-                ec_mbx_init(pec, slave);
+                    (void)ec_eoe_set_ip_parameter(pec, slave, slv->eoe.mac, slv->eoe.ip_address, 
+                            slv->eoe.subnet, slv->eoe.gateway, slv->eoe.dns, slv->eoe.dns_name);
+                }
 
-                for (int sm_idx = 0; sm_idx < 2; ++sm_idx) {
+                if ((transition == INIT_2_PREOP) || (transition == INIT_2_BOOT)) {
+                    break;
+                }
+            }
+            case PREOP_2_SAFEOP: 
+            case PREOP_2_OP: {
+                // configure distributed clocks if needed 
+                if (pec->dc.have_dc && slv->dc.use_dc) {
+                    if (slv->dc.cycle_time_0 == 0u) {
+                        slv->dc.cycle_time_0 = pec->dc.timer_override; 
+                    }
+
+                    if (slv->dc.type == 1) {
+                        if (slv->dc.cycle_time_1 == 0u) {
+                            slv->dc.cycle_time_1 = pec->dc.timer_override; 
+                        }
+
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d: configuring dc sync 01, "
+                                "cycle_times %d/%d, cycle_shift %d\n", 
+                                slave, slv->dc.cycle_time_0, 
+                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
+
+                        ec_dc_sync(pec, slave, 7, slv->dc.cycle_time_0, 
+                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
+                    } else {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d: configuring dc sync 0, "
+                                "cycle_time %d, cycle_shift %d\n", slave,
+                                slv->dc.cycle_time_0, slv->dc.cycle_shift);
+
+                        ec_dc_sync(pec, slave, 3, slv->dc.cycle_time_0, 0, 
+                                slv->dc.cycle_shift);
+                    }
+                } else {
+                    ec_dc_sync(pec, slave, 0, 0, 0, 0);
+                }
+
+                int start_sm = slv->eeprom.mbx_supported ? 2 : 0;
+
+                for (uint32_t sm_idx = start_sm; sm_idx < slv->sm_ch; ++sm_idx) {
+                    if (!slv->sm[sm_idx].adr) {
+                        continue;
+                    }
+
                     ec_log(10, get_transition_string(transition), "slave %2d: "
                             "sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
                             slave, sm_idx, slv->sm[sm_idx].adr, 
                             slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
 
-                    ec_fpwr(pec, slv->fixed_address, 0x800 + (sm_idx * 8),
+                    (void)ec_fpwr(pec, slv->fixed_address, 0x800u + (sm_idx * 8u),
                             &slv->sm[sm_idx], sizeof(ec_slave_sm_t), &wkc);
+
+                    if (!wkc) {
+                        ec_log(10, get_transition_string(transition), 
+                                "slave %2d: no answer on "
+                                "writing sm%d settings\n", slave, sm_idx);
+                    }
                 }
 
+                for (uint32_t fmmu_idx = 0; fmmu_idx < slv->fmmu_ch; ++fmmu_idx) { 
+                    if (!slv->fmmu[fmmu_idx].active) {
+                        continue;
+                    }
+
+                    // safeop to op stuff 
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d: log%d 0x%08X/%d/%d, len %3d, pyhs "
+                            "0x%04X/%d, type %d, active %d\n", slave, fmmu_idx,
+                            slv->fmmu[fmmu_idx].log, 
+                            slv->fmmu[fmmu_idx].log_bit_start,
+                            slv->fmmu[fmmu_idx].log_bit_stop, 
+                            slv->fmmu[fmmu_idx].log_len,
+                            slv->fmmu[fmmu_idx].phys, 
+                            slv->fmmu[fmmu_idx].phys_bit_start,
+                            slv->fmmu[fmmu_idx].type, 
+                            slv->fmmu[fmmu_idx].active);
+
+                    (void)ec_fpwr(pec, slv->fixed_address, 0x600u + (16u * fmmu_idx),
+                            (uint8_t *)&slv->fmmu[fmmu_idx], 
+                            sizeof(ec_slave_fmmu_t), &wkc);
+
+                }
+
+                // write state to slave
+                wkc = ec_slave_set_state(pec, slave, EC_STATE_SAFEOP);
+
+                if ((transition == INIT_2_SAFEOP) || (transition == PREOP_2_SAFEOP)) {
+                    break;
+                }
             }
-
-            ec_eeprom_to_pdi(pec, slave);
-
-            // write state to slave
-            if (transition == INIT_2_BOOT) {
-                wkc = ec_slave_set_state(pec, slave, EC_STATE_BOOT);
-//                break;
-            } else
-                wkc = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
-                
-            // apply eoe settings if any
-            if (slv->eoe.use_eoe) {
-                ec_log(10, get_transition_string(transition), 
-                        "slave %2d: applying EoE settings\n", slave);
-                if (slv->eoe.mac) {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d:         MAC %02X:%02X:%02X:%02X:%02X:%02X\n",
-                            slave, slv->eoe.mac[0], slv->eoe.mac[1], slv->eoe.mac[2],
-                            slv->eoe.mac[3], slv->eoe.mac[4], slv->eoe.mac[5]);
-                }
-                if (slv->eoe.ip_address) {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d:         IP     %d.%d.%d.%d\n",
-                            slave, slv->eoe.ip_address[3], slv->eoe.ip_address[2], 
-                            slv->eoe.ip_address[1], slv->eoe.ip_address[0]);
-                }
-                if (slv->eoe.subnet) {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d:         Subnet  %d.%d.%d.%d\n",
-                            slave, slv->eoe.subnet[3], slv->eoe.subnet[2], 
-                            slv->eoe.subnet[1], slv->eoe.subnet[0]);
-                }
-                if (slv->eoe.gateway) {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d:         Gateway %d.%d.%d.%d\n",
-                            slave, slv->eoe.gateway[3], slv->eoe.gateway[2], 
-                            slv->eoe.gateway[1], slv->eoe.gateway[0]);
-                }                        
-                if (slv->eoe.dns) {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d:         DNS     %d.%d.%d.%d\n",
-                            slave, slv->eoe.dns[3], slv->eoe.dns[2], 
-                            slv->eoe.dns[1], slv->eoe.dns[0]);
-                }
-                if (slv->eoe.dns_name) {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d:         DNSname %s\n",
-                            slave, slv->eoe.dns_name);
-                }
-
-                ec_eoe_set_ip_parameter(pec, slave, slv->eoe.mac, slv->eoe.ip_address, 
-                                slv->eoe.subnet, slv->eoe.gateway, slv->eoe.dns, slv->eoe.dns_name);
-            }
-
-            if (transition == INIT_2_PREOP || transition == INIT_2_BOOT)
+            case SAFEOP_2_OP: {
+                // write state to slave
+                wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
                 break;
-        }
-        case PREOP_2_SAFEOP: 
-        case PREOP_2_OP: {
-            // configure distributed clocks if needed 
-            if (pec->dc.have_dc && slv->dc.use_dc) {
-                if (slv->dc.cycle_time_0 == 0)
-                    slv->dc.cycle_time_0 = pec->dc.timer_override; 
+            }
+            case OP_2_SAFEOP:
+            case OP_2_PREOP:
+                // write state to slave
+                wkc = ec_slave_set_state(pec, slave, state);
 
-                if (slv->dc.type == 1) {
-                    if (slv->dc.cycle_time_1 == 0)
-                        slv->dc.cycle_time_1 = pec->dc.timer_override; 
+                if (transition == OP_2_SAFEOP) {
+                    break;
+                }
+            case OP_2_INIT:
+            case SAFEOP_2_PREOP:
+            case SAFEOP_2_INIT:
+            case PREOP_2_INIT: {
+                uint8_t dc_active = 0;
+                (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
+                        &dc_active, sizeof(dc_active), &wkc);
 
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d: configuring dc sync 01, "
-                            "cycle_times %d/%d, cycle_shift %d\n", 
-                            slave, slv->dc.cycle_time_0, 
-                            slv->dc.cycle_time_1, slv->dc.cycle_shift);
+                // write state to slave
+                wkc = ec_slave_set_state(pec, slave, state);
 
-                    ec_dc_sync(pec, slave, 7, slv->dc.cycle_time_0, 
-                            slv->dc.cycle_time_1, slv->dc.cycle_shift);
+                if ((transition == OP_2_PREOP) || (transition == SAFEOP_2_PREOP)) {
+                    break;
+                }
+            }
+            case BOOT_2_INIT:
+            case INIT_2_INIT: {
+                // rewrite fixed address
+                (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
+                        (uint8_t *)&slv->fixed_address, 
+                        sizeof(slv->fixed_address), &wkc); 
+
+                // disable ditributed clocks
+                uint8_t dc_active = 0;
+                (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
+                        &dc_active, sizeof(dc_active), &wkc);
+
+                // free resources
+                ec_slave_free(pec, slave);
+
+                // get number of sync managers
+                ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
+                if (slv->sm_ch != 0u) {
+                    // cppcheck-suppress misra-c2012-21.3
+                    alloc_resource(slv->sm, ec_slave_sm_t, 
+                            slv->sm_ch * sizeof(ec_slave_sm_t));
+
+                    for (uint32_t i = 0u; i < slv->sm_ch; ++i) {
+                        (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
+                                ec_to_adr(slv->fixed_address, 0x800u + (8u * i)),
+                                (uint8_t *)&slv->sm[i], sizeof(ec_slave_sm_t));
+                    }
+                }
+
+                // get number of fmmus
+                ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
+                if (slv->fmmu_ch != 0u) {
+                    // cppcheck-suppress misra-c2012-21.3
+                    alloc_resource(slv->fmmu, ec_slave_fmmu_t, 
+                            slv->fmmu_ch * sizeof(ec_slave_fmmu_t));
+
+                    for (uint32_t i = 0; i < slv->fmmu_ch; ++i) {
+                        (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
+                                ec_to_adr(slv->fixed_address, 0x600u + (16u * i)),
+                                (uint8_t *)&slv->fmmu[i], sizeof(ec_slave_fmmu_t));
+                    }
+                }
+
+                // get ram size
+                uint8_t ram_size = 0;
+                ec_reg_read(EC_REG_RAM_SIZE, &ram_size, sizeof(ram_size));
+                slv->ram_size = (uint32_t)ram_size << 10u;
+
+                // get pdi control 
+                ec_reg_read(EC_REG_PDICTL, &slv->pdi_ctrl, sizeof(slv->pdi_ctrl));
+                // get features
+                ec_reg_read(EC_REG_ESCSUP, &slv->features, sizeof(slv->features));
+
+                ec_log(10, get_transition_string(transition), 
+                        "slave %2d: pdi ctrl 0x%04X, fmmus %d, syncm %d\n", 
+                        slave, slv->pdi_ctrl, slv->fmmu_ch, slv->sm_ch);
+
+                // init to preop stuff
+                slv->eeprom.read_eeprom = 0;
+                ec_eeprom_dump(pec, slave);
+
+                // allocate sub device structures
+                if (slv->eeprom.general.ds402_channels > 0u) {
+                    slv->subdev_cnt = slv->eeprom.general.ds402_channels;
+                } else if (slv->eeprom.general.soe_channels > 0u) {
+                    slv->subdev_cnt = slv->eeprom.general.soe_channels;
                 } else {
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d: configuring dc sync 0, "
-                            "cycle_time %d, cycle_shift %d\n", slave,
-                            slv->dc.cycle_time_0, slv->dc.cycle_shift);
-
-                    ec_dc_sync(pec, slave, 3, slv->dc.cycle_time_0, 0, 
-                            slv->dc.cycle_shift);
+                    slv->subdev_cnt = 0;
                 }
-            } else
-                ec_dc_sync(pec, slave, 0, 0, 0, 0);
 
-            int start_sm = slv->eeprom.mbx_supported ? 2 : 0;
+                if (slv->subdev_cnt != 0u) {
+                    // cppcheck-suppress misra-c2012-21.3
+                    alloc_resource(slv->subdevs, ec_slave_subdev_t, 
+                            slv->subdev_cnt * sizeof(ec_slave_subdev_t));
 
-            for (int sm_idx = start_sm; sm_idx < slv->sm_ch; ++sm_idx) {
-                if (!slv->sm[sm_idx].adr)
-                    continue;
+                    for (uint32_t q = 0u; q < slv->subdev_cnt; q++) {
+                        slv->subdevs[q].pdin.pd = NULL;
+                        slv->subdevs[q].pdout.pd = NULL;
+                        slv->subdevs[q].pdin.len = 0;
+                        slv->subdevs[q].pdout.len = 0;
+                    }
+                }
 
-                ec_log(10, get_transition_string(transition), "slave %2d: "
-                        "sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
-                        slave, sm_idx, slv->sm[sm_idx].adr, 
-                        slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
-
-                ec_fpwr(pec, slv->fixed_address, 0x800 + (sm_idx * 8),
-                        &slv->sm[sm_idx], sizeof(ec_slave_sm_t), &wkc);
-
-                if (!wkc)
-                    ec_log(10, get_transition_string(transition), 
-                            "slave %2d: no answer on "
-                            "writing sm%d settings\n", slave, sm_idx);
-            }
-
-            for (int fmmu_idx = 0; fmmu_idx < slv->fmmu_ch; ++fmmu_idx) { 
-                if (!slv->fmmu[fmmu_idx].active) 
-                    continue;
-
-                // safeop to op stuff 
                 ec_log(10, get_transition_string(transition), 
-                        "slave %2d: log%d 0x%08X/%d/%d, len %3d, pyhs "
-                        "0x%04X/%d, type %d, active %d\n", slave, fmmu_idx,
-                        slv->fmmu[fmmu_idx].log, 
-                        slv->fmmu[fmmu_idx].log_bit_start,
-                        slv->fmmu[fmmu_idx].log_bit_stop, 
-                        slv->fmmu[fmmu_idx].log_len,
-                        slv->fmmu[fmmu_idx].phys, 
-                        slv->fmmu[fmmu_idx].phys_bit_start,
-                        slv->fmmu[fmmu_idx].type, 
-                        slv->fmmu[fmmu_idx].active);
-
-                ec_fpwr(pec, slv->fixed_address, 0x600 + (16 * fmmu_idx),
-                        (uint8_t *)&slv->fmmu[fmmu_idx], 
-                        sizeof(ec_slave_fmmu_t), &wkc);
-
+                        "slave %2d: vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
+                        slave, slv->eeprom.vendor_id, slv->eeprom.product_code, 
+                        slv->eeprom.mbx_supported);
             }
-
-            // write state to slave
-            wkc = ec_slave_set_state(pec, slave, EC_STATE_SAFEOP);
-
-            if (transition == INIT_2_SAFEOP || transition == PREOP_2_SAFEOP)
+            case PREOP_2_PREOP:
+            case SAFEOP_2_SAFEOP:
+            case OP_2_OP:
+                // write state to slave
+                wkc = ec_slave_set_state(pec, slave, state);
                 break;
-        }
-        case SAFEOP_2_OP: {
-            // write state to slave
-            wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
-            break;
-        }
-        case OP_2_SAFEOP:
-        case OP_2_PREOP:
-            // write state to slave
-            wkc = ec_slave_set_state(pec, slave, state);
-
-            if (transition == OP_2_SAFEOP)
+            default:
+                wkc = ec_slave_set_state(pec, slave, EC_STATE_INIT);
+                ec_log(10, __func__, "unknown state transition for slave "
+                        "%2d -> %04X\n", slave, transition);
                 break;
-        case OP_2_INIT:
-        case SAFEOP_2_PREOP:
-        case SAFEOP_2_INIT:
-        case PREOP_2_INIT: {
-            uint8_t dc_active = 0;
-            ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
-                    &dc_active, sizeof(dc_active), &wkc);
+        };
 
-            // write state to slave
-            wkc = ec_slave_set_state(pec, slave, state);
+        ret = wkc;
+    }
 
-            if (    transition == OP_2_PREOP || 
-                    transition == SAFEOP_2_PREOP)
-                break;
-        }
-        case BOOT_2_INIT:
-        case INIT_2_INIT: {
-            // rewrite fixed address
-            ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
-                    (uint8_t *)&slv->fixed_address, 
-                    sizeof(slv->fixed_address), &wkc); 
-        
-            // disable ditributed clocks
-            uint8_t dc_active = 0;
-            ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
-                    &dc_active, sizeof(dc_active), &wkc);
-
-            // free resources
-            ec_slave_free(pec, slave);
-
-            // get number of sync managers
-            ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
-            if (slv->sm_ch) {
-                alloc_resource(slv->sm, ec_slave_sm_t, 
-                        slv->sm_ch * sizeof(ec_slave_sm_t));
-
-                for (int i = 0; i < slv->sm_ch; ++i) 
-                    ec_transmit_no_reply(pec, EC_CMD_FPWR, 
-                            ec_to_adr(slv->fixed_address, 0x800 + (8 * i)),
-                            (uint8_t *)&slv->sm[i], sizeof(ec_slave_sm_t));
-            }
-
-            // get number of fmmus
-            ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
-            if (slv->fmmu_ch) {
-                alloc_resource(slv->fmmu, ec_slave_fmmu_t, 
-                        slv->fmmu_ch * sizeof(ec_slave_fmmu_t));
-
-                for (int i = 0; i < slv->fmmu_ch; ++i) 
-                    ec_transmit_no_reply(pec, EC_CMD_FPWR, 
-                            ec_to_adr(slv->fixed_address, 0x600 + (16 * i)),
-                            (uint8_t *)&slv->fmmu[i], sizeof(ec_slave_fmmu_t));
-            }
-
-            // get ram size
-            uint8_t ram_size = 0;
-            ec_reg_read(EC_REG_RAM_SIZE, &ram_size, sizeof(ram_size));
-            slv->ram_size = ram_size << 10;
-
-            // get pdi control 
-            ec_reg_read(EC_REG_PDICTL, &slv->pdi_ctrl, sizeof(slv->pdi_ctrl));
-            // get features
-            ec_reg_read(EC_REG_ESCSUP, &slv->features, sizeof(slv->features));
-
-            ec_log(10, get_transition_string(transition), 
-                    "slave %2d: pdi ctrl 0x%04X, fmmus %d, syncm %d\n", 
-                    slave, slv->pdi_ctrl, slv->fmmu_ch, slv->sm_ch);
-            
-            // init to preop stuff
-            slv->eeprom.read_eeprom = 0;
-            ec_eeprom_dump(pec, slave);
-                
-            // allocate sub device structures
-            if (slv->eeprom.general.ds402_channels > 0)
-                slv->subdev_cnt = slv->eeprom.general.ds402_channels;
-            else if (slv->eeprom.general.soe_channels > 0)
-                slv->subdev_cnt = slv->eeprom.general.soe_channels;
-            else 
-                slv->subdev_cnt = 0;
-
-            if (slv->subdev_cnt) {
-                alloc_resource(slv->subdevs, ec_slave_subdev_t, 
-                        slv->subdev_cnt * sizeof(ec_slave_subdev_t));
-
-                int q;
-                for (q = 0; q < slv->subdev_cnt; q++) {
-                    slv->subdevs[q].pdin.pd = slv->subdevs[q].pdout.pd = NULL;
-                    slv->subdevs[q].pdin.len = slv->subdevs[q].pdout.len = 0;
-                }
-            }
-
-            ec_log(10, get_transition_string(transition), 
-                    "slave %2d: vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
-                    slave, slv->eeprom.vendor_id, slv->eeprom.product_code, 
-                    slv->eeprom.mbx_supported);
-        }
-        case PREOP_2_PREOP:
-        case SAFEOP_2_SAFEOP:
-        case OP_2_OP:
-            // write state to slave
-            wkc = ec_slave_set_state(pec, slave, state);
-            break;
-        default:
-            wkc = ec_slave_set_state(pec, slave, EC_STATE_INIT);
-            ec_log(10, __func__, "unknown state transition for slave "
-                    "%2d -> %04X\n", slave, transition);
-            break;
-    };
-
-    return wkc;
+    return ret;
 }
 
 //! Adds master EoE settings.
@@ -1191,18 +1336,23 @@ void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
 
     slv->eoe.use_eoe = 1;
 
-#define EOE_ALLOC(field, sz) {          \
-    if (field) {                        \
-        slv->eoe.field = malloc(sz);        \
-        memcpy(slv->eoe.field, field, sz);  \
+#define EOE_ALLOC(field, sz) {                      \
+    if ((field) != NULL) {                            \
+        slv->eoe.field = (uint8_t *)malloc((sz));     \
+        (void)memcpy(slv->eoe.field, (field), (sz));    \
     } else { slv->eoe.field = NULL; } }
 
-    EOE_ALLOC(mac, 6);
-    EOE_ALLOC(ip_address, 4);
-    EOE_ALLOC(subnet, 4);
-    EOE_ALLOC(gateway, 4);
-    EOE_ALLOC(dns, 4);
-    if (dns_name) { slv->eoe.dns_name = strdup(dns_name); } else { slv->eoe.dns_name = NULL; }
+    // cppcheck-suppress misra-c2012-21.3
+    EOE_ALLOC(mac, 6u);
+    // cppcheck-suppress misra-c2012-21.3
+    EOE_ALLOC(ip_address, 4u);
+    // cppcheck-suppress misra-c2012-21.3
+    EOE_ALLOC(subnet, 4u);
+    // cppcheck-suppress misra-c2012-21.3
+    EOE_ALLOC(gateway, 4u);
+    // cppcheck-suppress misra-c2012-21.3
+    EOE_ALLOC(dns, 4u);
+    if (dns_name != NULL) { slv->eoe.dns_name = strdup(dns_name); } else { slv->eoe.dns_name = NULL; }
 
 #undef EOE_ALLOC
 

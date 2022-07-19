@@ -107,21 +107,27 @@ void *hw_rx_thread(void *arg);
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
 
 int try_grant_cap_net_raw_init() {
-    if (access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0)
-        return 0; // does probably not exist or is not readable
+    int ret = 0;
 
-    int fd = open(GRANT_CAP_NET_RAW_PROCFS, O_RDONLY);
-    if (fd == -1) {
-        ec_log(1, __func__, "error opening %s: %s\n", 
-                GRANT_CAP_NET_RAW_PROCFS, strerror(errno));
-        return -1;
+    if (access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0) {
+        // does probably not exist or is not readable
+    } else {
+        int fd = open(GRANT_CAP_NET_RAW_PROCFS, O_RDONLY);
+        if (fd == -1) {
+            ec_log(1, __func__, "error opening %s: %s\n", 
+                    GRANT_CAP_NET_RAW_PROCFS, strerror(errno));
+            ret = -1;
+        } else {
+            char buffer[1024];
+            int n = read(fd, buffer, 1024);
+            close(fd);
+            if (n <= 0 || strncmp(buffer, "OK", 2)) {
+                ret = -1;
+            }
+        }
     }
-    char buffer[1024];
-    int n = read(fd, buffer, 1024);
-    close(fd);
-    if (n <= 0 || strncmp(buffer, "OK", 2))
-        return -1;
-    return 0;
+
+    return ret;
 }
 
 #elif defined __VXWORKS__ 
@@ -159,6 +165,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     struct ifreq ifr;
     struct sockaddr_ll sll;
     memset(&sll, 0, sizeof(sll));
+    int ret = 0;
 
     if (try_grant_cap_net_raw_init() == -1) {
         ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
@@ -169,13 +176,14 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     assert(pphw != NULL);
 
     (*pphw) = (hw_t *) malloc(sizeof(hw_t));
-    if (!(*pphw))
+    if (!(*pphw)) {
         return -ENOMEM;
+    }
 
-    memset(*pphw, 0, sizeof(hw_t));
+    (void)memset(*pphw, 0, sizeof(hw_t));
 
-    pool_open(&(*pphw)->tx_high, 0, 1518);
-    pool_open(&(*pphw)->tx_low, 0, 1518);
+    (void)pool_open(&(*pphw)->tx_high, 0, 1518);
+    (void)pool_open(&(*pphw)->tx_low, 0, 1518);
 
 #ifdef __linux__
     // create raw socket connection
@@ -273,99 +281,105 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     struct ifreq bound_if;
     const char bpf_devname[] = "/dev/bpf";
 
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
 
     // open bpf device
     (*pphw)->sockfd = open(bpf_devname, O_RDWR, 0);
     if ((*pphw)->sockfd <= 0) {
-        ec_log(1, __func__, "error opening bpf device %s: %s\n", 
-                bpf_devname, strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-    (*pphw)->mtu_size = 1480;
+        ec_log(1, __func__, "error opening bpf device %s: %s\n", bpf_devname, strerror(errno));
+        ret = -1;
+    } else {
+        (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+        (*pphw)->mtu_size = 1480;
 
-    // connect bpf to specified network device
-    snprintf(bound_if.ifr_name, IFNAMSIZ, devname);
-    if (ioctl((*pphw)->sockfd, BIOCSETIF, &bound_if) == -1 ) {
-        ec_log(1, __func__, "error on BIOCSETIF: %s\n", 
-                strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-    // make sure we are dealing with an ethernet device.
-    if (ioctl((*pphw)->sockfd, BIOCGDLT, (caddr_t)&n) == -1) {
-        ec_log(1, __func__, "error on BIOCGDLT: %s\n", 
-                strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-    // activate immediate mode (therefore, buf_len is initially set to "1")
-    if (ioctl((*pphw)->sockfd, BIOCIMMEDIATE, &btrue) == -1) {
-        ec_log(1, __func__, "error on BIOCIMMEDIATE: %s\n", 
-                strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-    // request buffer length 
-    if (ioctl((*pphw)->sockfd, BIOCGBLEN, &ETH_FRAME_LEN) == -1) {
-        ec_log(1, __func__, "error on BIOCGBLEN: %s\n", 
-                strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d, buf_isze is %d\n", __LINE__, ETH_FRAME_LEN);
-    static struct bpf_program my_bpf_program;
-    my_bpf_program.bf_len = sizeof(insns)/sizeof(insns[0]);
-    my_bpf_program.bf_insns = insns;
+        // connect bpf to specified network device
+        (void)snprintf(bound_if.ifr_name, IFNAMSIZ, devname);
+        if (ioctl((*pphw)->sockfd, BIOCSETIF, &bound_if) == -1 ) {
+            ec_log(1, __func__, "error on BIOCSETIF: %s\n", 
+                    strerror(errno));
+            ret = -1;
+        } else {
+            (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+            // make sure we are dealing with an ethernet device.
+            if (ioctl((*pphw)->sockfd, BIOCGDLT, (caddr_t)&n) == -1) {
+                ec_log(1, __func__, "error on BIOCGDLT: %s\n", 
+                        strerror(errno));
+                ret = -1;
+            } else {
+                (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                // activate immediate mode (therefore, buf_len is initially set to "1")
+                if (ioctl((*pphw)->sockfd, BIOCIMMEDIATE, &btrue) == -1) {
+                    ec_log(1, __func__, "error on BIOCIMMEDIATE: %s\n", 
+                            strerror(errno));
+                    ret = -1;
+                } else {
+                    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                    // request buffer length 
+                    if (ioctl((*pphw)->sockfd, BIOCGBLEN, &ETH_FRAME_LEN) == -1) {
+                        ec_log(1, __func__, "error on BIOCGBLEN: %s\n", 
+                                strerror(errno));
+                        ret = -1;
+                    } else {
+                        (void)fprintf(stderr, "opening bpf device... %d, buf_isze is %d\n", __LINE__, ETH_FRAME_LEN);
+                        static struct bpf_program my_bpf_program;
+                        my_bpf_program.bf_len = sizeof(insns)/sizeof(insns[0]);
+                        my_bpf_program.bf_insns = insns;
 
-    // setting filter to bpf
-    if (ioctl((*pphw)->sockfd, BIOCSETF, &my_bpf_program) == -1) {
-        ec_log(1, __func__, "error on BIOCSETF: %s\n", 
-                strerror(errno));
-        goto error_exit;
+                        // setting filter to bpf
+                        if (ioctl((*pphw)->sockfd, BIOCSETF, &my_bpf_program) == -1) {
+                            ec_log(1, __func__, "error on BIOCSETF: %s\n", 
+                                    strerror(errno));
+                            ret = -1;
+                        } else {
+                            (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                            // we do not want to see the sent frames
+                            if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
+                                ec_log(1, __func__, "error on BIOCSSEESENT: %s\n", 
+                                        strerror(errno));
+                                ret = -1;
+                            } else {
+                                (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                                /* set receive call timeout */
+                                static struct timeval timeout = { 0, 1000};
+                                if (ioctl((*pphw)->sockfd, BIOCSRTIMEOUT, &timeout) == -1) {
+                                    ec_log(1, __func__, "error on BIOCSRTIMEOUT: %s\n", 
+                                            strerror(errno));
+                                    ret = -1;
+                                } else {
+                                    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                                    if (ioctl((*pphw)->sockfd, BIOCFLUSH) == -1) {
+                                        ec_log(1, __func__, "error on BIOCFLUSH: %s\n", 
+                                                strerror(errno));
+                                        ret = -1;
+                                    } else {
+                                        (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+
+                                        pthread_mutex_init(&(*pphw)->hw_lock, NULL);
+
+                                        // thread settings
+                                        (*pphw)->rxthreadprio = prio;
+                                        (*pphw)->rxthreadcpumask = cpumask;
+                                        (*pphw)->rxthreadrunning = 1;
+                                        pthread_create(&(*pphw)->rxthread, NULL, hw_rx_thread, *pphw);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-    // we do not want to see the sent frames
-    if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
-        ec_log(1, __func__, "error on BIOCSSEESENT: %s\n", 
-                strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-    /* set receive call timeout */
-    static struct timeval timeout = { 0, 1000};
-    if (ioctl((*pphw)->sockfd, BIOCSRTIMEOUT, &timeout) == -1) {
-        ec_log(1, __func__, "error on BIOCSRTIMEOUT: %s\n", 
-                strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-    if (ioctl((*pphw)->sockfd, BIOCFLUSH) == -1) {
-        ec_log(1, __func__, "error on BIOCFLUSH: %s\n", 
-                strerror(errno));
-        goto error_exit;
-    }
-    fprintf(stderr, "opening bpf device... %d\n", __LINE__);
 #else
 #error unsopported OS
 #endif
 
-    pthread_mutex_init(&(*pphw)->hw_lock, NULL);
-
-    // thread settings
-    (*pphw)->rxthreadprio = prio;
-    (*pphw)->rxthreadcpumask = cpumask;
-    (*pphw)->rxthreadrunning = 1;
-    pthread_create(&(*pphw)->rxthread, NULL, hw_rx_thread, *pphw);
-
-    return 0;
-
-    error_exit:
-
-    if (*pphw)
+error_exit:
+    if ((*pphw) != NULL) {
         free(*pphw);
+    }
 
-    return -1;
+    return ret;
 }
 
 //! destroys a hw
@@ -381,8 +395,8 @@ int hw_close(hw_t *phw) {
     pthread_join(phw->rxthread, NULL);
 
     pthread_mutex_lock(&phw->hw_lock);
-    pool_close(phw->tx_high);
-    pool_close(phw->tx_low);
+    (void)pool_close(phw->tx_high);
+    (void)pool_close(phw->tx_low);
 
     pthread_mutex_unlock(&phw->hw_lock);
     pthread_mutex_destroy(&phw->hw_lock);
@@ -403,9 +417,9 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
         return;
     }
 
-    ec_datagram_t *d;//, *tmp;
-    for (d = ec_datagram_first(pframe); (uint8_t *) d <
-            (uint8_t *) ec_frame_end(pframe);
+    ec_datagram_t *d;
+    for (d = ec_datagram_first(pframe); 
+            (uint8_t *) d < (uint8_t *) ec_frame_end(pframe);
             d = ec_datagram_next(d)) {
         pool_entry_t *entry = phw->tx_send[d->idx];
 
@@ -422,9 +436,9 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
                     d->idx, size, entry->data_size);
         }
 
-        memcpy(entry->data, d, min(size, entry->data_size));
+        (void)memcpy(entry->data, d, min(size, entry->data_size));
         
-        if (entry->user_cb) {
+        if ((entry->user_cb) != NULL) {
             (*entry->user_cb)(entry->user_arg, entry);
         }
     }
@@ -441,15 +455,16 @@ void *hw_rx_thread(void *arg) {
     assert(phw != NULL);
 
     // thread settings
-    if (pthread_getschedparam(pthread_self(), &policy, &param) != 0)
+    if (pthread_getschedparam(pthread_self(), &policy, &param) != 0) {
         ec_log(1, "RX_THREAD", "error on pthread_getschedparam %s\n",
                strerror(errno));
-    else {
+    } else {
         policy = SCHED_FIFO;
         param.sched_priority = phw->rxthreadprio;
-        if (pthread_setschedparam(pthread_self(), policy, &param) != 0)
+        if (pthread_setschedparam(pthread_self(), policy, &param) != 0) {
             ec_log(1, "RX_THREAD", "error on pthread_setschedparam %s\n",
                    strerror(errno));
+        }
     }
 
 #ifdef __VXWORKS__
@@ -462,14 +477,17 @@ void *hw_rx_thread(void *arg) {
 
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    for (unsigned i = 0; i < (sizeof(phw->rxthreadcpumask) * 8); ++i)
-        if (phw->rxthreadcpumask & (1 << i))
+    for (unsigned i = 0; i < (sizeof(phw->rxthreadcpumask) * 8); ++i) {
+        if ((phw->rxthreadcpumask & (1u << i)) != 0u) {
             CPU_SET(i, &cpuset);
+        }
+    }
 
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0)
+    if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
         ec_log(1, "RX_THREAD", "error on pthread_setaffinity_np %s\n", 
                 strerror(errno));
+    }
 #endif
 
 #endif
@@ -479,8 +497,9 @@ void *hw_rx_thread(void *arg) {
         ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
         
         if (bytesrx == -1) {
-            if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+            if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR)) {
                 continue;
+            }
 
             sleep(1);
             continue;
@@ -533,8 +552,9 @@ void *hw_rx_thread(void *arg) {
             ssize_t bytesrx = RECEIVE(phw->sockfd, pframe, ETH_FRAME_LEN);
 
             if (bytesrx <= 0) {
-                if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+                if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR)) {
                     continue;
+                }
 
                 sleep(1);
                 continue;
@@ -599,12 +619,12 @@ int hw_tx(hw_t *phw) {
         header = hw_get_next_tx_buffer(phw);
         pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
     } else {
-        memset(send_frame, 0, ETH_FRAME_LEN);
+        (void)memset(send_frame, 0, ETH_FRAME_LEN);
         pframe = (ec_frame_t *) send_frame;
     }
 
-    memcpy(pframe->mac_dest, mac_dest, 6);
-    memcpy(pframe->mac_src, mac_src, 6);
+    (void)memcpy(pframe->mac_dest, mac_dest, 6);
+    (void)memcpy(pframe->mac_src, mac_src, 6);
     pframe->ethertype = htons(ETH_P_ECAT);
     pframe->type = 0x01;
     pframe->len = sizeof(ec_frame_t);
@@ -619,20 +639,22 @@ int hw_tx(hw_t *phw) {
 
     // send high priority cyclic frames
     while (1) {
-        if (pool_idx == 2)
+        if (pool_idx == 2) {
             break;
-    
+        }
+
         len = 0;
-        pool_peek(pools[pool_idx], &p_entry);
-        if (p_entry) {
+        (void)pool_peek(pools[pool_idx], &p_entry);
+        if (p_entry !=  NULL) {
             p_entry_dg = (ec_datagram_t *)p_entry->data;
             len = ec_datagram_length(p_entry_dg);
         }
 
         if (((len == 0) && (pool_idx == 1)) ||
             ((pframe->len + len) > phw->mtu_size)) {
-            if (pframe->len == sizeof(ec_frame_t))
+            if (pframe->len == sizeof(ec_frame_t)) {
                 break; // nothing to send
+            }
 
             if (phw->mmap_packets > 0) {
                 // fill header
@@ -652,8 +674,8 @@ int hw_tx(hw_t *phw) {
                 pframe = ((void *) header) + (TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
 
                 // reset length to send new frame
-                memcpy(pframe->mac_dest, mac_dest, 6);
-                memcpy(pframe->mac_src, mac_src, 6);
+                (void)memcpy(pframe->mac_dest, mac_dest, 6);
+                (void)memcpy(pframe->mac_src, mac_src, 6);
                 pframe->ethertype = htons(ETH_P_ECAT);
                 pframe->type = 0x01;
                 pframe->len = sizeof(ec_frame_t);
@@ -668,8 +690,9 @@ int hw_tx(hw_t *phw) {
                     ec_log(1, "TX", "got only %d bytes out of %d bytes "
                             "through.\n", bytestx, pframe->len);
 
-                    if (bytestx == -1)
+                    if (bytestx == -1) {
                         ec_log(1, "TX", "error: %s\n", strerror(errno));
+                    }
                 }
 
                 // reset length to send new frame
@@ -684,14 +707,16 @@ int hw_tx(hw_t *phw) {
             continue;
         }
 
-        if (pool_get(pools[pool_idx], &p_entry, NULL) != 0)
+        if (pool_get(pools[pool_idx], &p_entry, NULL) != 0) {
             break;  // no more frames
+        }
 
-        if (pdg_prev)
+        if (pdg_prev != NULL) {
             ec_datagram_mark_next(pdg_prev);
+        }
         
         p_entry_dg = (ec_datagram_t *)p_entry->data;
-        memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
+        (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
         pframe->len += ec_datagram_length(p_entry_dg);
         pdg_prev = pdg;
         pdg = ec_datagram_next(pdg);

@@ -54,13 +54,13 @@ typedef struct __attribute__((__packed__)) ec_frame {
 typedef struct __attribute__((__packed__)) ec_datagram {
     uint8_t cmd;                //!< ethercat command
     uint8_t idx;                //!< datagram index
-    union {
-        struct {
-            uint16_t adp;       //!< auto inc/configured address
-            uint16_t ado;       //!< physical mem address
-        };
+    //union {
+    //    struct {
+    //        uint16_t adp;       //!< auto inc/configured address
+    //        uint16_t ado;       //!< physical mem address
+    //    };
         uint32_t adr;           //!< logical address
-    };
+    //};
     uint16_t len        : 11;   //!< datagram length
     uint16_t reserved   : 4;    //!< not used
     uint16_t next       : 1;    //!< 0 - last datagram, 1 - more follow
@@ -91,7 +91,7 @@ int ec_frame_init(ec_frame_t *frame);
  * \param payload frame payload
  * \param payload_len length of payload
  */
-int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
+void ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint16_t adp, uint16_t ado, uint8_t *payload, size_t payload_len);
 
 //! add datagram at the end of frame
@@ -103,7 +103,7 @@ int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
  * \param payload frame payload
  * \param payload_len length of payload
  */
-int ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
+void ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint32_t adr, uint8_t *payload, size_t payload_len);
 
 #define ec_datagram_mark_next(p)  ((ec_datagram_t *)(p))->next = 1

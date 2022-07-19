@@ -241,7 +241,7 @@ void ec_coe_init(ec_t *pec, uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    check_ret(pool_open(&slv->mbx.coe.recv_pool, 0, 1518));
+    (void)pool_open(&slv->mbx.coe.recv_pool, 0, 1518);
     pthread_mutex_init(&slv->mbx.coe.lock, NULL);
                 
     TAILQ_INIT(&slv->mbx.coe.emergencies);
@@ -262,7 +262,7 @@ void ec_coe_deinit(ec_t *pec, uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
     
     pthread_mutex_destroy(&slv->mbx.coe.lock);
-    check_ret(pool_close(slv->mbx.coe.recv_pool));
+    (void)pool_close(slv->mbx.coe.recv_pool);
 }
 
 //! \brief Wait for CoE message received from slave.
@@ -287,7 +287,7 @@ static void ec_coe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     ec_timer_t timeout;
     ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
-    check_ret(pool_get(slv->mbx.coe.recv_pool, pp_entry, &timeout));
+    (void)pool_get(slv->mbx.coe.recv_pool, pp_entry, &timeout);
 }
 
 //! \brief Enqueue CoE message received from slave.
@@ -340,7 +340,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     // getting index
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == 0) {
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
@@ -450,7 +450,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, uint16_t slave, uint16_t index,
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == 0) {
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
@@ -538,7 +538,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == 0) {
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
@@ -744,7 +744,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == 0) {
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
@@ -850,7 +850,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == 0) {
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
@@ -959,7 +959,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     pthread_mutex_lock(&slv->mbx.coe.lock);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == 0) {
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
@@ -1046,7 +1046,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
     uint16_t start_adr; 
     ec_slave_ptr(slv, pec, slave);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == 0) {
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else {
         if (slv->sm[0].adr > slv->sm[1].adr) {
@@ -1188,7 +1188,7 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) 
     (void)memcpy(qmsg->msg, (uint8_t *)&(p_entry->data[6 + 2]), msg_len);
 
     qmsg->msg_len = msg_len;
-    check_ret(ec_timer_gettime(&qmsg->timestamp));
+    (void)ec_timer_gettime(&qmsg->timestamp);
     TAILQ_INSERT_TAIL(&slv->mbx.coe.emergencies, qmsg, qh);
 
     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);

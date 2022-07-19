@@ -68,8 +68,26 @@ int ec_frame_init(ec_frame_t *frame) {
  * \param payload frame payload
  * \param payload_len length of payload
  */
-int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
+void ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint16_t adp, uint16_t ado, uint8_t *payload, size_t payload_len) {
+    assert(frame != NULL);
+    assert(payload != NULL);
+
+    ec_frame_add_datagram_log(frame, cmd, idx, 
+            (((uint32_t)ado << 16u) || (uint32_t)adp), payload, payload_len);
+}
+
+//! add datagram at the end of frame
+/*/
+ * \param frame pointer to frame
+ * \param cmd ethercat command
+ * \param idx ethercat frame index
+ * \param adr logical
+ * \param payload frame payload
+ * \param payload_len length of payload
+ */
+void ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
+        uint32_t adr, uint8_t *payload, size_t payload_len) {
     assert(frame != NULL);
     assert(payload != NULL);
 
@@ -89,30 +107,10 @@ int ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
 
     d->cmd = cmd; 
     d->idx = idx;
-    d->adp = adp;
-    d->ado = ado;
+    d->adr = adr;
     (void)memcpy(&((uint8_t *)d)[sizeof(ec_datagram_t)], payload, payload_len);
     d->len = payload_len;
 
     frame->len += ec_datagram_length(d);
-    return 0;
-}
-
-//! add datagram at the end of frame
-/*/
- * \param frame pointer to frame
- * \param cmd ethercat command
- * \param idx ethercat frame index
- * \param adr logical
- * \param payload frame payload
- * \param payload_len length of payload
- */
-int ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
-        uint32_t adr, uint8_t *payload, size_t payload_len) {
-    assert(frame != NULL);
-    assert(payload != NULL);
-
-    return ec_frame_add_datagram_phys(frame, cmd, idx, (uint16_t)(adr & 0x0000FFFFu), 
-            (uint16_t)((adr & 0xFFFF0000u) >> 16u), payload, payload_len);
 }
 

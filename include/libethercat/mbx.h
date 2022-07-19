@@ -47,13 +47,14 @@ typedef struct ec ec_t;
     
 #define MESSAGE_POOL_DEBUG(type) {}
 
+/*
 #define N_MESSAGE_POOL_DEBUG(type) \
 {                                                                                       \
     int avail = 0;                                                                      \
     sem_getvalue(&slv->mbx.message_pool_ ## type->avail_cnt, &avail);                   \
     ec_log(10, __func__, "slave %d: " #type " pool avail %d\n", slave, avail);          \
 }
-
+*/
 //! mailbox types
 enum {
     EC_MBX_ERR = 0x00,          //!< \brief error mailbox

@@ -325,8 +325,9 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
         if (ret != 0)
             return ret;
 
-        for (i = 0; (offset < buflen) && (i < 4); ++i, ++offset)
+        for (i = 0; (offset < buflen) && (i < 4); ++i, ++offset) {
             buf[offset] = ((uint8_t *)&val)[i];
+        }
     }
 
     return 0;
@@ -379,30 +380,18 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
     if (pec->eeprom_log) ec_log(__VA_ARGS__)
 
     // read soem eeprom values
-    eeprom(EC_EEPROM_ADR_VENDOR_ID,
-            slv->eeprom.vendor_id);
-    eeprom(EC_EEPROM_ADR_PRODUCT_CODE,
-            slv->eeprom.product_code);
-    eeprom(EC_EEPROM_ADR_MBX_SUPPORTED,
-            slv->eeprom.mbx_supported);
-    eeprom(EC_EEPROM_ADR_SIZE,
-            value32);
-    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_OFF,
-            slv->eeprom.mbx_receive_offset);
-    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_SIZE,
-            slv->eeprom.mbx_receive_size);
-    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_OFF,
-            slv->eeprom.mbx_send_offset);
-    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_SIZE,
-            slv->eeprom.mbx_send_size);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_OFF,  
-            slv->eeprom.boot_mbx_receive_offset);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_SIZE, 
-            slv->eeprom.boot_mbx_receive_size);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_OFF,
-            slv->eeprom.boot_mbx_send_offset);
-    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE,
-            slv->eeprom.boot_mbx_send_size);
+    eeprom(EC_EEPROM_ADR_VENDOR_ID, slv->eeprom.vendor_id);
+    eeprom(EC_EEPROM_ADR_PRODUCT_CODE, slv->eeprom.product_code);
+    eeprom(EC_EEPROM_ADR_MBX_SUPPORTED, slv->eeprom.mbx_supported);
+    eeprom(EC_EEPROM_ADR_SIZE, value32);
+    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_OFF, slv->eeprom.mbx_receive_offset);
+    eeprom(EC_EEPROM_ADR_STD_MBX_RECV_SIZE, slv->eeprom.mbx_receive_size);
+    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_OFF, slv->eeprom.mbx_send_offset);
+    eeprom(EC_EEPROM_ADR_STD_MBX_SEND_SIZE, slv->eeprom.mbx_send_size);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_OFF, slv->eeprom.boot_mbx_receive_offset);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_RECV_SIZE, slv->eeprom.boot_mbx_receive_size);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_OFF, slv->eeprom.boot_mbx_send_offset);
+    eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE, slv->eeprom.boot_mbx_send_size);
 
     slv->eeprom.read_eeprom = 1;
     

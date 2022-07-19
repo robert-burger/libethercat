@@ -39,6 +39,7 @@
 #include "libethercat/coe.h"
 #include "libethercat/dc.h"
 #include "libethercat/eeprom.h"
+#include "libethercat/error_codes.h"
 
 #define DC_DCSOFF_SAMPLES 1000
 
@@ -69,6 +70,7 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
         va_start(args, format);
         int ret = snprintf(tmp, 512, "%-20.20s: ", pre);
         vsnprintf(tmp+ret, 512-ret, format, args);
+        va_end(args);
 
         ec_log_func(lvl, ec_log_func_user, buf);
     }
@@ -599,7 +601,7 @@ void ec_scan(ec_t *pec) {
             sizeof(ec_slave_t));
 
     for (i = 0; i < pec->slave_cnt; ++i) {
-        int auto_inc = -1 * i;
+        int16_t auto_inc = -1 * i;
 
         ec_aprd(pec, auto_inc, EC_REG_TYPE, (uint8_t *)&val, 
                 sizeof(val), &wkc);
@@ -982,61 +984,61 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
     assert(pec != NULL);
     assert(data != NULL);
 
+    int ret = EC_OK;
+
     pool_entry_t *p_entry;
     ec_datagram_t *p_dg;
     idx_entry_t *p_idx;
 
     if (ec_index_get(&pec->idx_q, &p_idx) != 0) {
         ec_log(1, "EC_TRANSCEIVE", "error getting ethercat index\n");
-        return -1;
-    }
-
-    if (pool_get(pec->pool, &p_entry, NULL) != 0) {
+        ret = EC_ERROR_OUT_OF_INDICES;
+    } else if (pool_get(pec->pool, &p_entry, NULL) != 0) {
         ec_index_put(&pec->idx_q, p_idx);
         ec_log(1, "EC_TRANSCEIVE", "error getting datagram from pool\n");
-        return -1;
-    }
-
-    p_dg = (ec_datagram_t *)p_entry->data;
-
-    memset(p_dg, 0, sizeof(ec_datagram_t) + datalen + 2);
-    p_dg->cmd = cmd;
-    p_dg->idx = p_idx->idx;
-    p_dg->adr = adr;
-    p_dg->len = datalen;
-    p_dg->irq = 0;
-    memcpy(ec_datagram_payload(p_dg), data, datalen);
-
-    p_entry->user_cb = cb_block;
-    p_entry->user_arg = p_idx;
-
-    // queue frame and trigger tx
-    pool_put(pec->phw->tx_low, p_entry);
-
-    // send frame immediately if in sync mode
-    if (pec->tx_sync) {
-        hw_tx(pec->phw);
-    }
-
-    // wait for completion
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, 100000000);   // roundtrip on bus should be shorter than 100ms
-    struct timespec ts = { timeout.sec, timeout.nsec };
-    int ret = sem_timedwait(&p_idx->waiter, &ts);
-    if (ret == -1) {
-        ec_log(1, "ec_transceive", "sem_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
-                strerror(errno), cmd, adr);
-        wkc = 0;
+        ret = EC_ERROR_OUT_OF_DATAGRAMS;
     } else {
-        *wkc = ec_datagram_wkc(p_dg);
-        if (*wkc)
-            memcpy(data, ec_datagram_payload(p_dg), datalen);
+        p_dg = (ec_datagram_t *)p_entry->data;
+
+        memset(p_dg, 0, sizeof(ec_datagram_t) + datalen + 2);
+        p_dg->cmd = cmd;
+        p_dg->idx = p_idx->idx;
+        p_dg->adr = adr;
+        p_dg->len = datalen;
+        p_dg->irq = 0;
+        memcpy(ec_datagram_payload(p_dg), data, datalen);
+
+        p_entry->user_cb = cb_block;
+        p_entry->user_arg = p_idx;
+
+        // queue frame and trigger tx
+        pool_put(pec->phw->tx_low, p_entry);
+
+        // send frame immediately if in sync mode
+        if (pec->tx_sync) {
+            hw_tx(pec->phw);
+        }
+
+        // wait for completion
+        ec_timer_t timeout;
+        ec_timer_init(&timeout, 100000000);   // roundtrip on bus should be shorter than 100ms
+        struct timespec ts = { timeout.sec, timeout.nsec };
+        int ret = sem_timedwait(&p_idx->waiter, &ts);
+        if (ret == -1) {
+            ec_log(1, "ec_transceive", "sem_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
+                    strerror(errno), cmd, adr);
+            wkc = 0;
+        } else {
+            *wkc = ec_datagram_wkc(p_dg);
+            if (*wkc)
+                memcpy(data, ec_datagram_payload(p_dg), datalen);
+        }
+
+        pool_put(pec->pool, p_entry);
+        ec_index_put(&pec->idx_q, p_idx);
     }
 
-    pool_put(pec->pool, p_entry);
-    ec_index_put(&pec->idx_q, p_idx);
-
-    return 0;
+    return ret;
 }
 
 //! local callack for syncronous read/write

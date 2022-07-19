@@ -354,7 +354,7 @@ int ec_get_slave_count(ec_t *pec);
             ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_apwr(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APWR, ((uint32_t)(ado) << 16u) | \
-            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+            (*(uint16_t *)&(adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_aprw(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APRW, ((uint32_t)(ado) << 16u) | \
             ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
