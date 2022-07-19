@@ -33,6 +33,7 @@
 #include "libethercat/pool.h"
 #include "libethercat/common.h"
 #include "libethercat/ec.h"
+#include "libethercat/error_codes.h"
 
 #include <assert.h>
 #include <errno.h>
