@@ -124,22 +124,27 @@ static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    int32_t ret_time = 0;
+
     if (port < 4u) {
-        return pec->slaves[slave].dc.receive_times[port];
+        ret_time = pec->slaves[slave].dc.receive_times[port];
     }
 
-    return 0;
+    return ret_time;
 }
 
 static uint8_t eval_port(ec_t *pec, uint16_t slave, uint8_t a, uint8_t b, uint8_t c, uint8_t def) {
+    int ret_port = def;
+
     uint8_t port_idx[] = { a, b, c }; 
     for (uint8_t i = 0u; i < 3u; ++i) { 
         if (pec->slaves[slave].active_ports & (1u << port_idx[i])) { 
-            return port_idx[i]; 
+            ret_port = port_idx[i]; 
+            break;
         } 
     }
 
-    return def;
+    return ret_port;
 }
 
 //! determine previous active port, starting at port

@@ -408,38 +408,35 @@ int hw_close(hw_t *phw) {
 
 void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
+    assert(pframe != NULL);
 
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
-        ec_log(1, "RX_THREAD",
-                "received non-ethercat frame! (type 0x%X)\n",
-                pframe->type);
-        return;
-    }
+        ec_log(1, "RX_THREAD", "received non-ethercat frame! (type 0x%X)\n", pframe->type);
+    } else {
+        ec_datagram_t *d;
+        for (d = ec_datagram_first(pframe); 
+                (uint8_t *) d < (uint8_t *) ec_frame_end(pframe);
+                d = ec_datagram_next(d)) {
+            pool_entry_t *entry = phw->tx_send[d->idx];
 
-    ec_datagram_t *d;
-    for (d = ec_datagram_first(pframe); 
-            (uint8_t *) d < (uint8_t *) ec_frame_end(pframe);
-            d = ec_datagram_next(d)) {
-        pool_entry_t *entry = phw->tx_send[d->idx];
+            if (!entry) {
+                ec_log(1, "RX_THREAD", "received idx %d, but we did not send one?\n", d->idx);
+                continue;
+            }
 
-        if (!entry) {
-            ec_log(1, "RX_THREAD",
-                    "received idx %d, but we did not send one?\n", d->idx);
-            continue;
-        }
+            size_t size = ec_datagram_length(d);
+            if (entry->data_size < size) {
+                ec_log(1, "RX_THREAD",
+                        "received idx %d, size %d is to big for pool entry size %d!\n", 
+                        d->idx, size, entry->data_size);
+            }
 
-        size_t size = ec_datagram_length(d);
-        if (entry->data_size < size) {
-            ec_log(1, "RX_THREAD",
-                    "received idx %d, size %d is to big for pool entry size %d!\n", 
-                    d->idx, size, entry->data_size);
-        }
+            (void)memcpy(entry->data, d, min(size, entry->data_size));
 
-        (void)memcpy(entry->data, d, min(size, entry->data_size));
-        
-        if ((entry->user_cb) != NULL) {
-            (*entry->user_cb)(entry->user_arg, entry);
+            if ((entry->user_cb) != NULL) {
+                (*entry->user_cb)(entry->user_arg, entry);
+            }
         }
     }
 }

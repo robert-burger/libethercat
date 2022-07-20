@@ -35,13 +35,17 @@
 
 #include "libethercat/regs.h"
 #include "libethercat/datagram.h"
+#include "libethercat/error_codes.h"
 
-//! initialize empty frame
+//! Initialize empty frame.
 /*/
- * \param frame pointer to frame
+ * \param[in,out]   frame   Pointer to frame.
+ *
+ * \return EC_OK
  */
 int ec_frame_init(ec_frame_t *frame) {
     int i;
+    int ret = EC_OK;
 
     assert(frame != NULL);
 
@@ -55,18 +59,18 @@ int ec_frame_init(ec_frame_t *frame) {
     frame->len = sizeof(ec_frame_t);
     frame->type = 4;
 
-    return 0;
+    return ret;
 }
 
-//! add datagram at the end of frame
+//! Add datagram at the end of frame.
 /*/
- * \param frame pointer to frame
- * \param cmd ethercat command
- * \param idx ethercat frame index
- * \param adp auto inc/configured address
- * \param ado physical mem address
- * \param payload frame payload
- * \param payload_len length of payload
+ * \param[in,out]   frame         Pointer to frame.
+ * \param[in]       cmd           Ethercat command.
+ * \param[in]       idx           Ethercat frame index.
+ * \param[in]       adp           Auto inc/configured address.
+ * \param[in]       ado           Physical mem address.
+ * \param[in]       payload       Frame payload.
+ * \param[in]       payload_len   Length of payload.
  */
 void ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint16_t adp, uint16_t ado, uint8_t *payload, size_t payload_len) {
@@ -77,14 +81,14 @@ void ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
             (((uint32_t)ado << 16u) || (uint32_t)adp), payload, payload_len);
 }
 
-//! add datagram at the end of frame
+//! Add datagram at the end of frame.
 /*/
- * \param frame pointer to frame
- * \param cmd ethercat command
- * \param idx ethercat frame index
- * \param adr logical
- * \param payload frame payload
- * \param payload_len length of payload
+ * \param[in,out]   frame         Pointer to frame.
+ * \param[in]       cmd           Ethercat command.
+ * \param[in]       idx           Ethercat frame index.
+ * \param[in]       adr           Logical address.
+ * \param[in]       payload       Frame payload.
+ * \param[in]       payload_len   Length of payload.
  */
 void ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint32_t adr, uint8_t *payload, size_t payload_len) {

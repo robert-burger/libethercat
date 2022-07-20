@@ -129,16 +129,16 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
         slv->mbx.handler_running = 0;
         pthread_join(slv->mbx.handler_tid, NULL);
 
-        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
+        if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == EC_OK) {
             ec_coe_deinit(pec, slave);
         }
-        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {
+        if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) == EC_OK) {
             ec_soe_deinit(pec, slave);
         }
-        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
+        if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) == EC_OK) {
             ec_foe_deinit(pec, slave);
         }
-        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {
+        if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE) == EC_OK) {
             ec_eoe_deinit(pec, slave);
         }
 
@@ -150,6 +150,36 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
         (void)pool_close(slv->mbx.message_pool_send_free);
         (void)pool_close(slv->mbx.message_pool_send_queued);
     }
+}
+
+//! \brief Return string repr of mailbox protocol.
+/*!
+ * \param[in] mbx_flag  Mailbox protocol flag to be checked
+ *
+ * \return Mailbox protocol string repr.
+ */
+static const char *ec_mbx_get_protocol_string(uint16_t mbx_flag) {
+    static const char *MBX_PROTOCOL_STRING_COE = "CoE";
+    static const char *MBX_PROTOCOL_STRING_SOE = "SoE";
+    static const char *MBX_PROTOCOL_STRING_FOE = "FoE";
+    static const char *MBX_PROTOCOL_STRING_EOE = "EoE";
+    static const char *MBX_PROTOCOL_STRING_UNKNOWN = "Unknown";
+
+    const char *ret;
+
+    if (mbx_flag == EC_EEPROM_MBX_COE) {
+        ret = MBX_PROTOCOL_STRING_COE;
+    } else if (mbx_flag == EC_EEPROM_MBX_SOE) {
+        ret = MBX_PROTOCOL_STRING_SOE;
+    } else if (mbx_flag == EC_EEPROM_MBX_EOE) {
+        ret = MBX_PROTOCOL_STRING_EOE;
+    } else if (mbx_flag == EC_EEPROM_MBX_FOE) {
+        ret = MBX_PROTOCOL_STRING_FOE;
+    } else {
+        ret = MBX_PROTOCOL_STRING_UNKNOWN;
+    } 
+
+    return ret;
 }
 
 //! \brief Checks if mailbox protocol is supported by slave
@@ -164,11 +194,11 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
  * \return 1 if supported, 0 otherwise
  */
 int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag) {
-    const char mbx_string[] = "TODO";
     int ret = EC_OK;
 
     if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {
-        ec_log(10, __func__, "no %s support on slave %d\n", mbx_string, slave); 
+        ec_log(100, __func__, "no %s support on slave %d\n", 
+                ec_mbx_get_protocol_string(mbx_flag), slave); 
         ret = EC_ERROR_MAILBOX_MASK | (int32_t)mbx_flag;
     }
 

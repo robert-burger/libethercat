@@ -85,13 +85,11 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
 int ec_create_pd_groups(ec_t *pec, int pd_group_cnt) {
     assert(pec != NULL);
 
-    int i;
     ec_destroy_pd_groups(pec);
 
     pec->pd_group_cnt = pd_group_cnt;
-    alloc_resource(pec->pd_groups, ec_pd_group_t, sizeof(ec_pd_group_t) * 
-            pd_group_cnt);
-    for (i = 0; i < pec->pd_group_cnt; ++i) {
+    alloc_resource(pec->pd_groups, ec_pd_group_t, sizeof(ec_pd_group_t) * pd_group_cnt);
+    for (uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
         pec->pd_groups[i].log       = 0x10000 * (i+1);
         pec->pd_groups[i].log_len   = 0;
         pec->pd_groups[i].pd        = NULL;
@@ -113,9 +111,10 @@ int ec_destroy_pd_groups(ec_t *pec) {
     assert(pec != NULL);
 
     if (pec->pd_groups) {
-        int i;
-        for (i = 0; i < pec->pd_group_cnt; ++i)
+        for (uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
             free_resource(pec->pd_groups[i].pd);
+        }
+
         free(pec->pd_groups);
     }
 
@@ -125,26 +124,31 @@ int ec_destroy_pd_groups(ec_t *pec) {
     return 0;
 }
 
-const char state_string_boot[]    = "EC_STATE_BOOT";
-const char state_string_init[]    = "EC_STATE_INIT";
-const char state_string_preop[]   = "EC_STATE_PREOP";
-const char state_string_safeop[]  = "EC_STATE_SAFEOP";
-const char state_string_op[]      = "EC_STATE_OP";
-const char state_string_unknown[] = "EC_STATE_UNKNOWN";
-
 const char *get_state_string(ec_state_t state) {
-    if (state == EC_STATE_BOOT)
-        return state_string_boot;
-    if (state == EC_STATE_INIT)
-        return state_string_init;
-    if (state == EC_STATE_PREOP)
-        return state_string_preop;
-    if (state == EC_STATE_SAFEOP)
-        return state_string_safeop;
-    if (state == EC_STATE_OP)
-        return state_string_op;
+    static const char state_string_boot[]    = "EC_STATE_BOOT";
+    static const char state_string_init[]    = "EC_STATE_INIT";
+    static const char state_string_preop[]   = "EC_STATE_PREOP";
+    static const char state_string_safeop[]  = "EC_STATE_SAFEOP";
+    static const char state_string_op[]      = "EC_STATE_OP";
+    static const char state_string_unknown[] = "EC_STATE_UNKNOWN";
 
-    return state_string_unknown;
+    const char *ret;
+
+    if (state == EC_STATE_BOOT) {
+        ret = state_string_boot;
+    } else if (state == EC_STATE_INIT) {
+        ret = state_string_init;
+    } else if (state == EC_STATE_PREOP) {
+        ret = state_string_preop;
+    } else if (state == EC_STATE_SAFEOP) {
+        ret = state_string_safeop;
+    } else if (state == EC_STATE_OP) {
+        ret = state_string_op;
+    } else {
+        ret = state_string_unknown;
+    }
+
+    return ret;
 }
 
 void ec_create_logical_mapping_lrw(ec_t *pec, int group) {
@@ -459,7 +463,7 @@ void ec_create_logical_mapping(ec_t *pec, int group) {
     }
 }
 
-void *prepare_state_transition_wrapper(void *arg) {
+static void *prepare_state_transition_wrapper(void *arg) {
     worker_arg_t *tmp = (worker_arg_t *)arg;
     
     ec_log(100, get_state_string(tmp->state), 
@@ -472,7 +476,7 @@ void *prepare_state_transition_wrapper(void *arg) {
     return NULL;
 }
 
-void *set_state_wrapper(void *arg) {
+static void *set_state_wrapper(void *arg) {
     worker_arg_t *tmp = (worker_arg_t *)arg;
 
     ec_log(100, get_state_string(tmp->state), 
@@ -606,8 +610,9 @@ void ec_scan(ec_t *pec) {
         ec_aprd(pec, auto_inc, EC_REG_TYPE, (uint8_t *)&val, 
                 sizeof(val), &wkc);
 
-        if (wkc == 0)
+        if (wkc == 0) {
             break;  // break here, cause there seems to be no more slave
+        }
 
         ec_log(100, __func__, "slave %2d: auto inc %3d, fixed %d\n", 
                 i, auto_inc, fixed);
@@ -626,9 +631,10 @@ void ec_scan(ec_t *pec) {
 
         ec_apwr(pec, auto_inc, EC_REG_STADR, (uint8_t *)&fixed, 
                 sizeof(fixed), &wkc); 
-        if (wkc == 0)
+        if (wkc == 0) {
             ec_log(1, __func__, "slave %2d: error writing fixed "
                     "address %d\n", i, fixed);
+        }
 
         // set eeprom to pdi, some slaves need this
         ec_eeprom_to_pdi(pec, i);
@@ -656,8 +662,9 @@ void ec_scan(ec_t *pec) {
                 (2 << (8 + (2 * (port)))) ) { \
             slv->link_cnt++; slv->active_ports |= 1<<(port); }
 
-        for (int port = 0; port < 4; ++port)
+        for (int port = 0; port < 4; ++port) {
             active_port(port);
+        }
 
         // read out physical type
         ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, 
@@ -675,16 +682,16 @@ void ec_scan(ec_t *pec) {
             int topoc = 0, tmp_slave = slave - 1;
             do {
                 topology = pec->slaves[tmp_slave].link_cnt;
-                if (topology == 1)
+                if (topology == 1) {
                     topoc--;    // endpoint found
-                if (topology == 3)
+                } else if (topology == 3) {
                     topoc++;    // split found
-                if (topology == 4)
+                } else if (topology == 4) {
                     topoc += 2; // cross found
-                if (((topoc >= 0) && (topology > 1)) || (tmp_slave == 0)) { 
+                } else if (((topoc >= 0) && (topology > 1)) || (tmp_slave == 0)) { 
                     slv->parent = tmp_slave; // parent found
                     tmp_slave = 0;
-                }
+                } else {}
                 tmp_slave--;
             }
             while (tmp_slave >= 0);
@@ -990,10 +997,10 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
     ec_datagram_t *p_dg;
     idx_entry_t *p_idx;
 
-    if (ec_index_get(&pec->idx_q, &p_idx) != 0) {
+    if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
         ec_log(1, "EC_TRANSCEIVE", "error getting ethercat index\n");
         ret = EC_ERROR_OUT_OF_INDICES;
-    } else if (pool_get(pec->pool, &p_entry, NULL) != 0) {
+    } else if (pool_get(pec->pool, &p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, p_idx);
         ec_log(1, "EC_TRANSCEIVE", "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
@@ -1062,47 +1069,44 @@ int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr,
     assert(pec != NULL);
     assert(data != NULL);
 
+    int ret = EC_OK;
     pool_entry_t *p_entry;
     ec_datagram_t *p_dg;
     idx_entry_t *p_idx;
 
-    if (ec_index_get(&pec->idx_q, &p_idx) != 0) {
-        ec_log(1, "EC_TRANSMIT_NO_REPLY", 
-                "error getting ethercat index\n");
-        return -1;
-    }
-
-    if (pool_get(pec->pool, &p_entry, NULL) != 0) {
+    if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
+        ec_log(1, "EC_TRANSMIT_NO_REPLY", "error getting ethercat index\n");
+        ret = EC_ERROR_OUT_OF_INDICES;
+    } else if (pool_get(pec->pool, &p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, p_idx);
-        ec_log(1, "EC_TRANSMIT_NO_REPLY", 
-                "error getting datagram from pool\n");
-        return -1;
+        ec_log(1, "EC_TRANSMIT_NO_REPLY", "error getting datagram from pool\n");
+        ret = EC_ERROR_OUT_OF_DATAGRAMS;
+    } else {
+        p_dg = (ec_datagram_t *)p_entry->data;
+
+        memset(p_dg, 0, sizeof(ec_datagram_t) + datalen + 2);
+        p_dg->cmd = cmd;
+        p_dg->idx = p_idx->idx;
+        p_dg->adr = adr;
+        p_dg->len = datalen;
+        p_dg->irq = 0;
+        (void)memcpy(ec_datagram_payload(p_dg), data, datalen);
+
+        // don't care about answer
+        p_idx->pec = pec;
+        p_entry->user_cb = cb_no_reply;
+        p_entry->user_arg = p_idx;
+
+        // queue frame and return, we don't care about an answer
+        pool_put(pec->phw->tx_low, p_entry);
+
+        // send frame immediately if in sync mode
+        if (pec->tx_sync) {
+            hw_tx(pec->phw);
+        }
     }
 
-    p_dg = (ec_datagram_t *)p_entry->data;
-
-    memset(p_dg, 0, sizeof(ec_datagram_t) + datalen + 2);
-    p_dg->cmd = cmd;
-    p_dg->idx = p_idx->idx;
-    p_dg->adr = adr;
-    p_dg->len = datalen;
-    p_dg->irq = 0;
-    memcpy(ec_datagram_payload(p_dg), data, datalen);
-
-    // don't care about answer
-    p_idx->pec = pec;
-    p_entry->user_cb = cb_no_reply;
-    p_entry->user_arg = p_idx;
-
-    // queue frame and return, we don't care about an answer
-    pool_put(pec->phw->tx_low, p_entry);
-
-    // send frame immediately if in sync mode
-    if (pec->tx_sync) {
-        hw_tx(pec->phw);
-    }
-
-    return 0;
+    return ret;
 }
 
 //! send process data for specific group with logical commands
@@ -1114,55 +1118,49 @@ int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr,
 int ec_send_process_data_group(ec_t *pec, int group) {
     assert(pec != NULL);
 
+    int ret = EC_OK;
     ec_pd_group_t *pd = &pec->pd_groups[group];
     ec_datagram_t *p_dg;
     unsigned pd_len = 0;
 
     if ((pd->p_entry != NULL) || (pd->p_idx != NULL)) {
-        ec_log(1, __func__, "already sent group frame, will not send until it "
-                "has returned...\n");
-        return -1;
-    }
-
-    if (ec_index_get(&pec->idx_q, &pd->p_idx) != 0) {
-        ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", 
-                "error getting ethercat index\n");
-        return -1;
-    }
-
-    if (pool_get(pec->pool, &pd->p_entry, NULL) != 0) {
+        ec_log(1, __func__, "already sent group frame, will not send until it has returned...\n");
+        ret = EC_ERROR_UNAVAILABLE;
+    } else if (ec_index_get(&pec->idx_q, &pd->p_idx) != EC_OK) {
+        ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting ethercat index\n");
+        ret = EC_ERROR_OUT_OF_INDICES;
+    } else if (pool_get(pec->pool, &pd->p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, pd->p_idx);
-        ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", 
-                "error getting datagram from pool\n");
-        return -1;
-    }
-
-    if (pd->use_lrw) {
-        pd_len = max(pd->pdout_len, pd->pdin_len);
+        ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
+        ret = EC_ERROR_OUT_OF_DATAGRAMS;
     } else {
-        pd_len = pd->log_len;
+        if (pd->use_lrw) {
+            pd_len = max(pd->pdout_len, pd->pdin_len);
+        } else {
+            pd_len = pd->log_len;
+        }
+
+        p_dg = (ec_datagram_t *)pd->p_entry->data;
+
+        memset(p_dg, 0, sizeof(ec_datagram_t) + pd_len + 2);
+        p_dg->cmd = EC_CMD_LRW;
+        p_dg->idx = pd->p_idx->idx;
+        p_dg->adr = pd->log;
+        p_dg->len = pd_len;
+
+        p_dg->irq = 0;
+        if (pd->pd) {
+            (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
+        }
+
+        pd->p_entry->user_cb = cb_block;
+        pd->p_entry->user_arg = pd->p_idx;
+
+        // queue frame and trigger tx
+        pool_put(pec->phw->tx_high, pd->p_entry);
     }
-    
-    p_dg = (ec_datagram_t *)pd->p_entry->data;
 
-    memset(p_dg, 0, sizeof(ec_datagram_t) + pd_len + 2);
-    p_dg->cmd = EC_CMD_LRW;
-    p_dg->idx = pd->p_idx->idx;
-    p_dg->adr = pd->log;
-    p_dg->len = pd_len;
-
-    p_dg->irq = 0;
-    if (pd->pd) {
-        memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
-    }
-
-    pd->p_entry->user_cb = cb_block;
-    pd->p_entry->user_arg = pd->p_idx;
-
-    // queue frame and trigger tx
-    pool_put(pec->phw->tx_high, pd->p_entry);
-
-    return 0;
+    return ret;
 }
 
 //! receive process data for specific group with logical commands
@@ -1177,85 +1175,79 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
     assert(timeout != NULL);
 
     static int wkc_mismatch_cnt = 0;
-    int ret = 0;
+    int ret = EC_OK;
     ec_datagram_t *p_dg;
 
     uint16_t wkc = 0;
     ec_pd_group_t *pd = &pec->pd_groups[group];
-    if (!pd->p_idx)
-        return ret;
-    
     if ((pd->p_entry == NULL) || (pd->p_idx == NULL)) {
         ec_log(1, __func__, "did not sent group frame\n");
-        return -1;
-    }
-    
-    p_dg = (ec_datagram_t *)pd->p_entry->data;
-
-    // wait for completion
-    struct timespec ts = { timeout->sec, timeout->nsec };
-    ret = sem_timedwait(&pd->p_idx->waiter, &ts);
-    if (ret == -1) {
-        if (++pd->recv_missed < pec->consecutive_max_miss) {
-            ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                "sem_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
-                pd->recv_missed, pec->consecutive_max_miss);
-        } else {
-            ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                    "too much missed receive frames, falling back to INIT!\n");
-            ret = -2;
-        }
-    
-        goto local_exit;
-    }
-    
-    // reset consecutive missed counter
-    pd->recv_missed = 0;
-
-    wkc = ec_datagram_wkc(p_dg);
-    if (pd->pd) {
-        if (pd->use_lrw) {
-            memcpy(pd->pd + pd->pdout_len, ec_datagram_payload(p_dg), pd->pdin_len);
-        } else {
-            memcpy(pd->pd + pd->pdout_len, ec_datagram_payload(p_dg) + pd->pdout_len, pd->pdin_len);
-        }
-    }
-
-    if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
-                (pec->master_state == EC_STATE_OP)  ) && 
-            (wkc != pd->wkc_expected)) {
-        if ((wkc_mismatch_cnt++%1000) == 0) {
-            ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                    "group %2d: working counter mismatch got %u, "
-                    "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
-                    group, wkc, pd->wkc_expected, 
-                    pec->slave_cnt, wkc_mismatch_cnt);
-        }
-
-        ec_async_check_group(pec->async_loop, group);
-        ret = -1;
+        ret = EC_ERROR_UNAVAILABLE;
     } else {
-        wkc_mismatch_cnt = 0;
-    }
+        p_dg = (ec_datagram_t *)pd->p_entry->data;
 
-    for (int slave = 0; slave < pec->slave_cnt; ++slave) {
-        ec_slave_ptr(slv, pec, slave);
-        if (slv->assigned_pd_group != group) { continue; }
+        // wait for completion
+        struct timespec ts = { timeout->sec, timeout->nsec };
+        if (sem_timedwait(&pd->p_idx->waiter, &ts) != 0) {
+            if (++pd->recv_missed < pec->consecutive_max_miss) {
+                ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+                        "sem_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
+                        pd->recv_missed, pec->consecutive_max_miss);
+            } else {
+                ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+                        "too much missed receive frames, falling back to INIT!\n");
+                ret = EC_ERROR_TIMEOUT;
+            }
+        } else {
+            // reset consecutive missed counter
+            pd->recv_missed = 0;
 
-        if (slv->eeprom.mbx_supported && slv->mbx.sm_state) {
-            if (*slv->mbx.sm_state & 0x08) {
-                //ec_log(10, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
-                ec_mbx_sched_read(pec, slave);
+            wkc = ec_datagram_wkc(p_dg);
+            if (pd->pd) {
+                if (pd->use_lrw) {
+                    (void)memcpy(pd->pd + pd->pdout_len, ec_datagram_payload(p_dg), pd->pdin_len);
+                } else {
+                    (void)memcpy(pd->pd + pd->pdout_len, ec_datagram_payload(p_dg) + pd->pdout_len, pd->pdin_len);
+                }
+            }
+
+            if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+                        (pec->master_state == EC_STATE_OP)  ) && 
+                    (wkc != pd->wkc_expected)) {
+                if ((wkc_mismatch_cnt++%1000) == 0) {
+                    ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+                            "group %2d: working counter mismatch got %u, "
+                            "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
+                            group, wkc, pd->wkc_expected, 
+                            pec->slave_cnt, wkc_mismatch_cnt);
+                }
+
+                ec_async_check_group(pec->async_loop, group);
+                ret = EC_ERROR_WKC_MISMATCH;
+            } else {
+                wkc_mismatch_cnt = 0;
+            }
+
+            for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+                ec_slave_ptr(slv, pec, slave);
+                if (slv->assigned_pd_group != group) { continue; }
+
+                if (    (slv->eeprom.mbx_supported != 0u) && 
+                        (slv->mbx.sm_state != NULL)) {
+                    if ((*slv->mbx.sm_state & 0x08u) != 0u) {
+                        ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
+                        ec_mbx_sched_read(pec, slave);
+                    }
+                }
             }
         }
+
+        pool_put(pec->pool, pd->p_entry);
+        ec_index_put(&pec->idx_q, pd->p_idx);
+
+        pd->p_entry = NULL;
+        pd->p_idx = NULL;
     }
-
-local_exit:
-    pool_put(pec->pool, pd->p_entry);
-    ec_index_put(&pec->idx_q, pd->p_idx);
-
-    pd->p_entry = NULL;
-    pd->p_idx = NULL;
 
     return ret;
 }
@@ -1270,94 +1262,86 @@ pthread_mutex_t send_dc_lock = PTHREAD_MUTEX_INITIALIZER;
 int ec_send_distributed_clocks_sync(ec_t *pec) {
     assert(pec != NULL);
 
+    int ret = EC_OK;
     ec_datagram_t *p_dg = NULL;
-
-    if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
-        return -1;
-    }
 
     pthread_mutex_lock(&send_dc_lock);
 
-    if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
-//        ec_log(1, __func__, "already sent dc frame, will not send until it "
-//                "has returned...\n");
-//
-        pthread_mutex_unlock(&send_dc_lock);
-        return -1;
-    }
+    if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
+        ret = EC_ERROR_UNAVAILABLE;
+    } else if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
+        ret = EC_ERROR_UNAVAILABLE;
+    } else {
+        uint64_t act_rtc_time = ec_timer_gettime_nsec();
 
-    uint64_t act_rtc_time = ec_timer_gettime_nsec();
+        if (pec->dc.rtc_time != 0) {
+            if (act_rtc_time > pec->dc.rtc_time) {
+                pec->dc.rtc_cycle_sum += act_rtc_time - pec->dc.rtc_time;
+            } else {
+                pec->dc.rtc_cycle_sum -= pec->dc.rtc_time - act_rtc_time;
+            }
 
-    if (pec->dc.rtc_time != 0) {
-        if (act_rtc_time > pec->dc.rtc_time)
-            pec->dc.rtc_cycle_sum += act_rtc_time - pec->dc.rtc_time;
-        else
-            pec->dc.rtc_cycle_sum -= pec->dc.rtc_time - act_rtc_time;
+            pec->dc.rtc_count++;
 
-        pec->dc.rtc_count++;
+            if (pec->dc.rtc_count == DC_DCSOFF_SAMPLES) {
+                pec->dc.rtc_cycle = pec->dc.rtc_cycle_sum / DC_DCSOFF_SAMPLES;
+                pec->dc.rtc_count = 0;
+                pec->dc.rtc_cycle_sum = 0;
+            }
+        }
 
-        if (pec->dc.rtc_count == DC_DCSOFF_SAMPLES) {
-            pec->dc.rtc_cycle = pec->dc.rtc_cycle_sum / DC_DCSOFF_SAMPLES;
-            pec->dc.rtc_count = 0;
-            pec->dc.rtc_cycle_sum = 0;
+        if (pec->dc.timer_override > 0) {
+            if (pec->dc.timer_prev == 0) {
+                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                    pec->dc.timer_prev = act_rtc_time - pec->dc.rtc_sto;
+                } else {
+                    pec->dc.timer_prev = act_rtc_time;
+                }
+            } else {
+                pec->dc.timer_prev += (pec->dc.timer_override);
+            }
+        }
+
+        pec->dc.rtc_time = act_rtc_time;
+
+        if (ec_index_get(&pec->idx_q, &pec->dc.p_idx_dc) != EC_OK) {
+            ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
+            ret = EC_ERROR_OUT_OF_INDICES;
+        } else if (pool_get(pec->pool, &pec->dc.p_de_dc, NULL) != EC_OK) {
+            ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
+            ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
+            ret = EC_ERROR_OUT_OF_DATAGRAMS;
+        } else {
+            p_dg = (ec_datagram_t *)pec->dc.p_de_dc->data;
+            memset(p_dg, 0, sizeof(ec_datagram_t) + 8 + 2);
+
+            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                p_dg->cmd = EC_CMD_BWR;
+                p_dg->idx = pec->dc.p_idx_dc->idx;
+                p_dg->adr = (EC_REG_DCSYSTIME << 16);
+                p_dg->len = 8;
+                p_dg->irq = 0;
+
+                (void)memcpy(ec_datagram_payload(p_dg), &pec->dc.timer_prev, sizeof(pec->dc.timer_prev));
+            } else {
+                p_dg->cmd = EC_CMD_FRMW;
+                p_dg->idx = pec->dc.p_idx_dc->idx;
+                p_dg->adr = (EC_REG_DCSYSTIME << 16) | pec->dc.master_address;
+                p_dg->len = 8;
+                p_dg->irq = 0;
+            }
+
+            pec->dc.p_de_dc->user_cb = cb_block;
+            pec->dc.p_de_dc->user_arg = pec->dc.p_idx_dc;
+
+            // queue frame and trigger tx
+            pool_put(pec->phw->tx_high, pec->dc.p_de_dc);
         }
     }
-
-    if (pec->dc.timer_override > 0) {
-        if (pec->dc.timer_prev == 0) {
-            if (pec->dc.mode == dc_mode_master_as_ref_clock)
-                pec->dc.timer_prev = act_rtc_time - pec->dc.rtc_sto;
-            else
-                pec->dc.timer_prev = act_rtc_time;
-        } else
-            pec->dc.timer_prev += (pec->dc.timer_override);
-    }
-
-    pec->dc.rtc_time = act_rtc_time;
-
-    if (ec_index_get(&pec->idx_q, &pec->dc.p_idx_dc) != 0) {
-        ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", 
-                "error getting ethercat index\n");
-        pthread_mutex_unlock(&send_dc_lock);
-        return -1;
-    }
-
-    if (pool_get(pec->pool, &pec->dc.p_de_dc, NULL) != 0) {
-        ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
-        ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", 
-                "error getting datagram from pool\n");
-        pthread_mutex_unlock(&send_dc_lock);
-        return -1;
-    }
-
-    p_dg = (ec_datagram_t *)pec->dc.p_de_dc->data;
-    memset(p_dg, 0, sizeof(ec_datagram_t) + 8 + 2);
-
-    if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-        p_dg->cmd = EC_CMD_BWR;
-        p_dg->idx = pec->dc.p_idx_dc->idx;
-        p_dg->adr = (EC_REG_DCSYSTIME << 16);
-        p_dg->len = 8;
-        p_dg->irq = 0;
-            
-        memcpy(ec_datagram_payload(p_dg), &pec->dc.timer_prev, sizeof(pec->dc.timer_prev));
-    } else {
-        p_dg->cmd = EC_CMD_FRMW;
-        p_dg->idx = pec->dc.p_idx_dc->idx;
-        p_dg->adr = (EC_REG_DCSYSTIME << 16) | pec->dc.master_address;
-        p_dg->len = 8;
-        p_dg->irq = 0;
-    }
-
-    pec->dc.p_de_dc->user_cb = cb_block;
-    pec->dc.p_de_dc->user_arg = pec->dc.p_idx_dc;
-
-    // queue frame and trigger tx
-    pool_put(pec->phw->tx_high, pec->dc.p_de_dc);
       
     pthread_mutex_unlock(&send_dc_lock);
 
-    return 0;
+    return ret;
 }
 
 //! receive distributed clocks sync datagram
@@ -1370,150 +1354,147 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
     assert(pec != NULL);
     assert(timeout != NULL);
 
+    int ret = EC_OK;
     uint16_t wkc; 
     ec_datagram_t *p_dg = NULL;
 
     if (!pec->dc.have_dc || !pec->dc.p_de_dc) {
-        return 0;
-    }
-    
-    if ((pec->dc.p_de_dc == NULL) || (pec->dc.p_idx_dc == NULL)) {
+        ret = EC_ERROR_UNAVAILABLE;
+    } else if ((pec->dc.p_de_dc == NULL) || (pec->dc.p_idx_dc == NULL)) {
         ec_log(1, __func__, "no dc frame was sent!\n");
-        return -1;
-    }
-            
-    // wait for completion
-    struct timespec ts = { timeout->sec, timeout->nsec };
-    int ret = sem_timedwait(&pec->dc.p_idx_dc->waiter, &ts);
-    if (ret == -1) {
-        ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
-                "sem_timedwait distributed clocks (sent: %lld): %s\n", 
-                pec->dc.rtc_time, strerror(errno));
-        goto dc_exit;
-    }
+        ret = EC_ERROR_UNAVAILABLE;
+    } else {
+        // wait for completion
+        struct timespec ts = { timeout->sec, timeout->nsec };
+        if (sem_timedwait(&pec->dc.p_idx_dc->waiter, &ts) != 0) {
+            ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
+                    "sem_timedwait distributed clocks (sent: %lld): %s\n", 
+                    pec->dc.rtc_time, strerror(errno));
+            ret = EC_ERROR_TIMEOUT;
+        } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+            // special mode where we distribute the EtherCAT master clock to all slaves.
+            ret = EC_OK;
+        } else {
+            uint64_t rtc = ec_timer_gettime_nsec();
 
-    uint64_t rtc = ec_timer_gettime_nsec();
-    
-    p_dg = (ec_datagram_t *)pec->dc.p_de_dc->data;
-    wkc = ec_datagram_wkc(p_dg);
+            p_dg = (ec_datagram_t *)pec->dc.p_de_dc->data;
+            wkc = ec_datagram_wkc(p_dg);
 
-    if (pec->dc.mode == dc_mode_master_as_ref_clock)
-        goto dc_exit;
+            if (wkc) {
+                uint64_t act_dc_time; 
+                memcpy(&act_dc_time, ec_datagram_payload(p_dg), 8);
 
-    if (wkc) {
-        uint64_t act_dc_time; 
-        memcpy(&act_dc_time, ec_datagram_payload(p_dg), 8);
-        
-        if (((++pec->dc.offset_compensation_cnt) 
-                    % pec->dc.offset_compensation_cycles) == 0) {
-            pec->dc.offset_compensation_cnt = 0;
+                if (((++pec->dc.offset_compensation_cnt) 
+                            % pec->dc.offset_compensation_cycles) == 0) {
+                    pec->dc.offset_compensation_cnt = 0;
 
-            // doing offset compensation in dc master clock
-            // getting current system time first relative to ecat start
-            uint64_t act_rtc_time = ((pec->dc.timer_override > 0) ?
-                                     pec->dc.timer_prev : rtc) - pec->dc.rtc_sto;
+                    // doing offset compensation in dc master clock
+                    // getting current system time first relative to ecat start
+                    uint64_t act_rtc_time = ((pec->dc.timer_override > 0) ?
+                            pec->dc.timer_prev : rtc) - pec->dc.rtc_sto;
 
-            // clamp every value to 32-bit, so we do not need to care 
-            // about wheter dc is 32-bit or 64-bit.
-            int64_t rtc_temp = act_rtc_time % UINT_MAX;
-            int64_t dc_temp  = act_dc_time  % UINT_MAX;
+                    // clamp every value to 32-bit, so we do not need to care 
+                    // about wheter dc is 32-bit or 64-bit.
+                    int64_t rtc_temp = act_rtc_time % UINT_MAX;
+                    int64_t dc_temp  = act_dc_time  % UINT_MAX;
 
-            pec->dc.act_diff = rtc_temp - dc_temp;
-            if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp))
-                pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
-            else if ((pec->dc.prev_rtc > rtc_temp) && 
-                    (pec->dc.prev_dc < dc_temp))
-                pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
+                    pec->dc.act_diff = rtc_temp - dc_temp;
+                    if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp))
+                        pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
+                    else if ((pec->dc.prev_rtc > rtc_temp) && 
+                            (pec->dc.prev_dc < dc_temp))
+                        pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
 
-            // only compensate within one cycle, add rest to system time offset
-            if (pec->dc.timer_override > 0) {
-                // for example with a cycle of 1 ms we want to control between
-                // -0.5 ms to +0.5 ms.
-                int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
-                pec->dc.rtc_sto  += ticks_off * (pec->dc.timer_override / 2);             
-                pec->dc.act_diff  = pec->dc.act_diff % (pec->dc.timer_override / 2);
-                
-                if (ticks_off > 0) {
-                    ec_log(10, __func__, "compensating %d cycles, timer_prev %lld, rtc_sto %lld\n", 
-                            ticks_off, pec->dc.timer_prev, pec->dc.rtc_sto);
+                    // only compensate within one cycle, add rest to system time offset
+                    if (pec->dc.timer_override > 0) {
+                        // for example with a cycle of 1 ms we want to control between
+                        // -0.5 ms to +0.5 ms.
+                        int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
+                        pec->dc.rtc_sto  += ticks_off * (pec->dc.timer_override / 2);             
+                        pec->dc.act_diff  = pec->dc.act_diff % (pec->dc.timer_override / 2);
+
+                        if (ticks_off > 0) {
+                            ec_log(10, __func__, "compensating %d cycles, timer_prev %lld, rtc_sto %lld\n", 
+                                    ticks_off, pec->dc.timer_prev, pec->dc.rtc_sto);
+                        }
+                    }
+
+                    pec->dc.prev_rtc = rtc_temp;
+                    pec->dc.prev_dc  = dc_temp;
+
+                    // dc_mode 1 is sync ref_clock to master_clock
+                    if (pec->dc.mode == dc_mode_master_clock) {
+                        // sending offset compensation value to dc master clock
+                        pool_entry_t *p_entry_dc_sto;
+                        idx_entry_t *p_idx_dc_sto;
+
+                        // dc system time offset frame
+                        if (ec_index_get(&pec->idx_q, &p_idx_dc_sto) != EC_OK) {
+                            ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", 
+                                    "error getting ethercat index\n");
+                            goto sto_exit;
+                        }
+
+                        if (pool_get(pec->pool, &p_entry_dc_sto, NULL) != EC_OK) {
+                            ec_index_put(&pec->idx_q, p_idx_dc_sto);
+                            ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", 
+                                    "error getting datagram from pool\n");
+                            goto sto_exit;
+                        }
+
+                        // correct system time offset, sync ref_clock to master_clock
+                        pec->dc.dc_sto += pec->dc.act_diff;
+                        p_dg = (ec_datagram_t *)p_entry_dc_sto->data;
+                        memset(p_dg, 0, sizeof(ec_datagram_t) + 10);
+                        p_dg->cmd = EC_CMD_FPWR;
+                        p_dg->idx = p_idx_dc_sto->idx;
+                        p_dg->adr = (EC_REG_DCSYSOFFSET << 16) | pec->dc.master_address;
+                        p_dg->len = sizeof(pec->dc.dc_sto);
+                        p_dg->irq = 0;
+                        memcpy(ec_datagram_payload(p_dg), &pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
+                        // we don't care about the answer, cb_no_reply frees datagram 
+                        // and index
+                        p_idx_dc_sto->pec = pec;
+                        p_entry_dc_sto->user_cb = cb_no_reply;
+                        p_entry_dc_sto->user_arg = p_idx_dc_sto;
+
+                        // queue frame and trigger tx
+                        pool_put(pec->phw->tx_low, p_entry_dc_sto);
+                    }
                 }
-            }
-
-            pec->dc.prev_rtc = rtc_temp;
-            pec->dc.prev_dc  = dc_temp;
-
-            // dc_mode 1 is sync ref_clock to master_clock
-            if (pec->dc.mode == dc_mode_master_clock) {
-                // sending offset compensation value to dc master clock
-                pool_entry_t *p_entry_dc_sto;
-                idx_entry_t *p_idx_dc_sto;
-
-                // dc system time offset frame
-                if (ec_index_get(&pec->idx_q, &p_idx_dc_sto) != 0) {
-                    ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", 
-                            "error getting ethercat index\n");
-                    goto sto_exit;
-                }
-
-                if (pool_get(pec->pool, &p_entry_dc_sto, NULL) != 0) {
-                    ec_index_put(&pec->idx_q, p_idx_dc_sto);
-                    ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", 
-                            "error getting datagram from pool\n");
-                    goto sto_exit;
-                }
-
-                // correct system time offset, sync ref_clock to master_clock
-                pec->dc.dc_sto += pec->dc.act_diff;
-                p_dg = (ec_datagram_t *)p_entry_dc_sto->data;
-                memset(p_dg, 0, sizeof(ec_datagram_t) + 10);
-                p_dg->cmd = EC_CMD_FPWR;
-                p_dg->idx = p_idx_dc_sto->idx;
-                p_dg->adr = (EC_REG_DCSYSOFFSET << 16) | pec->dc.master_address;
-                p_dg->len = sizeof(pec->dc.dc_sto);
-                p_dg->irq = 0;
-                memcpy(ec_datagram_payload(p_dg), &pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
-                // we don't care about the answer, cb_no_reply frees datagram 
-                // and index
-                p_idx_dc_sto->pec = pec;
-                p_entry_dc_sto->user_cb = cb_no_reply;
-                p_entry_dc_sto->user_arg = p_idx_dc_sto;
-
-                // queue frame and trigger tx
-                pool_put(pec->phw->tx_low, p_entry_dc_sto);
-            }
-        }
 
 sto_exit:
-        if (pec->dc.dc_time > 0) {
-            if (act_dc_time < pec->dc.dc_time) {
-                if (pec->dc.dc_time < (uint64_t)UINT_MAX) // 32-bit dc clock
-                    pec->dc.dc_cycle_sum += ((uint64_t)UINT_MAX 
-                            - pec->dc.dc_time) + act_dc_time;
-                else
-                    pec->dc.dc_cycle_sum += (ULONG_MAX - pec->dc.dc_time) 
-                        + act_dc_time;
-            } else 
-                pec->dc.dc_cycle_sum += act_dc_time - pec->dc.dc_time;
-            pec->dc.dc_cycle_cnt++;                
+                if (pec->dc.dc_time > 0) {
+                    if (act_dc_time < pec->dc.dc_time) {
+                        if (pec->dc.dc_time < (uint64_t)UINT_MAX) // 32-bit dc clock
+                            pec->dc.dc_cycle_sum += ((uint64_t)UINT_MAX 
+                                    - pec->dc.dc_time) + act_dc_time;
+                        else
+                            pec->dc.dc_cycle_sum += (ULONG_MAX - pec->dc.dc_time) 
+                                + act_dc_time;
+                    } else 
+                        pec->dc.dc_cycle_sum += act_dc_time - pec->dc.dc_time;
+                    pec->dc.dc_cycle_cnt++;                
 
-            if (pec->dc.dc_cycle_cnt == DC_DCSOFF_SAMPLES) {                    
-                pec->dc.dc_cycle = pec->dc.dc_cycle_sum / DC_DCSOFF_SAMPLES;
-                pec->dc.dc_cycle_cnt = 0;
-                pec->dc.dc_cycle_sum = 0;
+                    if (pec->dc.dc_cycle_cnt == DC_DCSOFF_SAMPLES) {                    
+                        pec->dc.dc_cycle = pec->dc.dc_cycle_sum / DC_DCSOFF_SAMPLES;
+                        pec->dc.dc_cycle_cnt = 0;
+                        pec->dc.dc_cycle_sum = 0;
+                    }
+                }
+
+                pec->dc.dc_time = act_dc_time;
             }
         }
 
-        pec->dc.dc_time = act_dc_time;
+        pool_put(pec->pool, pec->dc.p_de_dc);
+        ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
+
+        pec->dc.p_de_dc = NULL;
+        pec->dc.p_idx_dc = NULL;
     }
 
-dc_exit:
-    pool_put(pec->pool, pec->dc.p_de_dc);
-    ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
-
-    pec->dc.p_de_dc = NULL;
-    pec->dc.p_idx_dc = NULL;
-
-    return 0;
+    return ret;
 }
 
 //! send broadcast read to ec state
@@ -1524,35 +1505,34 @@ dc_exit:
 int ec_send_brd_ec_state(ec_t *pec) {
     assert(pec != NULL);
 
+    int ret = EC_OK;
     ec_datagram_t *p_dg = NULL;
 
-    if (ec_index_get(&pec->idx_q, &pec->p_idx_state) != 0) {
+    if (ec_index_get(&pec->idx_q, &pec->p_idx_state) != EC_OK) {
         ec_log(1, __func__, "error getting ethercat index\n");
-        return -1;
-    }
-
-    if (pool_get(pec->pool, &pec->p_de_state, NULL) != 0) {
+        ret = EC_ERROR_OUT_OF_INDICES;
+    } else if (pool_get(pec->pool, &pec->p_de_state, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, pec->p_idx_state);
         ec_log(1, __func__, "error getting datagram from pool\n");
-        return -1;
+        ret = EC_ERROR_OUT_OF_DATAGRAMS;
+    } else {
+        p_dg = (ec_datagram_t *)pec->p_de_state->data;
+
+        memset(p_dg, 0, sizeof(ec_datagram_t) + 4u + 2u);
+        p_dg->cmd = EC_CMD_BRD;
+        p_dg->idx = pec->p_idx_state->idx;
+        p_dg->adr = EC_REG_ALSTAT << 16u;
+        p_dg->len = 2;
+        p_dg->irq = 0;
+
+        pec->p_de_state->user_cb = cb_block;
+        pec->p_de_state->user_arg = pec->p_idx_state;
+
+        // queue frame and trigger tx
+        pool_put(pec->phw->tx_high, pec->p_de_state);
     }
-    
-    p_dg = (ec_datagram_t *)pec->p_de_state->data;
 
-    memset(p_dg, 0, sizeof(ec_datagram_t) + 4 + 2);
-    p_dg->cmd = EC_CMD_BRD;
-    p_dg->idx = pec->p_idx_state->idx;
-    p_dg->adr = EC_REG_ALSTAT << 16;
-    p_dg->len = 2;
-    p_dg->irq = 0;
-
-    pec->p_de_state->user_cb = cb_block;
-    pec->p_de_state->user_arg = pec->p_idx_state;
-
-    // queue frame and trigger tx
-    pool_put(pec->phw->tx_high, pec->p_de_state);
-
-    return 0;
+    return ret;
 }
 
 //! receive broadcast read to ec_state
@@ -1569,51 +1549,47 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
     static int ec_state_mismatch_cnt = 0;
 
     ec_datagram_t *p_dg = NULL;
-    int ret = 0;
+    int ret = EC_OK;
     uint16_t al_status;
-
     uint16_t wkc = 0;
-    if (!pec->p_idx_state)
-        return ret;
-    
-    // wait for completion
     struct timespec ts = { timeout->sec, timeout->nsec };
-    ret = sem_timedwait(&pec->p_idx_state->waiter, &ts);
-    if (ret == -1) {
+
+    if (pec->p_idx_state == NULL) {
+        ret = EC_ERROR_UNAVAILABLE;
+    } else if (sem_timedwait(&pec->p_idx_state->waiter, &ts) != 0) { // wait for completion
         ec_log(1, __func__, "sem_timedwait ec_state: %s\n", strerror(errno));
-        goto local_exit;
-    }
-        
-    p_dg = (ec_datagram_t *)pec->p_de_state->data;
+        ret = EC_ERROR_TIMEOUT;
+    } else {
+        p_dg = (ec_datagram_t *)pec->p_de_state->data;
 
-    wkc = ec_datagram_wkc(p_dg);
-    memcpy(&al_status, ec_datagram_payload(p_dg), 2);
+        wkc = ec_datagram_wkc(p_dg);
+        memcpy(&al_status, ec_datagram_payload(p_dg), 2);
 
-    if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
-                (pec->master_state == EC_STATE_OP)  ) && 
-            (wkc != pec->slave_cnt)) {
-        if ((wkc_mismatch_cnt_ec_state++%1000) == 0) {
-            ec_log(1, __func__, 
-                    "brd ec_state: working counter mismatch got %u, "
-                    "slave_cnt %d, mismatch_cnt %d\n", 
-                    wkc, pec->slave_cnt, wkc_mismatch_cnt_ec_state);
+        if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+                    (pec->master_state == EC_STATE_OP)  ) && 
+                (wkc != pec->slave_cnt)) {
+            if ((wkc_mismatch_cnt_ec_state++%1000) == 0) {
+                ec_log(1, __func__, 
+                        "brd ec_state: working counter mismatch got %u, "
+                        "slave_cnt %d, mismatch_cnt %d\n", 
+                        wkc, pec->slave_cnt, wkc_mismatch_cnt_ec_state);
+            }
+
+            //        ec_async_check_group(pec->async_loop, group);
+            ret = EC_ERROR_WKC_MISMATCH;
+        } else {
+            wkc_mismatch_cnt_ec_state = 0;
         }
 
-//        ec_async_check_group(pec->async_loop, group);
-        ret = -1;
-    } else {
-        wkc_mismatch_cnt_ec_state = 0;
-    }
+        if (!pec->state_transition_pending && (al_status != pec->master_state)) {
+            if ((ec_state_mismatch_cnt++%1000) == 0)
+                ec_log(1, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
+                        al_status, pec->master_state);
+        }
 
-    if (!pec->state_transition_pending && (al_status != pec->master_state)) {
-        if ((ec_state_mismatch_cnt++%1000) == 0)
-            ec_log(1, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
-                    al_status, pec->master_state);
+        pool_put(pec->pool, pec->p_de_state);
+        ec_index_put(&pec->idx_q, pec->p_idx_state);
     }
-
-local_exit:
-    pool_put(pec->pool, pec->p_de_state);
-    ec_index_put(&pec->idx_q, pec->p_idx_state);
 
     return ret;
 }

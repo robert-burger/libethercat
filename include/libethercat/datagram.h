@@ -75,33 +75,35 @@ typedef struct __attribute__((__packed__)) ec_datagram {
 extern "C" {
 #endif
 
-//! initialize empty frame
+//! Initialize empty frame.
 /*/
- * \param frame pointer to frame
+ * \param[in,out]   frame   Pointer to frame.
+ *
+ * \return EC_OK
  */
 int ec_frame_init(ec_frame_t *frame);
 
-//! add datagram at the end of frame
+//! Add datagram at the end of frame.
 /*/
- * \param frame pointer to frame
- * \param cmd ethercat command
- * \param idx ethercat frame index
- * \param adp auto inc/configured address
- * \param ado physical mem address
- * \param payload frame payload
- * \param payload_len length of payload
+ * \param[in,out]   frame         Pointer to frame.
+ * \param[in]       cmd           Ethercat command.
+ * \param[in]       idx           Ethercat frame index.
+ * \param[in]       adp           Auto inc/configured address.
+ * \param[in]       ado           Physical mem address.
+ * \param[in]       payload       Frame payload.
+ * \param[in]       payload_len   Length of payload.
  */
 void ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint16_t adp, uint16_t ado, uint8_t *payload, size_t payload_len);
 
-//! add datagram at the end of frame
+//! Add datagram at the end of frame.
 /*/
- * \param frame pointer to frame
- * \param cmd ethercat command
- * \param idx ethercat frame index
- * \param adr logical
- * \param payload frame payload
- * \param payload_len length of payload
+ * \param[in,out]   frame         Pointer to frame.
+ * \param[in]       cmd           Ethercat command.
+ * \param[in]       idx           Ethercat frame index.
+ * \param[in]       adr           Logical address.
+ * \param[in]       payload       Frame payload.
+ * \param[in]       payload_len   Length of payload.
  */
 void ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
         uint32_t adr, uint8_t *payload, size_t payload_len);
