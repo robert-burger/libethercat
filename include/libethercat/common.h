@@ -41,6 +41,8 @@
 #define min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
+#define ec_min(a, b)  ((a) < (b) ? (a) : (b))
+
 #define free_resource(a) {  \
     if ((a) != NULL) {      \
         (void)free((a));          \

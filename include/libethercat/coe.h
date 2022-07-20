@@ -93,6 +93,7 @@ enum {
 #define DEFTYPE_PDOMAPPING          0x0021
 
 #define CANOPEN_MAXNAME             40u
+#define CANOPEN_MAXDATA             128u
     
 //! CanOpen over EtherCAT sdo descriptor
 typedef struct PACKED ec_coe_sdo_desc {
@@ -108,8 +109,8 @@ typedef struct PACKED ec_coe_sdo_entry_desc {
     uint16_t data_type;             //!< \brief entry data type
     uint16_t bit_length;            //!< \brief entry bit length
     uint16_t obj_access;            //!< \brief object access
-    char     name[CANOPEN_MAXNAME]; //!< \brief entry name
-    size_t   name_len;              //!< \brief length of name
+    uint8_t  data[CANOPEN_MAXDATA]; //!< \brief entry name
+    size_t   data_len;              //!< \brief length of name
 } PACKED ec_coe_sdo_entry_desc_t;
 
 #define EC_COE_SDO_VALUE_INFO_ACCESS_RIGHTS      0x01

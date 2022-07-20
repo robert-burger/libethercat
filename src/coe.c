@@ -995,9 +995,9 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
                     desc->data_type     = read_buf->data_type;
                     desc->bit_length    = read_buf->bit_length;
                     desc->obj_access    = read_buf->obj_access;
-                    desc->name_len      = min(CANOPEN_MAXNAME, read_buf->mbx_hdr.length - 6u - 10u);
+                    desc->data_len      = min(CANOPEN_MAXDATA, read_buf->mbx_hdr.length - 6u - 10u);
 
-                    (void)memcpy(desc->name, read_buf->desc_data, desc->name_len);
+                    (void)memcpy(desc->data, read_buf->desc_data, desc->data_len);
                     ret = EC_OK;
                 } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
                     ec_sdo_info_error_resp_t *read_buf_error = (void *)(p_entry->data);
