@@ -71,15 +71,15 @@ typedef struct ec_pd {
 } ec_pd_t;
 
 typedef uint16_t ec_state_t;
-#define EC_STATE_UNKNOWN     (0x0000u)       //!< \brief unknown state
-#define EC_STATE_INIT        (0x0001u)       //!< \brief EtherCAT INIT state
-#define EC_STATE_PREOP       (0x0002u)       //!< \brief EtherCAT PREOP state
-#define EC_STATE_BOOT        (0x0003u)       //!< \brief EtherCAT BOOT state
-#define EC_STATE_SAFEOP      (0x0004u)       //!< \brief EtherCAT SAFEOP state
-#define EC_STATE_OP          (0x0008u)       //!< \brief EtherCAT OP state
-#define EC_STATE_MASK        (0x000Fu)       //!< \brief EtherCAT state mask
-#define EC_STATE_ERROR       (0x0010u)       //!< \brief EtherCAT ERROR
-#define EC_STATE_RESET       (0x0010u)       //!< \brief EtherCAT ERROR reset
+#define EC_STATE_UNKNOWN     ((uint16_t)(0x0000u))       //!< \brief unknown state
+#define EC_STATE_INIT        ((uint16_t)(0x0001u))       //!< \brief EtherCAT INIT state
+#define EC_STATE_PREOP       ((uint16_t)(0x0002u))       //!< \brief EtherCAT PREOP state
+#define EC_STATE_BOOT        ((uint16_t)(0x0003u))       //!< \brief EtherCAT BOOT state
+#define EC_STATE_SAFEOP      ((uint16_t)(0x0004u))       //!< \brief EtherCAT SAFEOP state
+#define EC_STATE_OP          ((uint16_t)(0x0008u))       //!< \brief EtherCAT OP state
+#define EC_STATE_MASK        ((uint16_t)(0x000Fu))       //!< \brief EtherCAT state mask
+#define EC_STATE_ERROR       ((uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR
+#define EC_STATE_RESET       ((uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR reset
 
 #ifdef __VXWORKS__ 
 char *strndup(const char *s, size_t n);

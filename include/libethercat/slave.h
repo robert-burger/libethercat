@@ -360,7 +360,7 @@ void ec_slave_free(struct ec *pec, uint16_t slave);
  *                      (usually the n'th slave attached).
  * \param[in] state     New EtherCAT state which will be set on specified slave.
  *
- * \return Working counter of the set state command, should be 1 if it was successfull.
+ * \return EC_OK on success, otherwise EC_ERROR_* code.
  */
 int ec_slave_set_state(struct ec *pec, uint16_t slave, ec_state_t state);
 
@@ -379,7 +379,7 @@ int ec_slave_set_state(struct ec *pec, uint16_t slave, ec_state_t state);
  *                          EtherCAT slave. (maybe NULL if you are not
  *                          interested in)
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \return EC_OK on success, otherwise EC_ERROR_* code.
  */
 int ec_slave_get_state(struct ec *pec, uint16_t slave, 
         ec_state_t *state, uint16_t *alstatcode);
@@ -396,7 +396,7 @@ int ec_slave_get_state(struct ec *pec, uint16_t slave,
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  *
- * \return Working counter of the generate mapping commands, should be 1 if it was successfull.
+ * \return EC_OK on success, otherwise EC_ERROR_* code.
  */
 int ec_slave_generate_mapping(struct ec *pec, uint16_t slave);
 

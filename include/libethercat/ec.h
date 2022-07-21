@@ -226,7 +226,7 @@ void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]);
  * \param[in] pd_group_cnt  Number of groups to create.
  * \return 0 on success
  */
-int ec_create_pd_groups(ec_t *pec, int pd_group_cnt);
+int ec_create_pd_groups(ec_t *pec, uint32_t pd_group_cnt);
 
 //! \brief Destroy process data groups.
 /*!
@@ -351,13 +351,13 @@ int ec_get_slave_count(ec_t *pec);
 
 #define ec_aprd(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APRD, ((uint32_t)(ado) << 16u) | \
-            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+            (*(uint16_t *)&(adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_apwr(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APWR, ((uint32_t)(ado) << 16u) | \
             (*(uint16_t *)&(adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 #define ec_aprw(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APRW, ((uint32_t)(ado) << 16u) | \
-            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+            (*(uint16_t *)&(adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
 
 #define ec_fprd(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_FPRD, ((uint32_t)(ado) << 16lu) | \

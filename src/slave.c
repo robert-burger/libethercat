@@ -311,12 +311,13 @@ void ec_slave_set_dc_config(struct ec *pec, uint16_t slave,
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
+    ec_slave_ptr(slv, pec, slave);
 
-    pec->slaves[slave].dc.use_dc        = use_dc;
-    pec->slaves[slave].dc.type          = type;
-    pec->slaves[slave].dc.cycle_time_0  = cycle_time_0;
-    pec->slaves[slave].dc.cycle_time_1  = cycle_time_1;
-    pec->slaves[slave].dc.cycle_shift   = cycle_shift;
+    slv->dc.use_dc        = use_dc;
+    slv->dc.type          = type;
+    slv->dc.cycle_time_0  = cycle_time_0;
+    slv->dc.cycle_time_1  = cycle_time_1;
+    slv->dc.cycle_shift   = cycle_shift;
 }
 
 #define AL_STATUS_CODE__NOERROR                        0x0000 
@@ -629,6 +630,7 @@ static const char *ecat_state_2_string(int state) {
 
 // Set EtherCAT state on slave 
 int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
+    int ret = EC_OK;
     uint16_t wkc = 0u;
     uint16_t act_state = 0u;
     uint16_t value = 0u;
@@ -636,9 +638,9 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    if (ec_fpwr(pec, pec->slaves[slave].fixed_address, 
-            EC_REG_ALCTL, &state, sizeof(state), &wkc) != EC_OK) { 
+    if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) != EC_OK) { 
         // just return, we got an error from ec_transceive
+        ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else if ((state & EC_STATE_RESET) != 0u) {
         // just return here, we did an error reset
     } else {
@@ -650,19 +652,16 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
         ec_timer_init(&timeout, 10000000000); // 10 second timeout
 
         do {
-            if (ec_fpwr(pec, pec->slaves[slave].fixed_address, 
-                        EC_REG_ALCTL, &state, sizeof(state), &wkc) == EC_OK) { 
+            if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) == EC_OK) { 
                 act_state = 0;
                 wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
 
                 if ((act_state & EC_STATE_ERROR) != 0u) {
-                    if (ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                                EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
+                    if (ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
                         ec_log(10, "EC_STATE_SET", "slave %2d: state switch to %d failed, "
                                 "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
 
-                        (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | 
-                                EC_STATE_RESET);
+                        (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
                         break;
                     }
                 }
@@ -672,63 +671,65 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
         } while ((act_state != state) && (ec_timer_expired(&timeout) == 0));
  
         if (ec_timer_expired(&timeout) == 1) {
-            ec_log(1, "EC_STATE_SET", "slave %2d: did not respond on state "
-                    "switch to %d\n", slave, state);
-            wkc = 0;
+            ec_log(1, "EC_STATE_SET", "slave %2d: did not respond on state switch to %d\n", slave, state);
+            ret = EC_ERROR_SLAVE_NOT_RESPONDING;
         }
 
-        ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", 
-                slave, state, act_state, wkc);
+        ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", slave, state, act_state, wkc);
 
         if (act_state == state) {    
             ec_log(10, "EC_STATE_SET", "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
+            ret = EC_OK;
         } else {
             ec_log(1, "EC_STATE_SET", "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
+            ret = EC_ERROR_SLAVE_STATE_SWITCH;
         }
 
         pec->slaves[slave].act_state = act_state;
     }
 
-    return wkc;
+    return ret;
 }
 
 // get ethercat state from slave 
-int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, 
-        uint16_t *alstatcode) 
+int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, uint16_t *alstatcode) 
 {
-    uint16_t wkc = 0u;
-    uint16_t value = 0u;
-    
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    int ret = EC_OK;
+    uint16_t wkc = 0u;
+    uint16_t value = 0u;
+    
     ec_slave_ptr(slv, pec, slave);
-    (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
+    ret = ec_fprd(pec, pec->slaves[slave].fixed_address, 
             EC_REG_ALSTAT, &value, sizeof(value), &wkc);
 
-    if (wkc != 0u) {
+    if ((ret != EC_OK) || (wkc == 0u)) {
+        *state = EC_STATE_UNKNOWN;
+    } else {
         slv->act_state = (ec_state_t)value;
         *state = slv->act_state;
-    }
 
-    if (alstatcode && (*state & 0x10)) {
-        (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                EC_REG_ALSTATCODE, &value, sizeof(value), &wkc);
+        if (alstatcode && (*state & 0x10)) {
+            ret = ec_fprd(pec, pec->slaves[slave].fixed_address, 
+                    EC_REG_ALSTATCODE, &value, sizeof(value), &wkc);
 
-        if (wkc != 0u) {
-            *alstatcode = value;
+            if ((ret == EC_OK) && (wkc != 0u)) {
+                *alstatcode = value;
+            }
         }
     }
 
-    return wkc;
+    return ret;
 }
 
 // generate pd mapping
 int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
-    int ret = 0;
 
+    int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->sm_set_by_user != 0) {
@@ -736,15 +737,15 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
     } else {
         // check sm settings
         if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) != 0u) {
-            (void)ec_coe_generate_mapping(pec, slave);
+            ret = ec_coe_generate_mapping(pec, slave);
         } else if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
-            (void)ec_soe_generate_mapping(pec, slave);
+            ret = ec_soe_generate_mapping(pec, slave);
         } else {
             // try eeprom
             for (uint8_t sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
                 int txpdos_cnt = 0;
                 int rxpdos_cnt = 0;
-                size_t bit_len = 0;
+                size_t bit_len = 0u;
                 ec_eeprom_cat_pdo_t *pdo;
 
                 // inputs and outputs
@@ -788,8 +789,6 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
                 }
             }
         }
-
-        ret = 1;
     }
 
     return ret;
@@ -801,7 +800,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
 {
     uint16_t wkc;
     ec_state_t act_state = 0;
-    int ret = 0;
+    int ret = EC_OK;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -812,8 +811,10 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
     wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
     if (!wkc) {
         ec_log(10, __func__, "slave %2d: error getting state\n", slave);
-        ret = -1;
-    } else {
+        ret = EC_ERROR_SLAVE_NOT_RESPONDING;
+    }
+
+    if (ret == EC_OK) {
         // generate transition
         ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | (state & EC_STATE_MASK); 
 
@@ -848,7 +849,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
 
                             int ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, 
                                     coe->ca_atn, buf, buf_len, &abort_code);
-                            if (ret != 0) {
+                            if (ret != EC_OK) {
                                 ec_log(10, get_transition_string(transition), 
                                         "slave %2d: writing sdo failed: error code 0x%X!\n", 
                                         slave, ret);
@@ -869,7 +870,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                             int ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, 
                                     soe->si_el, buf, buf_len);
 
-                            if (ret != 0) {
+                            if (ret != EC_OK) {
                                 ec_log(10, get_transition_string(transition), 
                                         "slave %2d: writing SoE failed: error code 0x%X!\n", 
                                         slave, ret);
@@ -948,7 +949,7 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
 int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     uint16_t wkc;
     ec_state_t act_state = 0;
-    int ret = 0;
+    int ret = EC_OK;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -966,6 +967,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
     if (!wkc) {
         ec_log(10, "ERROR", "could not get state of slave %d\n", slave);
+        ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
         if ((act_state & EC_STATE_ERROR) != 0u) { // reset error state first
             (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
@@ -1305,8 +1307,6 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                         "%2d -> %04X\n", slave, transition);
                 break;
         };
-
-        ret = wkc;
     }
 
     return ret;

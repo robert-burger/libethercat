@@ -60,14 +60,14 @@ typedef struct ec_dc_info {
     uint64_t dc_time;
     uint64_t dc_cycle_sum;
     uint64_t dc_cycle;
-    int32_t dc_cycle_cnt;
+    uint32_t dc_cycle_cnt;
     int64_t dc_sto;
 
     int64_t rtc_sto;
     uint64_t rtc_time;
     uint64_t rtc_cycle_sum;
     uint64_t rtc_cycle;
-    int32_t rtc_count;
+    uint32_t rtc_count;
 
     int32_t act_diff;
                
@@ -78,7 +78,7 @@ typedef struct ec_dc_info {
     int offset_compensation_cnt;        //!< Current counter of offset compensation cycles.
 
     int timer_override;
-    int64_t timer_prev;
+    uint64_t timer_prev;
 
     enum {
         dc_mode_master_clock = 0,
