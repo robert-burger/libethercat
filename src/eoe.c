@@ -301,7 +301,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.eoe.lock) != 0) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else {
         ec_log(10, __func__, "slave %2d: set ip parameter\n", slave);
@@ -414,13 +414,12 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_le
             ec_timer_t timeout;
             (void)ec_timer_gettime(&timeout);
             timeout.sec += 10;
-            (void)ec_mbx_get_free_send_buffer(pec, slave, p_entry, &timeout, &slv->mbx.eoe.lock);
+            (void)ec_mbx_get_free_send_buffer(pec, slave, &p_entry, &timeout);
 
             // send sync callback
             p_entry->user_cb = ec_eoe_send_sync;
             p_entry->user_arg = &slv->mbx;
 
-            (void)memset(p_entry->data, 0, p_entry->data_size);
             // cppcheck-suppress misra-c2012-11.3
             ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
 

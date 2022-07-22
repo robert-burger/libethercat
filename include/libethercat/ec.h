@@ -200,8 +200,7 @@ void ec_log(int lvl, const char *pre, const char *format, ...);
  * \param[in]  eeprom_log   Log eeprom to stdout.
  * \return 0 on succes, otherwise error code
  */
-int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, 
-        int eeprom_log);
+int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_log);
 
 //! \brief Closes ethercat master.
 /*!
@@ -368,10 +367,28 @@ int ec_get_slave_count(ec_t *pec);
 #define ec_fprw(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_FPRW, ((uint32_t)(ado) << 16u) | \
             ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
-
 #define ec_frmw(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_FRMW, ((uint32_t)(ado) << 16u) | \
             ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+
+#define check_ret(fcn, ...) { \
+    if (fcn(__VA_ARGS__) != EC_OK) { \
+        ec_log(1, __func__, "" #fcn "(" #__VA_ARGS__ ") failed!\n"); \
+    } }
+
+#define check_ec_bwr(...)  check_ret(ec_bwr, __VA_ARGS__)
+#define check_ec_brd(...)  check_ret(ec_brd, __VA_ARGS__)
+#define check_ec_brw(...)  check_ret(ec_brw, __VA_ARGS__)
+
+#define check_ec_apwr(...)  check_ret(ec_apwr, __VA_ARGS__)
+#define check_ec_aprd(...)  check_ret(ec_aprd, __VA_ARGS__)
+#define check_ec_aprw(...)  check_ret(ec_aprw, __VA_ARGS__)
+
+#define check_ec_fpwr(...)  check_ret(ec_fpwr, __VA_ARGS__)
+#define check_ec_fprd(...)  check_ret(ec_fprd, __VA_ARGS__)
+#define check_ec_fprw(...)  check_ret(ec_fprw, __VA_ARGS__)
+#define check_ec_frmw(...)  check_ret(ec_frmw, __VA_ARGS__)
+
 
 #endif // LIBETHERCAT_EC_H
 

@@ -237,7 +237,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock) != EC_OK) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != EC_OK) {
         ret = EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS;
     } else {
         // cppcheck-suppress misra-c2012-11.3
@@ -357,7 +357,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         ec_log(100, __func__, "%s\n", soe_log_buf);
 
         while ((left_len != 0u) && (ret != EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS)) {
-            if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock) != EC_OK) {
+            if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != EC_OK) {
                 ret = EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS;
             } else {
                 // cppcheck-suppress misra-c2012-11.3

@@ -97,7 +97,9 @@ void ec_foe_init(ec_t *pec, uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    pool_open(&slv->mbx.foe.recv_pool, 0, 1518);
+    if (pool_open(&slv->mbx.foe.recv_pool, 0, 1518) != EC_OK) {
+        ec_log(1, __func__, "opening FoE receive pool failed!\n");
+    }
 }
 
 //! deinitialize FoE structure 
@@ -113,7 +115,9 @@ void ec_foe_deinit(ec_t *pec, uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    pool_close(slv->mbx.foe.recv_pool);
+    if (pool_close(slv->mbx.foe.recv_pool) != EC_OK) {
+        ec_log(1, __func__, "closing FoE receive pool failed!\n");
+    }
 }
 
 //! \brief Wait for FoE message received from slave.
@@ -138,7 +142,8 @@ static void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
     ec_timer_t timeout;
     ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
-    pool_get(slv->mbx.foe.recv_pool, pp_entry, &timeout);
+    // ignore return value here, may fail if no new message are currently available
+    (void)pool_get(slv->mbx.foe.recv_pool, pp_entry, &timeout);
 }
 
 //! \brief Enqueue FoE message received from slave.
@@ -188,7 +193,7 @@ static const char *dump_foe_error_request(int slave, ec_foe_error_request_t *rea
     size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
     if (text_len > 0u) {
         char *error_text = (char *)malloc(text_len + 1u);
-        strncpy(error_text, read_buf_error->error_text, text_len);
+        (void)strncpy(error_text, read_buf_error->error_text, text_len);
         error_text[text_len] = '\0';
         ec_log(10, __func__, "error_text: %s\n", error_text);
     } else {
@@ -220,7 +225,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry_send, NULL, &slv->mbx.lock) != EC_OK) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry_send, NULL) != EC_OK) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else {
         // cppcheck-suppress misra-c2012-11.3
@@ -269,33 +274,34 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
                 } else {
                     size_t len = read_buf_data->mbx_hdr.length - 6u;
                     *file_data = (uint8_t *)realloc(*file_data, *file_data_len + len);
-                    (void)memcpy(*file_data + *file_data_len, &read_buf_data->data[0], len); 
+                    (void)memcpy(&(*file_data)[*file_data_len], &read_buf_data->data[0], len); 
                     *file_data_len += len;
 
                     int packet_nr = read_buf_data->packet_nr;
                     uint32_t read_data_length = read_buf_data->mbx_hdr.length;
 
-                    ec_mbx_get_free_send_buffer(pec, slave, p_entry_send, NULL, &slv->mbx.lock);
-                    (void)memset(p_entry_send->data, 0, p_entry_send->data_size);
+                    if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry_send, NULL) != EC_OK) {
+                        ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
+                    } else {
+                        // cppcheck-suppress misra-c2012-11.3
+                        ec_foe_ack_request_t *write_buf_ack = (ec_foe_ack_request_t *)(p_entry_send->data);
 
-                    // cppcheck-suppress misra-c2012-11.3
-                    ec_foe_ack_request_t *write_buf_ack = (ec_foe_ack_request_t *)(p_entry_send->data);
+                        // everthing is fine, send ack 
+                        // mailbox header
+                        write_buf_ack->mbx_hdr.length    = 6; 
+                        write_buf_ack->mbx_hdr.mbxtype   = EC_MBX_FOE;
+                        // foe
+                        write_buf_ack->foe_hdr.op_code   = EC_FOE_OP_CODE_ACK_REQUEST;
+                        write_buf_ack->packet_nr         = packet_nr;
 
-                    // everthing is fine, send ack 
-                    // mailbox header
-                    write_buf_ack->mbx_hdr.length    = 6; 
-                    write_buf_ack->mbx_hdr.mbxtype   = EC_MBX_FOE;
-                    // foe
-                    write_buf_ack->foe_hdr.op_code   = EC_FOE_OP_CODE_ACK_REQUEST;
-                    write_buf_ack->packet_nr         = packet_nr;
+                        // send request
+                        ec_mbx_enqueue_head(pec, slave, p_entry_send);
 
-                    // send request
-                    ec_mbx_enqueue_head(pec, slave, p_entry_send);
-
-                    // compare length + mbx_hdr_size with mailbox size
-                    if ((read_data_length + 6u) < slv->sm[1].len) {
-                        // finished here
-                        ret = EC_OK;
+                        // compare length + mbx_hdr_size with mailbox size
+                        if ((read_data_length + 6u) < slv->sm[1].len) {
+                            // finished here
+                            ret = EC_OK;
+                        }
                     }
                 }
 
@@ -328,7 +334,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) != EC_OK) { 
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock) != EC_OK) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != EC_OK) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else {
         // cppcheck-suppress misra-c2012-11.3
@@ -345,7 +351,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_WRITE_REQUEST;
         // read request (password 4 Byte)
         write_buf->password          = password;
-        memcpy(write_buf->file_name, file_name, file_name_len);
+        (void)memcpy(write_buf->file_name, file_name, file_name_len);
 
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry);
@@ -388,13 +394,14 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         int last_pkt = 0;
 
         do {
-            ret = ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.lock);
+            ret = ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL);
             if (ret == EC_OK) {
                 // cppcheck-suppress misra-c2012-11.3
                 ec_foe_data_request_t *write_buf_data = (ec_foe_data_request_t *)p_entry->data;
 
-                size_t bytes_read = min((file_data_len - file_offset), data_len);
-                memcpy(&write_buf_data->data[0], file_data + file_offset, bytes_read);
+                size_t rest_len = file_data_len - file_offset;
+                size_t bytes_read = min(rest_len, data_len);
+                (void)memcpy(&write_buf_data->data[0], &file_data[file_offset], bytes_read);
                 if (bytes_read < data_len) {
                     last_pkt = 1;
                 }

@@ -342,7 +342,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else { 
         assert(p_entry != NULL);
@@ -452,7 +452,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else { 
         assert(p_entry != NULL);
@@ -540,7 +540,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else { 
         assert(p_entry != NULL);
@@ -618,7 +618,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
             uint8_t toggle = 1u;
 
             while (rest_len != 0u) {
-                if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
+                if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
                     ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
                     break;
                 } else { 
@@ -746,7 +746,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else { 
         assert(p_entry != NULL);
@@ -852,7 +852,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else { 
         assert(p_entry != NULL);
@@ -961,7 +961,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
-    } else if (ec_mbx_get_free_send_buffer(pec, slave, p_entry, NULL, &slv->mbx.coe.lock) != 0) {
+    } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else { 
         assert(p_entry != NULL);

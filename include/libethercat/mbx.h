@@ -197,8 +197,23 @@ int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag);
 #define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) \
     pool_get((pec)->slaves[(slave)].mbx.message_pool_recv_free, &(entry), (timeout))
 
-#define ec_mbx_get_free_send_buffer(pec, slave, entry, timeout, lock) \
+#define ec_mbx_get_free_send_buffer_old(pec, slave, entry, timeout, lock) \
     pool_get((pec)->slaves[(slave)].mbx.message_pool_send_free, &(entry), (timeout))
+
+//! \brief Get free mailbox send buffer from slaves send message pool.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[out] pp_entry Pointer to pool entry pointer where buffer 
+ *                      is returned.
+ * \param[in] timeout   Pointer to timeout or NULL.
+ *
+ * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
+ */
+int ec_mbx_get_free_send_buffer(ec_t *pec, int slave, pool_entry_t **pp_entry, ec_timer_t *timeout);
 
 #define ec_mbx_return_free_send_buffer(pec, slave, entry) \
     pool_put((pec)->slaves[(slave)].mbx.message_pool_send_free, (entry)) 

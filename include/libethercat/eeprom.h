@@ -74,7 +74,7 @@ typedef struct ec_eeprom_cat_pdo {
         uint8_t name_idx;           //!< name index in eeprom strings
         uint16_t flags;             //!< PDO flags
 
-#define EC_EEPROM_CAT_PDO_LEN   8
+#define EC_EEPROM_CAT_PDO_LEN   (size_t)8u
     };
 
     ec_eeprom_cat_pdo_entry_t *entries;
@@ -112,7 +112,7 @@ typedef struct PACKED ec_eeprom_cat_dc {
     uint8_t  name_idx;              //!< name index in eeprom strings
     uint8_t  desc_idx;              //!< description index
     uint8_t  reserved[4];           //!< funny reserved bytes
-#define EC_EEPROM_CAT_DC_LEN    24
+#define EC_EEPROM_CAT_DC_LEN    (size_t)25u
 } PACKED ec_eeprom_cat_dc_t;
 
 //------------------ Category FMMU ------------------

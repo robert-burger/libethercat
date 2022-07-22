@@ -649,4 +649,31 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
     ec_log(10, __func__, "slave %2d: stopped mailbox handler\n", slave);
 }
 
+//! \brief Get free mailbox send buffer from slaves send message pool.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[out] pp_entry Pointer to pool entry pointer where buffer 
+ *                      is returned.
+ * \param[in] timeout   Pointer to timeout or NULL.
+ *
+ * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
+ */
+int ec_mbx_get_free_send_buffer(ec_t *pec, int slave, pool_entry_t **pp_entry, ec_timer_t *timeout) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(pp_entry != NULL);
+
+    int ret = pool_get(pec->slaves[slave].mbx.message_pool_send_free, pp_entry, timeout);
+    if (ret == EC_OK) {
+        (*pp_entry)->user_cb = NULL;
+        (*pp_entry)->user_arg = NULL;
+        memset((*pp_entry)->data, 0, (*pp_entry)->data_size);
+    }
+
+    return ret;
+}
 
