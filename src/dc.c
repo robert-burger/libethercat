@@ -62,13 +62,16 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    uint8_t dc_cuc = 0;
-    uint8_t dc_active = 0;
-    uint16_t wkc = 0;
-    uint64_t rel_rtc_time = 0;
-    int64_t dc_start = 0, dc_time = 0, tmp_time = 0;
     ec_slave_ptr(slv, pec, slave);
     if ((slv->features & 0x04u) != 0u) { // dc available
+        uint8_t dc_cuc = 0;
+        uint8_t dc_active = 0;
+        uint16_t wkc = 0;
+        uint64_t rel_rtc_time = 0;
+        int64_t dc_start = 0;
+        int64_t dc_time = 0;
+        int64_t tmp_time = 0;
+
         // deactivate DC's to stop cyclic operation, enable write access of dc's
         ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
         ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
@@ -80,15 +83,15 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
         switch (pec->dc.mode) {
             case dc_mode_master_clock:
                 if (dc_active) 
-                    while ((pec->dc.act_diff == 0) || (pec->dc.timer_prev == 0)) {
+                    while ((pec->dc.act_diff == 0) || (pec->dc.timer_prev == 0u)) {
                         // wait until dc's are ready
                         ec_sleep(1000000);
                     }
 
-                rel_rtc_time = (uint64_t)((pec->dc.timer_prev - pec->dc.rtc_sto) - pec->dc.act_diff);
+                rel_rtc_time = (uint64_t)(((int64_t)pec->dc.timer_prev - pec->dc.rtc_sto) - (int64_t)pec->dc.act_diff);
                 break;
             case dc_mode_ref_clock:
-                rel_rtc_time = (uint64_t)(pec->dc.timer_prev - pec->dc.rtc_sto) + 10000u;
+                rel_rtc_time = (uint64_t)((int64_t)pec->dc.timer_prev - pec->dc.rtc_sto) + 10000u;
                 break;
             case dc_mode_master_as_ref_clock:
                 rel_rtc_time = (uint64_t)pec->dc.timer_prev; 
@@ -136,7 +139,7 @@ static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
 static uint8_t eval_port(ec_t *pec, uint16_t slave, uint8_t a, uint8_t b, uint8_t c, uint8_t def) {
     int ret_port = def;
 
-    uint8_t port_idx[] = { a, b, c }; 
+    const uint8_t port_idx[] = { a, b, c }; 
     for (uint8_t i = 0u; i < 3u; ++i) { 
         if (pec->slaves[slave].active_ports & (1u << port_idx[i])) { 
             ret_port = port_idx[i]; 
@@ -152,21 +155,23 @@ static inline uint8_t ec_dc_previous_port(ec_t *pec, uint16_t slave, uint8_t por
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    uint8_t ret_port = port;
+
     switch(port) {
         case 0: {
-            port = eval_port(pec, slave, 2, 1, 3, port);
+            ret_port = eval_port(pec, slave, 2, 1, 3, port);
             break;
         }
         case 1: {
-            port = eval_port(pec, slave, 3, 0, 2, port);
+            ret_port = eval_port(pec, slave, 3, 0, 2, port);
             break;
         }
         case 2: {
-            port = eval_port(pec, slave, 1, 3, 0, port);
+            ret_port = eval_port(pec, slave, 1, 3, 0, port);
             break;
         }
         case 3: {
-            port = eval_port(pec, slave, 0, 2, 1, port);
+            ret_port = eval_port(pec, slave, 0, 2, 1, port);
             break;
         }      
         default: {
@@ -174,13 +179,13 @@ static inline uint8_t ec_dc_previous_port(ec_t *pec, uint16_t slave, uint8_t por
         }
     }
 
-    return port;
+    return ret_port;
 }
 
 //! search for available port and return
 static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
     // read et1100 docs about port order
-    uint8_t port_idx[] = { 3, 1, 2, 0 };
+    const uint8_t port_idx[] = { 3, 1, 2, 0 };
     uint8_t port_on_parent = 0;
     
     assert(pec != NULL);
@@ -225,11 +230,11 @@ static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
 int ec_dc_config(struct ec *pec) {
     assert(pec != NULL);
 
-    int i;
+    uint32_t i;
     int parent;
     int child;
     int parenthold = 0;
-    int32_t delay_childs, delay_previous_slaves, delay_slave_with_childs;
+    int64_t delay_childs, delay_previous_slaves, delay_slave_with_childs;
     uint16_t wkc;
 
     pec->dc.have_dc = 0;
@@ -241,14 +246,13 @@ int ec_dc_config(struct ec *pec) {
 
     int prev = -1;
 
-    for (int slave = 0; slave < pec->slave_cnt; slave++) {        
+    for (uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
         ec_slave_ptr(slv, pec, slave);
         slv->dc.available_ports = slv->active_ports;
 
-        if (!(slv->dc.use_dc && (slv->features & 0x04))) {
+        if ((slv->dc.use_dc == 0) || ((slv->features & 0x04u) == 0u)) {
             // dc not available or not activated
-
-            for (i = 0; i < 4; ++i) {
+            for (i = 0u; i < 4u; ++i) {
                 slv->dc.receive_times[i] = 0;
             }
 
@@ -256,12 +260,12 @@ int ec_dc_config(struct ec *pec) {
             
             // if non DC slave found on first position on branch hold root 
             // parent
-            if ((parent > 0) && (pec->slaves[parent].link_cnt > 2)) {
+            if ((parent > 0) && (pec->slaves[parent].link_cnt > 2u)) {
                 parenthold = parent;
             }
 
             // if branch has no DC slaves consume port on root parent
-            if (parenthold && (slv->link_cnt == 1)) {
+            if (parenthold && (slv->link_cnt == 1u)) {
                 ec_dc_port_on_parent(pec, parenthold);
                 parenthold = 0;
             }
@@ -291,7 +295,7 @@ int ec_dc_config(struct ec *pec) {
 
         // read receive time of all ports and try to find entry port
         slv->entry_port = 0;
-        for (i = 0; i < 4; ++i) {
+        for (i = 0u; i < 4u; ++i) {
             slv->dc.receive_times[i] = 0;
             ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0 + (i * sizeof(int32_t)), 
                     &slv->dc.receive_times[i], sizeof(slv->dc.receive_times[i]), &wkc);
@@ -310,7 +314,7 @@ int ec_dc_config(struct ec *pec) {
         // remove entry_port from available ports
         ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: available_ports 0x%X, "
                 "entry_port %d\n", slave, slv->dc.available_ports, slv->entry_port);
-        slv->dc.available_ports &= (uint8_t)~(1u << slv->entry_port);
+        slv->dc.available_ports &= (uint8_t)~(1u << (uint32_t)slv->entry_port);
 
         // read out distributed clock slave offset and use as offset 
         // to set local time to 0
@@ -326,7 +330,7 @@ int ec_dc_config(struct ec *pec) {
         }
 
         // find parent with active distributed clocks
-        int parent = slave;
+        parent = slave;
         do {
             child = parent;
             parent = pec->slaves[parent].parent;
@@ -336,7 +340,7 @@ int ec_dc_config(struct ec *pec) {
             }
         } while (!((parent == -1) || 
                     ((pec->slaves[parent].dc.use_dc) && 
-                     (pec->slaves[parent].features & 0x04))));
+                     (pec->slaves[parent].features & 0x04u))));
 
         ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: parent %d\n", slave, parent);
 
@@ -345,7 +349,7 @@ int ec_dc_config(struct ec *pec) {
         if (parent >= 0) {
             // find port on parent this slave is connected to
             slv->port_on_parent = ec_dc_port_on_parent(pec, parent);
-            if (pec->slaves[parent].link_cnt == 1)
+            if (pec->slaves[parent].link_cnt == 1u)
                 slv->port_on_parent = pec->slaves[parent].entry_port;
 
             ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: port on port_on_parent "
@@ -366,9 +370,8 @@ int ec_dc_config(struct ec *pec) {
             delay_slave_with_childs = port_time_parent - port_time_parent_previous;
 
             // if we have childrens, get the delay of all childs
-            if (slv->link_cnt > 1) {
-                delay_childs = ec_dc_porttime(pec, slave, 
-                        ec_dc_previous_port(pec, slave, slv->entry_port)) -
+            if (slv->link_cnt > 1u) {
+                delay_childs = ec_dc_porttime(pec, slave, ec_dc_previous_port(pec, slave, slv->entry_port)) -
                     ec_dc_porttime(pec, slave, slv->entry_port);
             }
 

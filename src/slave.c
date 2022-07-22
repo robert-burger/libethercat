@@ -675,17 +675,19 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
             ret = EC_ERROR_SLAVE_NOT_RESPONDING;
         }
 
-        ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", slave, state, act_state, wkc);
+        if (ret == EC_OK) {
+            ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", slave, state, act_state, wkc);
 
-        if (act_state == state) {    
-            ec_log(10, "EC_STATE_SET", "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
-            ret = EC_OK;
-        } else {
-            ec_log(1, "EC_STATE_SET", "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
-            ret = EC_ERROR_SLAVE_STATE_SWITCH;
+            if (act_state == state) {    
+                ec_log(10, "EC_STATE_SET", "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
+                ret = EC_OK;
+            } else {
+                ec_log(1, "EC_STATE_SET", "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
+                ret = EC_ERROR_SLAVE_STATE_SWITCH;
+            }
+
+            pec->slaves[slave].act_state = act_state;
         }
-
-        pec->slaves[slave].act_state = act_state;
     }
 
     return ret;
@@ -798,7 +800,6 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
 int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, 
         ec_state_t state) 
 {
-    uint16_t wkc;
     ec_state_t act_state = 0;
     int ret = EC_OK;
     
@@ -808,13 +809,10 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
     ec_slave_ptr(slv, pec, slave);
 
     // check error state
-    wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
-    if (!wkc) {
+    if (ec_slave_get_state(pec, slave, &act_state, NULL) != EC_OK) {
         ec_log(10, __func__, "slave %2d: error getting state\n", slave);
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
-    }
-
-    if (ret == EC_OK) {
+    } else {
         // generate transition
         ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | (state & EC_STATE_MASK); 
 
@@ -823,8 +821,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                 break;
             case INIT_2_SAFEOP:
             case PREOP_2_SAFEOP:
-                ec_log(10, get_transition_string(transition), "slave %2d: "
-                        "sending init cmds\n", slave);
+                ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds\n", slave);
 
                 ec_slave_mailbox_init_cmd_t *cmd;
                 LIST_FOREACH(cmd, &slv->init_cmds, le) {
@@ -847,12 +844,11 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                             size_t buf_len = coe->datalen;
                             uint32_t abort_code = 0;
 
-                            int ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, 
-                                    coe->ca_atn, buf, buf_len, &abort_code);
-                            if (ret != EC_OK) {
+                            int local_ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, coe->ca_atn, buf, buf_len, &abort_code);
+                            if (local_ret != EC_OK) {
                                 ec_log(10, get_transition_string(transition), 
                                         "slave %2d: writing sdo failed: error code 0x%X!\n", 
-                                        slave, ret);
+                                        slave, local_ret);
                             } 
                             break;
                         }
@@ -867,13 +863,12 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                             uint8_t *buf = (uint8_t *)soe->data;
                             size_t buf_len = soe->datalen;
 
-                            int ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, 
-                                    soe->si_el, buf, buf_len);
+                            int local_ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, soe->si_el, buf, buf_len);
 
-                            if (ret != EC_OK) {
+                            if (local_ret != EC_OK) {
                                 ec_log(10, get_transition_string(transition), 
                                         "slave %2d: writing SoE failed: error code 0x%X!\n", 
-                                        slave, ret);
+                                        slave, local_ret);
                             } 
                             break;
                         }
@@ -1038,14 +1033,14 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
                 // write state to slave
                 if (transition == INIT_2_BOOT) {
-                    wkc = ec_slave_set_state(pec, slave, EC_STATE_BOOT);
+                    ret = ec_slave_set_state(pec, slave, EC_STATE_BOOT);
                     //                break;
                 } else {
-                    wkc = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
+                    ret = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
                 }
 
                 // apply eoe settings if any
-                if (slv->eoe.use_eoe != 0) {
+                if ((ret == EC_OK) && (slv->eoe.use_eoe != 0)) {
                     ec_log(10, get_transition_string(transition), 
                             "slave %2d: applying EoE settings\n", slave);
                     if (slv->eoe.mac != NULL) {
@@ -1084,11 +1079,11 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                                 slave, slv->eoe.dns_name);
                     }
 
-                    (void)ec_eoe_set_ip_parameter(pec, slave, slv->eoe.mac, slv->eoe.ip_address, 
+                    ret = ec_eoe_set_ip_parameter(pec, slave, slv->eoe.mac, slv->eoe.ip_address, 
                             slv->eoe.subnet, slv->eoe.gateway, slv->eoe.dns, slv->eoe.dns_name);
                 }
 
-                if ((transition == INIT_2_PREOP) || (transition == INIT_2_BOOT)) {
+                if ((ret != EC_OK) || (transition == INIT_2_PREOP) || (transition == INIT_2_BOOT)) {
                     break;
                 }
             }
@@ -1173,23 +1168,23 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 }
 
                 // write state to slave
-                wkc = ec_slave_set_state(pec, slave, EC_STATE_SAFEOP);
+                ret = ec_slave_set_state(pec, slave, EC_STATE_SAFEOP);
 
-                if ((transition == INIT_2_SAFEOP) || (transition == PREOP_2_SAFEOP)) {
+                if ((ret != EC_OK) || (transition == INIT_2_SAFEOP) || (transition == PREOP_2_SAFEOP)) {
                     break;
                 }
             }
             case SAFEOP_2_OP: {
                 // write state to slave
-                wkc = ec_slave_set_state(pec, slave, EC_STATE_OP);            
+                ret = ec_slave_set_state(pec, slave, EC_STATE_OP);            
                 break;
             }
             case OP_2_SAFEOP:
             case OP_2_PREOP:
                 // write state to slave
-                wkc = ec_slave_set_state(pec, slave, state);
+                ret = ec_slave_set_state(pec, slave, state);
 
-                if (transition == OP_2_SAFEOP) {
+                if ((ret != EC_OK) || (transition == OP_2_SAFEOP)) {
                     break;
                 }
             case OP_2_INIT:
@@ -1201,9 +1196,9 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                         &dc_active, sizeof(dc_active), &wkc);
 
                 // write state to slave
-                wkc = ec_slave_set_state(pec, slave, state);
+                ret = ec_slave_set_state(pec, slave, state);
 
-                if ((transition == OP_2_PREOP) || (transition == SAFEOP_2_PREOP)) {
+                if ((ret != EC_OK) || (transition == OP_2_PREOP) || (transition == SAFEOP_2_PREOP)) {
                     break;
                 }
             }
@@ -1299,12 +1294,11 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             case SAFEOP_2_SAFEOP:
             case OP_2_OP:
                 // write state to slave
-                wkc = ec_slave_set_state(pec, slave, state);
+                ret = ec_slave_set_state(pec, slave, state);
                 break;
             default:
-                wkc = ec_slave_set_state(pec, slave, EC_STATE_INIT);
-                ec_log(10, __func__, "unknown state transition for slave "
-                        "%2d -> %04X\n", slave, transition);
+                ret = ec_slave_set_state(pec, slave, EC_STATE_INIT);
+                ec_log(10, __func__, "unknown state transition for slave %2d -> %04X\n", slave, transition);
                 break;
         };
     }

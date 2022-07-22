@@ -523,6 +523,7 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
         struct timespec ts = { timeout.sec, timeout.nsec };
 
         ret = sem_timedwait(&slv->mbx.sync_sem, &ts);
+        int local_errno = errno;
         
         pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
         uint32_t flags = slv->mbx.handler_flags;
@@ -530,7 +531,7 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
         pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 
         if (!flags && (ret != 0)) {
-            if ((errno == ETIMEDOUT)) {
+            if ((local_errno == ETIMEDOUT)) {
                 // check receive mailbox on timeout if PREOP or lower
                 flags |= MBX_HANDLER_FLAGS_SEND;
 

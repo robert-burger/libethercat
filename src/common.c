@@ -20,17 +20,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
-#undef malloc
-     
+#include <config.h>
 #include <sys/types.h>
+#ifdef __VXWORKS__
+#include <string.h>
+#endif // __VXWORKS__
 
-void *malloc();
+void *malloc(size_t n);
 
 #if HAVE_MALLOC == 0
 
@@ -39,23 +38,24 @@ void *malloc();
 // allocate an n-byte block of memory from the heap.
 // if n is zero, allocate a 1-byte block.
 void *rpl_malloc(size_t n) {
-  if (n == 0u) {
-    n = 1u;
-  }
+    size_t local_n = n;
 
-  return malloc(n);
+    if (local_n == 0u) {
+        local_n = 1u;
+    }
+
+    return malloc(local_n);
 }
 
 #endif
 
 #ifdef __VXWORKS__ 
 
-#include <string.h>
 
 char *strndup(const char *s, size_t n) {
     const char* cp = s;
     size_t i = 0;
-    while(*cp) {
+    while((*cp) != '\0') {
         i++;
         if(i >= n) {
             break; // enough chars
@@ -64,9 +64,10 @@ char *strndup(const char *s, size_t n) {
         cp++;
     }
     i ++;
+    // cppcheck-suppress misra-c2012-21.3
     char* result = (char*)malloc(i);
-    memcpy(result, s, i);
-    result[i - 1] = 0;
+    (void)memcpy(result, s, i);
+    result[i - 1u] = 0;
     return result;
 }
 #endif

@@ -85,7 +85,7 @@ typedef struct {
 typedef struct {
     ec_mbx_header_t mbx_hdr;
     ec_eoe_header_t eoe_hdr;
-    uint32_t        time_stamp;
+    uint32_t        time_stamp; // cppcheck-suppress unusedStructMember
 } PACKED ec_eoe_response_t;
 
 // ------------------------ EoE SET IP ADDRESS REQUEST --------------------------
@@ -97,7 +97,7 @@ typedef struct {
     uint32_t gateway_included       : 1;
     uint32_t dns_included           : 1;
     uint32_t dns_name_included      : 1;
-    uint32_t reserved               : 26;
+    uint32_t reserved               : 26; // cppcheck-suppress unusedStructMember
 } PACKED ec_eoe_set_ip_parameter_header_t;
 
 //! initiate eoe set ip parameter request
@@ -111,14 +111,14 @@ typedef struct {
 
 typedef struct {
     // 8 bit
-    uint8_t frame_type         : 4;
-    uint8_t port               : 4;    
+    uint8_t frame_type         : 4; // cppcheck-suppress unusedStructMember
+    uint8_t port               : 4; // cppcheck-suppress unusedStructMember
 
     // 8 bit
-    uint8_t last_fragment      : 1;
-    uint8_t time_appended      : 1;
-    uint8_t time_requested     : 1;
-    uint8_t reserved           : 5;
+    uint8_t last_fragment      : 1; // cppcheck-suppress unusedStructMember
+    uint8_t time_appended      : 1; // cppcheck-suppress unusedStructMember
+    uint8_t time_requested     : 1; // cppcheck-suppress unusedStructMember
+    uint8_t reserved           : 5; // cppcheck-suppress unusedStructMember
 
     // 16 bit
     uint16_t result             : 16;
@@ -342,7 +342,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         ADD_PARAMETER(subnet,       EOE_SIZEOF_SUBNET);
         ADD_PARAMETER(gateway,      EOE_SIZEOF_GATEWAY);
         ADD_PARAMETER(dns,          EOE_SIZEOF_DNS);
-        ADD_PARAMETER(dns_name,     EOE_SIZEOF_DNS_NAME);
+        ADD_PARAMETER(dns_name,     EOE_SIZEOF_DNS_NAME); // cppcheck-suppress unreadVariable
 
         // send request
         ec_mbx_enqueue_tail(pec, slave, p_entry);
@@ -503,7 +503,7 @@ int ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
                 ec_eoe_wait(pec, slave, &p_entry); 
                 while (p_entry != NULL) {
                     // cppcheck-suppress misra-c2012-11.3
-                    ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
+                    read_buf = (ec_eoe_request_t *)(p_entry->data);
 
                     if (frame_offset != (read_buf->eoe_hdr.complete_size << 5u)) {
                         ec_log(1, __func__, "slave %d: frame offset mismatch %d != %d\n", 
@@ -528,10 +528,8 @@ int ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
                         break;
                     }
 
-                    if (p_entry != NULL) {        
-                        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
-                        p_entry = NULL;
-                    }
+                    ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                    p_entry = NULL;
 
                     ec_eoe_wait(pec, slave, &p_entry); 
                 }

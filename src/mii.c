@@ -27,7 +27,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -41,7 +41,7 @@
 
 #define fp_check(op, reg, buf, buf_len) {                                           \
     ec_fp ## op(pec, pec->slaves[slave].fixed_address, reg, buf, buf_len, &wkc);    \
-    if (wkc != 1) {                                                                 \
+    if (wkc != 1u) {                                                                 \
         ec_log(10, __func__, "slave %2d did not respond %s register 0x%X\n",        \
                 slave, strcmp(#op, "rd") == 0 ? "reading" : "writing", reg);        \
         return -1; }}
@@ -88,7 +88,7 @@ int ec_miiread(struct ec *pec, uint16_t slave,
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
             return -1;
         }
-    } while (ctrl_stat & 0x8000);
+    } while (ctrl_stat & 0x8000u);
 
         
     fp_check(rd, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data));
@@ -138,7 +138,7 @@ int ec_miiwrite(struct ec *pec, uint16_t slave,
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
             return -1;
         }
-    } while (ctrl_stat & 0x8000);
+    } while (ctrl_stat & 0x8000u);
 
     return 0;
 }

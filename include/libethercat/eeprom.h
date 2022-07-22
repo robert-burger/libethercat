@@ -284,7 +284,7 @@ int ec_eepromread_len(struct ec *pec, uint16_t slave,
  * \retval 0    On success
  */
 int ec_eepromwrite_len(struct ec *pec, uint16_t slave, 
-        uint32_t eepadr, uint8_t *buf, size_t buflen);
+        uint32_t eepadr, const uint8_t *buf, size_t buflen);
 
 //! Read out whole eeprom and categories and store in EtherCAT master structure.
 /*!

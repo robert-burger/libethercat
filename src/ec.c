@@ -54,7 +54,7 @@ static void default_log_func(int lvl, void* user, const char *format, ...){
 
     va_list args;                   // cppcheck-suppress misra-c2012-17.1
     va_start(args, format);         // cppcheck-suppress misra-c2012-17.1
-    vfprintf(stderr, format, args);
+    (void)vfprintf(stderr, format, args);
     va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 }
 
@@ -70,7 +70,7 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
         va_list args;                   // cppcheck-suppress misra-c2012-17.1
         va_start(args, format);         // cppcheck-suppress misra-c2012-17.1
         int ret = snprintf(tmp, 512, "%-20.20s: ", pre);
-        vsnprintf(&tmp[ret], 512-ret, format, args);
+        (void)vsnprintf(&tmp[ret], 512-ret, format, args);
         va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 
         ec_log_func(lvl, ec_log_func_user, buf);
@@ -91,7 +91,7 @@ int ec_create_pd_groups(ec_t *pec, uint32_t pd_group_cnt) {
     pec->pd_group_cnt = pd_group_cnt;
     alloc_resource(pec->pd_groups, ec_pd_group_t, sizeof(ec_pd_group_t) * pd_group_cnt);
     for (uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
-        pec->pd_groups[i].log       = 0x10000u * (i+1u);
+        pec->pd_groups[i].log       = 0x10000u * ((uint32_t)i+1u);
         pec->pd_groups[i].log_len   = 0u;
         pec->pd_groups[i].pd        = NULL;
         pec->pd_groups[i].pdout_len = 0u;
@@ -205,6 +205,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, uint32_t group) {
             pd->pdin_len, pd->pd_lrw_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
+    // cppcheck-suppress misra-c2012-21.3
     pd->pd = (uint8_t *)malloc(pd->log_len);
     (void)memset(pd->pd, 0, pd->log_len);
 
@@ -367,6 +368,7 @@ static void ec_create_logical_mapping(ec_t *pec, uint32_t group) {
             pd->pdout_len, pd->log + pd->pdout_len, pd->pdin_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
+    // cppcheck-suppress misra-c2012-21.3
     pd->pd = (uint8_t *)malloc(pd->log_len);
     (void)memset(pd->pd, 0, pd->log_len);
 
@@ -544,10 +546,16 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
         for (uint32_t slave = 0u; slave < pec->slave_cnt; ++slave) {                  
             if (pec->slaves[slave].assigned_pd_group != -1) {
                 ec_log(100, get_state_string(state), "prepare state transition for slave %d\n", slave);
-                ec_slave_prepare_state_transition(pec, slave, state);
+                int ret = ec_slave_prepare_state_transition(pec, slave, state);
+                if (ret != EC_OK) {
+                    ec_log(1, __func__, "ec_slave_prepare_state_transition failed with %d\n", ret);
+                }
 
                 ec_log(100, get_state_string(state), "generate mapping for slave %d\n", slave);
-                ec_slave_generate_mapping(pec, slave);
+                ret = ec_slave_generate_mapping(pec, slave);
+                if (ret != EC_OK) {
+                    ec_log(1, __func__, "ec_slave_generate_mapping failed with %d\n", ret);
+                }
             }
         }
     }
@@ -607,7 +615,7 @@ static void ec_scan(ec_t *pec) {
     uint16_t i;
 
     ec_state_t init_state = EC_STATE_INIT | EC_STATE_RESET;
-    ec_bwr(pec, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
+    (void)ec_bwr(pec, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
 
     if (pec->slaves != NULL) {
         uint16_t cnt = pec->slave_cnt;
@@ -622,107 +630,114 @@ static void ec_scan(ec_t *pec) {
     }
     
     // allocating slave structures
-    ec_brd(pec, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc); 
-    pec->slave_cnt = wkc;
+    int ret = ec_brd(pec, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc); 
+    if (ret != EC_OK) {
+        ec_log(1, __func__, "broadcast read of slave types failed with %d\n", ret);
+    } else {
+        pec->slave_cnt = wkc;
 
-    alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * 
-            sizeof(ec_slave_t));
+        alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * 
+                sizeof(ec_slave_t));
 
-    for (i = 0; i < pec->slave_cnt; ++i) {
-        int16_t auto_inc = (int16_t)-1 * (int16_t)i;
+        for (i = 0; i < pec->slave_cnt; ++i) {
+            int16_t auto_inc = (int16_t)-1 * (int16_t)i;
 
-        int ret = ec_aprd(pec, auto_inc, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc);
+            int local_ret = ec_aprd(pec, auto_inc, EC_REG_TYPE, (uint8_t *)&val, sizeof(val), &wkc);
 
-        if (ret == EC_OK) {
-            if (wkc == 0u) {
-                break;  // break here, cause there seems to be no more slave
-            }
-
-            ec_log(100, __func__, "slave %2d: auto inc %3d, fixed %d\n", 
-                    i, auto_inc, fixed);
-
-            pec->slaves[i].assigned_pd_group = -1;
-            pec->slaves[i].auto_inc_address = auto_inc;
-            pec->slaves[i].fixed_address = fixed;
-            pec->slaves[i].dc.use_dc = 1;
-            pec->slaves[i].sm_set_by_user = 0;
-            pec->slaves[i].subdev_cnt = 0;
-            pec->slaves[i].subdevs = NULL;
-            pec->slaves[i].eeprom.read_eeprom = 0;
-            TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
-            TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
-            LIST_INIT(&pec->slaves[i].init_cmds);
-
-            ret = ec_apwr(pec, auto_inc, EC_REG_STADR, (uint8_t *)&fixed, sizeof(fixed), &wkc); 
-            if (wkc == 0u) {
-                ec_log(1, __func__, "slave %2d: error writing fixed address %d\n", i, fixed);
-            }
-
-            // set eeprom to pdi, some slaves need this
-            ec_eeprom_to_pdi(pec, i);
-            init_state = EC_STATE_INIT | EC_STATE_RESET;
-            ret = ec_fpwr(pec, fixed, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
-
-            fixed++;
-        }
-    }
-
-    ec_log(10, __func__, "found %d ethercat slaves\n", i);
-
-    for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
-        ec_slave_ptr(slv, pec, slave); 
-        slv->link_cnt = 0;
-        slv->active_ports = 0;
-
-        uint16_t topology = 0;
-        int ret = ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &topology, sizeof(topology), &wkc);
-
-        if (ret == EC_OK) {
-            // check if port is open and communication established
-#define active_port(port) \
-            if ( (topology & (3u << (8u + (2u * (port)))) ) == \
-                    (2u << (8u + (2u * (port)))) ) { \
-                slv->link_cnt++; slv->active_ports |= 1u<<(port); }
-
-            for (uint16_t port = 0u; port < 4u; ++port) {
-                active_port(port);
-            }
-
-            // read out physical type
-            ret = ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, sizeof(slv->ptype), &wkc);
-        }
-
-        if (ret == EC_OK) {
-            // 0 = no links, not possible 
-            // 1 =  1 link , end of line 
-            // 2 =  2 links, one before and one after 
-            // 3 =  3 links, split point 
-            // 4 =  4 links, cross point 
-
-            // search for parent
-            slv->parent = -1; // parent is master at beginning
-            if (slave >= 1u) {
-                uint16_t topoc = 0u;
-                int tmp_slave = (int)slave - 1;
-
-                do {
-                    topology = pec->slaves[tmp_slave].link_cnt;
-                    if (topology == 1u) {
-                        topoc--;    // endpoint found
-                    } else if (topology == 3u) {
-                        topoc++;    // split found
-                    } else if (topology == 4u) {
-                        topoc += 2u; // cross found
-                    } else if (((topoc >= 0u) && (topology > 1u)) || (tmp_slave == 0)) { 
-                        slv->parent = tmp_slave; // parent found
-                        tmp_slave = 0;
-                    } else {}
-                    tmp_slave--;
+            if (local_ret == EC_OK) {
+                if (wkc == 0u) {
+                    break;  // break here, cause there seems to be no more slave
                 }
-                while (tmp_slave >= 0);
+
+                ec_log(100, __func__, "slave %2d: auto inc %3d, fixed %d\n", 
+                        i, auto_inc, fixed);
+
+                pec->slaves[i].assigned_pd_group = -1;
+                pec->slaves[i].auto_inc_address = auto_inc;
+                pec->slaves[i].fixed_address = fixed;
+                pec->slaves[i].dc.use_dc = 1;
+                pec->slaves[i].sm_set_by_user = 0;
+                pec->slaves[i].subdev_cnt = 0;
+                pec->slaves[i].subdevs = NULL;
+                pec->slaves[i].eeprom.read_eeprom = 0;
+                TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
+                TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
+                LIST_INIT(&pec->slaves[i].init_cmds);
+
+                local_ret = ec_apwr(pec, auto_inc, EC_REG_STADR, (uint8_t *)&fixed, sizeof(fixed), &wkc); 
+                if ((local_ret != EC_OK) || (wkc == 0u)) {
+                    ec_log(1, __func__, "slave %2d: error writing fixed address %d\n", i, fixed);
+                }
+
+                // set eeprom to pdi, some slaves need this
+                (void)ec_eeprom_to_pdi(pec, i);
+                init_state = EC_STATE_INIT | EC_STATE_RESET;
+                local_ret = ec_fpwr(pec, fixed, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
+                if (local_ret != EC_OK) {
+                    ec_log(1, __func__, "salve %2d: reading al control failed with %d\n", i, local_ret);
+                }
+
+                fixed++;
+            }
+        }
+
+        ec_log(10, __func__, "found %d ethercat slaves\n", i);
+
+        for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+            ec_slave_ptr(slv, pec, slave); 
+            slv->link_cnt = 0;
+            slv->active_ports = 0;
+
+            uint16_t topology = 0;
+            int local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &topology, sizeof(topology), &wkc);
+
+            if (local_ret == EC_OK) {
+                // check if port is open and communication established
+#define active_port(port) \
+                if ( (topology & (3u << (8u + (2u * (port)))) ) == \
+                        (2u << (8u + (2u * (port)))) ) { \
+                    slv->link_cnt++; slv->active_ports |= 1u<<(port); }
+
+                for (uint16_t port = 0u; port < 4u; ++port) {
+                    active_port(port);
+                }
+
+                // read out physical type
+                local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, sizeof(slv->ptype), &wkc);
             }
 
-            ec_log(100, __func__, "slave %2d has parent %d\n", slave, slv->parent);
+            if (local_ret == EC_OK) {
+                // 0 = no links, not possible 
+                // 1 =  1 link , end of line 
+                // 2 =  2 links, one before and one after 
+                // 3 =  3 links, split point 
+                // 4 =  4 links, cross point 
+
+                // search for parent
+                slv->parent = -1; // parent is master at beginning
+                if (slave >= 1u) {
+                    int16_t topoc = 0u;
+                    int tmp_slave = (int)slave - 1;
+
+                    do {
+                        topology = pec->slaves[tmp_slave].link_cnt;
+                        if (topology == 1u) {
+                            topoc--;    // endpoint found
+                        } else if (topology == 3u) {
+                            topoc++;    // split found
+                        } else if (topology == 4u) {
+                            topoc += 2; // cross found
+                        } else if (((topoc >= 0) && (topology > 1u)) || (tmp_slave == 0)) { 
+                            slv->parent = tmp_slave; // parent found
+                            tmp_slave = 0;
+                        } else {}
+                        tmp_slave--;
+                    }
+                    while (tmp_slave >= 0);
+                }
+
+                ec_log(100, __func__, "slave %2d has parent %d\n", slave, slv->parent);
+            }
         }
     }
 }
@@ -735,6 +750,7 @@ static void ec_scan(ec_t *pec) {
  */
 int ec_set_state(ec_t *pec, ec_state_t state) {
     assert(pec != NULL);
+    int ret = EC_OK;
 
     ec_log(10, __func__, "switch to from %s to %s\n", 
             get_state_string(pec->master_state), get_state_string(state));
@@ -779,13 +795,16 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case PREOP_2_OP: 
         case SAFEOP_2_SAFEOP:
             // ====> switch to SAFEOP stuff
-            ec_dc_config(pec);
+            ret = ec_dc_config(pec);
+            if (ret != EC_OK) {
+                ec_log(1, __func__, "configuring distributed clocks failed with %d\n", ret);
+            }
 
             // sending first time dc
-            if (ec_send_distributed_clocks_sync(pec) == 0) {
+            if (ec_send_distributed_clocks_sync(pec) == EC_OK) {
                 ec_timer_t dc_timeout;
                 ec_timer_init(&dc_timeout, 10000000);
-                ec_receive_distributed_clocks_sync(pec, &dc_timeout);
+                (void)ec_receive_distributed_clocks_sync(pec, &dc_timeout);
             } else {
                 ec_log(1, __func__, "was not able to send first dc frame\n");
             }
@@ -906,7 +925,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
     int ret = EC_OK;
 
     // cppcheck-suppress misra-c2012-21.3
-    ec_t *pec = malloc(sizeof(ec_t)); 
+    ec_t *pec = (ec_t *)malloc(sizeof(ec_t)); 
     (*ppec) = pec;
     if (pec == NULL) {
         ret = EC_ERROR_OUT_OF_MEMORY;
@@ -965,11 +984,19 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
     // destruct everything if something failed
     if (ret != EC_OK) {
         if (pec != NULL) {
-            hw_close(pec->phw);
-            pool_close(pec->pool);
+            int local_ret = hw_close(pec->phw);
+            if (local_ret != EC_OK) {
+                ec_log(1, __func__, "hw_close failed with %d\n", local_ret);
+            }
+            
+            local_ret = pool_close(pec->pool);
+            if (local_ret != EC_OK) {
+                ec_log(1, __func__, "pool_close failed with %d\n", local_ret);
+            }
 
             ec_index_deinit(&pec->idx_q);
 
+            // cppcheck-suppress misra-c2012-21.3
             free(pec);
         }
 
@@ -994,13 +1021,13 @@ int ec_close(ec_t *pec) {
     ec_log(10, __func__, "destroying async message pool\n");
     if (pec->async_loop != NULL) { (void)ec_async_message_pool_destroy(pec->async_loop);}
     ec_log(10, __func__, "closing hardware handle\n");
-    if (pec->phw != NULL) { hw_close(pec->phw);}
+    if (pec->phw != NULL) { (void)hw_close(pec->phw);}
     ec_log(10, __func__, "freeing frame pool\n");
     if (pec->pool != NULL) { (void)pool_close(pec->pool); }
 
     ec_log(10, __func__, "destroying pd_groups\n");
     ec_index_deinit(&pec->idx_q);
-    ec_destroy_pd_groups(pec);
+    (void)ec_destroy_pd_groups(pec);
 
     ec_log(10, __func__, "destroying slaves\n");
     if (pec->slaves != NULL) {
@@ -1012,10 +1039,12 @@ int ec_close(ec_t *pec) {
         }
 
         pec->slave_cnt = 0;
+        // cppcheck-suppress misra-c2012-21.3
         free(pec->slaves);
     }
 
     ec_log(10, __func__, "freeing master instance\n");
+    // cppcheck-suppress misra-c2012-21.3
     free(pec);
 
     ec_log(10, __func__, "all done!\n");
@@ -1026,7 +1055,7 @@ int ec_close(ec_t *pec) {
 static void cb_block(void *user_arg, struct pool_entry *p) {
     (void)p;
 
-    // cppcheck-suppress misra-c2012-
+    // cppcheck-suppress misra-c2012-11.5
     idx_entry_t *entry = (idx_entry_t *)user_arg;
     sem_post(&entry->waiter);
 }
@@ -1087,11 +1116,12 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
         ec_timer_t timeout;
         ec_timer_init(&timeout, 100000000);   // roundtrip on bus should be shorter than 100ms
         struct timespec ts = { timeout.sec, timeout.nsec };
-        int ret = sem_timedwait(&p_idx->waiter, &ts);
-        if (ret == -1) {
+        int local_ret = sem_timedwait(&p_idx->waiter, &ts);
+        if (local_ret == -1) {
             ec_log(1, "ec_transceive", "sem_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
                     strerror(errno), cmd, adr);
             *wkc = 0u;
+            ret = EC_ERROR_TIMEOUT;
         } else {
             *wkc = ec_datagram_wkc(p_dg);
             if ((*wkc) != 0u) {
@@ -1108,6 +1138,7 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
 
 //! local callack for syncronous read/write
 static void cb_no_reply(void *user_arg, struct pool_entry *p) {
+    // cppcheck-suppress misra-c2012-11.5
     idx_entry_t *entry = (idx_entry_t *)user_arg;
     pool_put(entry->pec->pool, p);
     ec_index_put(&entry->pec->idx_q, entry);
@@ -1181,7 +1212,6 @@ int ec_send_process_data_group(ec_t *pec, int group) {
     int ret = EC_OK;
     ec_pd_group_t *pd = &pec->pd_groups[group];
     ec_datagram_t *p_dg;
-    uint32_t pd_len = 0;
 
     if ((pd->p_entry != NULL) || (pd->p_idx != NULL)) {
         ec_log(1, __func__, "already sent group frame, will not send until it has returned...\n");
@@ -1194,6 +1224,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
         ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
     } else {
+        uint32_t pd_len;
         if (pd->use_lrw != 0) {
             pd_len = max(pd->pdout_len, pd->pdin_len);
         } else {
@@ -1234,16 +1265,15 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
     assert(pec != NULL);
     assert(timeout != NULL);
 
-    static int wkc_mismatch_cnt = 0;
     int ret = EC_OK;
-    ec_datagram_t *p_dg;
 
-    uint16_t wkc = 0;
     ec_pd_group_t *pd = &pec->pd_groups[group];
     if ((pd->p_entry == NULL) || (pd->p_idx == NULL)) {
         ec_log(1, __func__, "did not sent group frame\n");
         ret = EC_ERROR_UNAVAILABLE;
     } else {
+        ec_datagram_t *p_dg;
+
         p_dg = ec_datagram_cast(pd->p_entry->data);
 
         // wait for completion
@@ -1259,6 +1289,9 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
                 ret = EC_ERROR_TIMEOUT;
             }
         } else {
+            static int wkc_mismatch_cnt = 0;
+            uint16_t wkc = 0;
+
             // reset consecutive missed counter
             pd->recv_missed = 0;
 
@@ -1417,7 +1450,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
     uint16_t wkc; 
     ec_datagram_t *p_dg = NULL;
 
-    if (!pec->dc.have_dc || !pec->dc.p_de_dc) {
+    if (pec->dc.have_dc == 0) {
         ret = EC_ERROR_UNAVAILABLE;
     } else if ((pec->dc.p_de_dc == NULL) || (pec->dc.p_idx_dc == NULL)) {
         ec_log(1, __func__, "no dc frame was sent!\n");
@@ -1463,7 +1496,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                     } else {}
 
                     // only compensate within one cycle, add rest to system time offset
-                    if (pec->dc.timer_override > 0) {
+                    if (pec->dc.timer_override > 1) {
                         // for example with a cycle of 1 ms we want to control between
                         // -0.5 ms to +0.5 ms.
                         int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
@@ -1604,7 +1637,6 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
     ec_datagram_t *p_dg = NULL;
     int ret = EC_OK;
     uint16_t al_status = 0u;
-    uint16_t wkc = 0;
     struct timespec ts = { timeout->sec, timeout->nsec };
 
     if (pec->p_idx_state == NULL) {
@@ -1613,6 +1645,7 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
         ec_log(1, __func__, "sem_timedwait ec_state: %s\n", strerror(errno));
         ret = EC_ERROR_TIMEOUT;
     } else {
+        uint16_t wkc;
         p_dg = ec_datagram_cast(pec->p_de_state->data);
 
         wkc = ec_datagram_wkc(p_dg);

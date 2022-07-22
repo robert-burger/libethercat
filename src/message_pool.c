@@ -54,12 +54,13 @@ static int ec_async_message_loop_get(ec_message_pool_t *ppool,
     if (timeout != NULL) {
         struct timespec ts = { timeout->sec, timeout->nsec };
         ret = sem_timedwait(&ppool->avail_cnt, &ts);
+        int local_errno = errno;
         if (ret != 0) {
-            if (errno != ETIMEDOUT) {
+            if (local_errno != ETIMEDOUT) {
                 perror("sem_timedwait");
             }
 
-            ret = errno;
+            ret = local_errno;
         }
     }
 
@@ -104,10 +105,10 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
     assert(paml->pec != NULL);
     assert(slave != paml->pec->slave_cnt);
 
-    int wkc = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
+    int ret = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
 
-    if (!wkc) {
-        ec_log(10, "ec_async_thread", "slave %2d: wkc error on "
+    if (ret != EC_OK) {
+        ec_log(10, "ec_async_thread", "slave %2d: error on "
                 "getting slave state, possible slave lost, try to reconfigure\n", slave);
         
         (void)ec_set_state(paml->pec, EC_STATE_INIT);
@@ -117,12 +118,12 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
             ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
                     "0x%02X\n", slave, state, alstatcode);
             
-            uint16_t wkc2;
+            uint16_t wkc;
             uint8_t rx_error_counters[16];
             if (ec_fprd(paml->pec, paml->pec->slaves[slave].fixed_address, 
-                0x300, &rx_error_counters[0], 16, &wkc2) == 0) {
+                0x300, &rx_error_counters[0], 16, &wkc) == 0) {
 
-                if (wkc2 != 0u) {
+                if (wkc != 0u) {
                     int i;
                     int pos = 0;
                     char msg[128];
@@ -136,8 +137,12 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
                             slave, msg);
                 }
 
-                wkc = ec_slave_state_transition(paml->pec, slave, 
+                ret = ec_slave_state_transition(paml->pec, slave, 
                         paml->pec->slaves[slave].expected_state);
+
+                if (ret != EC_OK) {
+                    ec_log(1, __func__, "slave %2d: ec_slave_state_transition failed!\n", slave);
+                }
             }
         }
     }
@@ -168,7 +173,7 @@ static void *ec_async_message_loop_thread(void *arg) {
                 // do something
                 uint16_t slave;
                 for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
-                    if (paml->pec->slaves[slave].assigned_pd_group != me->msg.payload) {
+                    if (paml->pec->slaves[slave].assigned_pd_group != (int)me->msg.payload) {
                         continue;
                     }
 
@@ -219,7 +224,6 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
 
 // creates a new async message loop
 int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
-    int i = 0;
     int ret = EC_OK;
     
     assert(ppaml != NULL);
@@ -231,6 +235,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
     if (!(*ppaml)) {
         ret = ENOMEM;
     } else {
+        int i = 0;
 
         // initiale pre-alocated async messages in avail queue
         pthread_mutex_init(&(*ppaml)->avail.lock, NULL);

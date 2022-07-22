@@ -712,8 +712,8 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
 
 typedef struct PACKED ec_sdoinfoheader {
     uint16_t opcode     : 7;
-    uint16_t incomplete : 1;
-    uint16_t reserved   : 8;
+    uint16_t incomplete : 1; // cppcheck-suppress unusedStructMember
+    uint16_t reserved   : 8; // cppcheck-suppress unusedStructMember
     uint16_t fragments_left;
 } PACKED ec_sdoinfoheader_t;
 
@@ -1043,12 +1043,13 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     uint8_t *buf = NULL;
-    uint16_t start_adr; 
     ec_slave_ptr(slv, pec, slave);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else {
+        uint16_t start_adr; 
+
         if (slv->sm[0].adr > slv->sm[1].adr) {
             start_adr = slv->sm[0].adr + slv->sm[0].len;
         } else {
@@ -1116,7 +1117,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
 
                 for (uint8_t j = 1u; j <= entry_cnt_2; ++j) {
                     uint32_t entry;
-                    size_t entry_size = sizeof(entry);
+                    entry_size = sizeof(entry);
                     buf = (uint8_t *)&entry;
                     ret = ec_coe_sdo_read(pec, slave, entry_idx, j, 0, buf, &entry_size, &abort_code);
                     if (ret != 0) {

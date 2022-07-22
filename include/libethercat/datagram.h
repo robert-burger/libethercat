@@ -49,7 +49,7 @@ typedef struct __attribute__((__packed__)) ec_frame {
 
 #define ec_frame_hdr_length     (sizeof(ec_frame_t))
 #define ec_frame_length(f)      ((f)->len)
-#define ec_frame_end(pframe)    ((uint8_t *)(pframe) + (pframe)->len)
+#define ec_frame_end(pframe)    (&((uint8_t *)(pframe))[(pframe)->len])
 
 typedef struct __attribute__((__packed__)) ec_datagram {
     uint8_t cmd;                //!< ethercat command

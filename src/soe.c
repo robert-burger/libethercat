@@ -155,14 +155,13 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 
     // check for correct op_code
     if (soe_hdr->op_code == EC_SOE_NOTIFICATION) {
-        uint32_t soe_log_pos = 0;
         int local_ret;
 
         local_ret = snprintf(soe_log_buf, SOE_LOG_BUF_SIZE, "SoE Notification: opcode %d, incomplete %d, error %d, "
                 "atn %d, elements %d, idn %d", soe_hdr->op_code, soe_hdr->incomplete, soe_hdr->error, 
                 soe_hdr->atn, soe_hdr->elements, soe_hdr->idn_fragments_left);
         if (local_ret >= 0) {
-            soe_log_pos += (uint32_t)local_ret;
+            uint32_t soe_log_pos = (uint32_t)local_ret;
 
             if ((mbx_hdr->length - sizeof(ec_soe_header_t)) > 0u) {
                 local_ret = snprintf(&soe_log_buf[soe_log_pos], SOE_LOG_BUF_SIZE - soe_log_pos, ", payload: ");
@@ -431,7 +430,6 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
     assert(bitsize != NULL);
     
     int ret = EC_OK;
-    uint16_t i;
     uint16_t *idn_value = NULL;
     uint8_t elements; 
 
@@ -455,12 +453,14 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
     }
 
     if (ret == EC_OK) {
+        uint16_t i;
+
         // read all mapped idn's and add bit length, 
         // length is stored in idn attributes
         for (i = 0u; i < (idn_len[0]/2u); ++i) {
             uint16_t sub_idn = idn_value[i+2u];
             ec_soe_idn_attribute_t sub_idn_attr;
-            uint8_t *buf = (uint8_t *)&sub_idn_attr;
+            buf = (uint8_t *)&sub_idn_attr;
             size_t sub_idn_attr_size = sizeof(sub_idn_attr);
             elements = EC_SOE_ATTRIBUTE;
 
@@ -492,14 +492,14 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     int ret = EC_OK;
-    uint8_t atn;
-    uint16_t idn_at = 16;
-    uint32_t at_bits = 0;
-    uint32_t at_sm = 3;
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE;
     } else {
+        uint8_t atn;
+        const uint16_t idn_at = 16u;
+        uint32_t at_bits = 0u;
+
         // generate at mapping over all at's of specified slave
         // at mapping is stored at idn 16 and should be written in preop
         // state by user
@@ -520,6 +520,8 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
         }
 
         if (at_bits != 0u) {
+            const uint32_t at_sm = 3u;
+
             ec_log(10, __func__, "slave %2d: sm%d length bits %d, bytes %d\n", 
                     slave, at_sm, at_bits, (at_bits + 7u) / 8u);
 
@@ -528,9 +530,9 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
             }
         }
 
-        uint16_t idn_mdt = 24u;
+        const uint16_t idn_mdt = 24u;
         uint32_t mdt_bits = 0u;
-        uint32_t mdt_sm = 2u;
+
         // generate mdt mapping over all mdt's of specified slave
         // mdt mapping is stored at idn 24 and should be written in preop
         // state by user
@@ -551,6 +553,7 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
         }
 
         if (mdt_bits != 0u) {
+            const uint32_t mdt_sm = 2u;
             ec_log(10, __func__, "slave %2d: sm%d length bits %d, bytes %d\n", 
                     slave, mdt_sm, mdt_bits, (mdt_bits + 7u) / 8u);
 
