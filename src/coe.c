@@ -31,6 +31,7 @@
 #include "libethercat/timer.h"
 #include "libethercat/error_codes.h"
 
+// cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -74,6 +75,7 @@ const char *get_sdo_info_error_string(uint32_t errorcode) {
     switch (errorcode) {
         default:
             break;
+// cppcheck-suppress [misra-c2012-20.10, misra-c2012-20.12]
 #define ADD_CASE(x) \
         case (x): \
             retval = sdo_info_error_##x; \
@@ -1182,8 +1184,8 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) 
     // don't copy any headers, we already know that we have a coe emergency
     size_t msg_len = hdr->length - 2u;
 
-    ec_coe_emergency_message_entry_t *qmsg = (ec_coe_emergency_message_entry_t *)
-        malloc(sizeof(ec_coe_emergency_message_entry_t) + msg_len);
+    // cppcheck-suppress misra-c2012-21.3
+    ec_coe_emergency_message_entry_t *qmsg = (ec_coe_emergency_message_entry_t *)malloc(sizeof(ec_coe_emergency_message_entry_t) + msg_len);
 
     // skip mbx header and coe header
     (void)memcpy(qmsg->msg, (uint8_t *)&(p_entry->data[6 + 2]), msg_len);

@@ -86,9 +86,10 @@ void ec_log(int lvl, const char *pre, const char *format, ...) {
 int ec_create_pd_groups(ec_t *pec, uint32_t pd_group_cnt) {
     assert(pec != NULL);
 
-    ec_destroy_pd_groups(pec);
+    (void)ec_destroy_pd_groups(pec);
 
     pec->pd_group_cnt = pd_group_cnt;
+    // cppcheck-suppress misra-c2012-21.3
     alloc_resource(pec->pd_groups, ec_pd_group_t, sizeof(ec_pd_group_t) * pd_group_cnt);
     for (uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
         pec->pd_groups[i].log       = 0x10000u * ((uint32_t)i+1u);
@@ -113,9 +114,11 @@ int ec_destroy_pd_groups(ec_t *pec) {
 
     if (pec->pd_groups != NULL) {
         for (uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
+            // cppcheck-suppress misra-c2012-21.3
             free_resource(pec->pd_groups[i].pd);
         }
 
+        // cppcheck-suppress misra-c2012-21.3
         free(pec->pd_groups);
     }
 
@@ -216,7 +219,8 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, uint32_t group) {
 
     for (i = 0; i < pec->slave_cnt; ++i) {
         ec_slave_t *slv = &pec->slaves[i];
-        uint32_t start_sm = (slv->eeprom.mbx_supported != 0u) ? 2u : 0u;
+        uint32_t start_sm = 2u;
+        if (slv->eeprom.mbx_supported != 0u) { start_sm = 0u; }
 
         if (slv->assigned_pd_group != (int)group) {
             continue;
@@ -626,6 +630,7 @@ static void ec_scan(ec_t *pec) {
         }
 
         pec->slave_cnt = 0;
+        // cppcheck-suppress misra-c2012-21.3
         free_resource(pec->slaves);
     }
     
@@ -636,6 +641,7 @@ static void ec_scan(ec_t *pec) {
     } else {
         pec->slave_cnt = wkc;
 
+        // cppcheck-suppress misra-c2012-21.3
         alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * 
                 sizeof(ec_slave_t));
 
@@ -694,9 +700,8 @@ static void ec_scan(ec_t *pec) {
             if (local_ret == EC_OK) {
                 // check if port is open and communication established
 #define active_port(port) \
-                if ( (topology & (3u << (8u + (2u * (port)))) ) == \
-                        (2u << (8u + (2u * (port)))) ) { \
-                    slv->link_cnt++; slv->active_ports |= 1u<<(port); }
+                if ( (topology & ((uint16_t)3u << (8u + (2u * (port)))) ) == ((uint16_t)2u << (8u + (2u * (port)))) ) { \
+                    slv->link_cnt++; slv->active_ports |= (uint8_t)1u<<(port); }
 
                 for (uint16_t port = 0u; port < 4u; ++port) {
                     active_port(port);
@@ -1385,7 +1390,8 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
         if (pec->dc.timer_override > 0) {
             if (pec->dc.timer_prev == 0u) {
                 if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                    pec->dc.timer_prev = (uint64_t)((int64_t)act_rtc_time - pec->dc.rtc_sto);
+                    int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+                    pec->dc.timer_prev = (uint64_t)tmp;
                 } else {
                     pec->dc.timer_prev = (uint64_t)act_rtc_time;
                 }
@@ -1414,7 +1420,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
                 p_dg->len = 8;
                 p_dg->irq = 0;
 
-                (void)memcpy(ec_datagram_payload(p_dg), &pec->dc.timer_prev, sizeof(pec->dc.timer_prev));
+                (void)memcpy((uint8_t *)ec_datagram_payload(p_dg), (uint8_t *)&pec->dc.timer_prev, sizeof(pec->dc.timer_prev));
             } else {
                 p_dg->cmd = EC_CMD_FRMW;
                 p_dg->idx = pec->dc.p_idx_dc->idx;
@@ -1474,14 +1480,17 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
 
             if (wkc != 0u) {
                 uint64_t act_dc_time; 
-                (void)memcpy(&act_dc_time, ec_datagram_payload(p_dg), 8);
+                (void)memcpy((uint8_t *)&act_dc_time, (uint8_t *)ec_datagram_payload(p_dg), 8);
 
                 if (((++pec->dc.offset_compensation_cnt) % pec->dc.offset_compensation_cycles) == 0) {
                     pec->dc.offset_compensation_cnt = 0;
 
                     // doing offset compensation in dc master clock
                     // getting current system time first relative to ecat start
-                    uint64_t act_rtc_time = (uint64_t)((int64_t)((pec->dc.timer_override > 0) ? pec->dc.timer_prev : rtc) - pec->dc.rtc_sto);
+                    int64_t tmp = pec->dc.timer_prev;
+                    if (pec->dc.timer_override > 0) { tmp = rtc; }
+                    tmp -= pec->dc.rtc_sto;
+                    uint64_t act_rtc_time = (uint64_t)tmp;
 
                     // clamp every value to 32-bit, so we do not need to care 
                     // about wheter dc is 32-bit or 64-bit.
@@ -1536,7 +1545,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                             p_dg->adr = ((uint32_t)EC_REG_DCSYSOFFSET << 16u) | pec->dc.master_address;
                             p_dg->len = sizeof(pec->dc.dc_sto);
                             p_dg->irq = 0;
-                            (void)memcpy(ec_datagram_payload(p_dg), &pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
+                            (void)memcpy(ec_datagram_payload(p_dg), (uint8_t *)&pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
                             // we don't care about the answer, cb_no_reply frees datagram 
                             // and index
                             p_idx_dc_sto->pec = pec;
@@ -1649,7 +1658,7 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
         p_dg = ec_datagram_cast(pec->p_de_state->data);
 
         wkc = ec_datagram_wkc(p_dg);
-        (void)memcpy(&al_status, ec_datagram_payload(p_dg), 2iu);
+        (void)memcpy((uint8_t *)&al_status, ec_datagram_payload(p_dg), 2iu);
 
         if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                     (pec->master_state == EC_STATE_OP)  ) && 
@@ -1690,7 +1699,7 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
 void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]) {
     assert(pec != NULL);
 
-    (void)memcpy(&pec->tun_ip, &ip_address[0], 4);
+    (void)memcpy((uint8_t *)&pec->tun_ip, (uint8_t *)&ip_address[0], 4);
     if (ec_eoe_setup_tun(pec) != EC_OK) {
         ec_log(1, __func__, "ec_eoe_setup_tun failed!\n");
     }

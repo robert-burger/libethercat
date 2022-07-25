@@ -29,8 +29,9 @@
 #include <string.h>
 #endif // __VXWORKS__
 
-void *malloc(size_t n);
+#include "libethercat/common.h"
 
+// cppcheck-suppress misra-c2012-20.9
 #if HAVE_MALLOC == 0
 
 // wrapper around malloc to avoid allocation of 0 bytes
@@ -44,6 +45,7 @@ void *rpl_malloc(size_t n) {
         local_n = 1u;
     }
 
+    // cppcheck-suppress misra-c2012-21.3
     return malloc(local_n);
 }
 

@@ -38,13 +38,13 @@
 //! hardware structure
 typedef struct hw {
     int sockfd;                     //!< raw socket file descriptor
-    int mtu_size;                   //!< mtu size
+    uint32_t mtu_size;              //!< mtu size
 
     // receiver thread settings
     pthread_t rxthread;             //!< receiver thread handle
     int rxthreadrunning;            //!< receiver thread running flag
     int rxthreadprio;               //!< receiver thread priority
-    int rxthreadcpumask;            //!< recevied thread cpu mask
+    uint32_t rxthreadcpumask;       //!< recevied thread cpu mask
 
     int mmap_packets;
     char *rx_ring;                  //!< kernel mmap receive buffers

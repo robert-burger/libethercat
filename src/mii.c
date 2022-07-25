@@ -34,17 +34,10 @@
 
 #include "libethercat/mii.h"
 #include "libethercat/ec.h"
+#include "libethercat/error_codes.h"
 
 #include <assert.h>
 #include <string.h>
-#include <stdio.h>
-
-#define fp_check(op, reg, buf, buf_len) {                                           \
-    ec_fp ## op(pec, pec->slaves[slave].fixed_address, reg, buf, buf_len, &wkc);    \
-    if (wkc != 1u) {                                                                 \
-        ec_log(10, __func__, "slave %2d did not respond %s register 0x%X\n",        \
-                slave, strcmp(#op, "rd") == 0 ? "reading" : "writing", reg);        \
-        return -1; }}
 
 // Read 16-bit word via MII.
 /*
@@ -60,39 +53,42 @@
  * \retval 0    On success
  */
 int ec_miiread(struct ec *pec, uint16_t slave, 
-        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) {
-    uint16_t wkc;
-    uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
-    uint16_t ctrl_stat = 0;
-
+        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) 
+{
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(data != NULL);
 
+    int ret = EC_OK;
+    uint16_t wkc;
+    uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
+    uint16_t ctrl_stat = 0;
+
     // write phy address amd regoster
-    fp_check(wr, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg));
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg), &wkc);
 
     // execute read command
-    fp_check(rd, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
-    ctrl_stat = (ctrl_stat & ~0x0300) | 0x0100;
-    fp_check(wr, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
+    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+    ctrl_stat &= ~(uint16_t)0x0300u;
+    ctrl_stat |= (uint16_t)0x0100u;
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
     // set up timeout 100 ms
     ec_timer_t timeout;
     ec_timer_init(&timeout, 10000000000);
 
     do {
-        fp_check(rd, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
+        check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
-        if (ec_timer_expired(&timeout)) {
+        if (ec_timer_expired(&timeout) == 1) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
-            return -1;
+            ret = EC_ERROR_TIMEOUT;
         }
-    } while (ctrl_stat & 0x8000u);
+    } while (((ctrl_stat & 0x8000u) != 0u) && (ret == EC_OK));
 
         
-    fp_check(rd, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data));
-    return 0;
+    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data), &wkc);
+    return ret;
 }
 
 // Write 16-bit word via MII.
@@ -109,37 +105,40 @@ int ec_miiread(struct ec *pec, uint16_t slave,
  * \retval 0    On success
  */
 int ec_miiwrite(struct ec *pec, uint16_t slave, 
-        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) {
-    uint16_t wkc;
-    uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
-    uint16_t ctrl_stat = 0;
-
+        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) 
+{
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(data != NULL);
 
+    int ret = EC_OK;
+    uint16_t wkc;
+    uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
+    uint16_t ctrl_stat = 0;
+
     // write phy address, register and data
-    fp_check(wr, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg));      
-    fp_check(wr, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data));
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg), &wkc);      
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data), &wkc);
 
     // execute write command
-    fp_check(rd, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
-    ctrl_stat = (ctrl_stat & ~0x0300) | 0x0201;
-    fp_check(wr, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
+    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+    ctrl_stat &= ~(uint16_t)0x0300u;
+    ctrl_stat |= (uint16_t)0x0201u;
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
     // set up timeout 100 ms
     ec_timer_t timeout;
     ec_timer_init(&timeout, 100000000);
 
     do {
-        fp_check(rd, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat));
+        check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
-        if (ec_timer_expired(&timeout)) {
+        if (ec_timer_expired(&timeout) == 1) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
-            return -1;
+            ret = EC_ERROR_TIMEOUT;
         }
-    } while (ctrl_stat & 0x8000u);
+    } while (((ctrl_stat & 0x8000u) != 0u) && (ret == EC_OK));
 
-    return 0;
+    return ret;
 }
 

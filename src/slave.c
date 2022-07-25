@@ -1087,6 +1087,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     break;
                 }
             }
+            // cppcheck-suppress misra-c2012-16.3
             case PREOP_2_SAFEOP: 
             case PREOP_2_OP: {
                 // configure distributed clocks if needed 
@@ -1174,6 +1175,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     break;
                 }
             }
+            // cppcheck-suppress misra-c2012-16.3
             case SAFEOP_2_OP: {
                 // write state to slave
                 ret = ec_slave_set_state(pec, slave, EC_STATE_OP);            
@@ -1187,6 +1189,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                 if ((ret != EC_OK) || (transition == OP_2_SAFEOP)) {
                     break;
                 }
+            // cppcheck-suppress misra-c2012-16.3
             case OP_2_INIT:
             case SAFEOP_2_PREOP:
             case SAFEOP_2_INIT:
@@ -1202,6 +1205,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     break;
                 }
             }
+            // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
             case INIT_2_INIT: {
                 // rewrite fixed address
@@ -1290,6 +1294,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                         slave, slv->eeprom.vendor_id, slv->eeprom.product_code, 
                         slv->eeprom.mbx_supported);
             }
+            // cppcheck-suppress misra-c2012-16.3
             case PREOP_2_PREOP:
             case SAFEOP_2_SAFEOP:
             case OP_2_OP:
@@ -1348,6 +1353,7 @@ void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
     EOE_ALLOC(dns, 4u);
     if (dns_name != NULL) { slv->eoe.dns_name = strdup(dns_name); } else { slv->eoe.dns_name = NULL; }
 
+// cppcheck-suppress misra-c2012-20.5
 #undef EOE_ALLOC
 
 }

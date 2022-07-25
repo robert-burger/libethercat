@@ -662,7 +662,7 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
  *
  * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
  */
-int ec_mbx_get_free_send_buffer(ec_t *pec, int slave, pool_entry_t **pp_entry, ec_timer_t *timeout) {
+int ec_mbx_get_free_send_buffer(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry, ec_timer_t *timeout) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -671,7 +671,7 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, int slave, pool_entry_t **pp_entry, e
     if (ret == EC_OK) {
         (*pp_entry)->user_cb = NULL;
         (*pp_entry)->user_arg = NULL;
-        memset((*pp_entry)->data, 0, (*pp_entry)->data_size);
+        (void)memset((*pp_entry)->data, 0, (*pp_entry)->data_size);
     }
 
     return ret;

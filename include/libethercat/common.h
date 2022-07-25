@@ -32,6 +32,8 @@
 #ifndef LIBETHERCAT_COMMON_H
 #define LIBETHERCAT_COMMON_H
 
+#include "config.h"
+
 #include <stdint.h>
 #include <pthread.h>
 
@@ -80,6 +82,11 @@ typedef uint16_t ec_state_t;
 #define EC_STATE_MASK        ((uint16_t)(0x000Fu))       //!< \brief EtherCAT state mask
 #define EC_STATE_ERROR       ((uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR
 #define EC_STATE_RESET       ((uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR reset
+
+// cppcheck-suppress misra-c2012-20.9
+#if HAVE_MALLOC == 0
+void *rpl_malloc(size_t n);
+#endif
 
 #ifdef __VXWORKS__ 
 char *strndup(const char *s, size_t n);

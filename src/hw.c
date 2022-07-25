@@ -31,6 +31,7 @@
 #include "config.h"
 
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
+// cppcheck-suppress misra-c2012-21.1
 #define _GNU_SOURCE
 #include <sched.h>
 #endif
@@ -42,6 +43,7 @@
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
 #include "libethercat/idx.h"
+#include "libethercat/error_codes.h"
 
 #include <pthread.h>
 
@@ -82,6 +84,7 @@
 #error unsupported OS
 #endif
 
+// cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -96,7 +99,7 @@
 #endif
 
 //! receiver thread forward declaration
-void *hw_rx_thread(void *arg);
+static void *hw_rx_thread(void *arg);
 
 #ifdef __linux__
 #define RECEIVE(fd, frame, len)     recv((fd), (frame), (len), 0)
@@ -130,14 +133,122 @@ static int try_grant_cap_net_raw_init() {
     return ret;
 }
 
+static int internal_hw_open(hw_t *phw, const char *devname) {
+    int ret = EC_OK;
+    
+    if (try_grant_cap_net_raw_init() == -1) {
+        ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
+                "not allowed to open a raw socket\n");
+    }
+
+    // create raw socket connection
+    phw->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
+    if (phw->sockfd <= 0) {
+        ec_log(1, __func__, "socket error on opening SOCK_RAW: %s\n", strerror(errno));
+        ret = EC_ERROR_UNAVAILABLE;
+    }
+
+    if ((ret == EC_OK) && (phw->mmap_packets > 0)) {
+        int pagesize = getpagesize();
+        ec_log(10, __func__, "got page size %d bytes\n", pagesize);
+
+        struct tpacket_req tp;
+
+        // tell kernel to export data through mmap()ped ring
+        tp.tp_block_size = phw->mmap_packets * pagesize;
+        tp.tp_block_nr   = 1;
+        tp.tp_frame_size = pagesize;
+        tp.tp_frame_nr   = phw->mmap_packets;
+        if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_RX_RING, (void*)&tp, sizeof(tp)) != 0) {
+            ec_log(1, __func__, "setsockopt() rx ring: %s\n", strerror(errno));
+            ret = EC_ERROR_UNAVAILABLE;
+        } else if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_TX_RING, (void*)&tp, sizeof(tp)) != 0) {
+            ec_log(1, __func__, "setsockopt() tx ring: %s\n", strerror(errno));
+            ret = EC_ERROR_UNAVAILABLE;
+        } else {}
+
+        if (ret == EC_OK) {
+            // TODO unmap anywhere
+            phw->rx_ring = mmap(0, phw->mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, MAP_SHARED, phw->sockfd, 0);
+            phw->tx_ring = &phw->rx_ring[(phw->mmap_packets * pagesize)];
+
+            phw->rx_ring_offset = 0;
+            phw->tx_ring_offset = 0;
+        }
+    }
+
+    if (ret == EC_OK) { 
+        int i;
+
+        // set timeouts
+        struct timeval timeout;
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 1;
+        setsockopt(phw->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        setsockopt(phw->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+
+        // do not route our frames
+        i = 1;
+        setsockopt(phw->sockfd, SOL_SOCKET, SO_DONTROUTE, &i, sizeof(i));
+
+        // attach to out network interface
+        struct ifreq ifr;
+        (void)strcpy(ifr.ifr_name, devname);
+        ioctl(phw->sockfd, SIOCGIFINDEX, &ifr);
+        int ifindex = ifr.ifr_ifindex;
+        (void)strcpy(ifr.ifr_name, devname);
+        ifr.ifr_flags = 0;
+        ioctl(phw->sockfd, SIOCGIFFLAGS, &ifr);
+        ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
+        /*int ret =*/ ioctl(phw->sockfd, SIOCSIFFLAGS, &ifr);
+        //    if (ret != 0) {
+        //        ec_log(1, __func__, "error setting interface %s: %s\n", devname, strerror(errno));
+        //        goto error_exit;
+        //    }
+
+        ec_log(10, __func__, "binding raw socket to %s\n", devname);
+
+        (void)memset(&ifr, 0, sizeof(ifr));
+        (void)strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
+        ioctl(phw->sockfd, SIOCGIFMTU, &ifr);
+        phw->mtu_size = ifr.ifr_mtu;
+        ec_log(10, "hw_open", "got mtu size %d\n", phw->mtu_size);
+
+        // bind socket to protocol, in this case RAW EtherCAT */
+        struct sockaddr_ll sll;
+        (void)memset(&sll, 0, sizeof(sll));
+        sll.sll_family = AF_PACKET;
+        sll.sll_ifindex = ifindex;
+        sll.sll_protocol = htons(ETH_P_ECAT);
+        bind(phw->sockfd, (struct sockaddr *) &sll, sizeof(sll));
+    }
+
+    return ret;
+}
 #elif defined __VXWORKS__ 
 #define RECEIVE(fd, frame, len)     read((fd), (frame), (len))
 #define SEND(fd, frame, len)        write((fd), (frame), (len))
+    
+static int internal_hw_open(hw_t *phw, const char *devname) {
+    int ret = EC_OK;
+
+    /* we use snarf link layer device driver */
+    // cppcheck-suppress misra-c2012-7.1
+    phw->sockfd = open(devname, O_RDWR, 0644);
+    if (phw->sockfd <= 0) {
+        ec_log(1, __func__, "error opening %s: %s\n", devname, strerror(errno));
+    } else {
+        phw->mtu_size = 1480;
+    }
+
+    return ret;
+}
 
 #elif defined HAVE_NET_BPF_H
 #define RECEIVE(fd, frame, len)     read((fd), (frame), (len))
 #define SEND(fd, frame, len)        write((fd), (frame), (len))
 
+// cppcheck-suppress misra-c2012-8.9
 static struct bpf_insn insns[] = {                       
     BPF_STMT(BPF_LD + BPF_H + BPF_ABS, 12),
     BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, ETH_P_ECAT, 0, 1),
@@ -145,6 +256,101 @@ static struct bpf_insn insns[] = {
     BPF_STMT(BPF_RET + BPF_K, 0),
 };
 
+static int internal_hw_open(hw_t *phw, const char *devname) {
+    int ret = EC_OK;
+    const unsigned int btrue = 1;
+    const unsigned int bfalse = 0;
+
+    int n = 0;
+    struct ifreq bound_if;
+    const char bpf_devname[] = "/dev/bpf";
+
+    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+
+    // open bpf device
+    phw->sockfd = open(bpf_devname, O_RDWR, 0);
+    if (phw->sockfd <= 0) {
+        ec_log(1, __func__, "error opening bpf device %s: %s\n", bpf_devname, strerror(errno));
+        ret = -1;
+    } else {
+        (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+        phw->mtu_size = 1480;
+
+        // connect bpf to specified network device
+        (void)snprintf(bound_if.ifr_name, IFNAMSIZ, devname);
+        if (ioctl(phw->sockfd, BIOCSETIF, &bound_if) == -1 ) {
+            ec_log(1, __func__, "error on BIOCSETIF: %s\n", 
+                    strerror(errno));
+            ret = -1;
+        } else {
+            (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+            // make sure we are dealing with an ethernet device.
+            if (ioctl(phw->sockfd, BIOCGDLT, (caddr_t)&n) == -1) {
+                ec_log(1, __func__, "error on BIOCGDLT: %s\n", 
+                        strerror(errno));
+                ret = -1;
+            } else {
+                (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                // activate immediate mode (therefore, buf_len is initially set to "1")
+                if (ioctl(phw->sockfd, BIOCIMMEDIATE, &btrue) == -1) {
+                    ec_log(1, __func__, "error on BIOCIMMEDIATE: %s\n", 
+                            strerror(errno));
+                    ret = -1;
+                } else {
+                    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                    // request buffer length 
+                    if (ioctl(phw->sockfd, BIOCGBLEN, &ETH_FRAME_LEN) == -1) {
+                        ec_log(1, __func__, "error on BIOCGBLEN: %s\n", 
+                                strerror(errno));
+                        ret = -1;
+                    } else {
+                        (void)fprintf(stderr, "opening bpf device... %d, buf_isze is %d\n", __LINE__, ETH_FRAME_LEN);
+                        static struct bpf_program my_bpf_program;
+                        my_bpf_program.bf_len = sizeof(insns)/sizeof(insns[0]);
+                        my_bpf_program.bf_insns = insns;
+
+                        // setting filter to bpf
+                        if (ioctl(phw->sockfd, BIOCSETF, &my_bpf_program) == -1) {
+                            ec_log(1, __func__, "error on BIOCSETF: %s\n", 
+                                    strerror(errno));
+                            ret = -1;
+                        } else {
+                            (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                            // we do not want to see the sent frames
+                            if (ioctl(phw->sockfd, BIOCSSEESENT, &bfalse) == -1) {
+                                ec_log(1, __func__, "error on BIOCSSEESENT: %s\n", 
+                                        strerror(errno));
+                                ret = -1;
+                            } else {
+                                (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                                /* set receive call timeout */
+                                static struct timeval timeout = { 0, 1000};
+                                if (ioctl(phw->sockfd, BIOCSRTIMEOUT, &timeout) == -1) {
+                                    ec_log(1, __func__, "error on BIOCSRTIMEOUT: %s\n", 
+                                            strerror(errno));
+                                    ret = -1;
+                                } else {
+                                    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+                                    if (ioctl(phw->sockfd, BIOCFLUSH) == -1) {
+                                        ec_log(1, __func__, "error on BIOCFLUSH: %s\n", 
+                                                strerror(errno));
+                                        ret = -1;
+                                    } else {
+                                        (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+
+                                        pthread_mutex_init(&phw->hw_lock, NULL);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return ret;
+}
 #else
 #error unsupported OS
 #endif
@@ -159,223 +365,36 @@ static struct bpf_insn insns[] = {
  * \return 0 or negative error code
  */
 int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_packets) {
-#ifdef __linux__
-    struct timeval timeout;
-    int i;
-    int ifindex;
-    struct ifreq ifr;
-    struct sockaddr_ll sll;
-    (void)memset(&sll, 0, sizeof(sll));
-    int ret = 0;
-
-    if (try_grant_cap_net_raw_init() == -1) {
-        ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
-                "not allowed to open a raw socket\n");
-    }
-#endif
+    int ret = EC_OK;
 
     assert(pphw != NULL);
 
+    // cppcheck-suppress misra-c2012-21.3
     (*pphw) = (hw_t *) malloc(sizeof(hw_t));
-    if (!(*pphw)) {
-        return -ENOMEM;
-    }
+    if ((*pphw) == NULL) {
+        ret = EC_ERROR_OUT_OF_MEMORY;
+    } else {
 
     (void)memset(*pphw, 0, sizeof(hw_t));
+    
+    (*pphw)->mmap_packets = mmap_packets;
 
     (void)pool_open(&(*pphw)->tx_high, 0, 1518);
     (void)pool_open(&(*pphw)->tx_low, 0, 1518);
 
-#ifdef __linux__
-    // create raw socket connection
-    (*pphw)->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
-    if ((*pphw)->sockfd <= 0) {
-        ec_log(1, __func__, "socket error on opening SOCK_RAW: %s\n", strerror(errno));
-        goto error_exit;
+    ret = internal_hw_open(*pphw, devname);
     }
 
-    (*pphw)->mmap_packets = mmap_packets;
-    if (mmap_packets > 0) {
-        int pagesize = getpagesize();
-        ec_log(10, __func__, "got page size %d bytes\n", pagesize);
-
-        struct tpacket_req tp;
-
-        // tell kernel to export data through mmap()ped ring
-        tp.tp_block_size = mmap_packets * pagesize;
-        tp.tp_block_nr   = 1;
-        tp.tp_frame_size = pagesize;
-        tp.tp_frame_nr   = mmap_packets;
-        if (setsockopt((*pphw)->sockfd, SOL_PACKET, 
-                    PACKET_RX_RING, (void*)&tp, sizeof(tp)) != 0) {
-            ec_log(1, __func__, "setsockopt() rx ring: %s\n", strerror(errno));
-            goto error_exit;
-        }
-        if (setsockopt((*pphw)->sockfd, SOL_PACKET, 
-                    PACKET_TX_RING, (void*)&tp, sizeof(tp)) != 0) {
-            ec_log(1, __func__, "setsockopt() tx ring: %s\n", strerror(errno));
-            goto error_exit;
-        }
-
-        // TODO unmap anywhere
-        (*pphw)->rx_ring = mmap(0, mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, 
-                MAP_SHARED, (*pphw)->sockfd, 0);
-        (*pphw)->tx_ring = (*pphw)->rx_ring + (mmap_packets * pagesize);
-
-        (*pphw)->rx_ring_offset = 0;
-        (*pphw)->tx_ring_offset = 0;
+    if (ret == EC_OK) {
+        // thread settings
+        (*pphw)->rxthreadprio = prio;
+        (*pphw)->rxthreadcpumask = cpumask;
+        (*pphw)->rxthreadrunning = 1;
+        pthread_create(&(*pphw)->rxthread, NULL, hw_rx_thread, *pphw);
     }
 
-    // set timeouts
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 1;
-    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-               sizeof(timeout));
-    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout,
-               sizeof(timeout));
-
-    // do not route our frames
-    i = 1;
-    setsockopt((*pphw)->sockfd, SOL_SOCKET, SO_DONTROUTE, &i, sizeof(i));
-
-    // attach to out network interface
-    strcpy(ifr.ifr_name, devname);
-    ioctl((*pphw)->sockfd, SIOCGIFINDEX, &ifr);
-    ifindex = ifr.ifr_ifindex;
-    strcpy(ifr.ifr_name, devname);
-    ifr.ifr_flags = 0;
-    ioctl((*pphw)->sockfd, SIOCGIFFLAGS, &ifr);
-    ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
-    /*int ret =*/ ioctl((*pphw)->sockfd, SIOCSIFFLAGS, &ifr);
-//    if (ret != 0) {
-//        ec_log(1, __func__, "error setting interface %s: %s\n", devname, strerror(errno));
-//        goto error_exit;
-//    }
-
-    ec_log(10, __func__, "binding raw socket to %s\n", devname);
-
-    memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
-    ioctl((*pphw)->sockfd, SIOCGIFMTU, &ifr);
-    (*pphw)->mtu_size = ifr.ifr_mtu;
-    ec_log(10, "hw_open", "got mtu size %d\n", (*pphw)->mtu_size);
-
-    // bind socket to protocol, in this case RAW EtherCAT */
-    sll.sll_family = AF_PACKET;
-    sll.sll_ifindex = ifindex;
-    sll.sll_protocol = htons(ETH_P_ECAT);
-    bind((*pphw)->sockfd, (struct sockaddr *) &sll, sizeof(sll));
-#elif defined __VXWORKS__
-    /* we use snarf link layer device driver */
-    (*pphw)->sockfd = open(devname, O_RDWR, 0644);
-    if ((*pphw)->sockfd <= 0) {
-        ec_log(1, __func__, "error opening %s: %s\n", devname, strerror(errno));
-    } else {
-        (*pphw)->mtu_size = 1480;
-    }
-#elif defined HAVE_NET_BPF_H
-    const unsigned int btrue = 1;
-    const unsigned int bfalse = 0;
-
-    int n = 0;
-    struct ifreq bound_if;
-    const char bpf_devname[] = "/dev/bpf";
-
-    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-
-    // open bpf device
-    (*pphw)->sockfd = open(bpf_devname, O_RDWR, 0);
-    if ((*pphw)->sockfd <= 0) {
-        ec_log(1, __func__, "error opening bpf device %s: %s\n", bpf_devname, strerror(errno));
-        ret = -1;
-    } else {
-        (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-        (*pphw)->mtu_size = 1480;
-
-        // connect bpf to specified network device
-        (void)snprintf(bound_if.ifr_name, IFNAMSIZ, devname);
-        if (ioctl((*pphw)->sockfd, BIOCSETIF, &bound_if) == -1 ) {
-            ec_log(1, __func__, "error on BIOCSETIF: %s\n", 
-                    strerror(errno));
-            ret = -1;
-        } else {
-            (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-            // make sure we are dealing with an ethernet device.
-            if (ioctl((*pphw)->sockfd, BIOCGDLT, (caddr_t)&n) == -1) {
-                ec_log(1, __func__, "error on BIOCGDLT: %s\n", 
-                        strerror(errno));
-                ret = -1;
-            } else {
-                (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-                // activate immediate mode (therefore, buf_len is initially set to "1")
-                if (ioctl((*pphw)->sockfd, BIOCIMMEDIATE, &btrue) == -1) {
-                    ec_log(1, __func__, "error on BIOCIMMEDIATE: %s\n", 
-                            strerror(errno));
-                    ret = -1;
-                } else {
-                    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-                    // request buffer length 
-                    if (ioctl((*pphw)->sockfd, BIOCGBLEN, &ETH_FRAME_LEN) == -1) {
-                        ec_log(1, __func__, "error on BIOCGBLEN: %s\n", 
-                                strerror(errno));
-                        ret = -1;
-                    } else {
-                        (void)fprintf(stderr, "opening bpf device... %d, buf_isze is %d\n", __LINE__, ETH_FRAME_LEN);
-                        static struct bpf_program my_bpf_program;
-                        my_bpf_program.bf_len = sizeof(insns)/sizeof(insns[0]);
-                        my_bpf_program.bf_insns = insns;
-
-                        // setting filter to bpf
-                        if (ioctl((*pphw)->sockfd, BIOCSETF, &my_bpf_program) == -1) {
-                            ec_log(1, __func__, "error on BIOCSETF: %s\n", 
-                                    strerror(errno));
-                            ret = -1;
-                        } else {
-                            (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-                            // we do not want to see the sent frames
-                            if (ioctl((*pphw)->sockfd, BIOCSSEESENT, &bfalse) == -1) {
-                                ec_log(1, __func__, "error on BIOCSSEESENT: %s\n", 
-                                        strerror(errno));
-                                ret = -1;
-                            } else {
-                                (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-                                /* set receive call timeout */
-                                static struct timeval timeout = { 0, 1000};
-                                if (ioctl((*pphw)->sockfd, BIOCSRTIMEOUT, &timeout) == -1) {
-                                    ec_log(1, __func__, "error on BIOCSRTIMEOUT: %s\n", 
-                                            strerror(errno));
-                                    ret = -1;
-                                } else {
-                                    (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-                                    if (ioctl((*pphw)->sockfd, BIOCFLUSH) == -1) {
-                                        ec_log(1, __func__, "error on BIOCFLUSH: %s\n", 
-                                                strerror(errno));
-                                        ret = -1;
-                                    } else {
-                                        (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-
-                                        pthread_mutex_init(&(*pphw)->hw_lock, NULL);
-
-                                        // thread settings
-                                        (*pphw)->rxthreadprio = prio;
-                                        (*pphw)->rxthreadcpumask = cpumask;
-                                        (*pphw)->rxthreadrunning = 1;
-                                        pthread_create(&(*pphw)->rxthread, NULL, hw_rx_thread, *pphw);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-#else
-#error unsopported OS
-#endif
-
-error_exit:
-    if ((*pphw) != NULL) {
+    if ((ret != EC_OK) && (*pphw) != NULL) {
+        // cppcheck-suppress misra-c2012-21.3
         free(*pphw);
     }
 
@@ -401,6 +420,7 @@ int hw_close(hw_t *phw) {
     pthread_mutex_unlock(&phw->hw_lock);
     pthread_mutex_destroy(&phw->hw_lock);
 
+    // cppcheck-suppress misra-c2012-21.3
     free(phw);
 
     return 0;
@@ -432,7 +452,7 @@ static void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
                         d->idx, size, entry->data_size);
             }
 
-            (void)memcpy(entry->data, d, min(size, entry->data_size));
+            (void)memcpy(entry->data, (uint8_t *)d, min(size, entry->data_size));
 
             if ((entry->user_cb) != NULL) {
                 (*entry->user_cb)(entry->user_arg, entry);
@@ -473,8 +493,8 @@ void *hw_rx_thread(void *arg) {
 #else
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    for (uint32_t i = 0u; i < (sizeof(phw->rxthreadcpumask) * 8u); ++i) {
-        if ((phw->rxthreadcpumask & (1u << i)) != 0u) {
+    for (uint32_t i = 0u; i < 32u; ++i) {
+        if ((phw->rxthreadcpumask & ((uint32_t)1u << i)) != 0u) {
             CPU_SET(i, &cpuset);
         }
     }
@@ -509,9 +529,12 @@ void *hw_rx_thread(void *arg) {
             /* calculate frame size, has to be aligned to word boundaries,
              * copy frame data to frame data buffer */
             size_t bpf_frame_size = BPF_WORDALIGN(
+                    // cppcheck-suppress misra-c2012-11.3
                     ((struct bpf_hdr *) tmpframe2)->bh_hdrlen +
+                    // cppcheck-suppress misra-c2012-11.3
                     ((struct bpf_hdr *) tmpframe2)->bh_datalen);
             
+            // cppcheck-suppress misra-c2012-11.3
             ec_frame_t *real_frame = (ec_frame_t *)(&tmpframe2[((struct bpf_hdr *)tmpframe2)->bh_hdrlen]);
             hw_process_rx_frame(phw, real_frame);
 
@@ -612,6 +635,7 @@ int hw_tx(hw_t *phw) {
     static const uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     static const uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
+    int ret = EC_OK;
     struct tpacket_hdr *header = NULL;
     uint8_t send_frame[ETH_FRAME_LEN];
     // cppcheck-suppress misra-c2012-11.3
@@ -643,11 +667,7 @@ int hw_tx(hw_t *phw) {
     ec_datagram_t *p_entry_dg = NULL;
 
     // send high priority cyclic frames
-    while (1) {
-        if (pool_idx == 2) {
-            break;
-        }
-
+    while ((pool_idx < 2) && (ret == EC_OK)) {
         size_t len = 0;
         (void)pool_peek(pools[pool_idx], &p_entry);
         if (p_entry !=  NULL) {
@@ -656,81 +676,75 @@ int hw_tx(hw_t *phw) {
             len = ec_datagram_length(p_entry_dg);
         }
 
-        if (((len == 0u) && (pool_idx == 1)) ||
-            ((pframe->len + len) > phw->mtu_size)) {
+        if (((len == 0u) && (pool_idx == 1)) || ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len == sizeof(ec_frame_t)) {
-                break; // nothing to send
-            }
-
-            if (phw->mmap_packets > 0) {
-                // fill header
-                header->tp_len = pframe->len;
-                header->tp_status = TP_STATUS_SEND_REQUEST;
-
-                // notify kernel
-                if (send(phw->sockfd, NULL, 0, 0) < 0) {
-                    ec_log(1, __func__, "error on sendto: %s\n", strerror(errno));
-                }
-
-                // increase consumer ring pointer
-                phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
-                
-                // reset length to send new frame
-                header = hw_get_next_tx_buffer(phw);
-                // cppcheck-suppress misra-c2012-11.3
-                pframe = (ec_frame_t *)(&((char *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
-
-                // reset length to send new frame
-                (void)memcpy(pframe->mac_dest, mac_dest, 6);
-                (void)memcpy(pframe->mac_src, mac_src, 6);
-                pframe->ethertype = htons(ETH_P_ECAT);
-                pframe->type = 0x01;
-                pframe->len = sizeof(ec_frame_t);
-                pdg = ec_datagram_first(pframe);
-                continue;
+                // nothing to send
             } else {
-                // no more datagrams need to be sent or no more space in frame
-                ssize_t bytestx =
-                    SEND(phw->sockfd, pframe, pframe->len);
+                if (phw->mmap_packets > 0) {
+                    // fill header
+                    header->tp_len = pframe->len;
+                    header->tp_status = TP_STATUS_SEND_REQUEST;
 
-                if ((ssize_t)pframe->len != bytestx) {
-                    ec_log(1, "TX", "got only %d bytes out of %d bytes "
-                            "through.\n", bytestx, pframe->len);
-
-                    if (bytestx == -1) {
-                        ec_log(1, "TX", "error: %s\n", strerror(errno));
+                    // notify kernel
+                    if (send(phw->sockfd, NULL, 0, 0) < 0) {
+                        ec_log(1, __func__, "error on sendto: %s\n", strerror(errno));
                     }
-                }
 
-                // reset length to send new frame
-                pframe->len = sizeof(ec_frame_t);
-                pdg = ec_datagram_first(pframe);
-                continue;
+                    // increase consumer ring pointer
+                    phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
+
+                    // reset length to send new frame
+                    header = hw_get_next_tx_buffer(phw);
+                    // cppcheck-suppress misra-c2012-11.3
+                    pframe = (ec_frame_t *)(&((char *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
+
+                    // reset length to send new frame
+                    (void)memcpy(pframe->mac_dest, mac_dest, 6);
+                    (void)memcpy(pframe->mac_src, mac_src, 6);
+                    pframe->ethertype = htons(ETH_P_ECAT);
+                    pframe->type = 0x01;
+                    pframe->len = sizeof(ec_frame_t);
+                    pdg = ec_datagram_first(pframe);
+                } else {
+                    // no more datagrams need to be sent or no more space in frame
+                    ssize_t bytestx = SEND(phw->sockfd, pframe, pframe->len);
+
+                    if ((ssize_t)pframe->len != bytestx) {
+                        ec_log(1, "TX", "got only %d bytes out of %d bytes "
+                                "through.\n", bytestx, pframe->len);
+
+                        if (bytestx == -1) {
+                            ec_log(1, "TX", "error: %s\n", strerror(errno));
+                        }
+                    }
+
+                    // reset length to send new frame
+                    pframe->len = sizeof(ec_frame_t);
+                    pdg = ec_datagram_first(pframe);
+                }
             }
         }
 
         if (len == 0u) {
             pool_idx++;
-            continue;
-        }
+        } else {
+            ret = pool_get(pools[pool_idx], &p_entry, NULL);
+            if (ret == EC_OK) {
+                if (pdg_prev != NULL) {
+                    ec_datagram_mark_next(pdg_prev);
+                }
 
-        if (pool_get(pools[pool_idx], &p_entry, NULL) != 0) {
-            break;  // no more frames
-        }
+                // cppcheck-suppress misra-c2012-11.3
+                p_entry_dg = (ec_datagram_t *)p_entry->data;
+                (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
+                pframe->len += ec_datagram_length(p_entry_dg);
+                pdg_prev = pdg;
+                pdg = ec_datagram_next(pdg);
 
-        if (pdg_prev != NULL) {
-            ec_datagram_mark_next(pdg_prev);
+                // store as sent
+                phw->tx_send[p_entry_dg->idx] = p_entry;
+            }
         }
-        
-        // cppcheck-suppress misra-c2012-11.3
-        p_entry_dg = (ec_datagram_t *)p_entry->data;
-        (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
-        pframe->len += ec_datagram_length(p_entry_dg);
-        pdg_prev = pdg;
-        pdg = ec_datagram_next(pdg);
-
-        // store as sent
-        phw->tx_send[p_entry_dg->idx] = p_entry;
     }
 
     pthread_mutex_unlock(&phw->hw_lock);

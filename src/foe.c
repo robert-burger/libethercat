@@ -36,6 +36,7 @@
 #include "libethercat/foe.h"
 #include "libethercat/error_codes.h"
 
+// cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -192,6 +193,7 @@ static const char *dump_foe_error_request(int slave, ec_foe_error_request_t *rea
 
     size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
     if (text_len > 0u) {
+        // cppcheck-suppress misra-c2012-21.3
         char *error_text = (char *)malloc(text_len + 1u);
         (void)strncpy(error_text, read_buf_error->error_text, text_len);
         error_text[text_len] = '\0';
@@ -273,6 +275,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
                     ec_log(10, __func__, "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
                 } else {
                     size_t len = read_buf_data->mbx_hdr.length - 6u;
+                    // cppcheck-suppress misra-c2012-21.3
                     *file_data = (uint8_t *)realloc(*file_data, *file_data_len + len);
                     (void)memcpy(&(*file_data)[*file_data_len], &read_buf_data->data[0], len); 
                     *file_data_len += len;

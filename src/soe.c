@@ -37,6 +37,7 @@
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
+// cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <string.h>
 

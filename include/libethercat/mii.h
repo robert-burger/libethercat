@@ -26,11 +26,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
+ * If not, see <www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBETHERCAT_MII_H__
-#define __LIBETHERCAT_MII_H__
+#ifndef LIBETHERCAT_MII_H
+#define LIBETHERCAT_MII_H
 
 #include "libethercat/common.h"
 #include "libethercat/ec.h"
@@ -67,5 +67,5 @@ int ec_miiread(struct ec *pec, uint16_t slave,
 int ec_miiwrite(struct ec *pec, uint16_t slave, 
         uint8_t phy_adr, uint16_t phy_reg, uint16_t *data);
 
-#endif // __LIBETHERCAT_MII_H__
+#endif // LIBETHERCAT_MII_H
 
