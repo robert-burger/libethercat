@@ -50,7 +50,7 @@
  * \param[in] phy_reg           Register of PHY selected by \p phy_adr.
  * \param[out] data             Returns read 16-bit data value.
  *
- * \retval 0    On success
+ * \retval EC_OK    On success
  */
 int ec_miiread(struct ec *pec, uint16_t slave, 
         uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) 
@@ -78,16 +78,15 @@ int ec_miiread(struct ec *pec, uint16_t slave,
     ec_timer_init(&timeout, 10000000000);
 
     do {
-        check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+        ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
-        if (ec_timer_expired(&timeout) == 1) {
+        if ((ret == EC_OK) && (ec_timer_expired(&timeout) == 1)) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
             ret = EC_ERROR_TIMEOUT;
         }
     } while (((ctrl_stat & 0x8000u) != 0u) && (ret == EC_OK));
 
-        
-    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data), &wkc);
+    ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data), &wkc);
     return ret;
 }
 
@@ -102,7 +101,7 @@ int ec_miiread(struct ec *pec, uint16_t slave,
  * \param[in] phy_reg           Register of PHY selected by \p phy_adr.
  * \param[in] data              Data contains 16-bit data value to write.
  *
- * \retval 0    On success
+ * \retval EC_OK    On success
  */
 int ec_miiwrite(struct ec *pec, uint16_t slave, 
         uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) 
@@ -131,9 +130,9 @@ int ec_miiwrite(struct ec *pec, uint16_t slave,
     ec_timer_init(&timeout, 100000000);
 
     do {
-        check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+        ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
-        if (ec_timer_expired(&timeout) == 1) {
+        if ((ret == EC_OK) && (ec_timer_expired(&timeout) == 1)) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
             ret = EC_ERROR_TIMEOUT;
         }

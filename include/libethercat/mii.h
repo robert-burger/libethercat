@@ -46,7 +46,7 @@
  * \param[in] phy_reg           Register of PHY selected by \p phy_adr.
  * \param[out] data             Returns read 16-bit data value.
  *
- * \retval 0    On success
+ * \retval EC_O    On success
  */
 int ec_miiread(struct ec *pec, uint16_t slave, 
         uint8_t phy_adr, uint16_t phy_reg, uint16_t *data);
@@ -62,7 +62,7 @@ int ec_miiread(struct ec *pec, uint16_t slave,
  * \param[in] phy_reg           Register of PHY selected by \p phy_adr.
  * \param[in] data              Data contains 16-bit data value to write.
  *
- * \retval 0    On success
+ * \retval EC_OK    On success
  */
 int ec_miiwrite(struct ec *pec, uint16_t slave, 
         uint8_t phy_adr, uint16_t phy_reg, uint16_t *data);
