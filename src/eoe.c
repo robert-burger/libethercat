@@ -305,7 +305,6 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else {
         ec_log(10, __func__, "slave %2d: set ip parameter\n", slave);
-        (void)memset(p_entry->data, 0, p_entry->data_size);
 
         // cppcheck-suppress misra-c2012-11.3
         ec_eoe_set_ip_parameter_request_t *write_buf = (ec_eoe_set_ip_parameter_request_t *)(p_entry->data);
@@ -318,7 +317,6 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_SET_IP_ADDRESS_REQUEST;
         write_buf->eoe_hdr.last_fragment      = 0x01;
 
-        (void)memset(&(write_buf->sip_hdr), 0, sizeof(write_buf->sip_hdr));
         off_t data_pos = 0;
 
 #define EOE_SIZEOF_MAC           6u
@@ -344,10 +342,8 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         ADD_PARAMETER(dns,          EOE_SIZEOF_DNS);
         ADD_PARAMETER(dns_name,     EOE_SIZEOF_DNS_NAME); // cppcheck-suppress unreadVariable
 
-        // send request
+        // send request and wait for answer
         ec_mbx_enqueue_tail(pec, slave, p_entry);
-
-        // wait for answer
         ec_eoe_wait_response(pec, slave, &p_entry); 
 
         if (p_entry != NULL) {
@@ -655,15 +651,18 @@ int ec_eoe_setup_tun(ec_t *pec) {
     assert(pec != NULL);
 
     int ret = EC_OK;
+    int s;
+    struct ifreq ifr;
+    (void)memset(&ifr, 0, sizeof(ifr));
 
     // open tun device
     pec->tun_fd = open("/dev/net/tun", O_RDWR);
     if (pec->tun_fd == -1) {
         ec_log(1, __func__, "could not open /dev/net/tun\n");
         ret = EC_ERROR_UNAVAILABLE;
-    } else {
-        struct ifreq ifr;
-        (void)memset(&ifr, 0, sizeof(ifr));
+    } 
+
+    if (ret == EC_OK) {
         ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
 
         if (ioctl(pec->tun_fd, TUNSETIFF, (void *)&ifr) != 0) {
@@ -671,43 +670,52 @@ int ec_eoe_setup_tun(ec_t *pec) {
             close(pec->tun_fd);
             pec->tun_fd = 0;
             ret = EC_ERROR_UNAVAILABLE;
+        } 
+    }
+
+    if (ret == EC_OK) {
+        ec_log(10, __func__, "using interface %s\n", ifr.ifr_name);
+
+        // Create a socket
+        s = socket(AF_INET, SOCK_DGRAM, 0);
+        if (s < 0) {
+            perror("socket");
+            ret = EC_ERROR_UNAVAILABLE;
+        } 
+    }
+
+    if (ret == EC_OK) {
+        if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) { // Get interface flags
+            perror("cannot get interface flags");
+            ret = EC_ERROR_UNAVAILABLE;
+        } 
+    }
+
+    if (ret == EC_OK) {
+        // Turn on interface
+        ifr.ifr_flags |= IFF_UP;
+        if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0) {
+            (void)fprintf(stderr, "ifup: failed ");
+            perror(ifr.ifr_name);
+            ret = EC_ERROR_UNAVAILABLE;
+        } 
+    }
+
+    if (ret == EC_OK) {
+        // Set interface address
+        struct sockaddr_in  my_addr;
+        bzero((char *) &my_addr, sizeof(my_addr));
+        my_addr.sin_family = AF_INET;
+        my_addr.sin_addr.s_addr = htonl(pec->tun_ip);
+        (void)memcpy(&ifr.ifr_addr, &my_addr, sizeof(struct sockaddr));
+
+        if (ioctl(s, SIOCSIFADDR, &ifr) < 0) {
+            (void)fprintf(stderr, "Cannot set IP address. ");
+            perror(ifr.ifr_name);
+            ret = EC_ERROR_UNAVAILABLE;
         } else {
-            ec_log(10, __func__, "using interface %s\n", ifr.ifr_name);
-
-            int s;
-            // Create a socket
-            s = socket(AF_INET, SOCK_DGRAM, 0);
-            if (s < 0) {
-                perror("socket");
-                ret = EC_ERROR_UNAVAILABLE;
-            } else if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) { // Get interface flags
-                perror("cannot get interface flags");
-                ret = EC_ERROR_UNAVAILABLE;
-            } else {
-                // Turn on interface
-                ifr.ifr_flags |= IFF_UP;
-                if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0) {
-                    (void)fprintf(stderr, "ifup: failed ");
-                    perror(ifr.ifr_name);
-                    ret = EC_ERROR_UNAVAILABLE;
-                } else {
-                    // Set interface address
-                    struct sockaddr_in  my_addr;
-                    bzero((char *) &my_addr, sizeof(my_addr));
-                    my_addr.sin_family = AF_INET;
-                    my_addr.sin_addr.s_addr = htonl(pec->tun_ip);//inet_network("192.168.2.1"));
-                    (void)memcpy(&ifr.ifr_addr, &my_addr, sizeof(struct sockaddr));
-
-                    if (ioctl(s, SIOCSIFADDR, &ifr) < 0) {
-                        (void)fprintf(stderr, "Cannot set IP address. ");
-                        perror(ifr.ifr_name);
-                        ret = EC_ERROR_UNAVAILABLE;
-                    } else {
-                        pec->tun_running = 1;
-                        pthread_create(&pec->tun_tid, NULL, ec_eoe_tun_handler_wrapper, pec);
-                    }
-                }
-            }
+            pec->tun_running = 1;
+            pthread_create(&pec->tun_tid, NULL, ec_eoe_tun_handler_wrapper, pec);
         }
     }
 
