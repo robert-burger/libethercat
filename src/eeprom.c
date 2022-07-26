@@ -672,6 +672,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                             // read pdo
                             // cppcheck-suppress misra-c2012-21.3
                             pdo = (ec_eeprom_cat_pdo_t *)malloc(sizeof(ec_eeprom_cat_pdo_t));
+                            (void)memset((uint8_t *)pdo, 0, sizeof(ec_eeprom_cat_pdo_t));
                             (void)ec_eepromread_len(pec, slave, local_offset, 
                                     (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
                             local_offset += (size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);

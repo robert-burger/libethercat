@@ -752,7 +752,7 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
 
                 // inputs and outputs
                 TAILQ_FOREACH(pdo, &slv->eeprom.txpdos, qh) {
-                    if (sm_idx == pdo->sm_nr) {
+                    if (sm_idx == pdo->sm_nr) { // cppcheck-suppress uninitvar
                         for (uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
                             ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
                                     "txpdo bit_len %d, sm %d\n", slave, 
@@ -825,7 +825,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
 
                 ec_slave_mailbox_init_cmd_t *cmd;
                 LIST_FOREACH(cmd, &slv->init_cmds, le) {
-                    if (cmd->transition != 0x24) {
+                    if (cmd->transition != 0x24) { // cppcheck-suppress uninitvar
                         continue;
                     }
 
