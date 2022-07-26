@@ -133,11 +133,10 @@ int pool_close(pool_t *pp) {
  * \return EC_OK or error code
  */
 int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
-    int ret = EC_ERROR_TIMEOUT;
-
     assert(pp != NULL);
     assert(entry != NULL);
 
+    int ret = EC_OK;
     struct timespec ts;
 
     if (timeout != NULL) {
@@ -150,22 +149,19 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
         ts.tv_nsec = tim.nsec;
     }
 
-    while (1) {
-        ret = sem_timedwait(&pp->avail_cnt, &ts);
+    while (ret == EC_OK) {
+        int local_ret = sem_timedwait(&pp->avail_cnt, &ts);
         int tmp_errno = errno;
-        if (ret != 0) {
-            if (tmp_errno != ETIMEDOUT) {
-                perror("sem_timedwait");
-                continue;
-            }
-
-            *entry = NULL;
-            ret = EC_ERROR_TIMEOUT;
-        } else {
-            ret = EC_OK;
+        if (local_ret == 0) {
+            break;
         }
 
-        break;
+        if (tmp_errno != ETIMEDOUT) {
+            perror("sem_timedwait");
+        } else {
+            *entry = NULL;
+            ret = EC_ERROR_TIMEOUT;
+        }
     }
 
     if (ret == EC_OK) {
@@ -174,6 +170,8 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
         *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
         if ((*entry) != NULL) {
             TAILQ_REMOVE(&pp->avail, (pool_entry_t *)*entry, qh);
+        } else {
+            ret = EC_ERROR_UNAVAILABLE;
         }
 
         pthread_mutex_unlock(&pp->_pool_lock);
