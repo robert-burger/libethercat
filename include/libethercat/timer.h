@@ -80,8 +80,8 @@ void ec_sleep(int64_t nsec);
  * \param[out] timer    Pointer to timer struct which will be initialized
  *                      with current time.
  *
- * \retval 0            On success.
- * \retval -1           On error and errno set.
+ * \retval EC_OK                    On success.
+ * \retval EC_ERROR_UNAVAILABLE     On error and errno set.
  */
 int ec_timer_gettime(ec_timer_t *timer);
 
@@ -104,8 +104,8 @@ void ec_timer_init(ec_timer_t *timer, int64_t timeout);
 /*!
  * \param[out] timer    Timer to check if it is expired.
  *
- * \retval 1            If \p timer is expired
- * \retval 0            If \p timer is not expired
+ * \retval EC_ERROR_TIMER_EXPIRED   If \p timer is expired
+ * \retval EC_OK                    If \p timer is not expired
  */
 int ec_timer_expired(ec_timer_t *timer);
 

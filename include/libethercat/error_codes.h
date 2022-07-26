@@ -35,6 +35,7 @@
 #include "libethercat/mbx.h"
 
 #define EC_OK                                   0
+#define EC_ERROR_TIMER_EXPIRED                  1
 
 #define EC_ERROR_GENERAL_MASK                   0x00010000
 
