@@ -421,6 +421,6 @@ int ec_dc_config(struct ec *pec) {
     uint64_t temp_dc = 0;
     check_ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
 
-    return 1;
+    return EC_OK;
 }
 

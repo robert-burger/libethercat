@@ -654,7 +654,7 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
         do {
             if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) == EC_OK) { 
                 act_state = 0;
-                wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
+                ret = ec_slave_get_state(pec, slave, &act_state, NULL);
 
                 if ((act_state & EC_STATE_ERROR) != 0u) {
                     if (ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
@@ -959,8 +959,8 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             "reading reg 0x%X : no answer from slave %2d\n", slave); } }
 
     // check error state
-    wkc = ec_slave_get_state(pec, slave, &act_state, NULL);
-    if (!wkc) {
+    ret = ec_slave_get_state(pec, slave, &act_state, NULL);
+    if (ret != EC_OK) {
         ec_log(10, "ERROR", "could not get state of slave %d\n", slave);
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
