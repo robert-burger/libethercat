@@ -32,7 +32,6 @@
 #define LIBETHERCAT_MESSAGE_POOL_H
 
 #include <sys/queue.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <semaphore.h>
 

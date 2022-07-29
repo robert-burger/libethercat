@@ -34,6 +34,7 @@
 
 #include "libethercat/ec.h"
 #include "libethercat/foe.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 // cppcheck-suppress misra-c2012-21.6
@@ -44,6 +45,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>
 
 //! FoE header
 typedef struct PACKED ec_foe_header {
@@ -194,7 +196,7 @@ static const char *dump_foe_error_request(int slave, ec_foe_error_request_t *rea
     size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
     if (text_len > 0u) {
         // cppcheck-suppress misra-c2012-21.3
-        char *error_text = (char *)malloc(text_len + 1u);
+        char *error_text = (char *)ec_malloc(text_len + 1u);
         (void)strncpy(error_text, read_buf_error->error_text, text_len);
         error_text[text_len] = '\0';
         ec_log(10, __func__, "error_text: %s\n", error_text);

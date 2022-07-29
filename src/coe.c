@@ -29,6 +29,7 @@
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
 #include "libethercat/timer.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 // cppcheck-suppress misra-c2012-21.6
@@ -1184,8 +1185,8 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) 
     // don't copy any headers, we already know that we have a coe emergency
     size_t msg_len = hdr->length - 2u;
 
-    // cppcheck-suppress misra-c2012-21.3
-    ec_coe_emergency_message_entry_t *qmsg = (ec_coe_emergency_message_entry_t *)malloc(sizeof(ec_coe_emergency_message_entry_t) + msg_len);
+    ec_coe_emergency_message_entry_t *qmsg = (ec_coe_emergency_message_entry_t *)
+        ec_malloc(sizeof(ec_coe_emergency_message_entry_t) + msg_len);
 
     // skip mbx header and coe header
     (void)memcpy(qmsg->msg, (uint8_t *)&(p_entry->data[6 + 2]), msg_len);

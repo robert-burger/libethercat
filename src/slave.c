@@ -35,6 +35,7 @@
 #include "libethercat/foe.h"
 #include "libethercat/mbx.h"
 #include "libethercat/dc.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <string.h>
@@ -134,10 +135,10 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
         char *data, size_t datalen) 
 {
     // cppcheck-suppress misra-c2012-21.3
-    ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(COE_INIT_CMD_SIZE);
+    ec_slave_mailbox_init_cmd_t *cmd = (void *)ec_malloc(COE_INIT_CMD_SIZE);
 
     if (cmd == NULL) {
-        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+        ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
     } else {
         cmd->type       = EC_MBX_COE;
         cmd->transition = transition;
@@ -147,13 +148,13 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
         coe->si_el      = si_el;
         coe->ca_atn     = ca_atn;
         // cppcheck-suppress misra-c2012-21.3
-        coe->data       = (char *)malloc(datalen);
+        coe->data       = (char *)ec_malloc(datalen);
         coe->datalen    = datalen;
 
         if (coe->data == NULL) {
-            ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+            ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
             // cppcheck-suppress misra-c2012-21.3
-            free(cmd);
+            ec_free(cmd);
             cmd = NULL;
         } else {
             (void)memcpy(coe->data, data, datalen);
@@ -171,11 +172,11 @@ static void ec_slave_mailbox_coe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd)
         ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
 
         // cppcheck-suppress misra-c2012-21.3
-        if (coe->data != NULL) { free(coe->data); }
+        if (coe->data != NULL) { ec_free(coe->data); }
     }
 
     // cppcheck-suppress misra-c2012-21.3
-    free (cmd);
+    ec_free (cmd);
 }
 
 // add master init command
@@ -213,10 +214,10 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
         char *data, size_t datalen) 
 {
     // cppcheck-suppress misra-c2012-21.3
-    ec_slave_mailbox_init_cmd_t *cmd = (void *)malloc(SOE_INIT_CMD_SIZE);
+    ec_slave_mailbox_init_cmd_t *cmd = (void *)ec_malloc(SOE_INIT_CMD_SIZE);
 
     if (cmd == NULL) {
-        ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+        ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
     } else {
         cmd->type       = EC_MBX_SOE;
         cmd->transition = transition;
@@ -226,13 +227,13 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
         soe->si_el      = si_el;
         soe->ca_atn     = ca_atn;
         // cppcheck-suppress misra-c2012-21.3
-        soe->data       = (char *)malloc(datalen);
+        soe->data       = (char *)ec_malloc(datalen);
         soe->datalen    = datalen;
 
         if (soe->data == NULL) {
-            ec_log(10, __func__, "malloc error %s\n", strerror(errno));
+            ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
             // cppcheck-suppress misra-c2012-21.3
-            free(cmd);
+            ec_free(cmd);
             cmd = NULL;
         } else {
             (void)memcpy(soe->data, data, datalen);
@@ -250,11 +251,11 @@ static void ec_slave_mailbox_soe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd)
         ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
 
         // cppcheck-suppress misra-c2012-21.3
-        if (soe->data != NULL) { free(soe->data); }
+        if (soe->data != NULL) { ec_free(soe->data); }
     }
 
     // cppcheck-suppress misra-c2012-21.3
-    free (cmd);
+    ec_free (cmd);
 }
 
 // add master init command
@@ -299,7 +300,7 @@ void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
             break;
         default: 
             // cppcheck-suppress misra-c2012-21.3
-            free(cmd);
+            ec_free(cmd);
             break;
     }
 }
@@ -896,11 +897,11 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
         uint32_t string;
         for (string = 0; string < slv->eeprom.strings_cnt; ++string) {
             // cppcheck-suppress misra-c2012-21.3
-            free(slv->eeprom.strings[string]);
+            ec_free(slv->eeprom.strings[string]);
         }
 
         // cppcheck-suppress misra-c2012-21.3
-        free(slv->eeprom.strings);
+        ec_free(slv->eeprom.strings);
     }
 
     ec_eeprom_cat_pdo_t *pdo;
@@ -908,20 +909,20 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
         TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
         if (pdo->entries != NULL) {
             // cppcheck-suppress misra-c2012-21.3
-            free(pdo->entries);
+            ec_free(pdo->entries);
         }
         // cppcheck-suppress misra-c2012-21.3
-        free(pdo);
+        ec_free(pdo);
     }
 
     for (pdo = TAILQ_FIRST(&slv->eeprom.rxpdos); pdo != NULL; pdo = TAILQ_FIRST(&slv->eeprom.rxpdos)) {
         TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
         if (pdo->entries != NULL) {
             // cppcheck-suppress misra-c2012-21.3
-            free(pdo->entries);
+            ec_free(pdo->entries);
         }
         // cppcheck-suppress misra-c2012-21.3
-        free(pdo);
+        ec_free(pdo);
     }
 
     ec_slave_mailbox_init_cmd_t *cmd;
@@ -1337,7 +1338,7 @@ void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
 
 #define EOE_ALLOC(field, sz) {                      \
     if ((field) != NULL) {                            \
-        slv->eoe.field = (uint8_t *)malloc((sz));     \
+        slv->eoe.field = (uint8_t *)ec_malloc((sz));     \
         (void)memcpy(slv->eoe.field, (field), (sz));    \
     } else { slv->eoe.field = NULL; } }
 

@@ -34,6 +34,7 @@
 
 #include "libethercat/eeprom.h"
 #include "libethercat/ec.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
@@ -482,7 +483,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         do_eeprom_log(100, "EEPROM_STRINGS", "slave %2d: cat_len %d\n", slave, cat_len);
 
                         // cppcheck-suppress misra-c2012-21.3
-                        uint8_t *buf = (uint8_t *)malloc((cat_len * 2u) + 1u);
+                        uint8_t *buf = (uint8_t *)ec_malloc((cat_len * 2u) + 1u);
                         buf[cat_len * 2u] = 0u;
                         (void)ec_eepromread_len(pec, slave, cat_offset+2, buf, cat_len * 2u);
 
@@ -495,19 +496,19 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
                         if (!slv->eeprom.strings_cnt) {
                             // cppcheck-suppress misra-c2012-21.3
-                            free(buf);
+                            ec_free(buf);
                             break;
                         }
 
                         // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.strings = (char **)malloc(sizeof(char *) * slv->eeprom.strings_cnt);
+                        slv->eeprom.strings = (char **)ec_malloc(sizeof(char *) * slv->eeprom.strings_cnt);
 
                         for (i = 0; i < slv->eeprom.strings_cnt; ++i) {
                             uint8_t string_len = buf[local_offset];
                             local_offset++;
 
                             // cppcheck-suppress misra-c2012-21.3
-                            slv->eeprom.strings[i] = (char *)malloc(sizeof(char) * (string_len + 1u));
+                            slv->eeprom.strings[i] = (char *)ec_malloc(sizeof(char) * (string_len + 1u));
                             (void)strncpy(slv->eeprom.strings[i], (char *)&buf[local_offset], string_len);
                             local_offset += string_len;
 
@@ -525,7 +526,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         }
 
                         // cppcheck-suppress misra-c2012-21.3
-                        free(buf);
+                        ec_free(buf);
                         break;
                     }
                     case EC_EEPROM_CAT_DATATYPES:
@@ -559,7 +560,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
                         // alloc fmmus
                         // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.fmmus = (ec_eeprom_cat_fmmu_t *)malloc(
+                        slv->eeprom.fmmus = (ec_eeprom_cat_fmmu_t *)ec_malloc(
                                 sizeof(ec_eeprom_cat_fmmu_t) * slv->eeprom.fmmus_cnt);
 
                         uint32_t fmmu_idx = 0;
@@ -603,19 +604,19 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
                         // alloc sms
                         // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.sms = (ec_eeprom_cat_sm_t *)malloc(
+                        slv->eeprom.sms = (ec_eeprom_cat_sm_t *)ec_malloc(
                                 sizeof(ec_eeprom_cat_sm_t) * slv->eeprom.sms_cnt);
 
                         // reallocate if we have more sm that previously declared
                         if ((cat_len/(sizeof(ec_eeprom_cat_sm_t) / 2u)) > slv->sm_ch) {
                             if (slv->sm != NULL) {
                                 // cppcheck-suppress misra-c2012-21.3
-                                free(slv->sm);
+                                ec_free(slv->sm);
                             }
 
                             slv->sm_ch = cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u);
                             // cppcheck-suppress misra-c2012-21.3
-                            slv->sm = (ec_slave_sm_t *)malloc(slv->sm_ch * 
+                            slv->sm = (ec_slave_sm_t *)ec_malloc(slv->sm_ch * 
                                     sizeof(ec_slave_sm_t));
                             (void)memset(slv->sm, 0, slv->sm_ch * sizeof(ec_slave_sm_t));
                         }
@@ -664,14 +665,14 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         while (pdo != NULL) {
                             TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
                             // cppcheck-suppress misra-c2012-21.3
-                            free(pdo);
+                            ec_free(pdo);
                             pdo = TAILQ_FIRST(&slv->eeprom.txpdos);
                         }
 
                         do {
                             // read pdo
                             // cppcheck-suppress misra-c2012-21.3
-                            pdo = (ec_eeprom_cat_pdo_t *)malloc(sizeof(ec_eeprom_cat_pdo_t));
+                            pdo = (ec_eeprom_cat_pdo_t *)ec_malloc(sizeof(ec_eeprom_cat_pdo_t));
                             (void)memset((uint8_t *)pdo, 0, sizeof(ec_eeprom_cat_pdo_t));
                             (void)ec_eepromread_len(pec, slave, local_offset, 
                                     (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
@@ -683,7 +684,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                             if (pdo->n_entry > 0u) {
                                 // alloc entries
                                 // cppcheck-suppress misra-c2012-21.3
-                                pdo->entries = (ec_eeprom_cat_pdo_entry_t *)malloc(pdo->n_entry * 
+                                pdo->entries = (ec_eeprom_cat_pdo_entry_t *)ec_malloc(pdo->n_entry * 
                                         sizeof(ec_eeprom_cat_pdo_entry_t));
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
@@ -720,14 +721,14 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         while (pdo != NULL) {
                             TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
                             // cppcheck-suppress misra-c2012-21.3
-                            free(pdo);
+                            ec_free(pdo);
                             pdo = TAILQ_FIRST(&slv->eeprom.rxpdos);
                         }
 
                         do {
                             // read pdo
                             // cppcheck-suppress misra-c2012-21.3
-                            pdo = (ec_eeprom_cat_pdo_t *)malloc(sizeof(ec_eeprom_cat_pdo_t));
+                            pdo = (ec_eeprom_cat_pdo_t *)ec_malloc(sizeof(ec_eeprom_cat_pdo_t));
                             (void)ec_eepromread_len(pec, slave, local_offset, 
                                     (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
                             local_offset += (size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
@@ -738,7 +739,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                             if (pdo->n_entry > 0u) {
                                 // alloc entries
                                 // cppcheck-suppress misra-c2012-21.3
-                                pdo->entries = (ec_eeprom_cat_pdo_entry_t *)malloc(pdo->n_entry * 
+                                pdo->entries = (ec_eeprom_cat_pdo_entry_t *)ec_malloc(pdo->n_entry * 
                                         sizeof(ec_eeprom_cat_pdo_entry_t));
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
@@ -769,7 +770,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         // freeing existing dcs ...
                         if (slv->eeprom.dcs > 0) {
                             // cppcheck-suppress misra-c2012-21.3
-                            free(slv->eeprom.dcs);
+                            ec_free(slv->eeprom.dcs);
                             slv->eeprom.dcs = NULL;
                             slv->eeprom.dcs_cnt = 0;
                         }
@@ -777,7 +778,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         // allocating new dcs
                         slv->eeprom.dcs_cnt = cat_len / (size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
                         // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.dcs = (ec_eeprom_cat_dc_t *)malloc(EC_EEPROM_CAT_DC_LEN * slv->eeprom.dcs_cnt);
+                        slv->eeprom.dcs = (ec_eeprom_cat_dc_t *)ec_malloc(EC_EEPROM_CAT_DC_LEN * slv->eeprom.dcs_cnt);
 
                         for (j = 0; j < slv->eeprom.dcs_cnt; ++j) {
                             ec_eeprom_cat_dc_t *dc = &slv->eeprom.dcs[j];

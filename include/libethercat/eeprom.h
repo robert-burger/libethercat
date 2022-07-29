@@ -33,7 +33,6 @@
 #define LIBETHERCAT_EEPROM_H
 
 #include "libethercat/common.h"
-#include <stdlib.h>
 #include <sys/queue.h>
 
 //------------------ Category General ---------------

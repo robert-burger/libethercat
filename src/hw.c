@@ -36,13 +36,10 @@
 #include <sched.h>
 #endif
 
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
 #include "libethercat/idx.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <pthread.h>
@@ -370,7 +367,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
     assert(pphw != NULL);
 
     // cppcheck-suppress misra-c2012-21.3
-    (*pphw) = (hw_t *) malloc(sizeof(hw_t));
+    (*pphw) = (hw_t *)ec_malloc(sizeof(hw_t));
     if ((*pphw) == NULL) {
         ret = EC_ERROR_OUT_OF_MEMORY;
     } else {
@@ -395,7 +392,7 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
 
     if ((ret != EC_OK) && (*pphw) != NULL) {
         // cppcheck-suppress misra-c2012-21.3
-        free(*pphw);
+        ec_free(*pphw);
     }
 
     return ret;
@@ -421,7 +418,7 @@ int hw_close(hw_t *phw) {
     pthread_mutex_destroy(&phw->hw_lock);
 
     // cppcheck-suppress misra-c2012-21.3
-    free(phw);
+    ec_free(phw);
 
     return 0;
 }

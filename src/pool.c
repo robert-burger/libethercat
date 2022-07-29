@@ -33,6 +33,7 @@
 #include "libethercat/pool.h"
 #include "libethercat/common.h"
 #include "libethercat/ec.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
@@ -57,7 +58,7 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
     int ret = EC_OK;
 
     // cppcheck-suppress misra-c2012-21.3
-    (*pp) = (pool_t *)malloc(sizeof(pool_t));
+    (*pp) = (pool_t *)ec_malloc(sizeof(pool_t));
     if (!(*pp)) {
         ret = EC_ERROR_OUT_OF_MEMORY;
     } else {
@@ -71,12 +72,12 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
         size_t i;
         for (i = 0; i < cnt; ++i) {
             // cppcheck-suppress misra-c2012-21.3
-            pool_entry_t *entry = (pool_entry_t *)malloc(sizeof(pool_entry_t));
+            pool_entry_t *entry = (pool_entry_t *)ec_malloc(sizeof(pool_entry_t));
             (void)memset(entry, 0, sizeof(pool_entry_t));
 
             entry->data_size = data_size;
             // cppcheck-suppress misra-c2012-21.3
-            entry->data = (void *)malloc(data_size);
+            entry->data = (void *)ec_malloc(data_size);
             (void)memset(entry->data, 0, data_size);
             TAILQ_INSERT_TAIL(&(*pp)->avail, entry, qh);
         }
@@ -103,12 +104,12 @@ int pool_close(pool_t *pp) {
         TAILQ_REMOVE(&pp->avail, entry, qh);
         if (entry->data != NULL) { 
             // cppcheck-suppress misra-c2012-21.3
-            free(entry->data); 
+            ec_free(entry->data); 
             entry->data = NULL; 
         }
 
         // cppcheck-suppress misra-c2012-21.3
-        free(entry);
+        ec_free(entry);
 
         entry = TAILQ_FIRST(&pp->avail);
     }
@@ -119,7 +120,7 @@ int pool_close(pool_t *pp) {
     sem_destroy(&pp->avail_cnt);
 
     // cppcheck-suppress misra-c2012-21.3
-    free(pp);
+    ec_free(pp);
     
     return EC_OK;
 }

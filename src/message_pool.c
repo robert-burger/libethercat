@@ -33,6 +33,7 @@
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
 #include "libethercat/slave.h"
+#include "libethercat/memory.h"
 #include "libethercat/message_pool.h"
 
 #include <assert.h>
@@ -62,7 +63,7 @@ static int ec_async_message_loop_get(ec_message_pool_t *ppool,
                 perror("sem_timedwait");
             }
 
-            ret = local_errno;
+            ret = EC_ERROR_TIMEOUT;
         }
     }
 
@@ -164,7 +165,7 @@ static void *ec_async_message_loop_thread(void *arg) {
         ec_message_entry_t *me = NULL;
 
         int ret = ec_async_message_loop_get(&paml->exec, &me, &timeout);
-        if (ret != 0) {
+        if (ret != EC_OK) {
             continue; // e.g. timeout
         }
 
@@ -233,7 +234,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
 
     // create memory for async message loop
     // cppcheck-suppress misra-c2012-21.3
-    (*ppaml) = (ec_async_message_loop_t *)malloc(sizeof(ec_async_message_loop_t));
+    (*ppaml) = (ec_async_message_loop_t *)ec_malloc(sizeof(ec_async_message_loop_t));
     if (!(*ppaml)) {
         ret = ENOMEM;
     } else {
@@ -242,13 +243,13 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
         // initiale pre-alocated async messages in avail queue
         pthread_mutex_init(&(*ppaml)->avail.lock, NULL);
         pthread_mutex_lock(&(*ppaml)->avail.lock);
-        (void)memset(&(*ppaml)->avail.avail_cnt, 0, sizeof(sem_t));
+        //(void)memset(&(*ppaml)->avail.avail_cnt, 0, sizeof(sem_t));
         sem_init(&(*ppaml)->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
         TAILQ_INIT(&(*ppaml)->avail.queue);
 
         for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
             // cppcheck-suppress misra-c2012-21.3
-            ec_message_entry_t *me = (ec_message_entry_t *)malloc(sizeof(ec_message_entry_t));
+            ec_message_entry_t *me = (ec_message_entry_t *)ec_malloc(sizeof(ec_message_entry_t));
             (void)memset(me, 0, sizeof(ec_message_entry_t));
             TAILQ_INSERT_TAIL(&(*ppaml)->avail.queue, me, qh);
         }
@@ -258,7 +259,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
         // initialize execute queue
         pthread_mutex_init(&(*ppaml)->exec.lock, NULL);
         pthread_mutex_lock(&(*ppaml)->exec.lock);
-        (void)memset(&(*ppaml)->exec.avail_cnt, 0, sizeof(sem_t));
+        //(void)memset(&(*ppaml)->exec.avail_cnt, 0, sizeof(sem_t));
         sem_init(&(*ppaml)->exec.avail_cnt, 0, 0);
         TAILQ_INIT(&(*ppaml)->exec.queue);
         pthread_mutex_unlock(&(*ppaml)->exec.lock);
@@ -288,7 +289,7 @@ int ec_async_message_pool_destroy(ec_async_message_loop_t *paml) {
     while (me != NULL) {
         TAILQ_REMOVE(&paml->avail.queue, me, qh);
         // cppcheck-suppress misra-c2012-21.3
-        free(me);
+        ec_free(me);
 
         me = TAILQ_FIRST(&paml->avail.queue);
     }
@@ -300,7 +301,7 @@ int ec_async_message_pool_destroy(ec_async_message_loop_t *paml) {
     while (me != NULL) {
         TAILQ_REMOVE(&paml->exec.queue, me, qh);
         // cppcheck-suppress misra-c2012-21.3
-        free(me);
+        ec_free(me);
     
         me = TAILQ_FIRST(&paml->exec.queue);
     }
@@ -308,7 +309,7 @@ int ec_async_message_pool_destroy(ec_async_message_loop_t *paml) {
     pthread_mutex_destroy(&paml->exec.lock);
 
     // cppcheck-suppress misra-c2012-21.3
-    free(paml);
+    ec_free(paml);
     
     return 0;
 }

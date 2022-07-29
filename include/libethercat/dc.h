@@ -51,7 +51,7 @@ typedef struct ec_dc_info_slave {
     uint32_t cycle_shift;       //!< cycle shift time [ns]
 } ec_dc_info_slave_t;
 
-typedef struct ec_dc_info {
+typedef struct __attribute__((__packed__)) ec_dc_info {
     uint16_t master_address;
     int have_dc;
     int next;
@@ -74,10 +74,10 @@ typedef struct ec_dc_info {
     int64_t prev_rtc;   //!< rtc value of previous cycle (truncated to 32-bit)
     int64_t prev_dc;    //!< dc  value of previous cycle (truncated to 32-bit)
 
-    int offset_compensation_cycles;     //!< Number of cycles offset compensation takes place.
-    int offset_compensation_cnt;        //!< Current counter of offset compensation cycles.
+    int32_t offset_compensation_cycles;     //!< Number of cycles offset compensation takes place.
+    int32_t offset_compensation_cnt;        //!< Current counter of offset compensation cycles.
 
-    int timer_override;
+    int32_t timer_override;
     uint64_t timer_prev;
 
     enum {

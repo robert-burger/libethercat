@@ -338,6 +338,7 @@ int ec_dc_config(struct ec *pec) {
         if (pec->dc.master_address == slv->fixed_address) {
             pec->dc.dc_sto = dcsof;
             pec->dc.rtc_sto = ec_timer_gettime_nsec();
+            ec_log(100, "DISTRIBUTED_CLOCK", "initial dc_sto %lld, rtc_sto %lld\n", pec->dc.dc_sto, pec->dc.rtc_sto);
         }
 
         // find parent with active distributed clocks

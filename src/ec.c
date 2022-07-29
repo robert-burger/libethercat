@@ -38,6 +38,7 @@
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
 #include "libethercat/dc.h"
+#include "libethercat/memory.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/error_codes.h"
 
@@ -119,7 +120,7 @@ int ec_destroy_pd_groups(ec_t *pec) {
         }
 
         // cppcheck-suppress misra-c2012-21.3
-        free(pec->pd_groups);
+        ec_free(pec->pd_groups);
     }
 
     pec->pd_group_cnt = 0;
@@ -209,7 +210,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, uint32_t group) {
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
     // cppcheck-suppress misra-c2012-21.3
-    pd->pd = (uint8_t *)malloc(pd->log_len);
+    pd->pd = (uint8_t *)ec_malloc(pd->log_len);
     (void)memset(pd->pd, 0, pd->log_len);
 
     uint8_t *pdout = pd->pd;
@@ -373,7 +374,7 @@ static void ec_create_logical_mapping(ec_t *pec, uint32_t group) {
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
     // cppcheck-suppress misra-c2012-21.3
-    pd->pd = (uint8_t *)malloc(pd->log_len);
+    pd->pd = (uint8_t *)ec_malloc(pd->log_len);
     (void)memset(pd->pd, 0, pd->log_len);
 
     uint8_t *pdout = pd->pd;
@@ -930,7 +931,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
     int ret = EC_OK;
 
     // cppcheck-suppress misra-c2012-21.3
-    ec_t *pec = (ec_t *)malloc(sizeof(ec_t)); 
+    ec_t *pec = (ec_t *)ec_malloc(sizeof(ec_t)); 
     (*ppec) = pec;
     if (pec == NULL) {
         ret = EC_ERROR_OUT_OF_MEMORY;
@@ -975,7 +976,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
         // eeprom logging level
         pec->eeprom_log         = eeprom_log;
 
-        ret = pool_open(&pec->pool, 1000, 1518);
+        ret = pool_open(&pec->pool, 100, 1518);
     }
 
     if (ret == EC_OK) {
@@ -1002,7 +1003,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
             ec_index_deinit(&pec->idx_q);
 
             // cppcheck-suppress misra-c2012-21.3
-            free(pec);
+            ec_free(pec);
         }
 
         *ppec = NULL;
@@ -1045,12 +1046,12 @@ int ec_close(ec_t *pec) {
 
         pec->slave_cnt = 0;
         // cppcheck-suppress misra-c2012-21.3
-        free(pec->slaves);
+        ec_free(pec->slaves);
     }
 
     ec_log(10, __func__, "freeing master instance\n");
     // cppcheck-suppress misra-c2012-21.3
-    free(pec);
+    ec_free(pec);
 
     ec_log(10, __func__, "all done!\n");
     return 0;
@@ -1389,12 +1390,12 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
         if (pec->dc.timer_override > 0) {
             if (pec->dc.timer_prev == 0u) {
-                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+//                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
                     int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
                     pec->dc.timer_prev = (uint64_t)tmp;
-                } else {
-                    pec->dc.timer_prev = (uint64_t)act_rtc_time;
-                }
+//                } else {
+//                    pec->dc.timer_prev = (uint64_t)act_rtc_time;
+//                }
             } else {
                 pec->dc.timer_prev += (uint64_t)(pec->dc.timer_override);
             }
@@ -1473,7 +1474,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
             // special mode where we distribute the EtherCAT master clock to all slaves.
             ret = EC_OK;
         } else {
-            uint64_t rtc = ec_timer_gettime_nsec();
+            //uint64_t rtc = ec_timer_gettime_nsec();
 
             p_dg = ec_datagram_cast(pec->dc.p_de_dc->data);
             wkc = ec_datagram_wkc(p_dg);
@@ -1488,35 +1489,44 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                     // doing offset compensation in dc master clock
                     // getting current system time first relative to ecat start
                     int64_t tmp = pec->dc.timer_prev;
-                    if (pec->dc.timer_override > 0) { tmp = rtc; }
-                    tmp -= pec->dc.rtc_sto;
-                    uint64_t act_rtc_time = (uint64_t)tmp;
+                    //if (pec->dc.timer_override > 0) { 
+                    //    tmp = rtc; 
+                    //    tmp -= pec->dc.rtc_sto;
+                    //}
+
+                    int64_t act_rtc_time = (int64_t)tmp;
 
                     // clamp every value to 32-bit, so we do not need to care 
                     // about wheter dc is 32-bit or 64-bit.
-                    int64_t rtc_temp = act_rtc_time % UINT_MAX;
-                    int64_t dc_temp  = act_dc_time  % UINT_MAX;
+                    int64_t rtc_temp = act_rtc_time;// % UINT_MAX;
+                    int64_t dc_temp  = act_dc_time; // % UINT_MAX;
 
                     pec->dc.act_diff = rtc_temp - dc_temp;
-                    if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp)) {
-                        pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
-                    } else if ((pec->dc.prev_rtc > rtc_temp) && (pec->dc.prev_dc < dc_temp)) {
-                        pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
-                    } else {}
-
+//                    if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp)) {
+//                        pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
+//                    } else if ((pec->dc.prev_rtc > rtc_temp) && (pec->dc.prev_dc < dc_temp)) {
+//                        pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
+//                    } else {}
+//
                     // only compensate within one cycle, add rest to system time offset
-                    if (pec->dc.timer_override > 1) {
-                        // for example with a cycle of 1 ms we want to control between
-                        // -0.5 ms to +0.5 ms.
-                        int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
-                        pec->dc.rtc_sto  += ticks_off * (pec->dc.timer_override / 2);             
-                        pec->dc.act_diff  = pec->dc.act_diff % (pec->dc.timer_override / 2);
-
-                        if (ticks_off > 0) {
-                            ec_log(10, __func__, "compensating %d cycles, timer_prev %lld, rtc_sto %lld\n", 
-                                    ticks_off, pec->dc.timer_prev, pec->dc.rtc_sto);
+//                    if (pec->dc.timer_override > 1) {
+//                        // for example with a cycle of 1 ms we want to control between
+//                        // -0.5 ms to +0.5 ms.
+                    int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
+                        if (ticks_off != 0) {
+                     printf("we are %d ticks off, compensting now. timer_prev %ld, rtc_temp %ld, dc_temp %ld, act_diff %d\n", ticks_off, pec->dc.timer_prev, rtc_temp, dc_temp, pec->dc.act_diff);
+//                        pec->dc.rtc_sto  += ticks_off * (pec->dc.timer_override / 2);             
+                        pec->dc.timer_prev -= ticks_off * (pec->dc.timer_override / 2);
+                        pec->dc.act_diff    = pec->dc.timer_prev - dc_temp; //pec->dc.act_diff % (pec->dc.timer_override / 2);
                         }
-                    }
+                    
+                     printf("timer_prev %ld, rtc_temp %ld, dc_temp %ld, act_diff %d\n", pec->dc.timer_prev, rtc_temp, dc_temp, pec->dc.act_diff);
+//
+//                        if (ticks_off > 0) {
+//                            ec_log(10, __func__, "compensating %d cycles, timer_prev %lld, rtc_sto %lld\n", 
+//                                    ticks_off, pec->dc.timer_prev, pec->dc.rtc_sto);
+//                        }
+//                    }
 
                     pec->dc.prev_rtc = rtc_temp;
                     pec->dc.prev_dc  = dc_temp;

@@ -34,6 +34,7 @@
 
 #include "libethercat/idx.h"
 #include "libethercat/ec.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 //! Get next free index entry.
@@ -101,7 +102,7 @@ int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
     TAILQ_INIT(&idx_q->q);
     for (i = 0; i < max_index; ++i) {
         // cppcheck-suppress misra-c2012-21.3
-        idx_entry_t *entry = (idx_entry_t *)malloc(sizeof(idx_entry_t));
+        idx_entry_t *entry = (idx_entry_t *)ec_malloc(sizeof(idx_entry_t));
         if (entry == NULL) {
             ret = EC_ERROR_OUT_OF_MEMORY;
             break;
@@ -135,7 +136,7 @@ void ec_index_deinit(idx_queue_t *idx_q) {
         sem_destroy(&idx->waiter);
 
         // cppcheck-suppress misra-c2012-21.3
-        free(idx);
+        ec_free(idx);
         idx = TAILQ_FIRST(&idx_q->q);
     }
 

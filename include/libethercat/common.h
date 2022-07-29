@@ -37,6 +37,8 @@
 #include <stdint.h>
 #include <pthread.h>
 
+#include "libethercat/memory.h"
+
 #define PACKED __attribute__((__packed__))
 
 #ifndef min
@@ -47,13 +49,13 @@
 
 #define free_resource(a) {  \
     if ((a) != NULL) {      \
-        (void)free((a));          \
+        (void)ec_free((a));          \
         (a) = NULL;         \
     } }
 
 #define alloc_resource(a, type, len) {      \
     if ((len) > 0u) {                       \
-        (a) = (type *)malloc((len));        \
+        (a) = (type *)ec_malloc((len));        \
         (void)memset((a), 0u, (len)); } }
 
 #define EC_MAX_DATA 4096u

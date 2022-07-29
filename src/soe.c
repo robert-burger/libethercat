@@ -34,6 +34,7 @@
 #include "libethercat/ec.h"
 #include "libethercat/soe.h"
 #include "libethercat/timer.h"
+#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
@@ -290,7 +291,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
                 if (*buf == NULL) {
                     // cppcheck-suppress misra-c2012-21.3
-                    *buf = (uint8_t *)malloc(*len);
+                    *buf = (uint8_t *)ec_malloc(*len);
                     to = *buf;
                 }
 
@@ -448,7 +449,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
         // read mapping idn
         size_t idn_size = (idn_len[0] + 4u);
         // cppcheck-suppress misra-c2012-21.3
-        idn_value = (uint16_t *)malloc(idn_size);
+        idn_value = (uint16_t *)ec_malloc(idn_size);
         elements = EC_SOE_VALUE;
         ret = ec_soe_read(pec, slave, atn, idn, &elements, (uint8_t **)&idn_value, &idn_size);
     }
@@ -478,7 +479,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
 
         if (idn_value != NULL) {
             // cppcheck-suppress misra-c2012-21.3
-            free(idn_value);
+            ec_free(idn_value);
         }
 
         ec_log(10, __func__, "soe mapping for idn %d, bitsize %u\n", idn, *bitsize);
