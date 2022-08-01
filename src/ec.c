@@ -1488,48 +1488,24 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
 
                     // doing offset compensation in dc master clock
                     // getting current system time first relative to ecat start
-                    int64_t tmp = pec->dc.timer_prev;
-                    //if (pec->dc.timer_override > 0) { 
-                    //    tmp = rtc; 
-                    //    tmp -= pec->dc.rtc_sto;
-                    //}
+                    int64_t act_rtc_time = pec->dc.timer_prev;
 
-                    int64_t act_rtc_time = (int64_t)tmp;
+                    // get clock difference
+                    pec->dc.act_diff = act_rtc_time - act_dc_time; 
 
-                    // clamp every value to 32-bit, so we do not need to care 
-                    // about wheter dc is 32-bit or 64-bit.
-                    int64_t rtc_temp = act_rtc_time;// % UINT_MAX;
-                    int64_t dc_temp  = act_dc_time; // % UINT_MAX;
-
-                    pec->dc.act_diff = rtc_temp - dc_temp;
-//                    if ((pec->dc.prev_rtc < rtc_temp) && (pec->dc.prev_dc > dc_temp)) {
-//                        pec->dc.act_diff = rtc_temp - (UINT_MAX + dc_temp);
-//                    } else if ((pec->dc.prev_rtc > rtc_temp) && (pec->dc.prev_dc < dc_temp)) {
-//                        pec->dc.act_diff = UINT_MAX + rtc_temp - dc_temp;
-//                    } else {}
-//
                     // only compensate within one cycle, add rest to system time offset
-//                    if (pec->dc.timer_override > 1) {
-//                        // for example with a cycle of 1 ms we want to control between
-//                        // -0.5 ms to +0.5 ms.
-                    int ticks_off = pec->dc.act_diff / (pec->dc.timer_override / 2);
-                        if (ticks_off != 0) {
-                     printf("we are %d ticks off, compensting now. timer_prev %ld, rtc_temp %ld, dc_temp %ld, act_diff %d\n", ticks_off, pec->dc.timer_prev, rtc_temp, dc_temp, pec->dc.act_diff);
-//                        pec->dc.rtc_sto  += ticks_off * (pec->dc.timer_override / 2);             
-                        pec->dc.timer_prev -= ticks_off * (pec->dc.timer_override / 2);
-                        pec->dc.act_diff    = pec->dc.timer_prev - dc_temp; //pec->dc.act_diff % (pec->dc.timer_override / 2);
-                        }
+                    int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
+                    if (ticks_off != 0) {
+                        ec_log(10, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
+                                ticks_off, pec->dc.timer_prev, act_dc_time, pec->dc.act_diff);
+                        pec->dc.timer_prev -= ticks_off * (pec->dc.timer_override);
+                        pec->dc.act_diff    = pec->dc.timer_prev - act_dc_time;
+                    }
                     
-                     printf("timer_prev %ld, rtc_temp %ld, dc_temp %ld, act_diff %d\n", pec->dc.timer_prev, rtc_temp, dc_temp, pec->dc.act_diff);
-//
-//                        if (ticks_off > 0) {
-//                            ec_log(10, __func__, "compensating %d cycles, timer_prev %lld, rtc_sto %lld\n", 
-//                                    ticks_off, pec->dc.timer_prev, pec->dc.rtc_sto);
-//                        }
-//                    }
+                    ec_log(100, __func__, "rtc %ld, dc %ld, act_diff %d\n", act_rtc_time, act_dc_time, pec->dc.act_diff);
 
-                    pec->dc.prev_rtc = rtc_temp;
-                    pec->dc.prev_dc  = dc_temp;
+                    pec->dc.prev_rtc = act_rtc_time;
+                    pec->dc.prev_dc  = act_dc_time;
 
                     // dc_mode 1 is sync ref_clock to master_clock
                     if (pec->dc.mode == dc_mode_master_clock) {
