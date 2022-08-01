@@ -86,7 +86,7 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
         switch (pec->dc.mode) {
             default: 
             case dc_mode_ref_clock:
-                tmp_time = (int64_t)pec->dc.timer_prev - pec->dc.rtc_sto + 10000;
+                tmp_time = (int64_t)pec->dc.timer_prev + 10000;
                 rel_rtc_time = (uint64_t)(tmp_time);
                 break;
             case dc_mode_master_clock: {
@@ -97,7 +97,7 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
                     }
                 }
 
-                tmp_time = (int64_t)pec->dc.timer_prev - pec->dc.rtc_sto;
+                tmp_time = (int64_t)pec->dc.timer_prev;
                 tmp_time = tmp_time - pec->dc.act_diff;
                 rel_rtc_time = (uint64_t)(tmp_time);
                 break;
