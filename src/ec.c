@@ -1390,12 +1390,8 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
         if (pec->dc.timer_override > 0) {
             if (pec->dc.timer_prev == 0u) {
-//                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                    int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
-                    pec->dc.timer_prev = (uint64_t)tmp;
-//                } else {
-//                    pec->dc.timer_prev = (uint64_t)act_rtc_time;
-//                }
+                int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+                pec->dc.timer_prev = (uint64_t)tmp;
             } else {
                 pec->dc.timer_prev += (uint64_t)(pec->dc.timer_override);
             }
@@ -1443,6 +1439,19 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     return ret;
 }
 
+//! calculate signed difference of 64-bit unsigned int's
+/*!
+ * \param[in]   a       Minuend.
+ * \param[in]   b       Subtrahend.
+ *
+ * \return Difference 
+ */
+static int64_t signed64_diff(uint64_t a, uint64_t b) {
+    uint64_t abs_diff = (a > b) ? (a - b) : (b - a);
+    assert(abs_diff <= INT64_MAX);
+    return (a > b) ? (int64_t)abs_diff : -(int64_t)abs_diff;
+}
+
 //! receive distributed clocks sync datagram
 /*!
  * \param pec ethercat master pointer
@@ -1474,8 +1483,6 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
             // special mode where we distribute the EtherCAT master clock to all slaves.
             ret = EC_OK;
         } else {
-            //uint64_t rtc = ec_timer_gettime_nsec();
-
             p_dg = ec_datagram_cast(pec->dc.p_de_dc->data);
             wkc = ec_datagram_wkc(p_dg);
 
@@ -1483,64 +1490,60 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                 uint64_t act_dc_time; 
                 (void)memcpy((uint8_t *)&act_dc_time, (uint8_t *)ec_datagram_payload(p_dg), 8);
 
-                if (((++pec->dc.offset_compensation_cnt) % pec->dc.offset_compensation_cycles) == 0) {
-                    pec->dc.offset_compensation_cnt = 0;
+                // doing offset compensation in dc master clock
+                // getting current system time first relative to ecat start
+                uint64_t act_rtc_time = pec->dc.timer_prev;
 
-                    // doing offset compensation in dc master clock
-                    // getting current system time first relative to ecat start
-                    int64_t act_rtc_time = pec->dc.timer_prev;
+                // get clock difference
+                pec->dc.act_diff = signed64_diff(act_rtc_time, act_dc_time); 
 
-                    // get clock difference
-                    pec->dc.act_diff = act_rtc_time - act_dc_time; 
+                // only compensate within one cycle, add rest to system time offset
+                int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
+                if (ticks_off != 0) {
+                    ec_log(10, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
+                            ticks_off, pec->dc.timer_prev, act_dc_time, pec->dc.act_diff);
+                    pec->dc.timer_prev -= ticks_off * (pec->dc.timer_override);
+                    pec->dc.act_diff    = pec->dc.timer_prev - act_dc_time;
+                }
 
-                    // only compensate within one cycle, add rest to system time offset
-                    int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
-                    if (ticks_off != 0) {
-                        ec_log(10, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
-                                ticks_off, pec->dc.timer_prev, act_dc_time, pec->dc.act_diff);
-                        pec->dc.timer_prev -= ticks_off * (pec->dc.timer_override);
-                        pec->dc.act_diff    = pec->dc.timer_prev - act_dc_time;
-                    }
-                    
-                    ec_log(100, __func__, "rtc %ld, dc %ld, act_diff %d\n", act_rtc_time, act_dc_time, pec->dc.act_diff);
+                ec_log(100, __func__, "rtc %lu, dc %lu, act_diff %d\n", act_rtc_time, act_dc_time, pec->dc.act_diff);
 
-                    pec->dc.prev_rtc = act_rtc_time;
-                    pec->dc.prev_dc  = act_dc_time;
+                pec->dc.prev_rtc = act_rtc_time;
+                pec->dc.prev_dc  = act_dc_time;
 
-                    // dc_mode 1 is sync ref_clock to master_clock
-                    if (pec->dc.mode == dc_mode_master_clock) {
-                        // sending offset compensation value to dc master clock
-                        pool_entry_t *p_entry_dc_sto;
-                        idx_entry_t *p_idx_dc_sto;
+                // dc_mode 1 is sync ref_clock to master_clock
+                if (pec->dc.mode == dc_mode_master_clock) {
+                    // sending offset compensation value to dc master clock
+                    pool_entry_t *p_entry_dc_sto;
+                    idx_entry_t *p_idx_dc_sto;
 
-                        // dc system time offset frame
-                        if (ec_index_get(&pec->idx_q, &p_idx_dc_sto) != EC_OK) {
-                            ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
-                            ret = EC_ERROR_OUT_OF_INDICES;
-                        } else if (pool_get(pec->pool, &p_entry_dc_sto, NULL) != EC_OK) {
-                            ec_index_put(&pec->idx_q, p_idx_dc_sto);
-                            ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
-                            ret = EC_ERROR_OUT_OF_DATAGRAMS;
-                        } else {
-                            // correct system time offset, sync ref_clock to master_clock
-                            pec->dc.dc_sto += pec->dc.act_diff;
-                            p_dg = ec_datagram_cast(p_entry_dc_sto->data);
-                            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 10u);
-                            p_dg->cmd = EC_CMD_FPWR;
-                            p_dg->idx = p_idx_dc_sto->idx;
-                            p_dg->adr = ((uint32_t)EC_REG_DCSYSOFFSET << 16u) | pec->dc.master_address;
-                            p_dg->len = sizeof(pec->dc.dc_sto);
-                            p_dg->irq = 0;
-                            (void)memcpy(ec_datagram_payload(p_dg), (uint8_t *)&pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
-                            // we don't care about the answer, cb_no_reply frees datagram 
-                            // and index
-                            p_idx_dc_sto->pec = pec;
-                            p_entry_dc_sto->user_cb = cb_no_reply;
-                            p_entry_dc_sto->user_arg = p_idx_dc_sto;
+                    // dc system time offset frame
+                    if (ec_index_get(&pec->idx_q, &p_idx_dc_sto) != EC_OK) {
+                        ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
+                        ret = EC_ERROR_OUT_OF_INDICES;
+                    } else if (pool_get(pec->pool, &p_entry_dc_sto, NULL) != EC_OK) {
+                        ec_index_put(&pec->idx_q, p_idx_dc_sto);
+                        ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
+                        ret = EC_ERROR_OUT_OF_DATAGRAMS;
+                    } else {
+                        // correct system time offset, sync ref_clock to master_clock
+                        pec->dc.dc_sto += pec->dc.act_diff;
+                        p_dg = ec_datagram_cast(p_entry_dc_sto->data);
+                        (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 10u);
+                        p_dg->cmd = EC_CMD_FPWR;
+                        p_dg->idx = p_idx_dc_sto->idx;
+                        p_dg->adr = ((uint32_t)EC_REG_DCSYSOFFSET << 16u) | pec->dc.master_address;
+                        p_dg->len = sizeof(pec->dc.dc_sto);
+                        p_dg->irq = 0;
+                        (void)memcpy(ec_datagram_payload(p_dg), (uint8_t *)&pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
+                        // we don't care about the answer, cb_no_reply frees datagram 
+                        // and index
+                        p_idx_dc_sto->pec = pec;
+                        p_entry_dc_sto->user_cb = cb_no_reply;
+                        p_entry_dc_sto->user_arg = p_idx_dc_sto;
 
-                            // queue frame and trigger tx
-                            pool_put(pec->phw->tx_low, p_entry_dc_sto);
-                        }
+                        // queue frame and trigger tx
+                        pool_put(pec->phw->tx_low, p_entry_dc_sto);
                     }
                 }
 

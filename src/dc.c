@@ -288,8 +288,6 @@ int ec_dc_config(struct ec *pec) {
             // first slave with enabled dc's
             pec->dc.master_address = slv->fixed_address;
             pec->dc.have_dc = 1;
-            pec->dc.offset_compensation_cycles = 100;
-            pec->dc.offset_compensation_cnt = 0;
             pec->dc.timer_prev = 0;
             pec->dc.prev_rtc = 0;
             pec->dc.prev_dc = 0;

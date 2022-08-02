@@ -74,9 +74,6 @@ typedef struct __attribute__((__packed__)) ec_dc_info {
     int64_t prev_rtc;   //!< rtc value of previous cycle (truncated to 32-bit)
     int64_t prev_dc;    //!< dc  value of previous cycle (truncated to 32-bit)
 
-    int32_t offset_compensation_cycles;     //!< Number of cycles offset compensation takes place.
-    int32_t offset_compensation_cnt;        //!< Current counter of offset compensation cycles.
-
     int32_t timer_override;
     uint64_t timer_prev;
 
