@@ -559,7 +559,7 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
                     (void)memset(p_entry->data, 0, p_entry->data_size);
     
                     if (ec_mbx_receive(pec, slave, p_entry->data, 
-                                min(p_entry->data_size, (size_t)slv->sm[MAILBOX_READ].len), 0) != 0) {
+                                min(p_entry->data_size, (size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
                         // cppcheck-suppress misra-c2012-11.3
                         ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
                         ec_log(100, __func__, "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
