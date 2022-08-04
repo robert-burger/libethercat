@@ -312,8 +312,6 @@ void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
     // cppcheck-suppress misra-c2012-11.3
     ec_coe_header_t *coe_hdr = (ec_coe_header_t *)(&(p_entry->data[sizeof(ec_mbx_header_t)]));
 
-    ec_log(100, __func__, "got service: %0X\n", coe_hdr->service);
-
     if (coe_hdr->service == EC_COE_EMERGENCY) {
         ec_coe_emergency_enqueue(pec, slave, p_entry);
     } else if ((coe_hdr->service >= 0x01u) && (coe_hdr->service <= 0x08u)) {
@@ -579,7 +577,6 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry);
 
-        // wait for answer
         ec_coe_wait(pec, slave, &p_entry);
         while (p_entry != NULL) {
             ec_sdo_normal_download_resp_t *read_buf = (void *)(p_entry->data);
@@ -616,8 +613,6 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
         }
 
         if (ret == EC_OK) {
-            ret = EC_ERROR_MAILBOX_TIMEOUT;
-
             uint8_t toggle = 1u;
 
             while (rest_len != 0u) {
@@ -625,6 +620,8 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
                     ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
                     break;
                 } else { 
+                    ret = EC_ERROR_MAILBOX_TIMEOUT;
+
                     ec_sdo_seg_download_req_t *seg_write_buf = (void *)(p_entry->data);
 
                     // need to send more segments
@@ -703,7 +700,7 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
         uint8_t sub_index, int complete, uint8_t *buf, size_t len,
         uint32_t *abort_code) 
 {
-    int ret = 0;
+    int ret;
     if ((len <= 4u) && (complete == 0)) {
         ret = ec_coe_sdo_write_expedited(pec, slave, index, sub_index, complete, buf, len, abort_code); 
     } else {
