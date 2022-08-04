@@ -220,8 +220,8 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, uint32_t group) {
 
     for (i = 0; i < pec->slave_cnt; ++i) {
         ec_slave_t *slv = &pec->slaves[i];
-        uint32_t start_sm = 2u;
-        if (slv->eeprom.mbx_supported != 0u) { start_sm = 0u; }
+        uint32_t start_sm = 0u;
+        if (slv->eeprom.mbx_supported != 0u) { start_sm = 2u; }
 
         if (slv->assigned_pd_group != (int)group) {
             continue;
