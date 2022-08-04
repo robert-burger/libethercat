@@ -858,15 +858,8 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
 
             // reset dc
-            pec->dc.act_diff        = 0;
-            pec->dc.timer_prev      = 0;
             pec->dc.dc_time         = 0;
-            pec->dc.dc_cycle_sum    = 0;
-            pec->dc.dc_cycle_cnt    = 0;
             pec->dc.rtc_time        = 0;
-            pec->dc.rtc_cycle_sum   = 0;
-            pec->dc.rtc_cycle       = 0;
-            pec->dc.rtc_count       = 0;
             pec->dc.act_diff        = 0;
             pec->tx_sync            = 1;
 
@@ -958,12 +951,7 @@ int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_l
         // init values for distributed clocks
         pec->dc.have_dc         = 0;
         pec->dc.dc_time         = 0;
-        pec->dc.dc_cycle_sum    = 0;
-        pec->dc.dc_cycle_cnt    = 0;
         pec->dc.rtc_time        = 0;
-        pec->dc.rtc_cycle_sum   = 0;
-        pec->dc.rtc_cycle       = 0;
-        pec->dc.rtc_count       = 0;
         pec->dc.act_diff        = 0;
 
         pec->tun_fd             = 0;
@@ -1372,32 +1360,18 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     } else {
         uint64_t act_rtc_time = ec_timer_gettime_nsec();
 
-        if (pec->dc.rtc_time != 0u) {
-            if (act_rtc_time > pec->dc.rtc_time) {
-                pec->dc.rtc_cycle_sum += act_rtc_time - pec->dc.rtc_time;
-            } else {
-                pec->dc.rtc_cycle_sum -= pec->dc.rtc_time - act_rtc_time;
-            }
-
-            pec->dc.rtc_count++;
-
-            if (pec->dc.rtc_count == DC_DCSOFF_SAMPLES) {
-                pec->dc.rtc_cycle = pec->dc.rtc_cycle_sum / DC_DCSOFF_SAMPLES;
-                pec->dc.rtc_count = 0;
-                pec->dc.rtc_cycle_sum = 0;
-            }
+        if (pec->dc.mode == dc_mode_ref_clock) {
+            if (pec->dc.timer_override > 0) {
+                if (pec->dc.rtc_time == 0u) {
+                    int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+                    pec->dc.rtc_time = (uint64_t)tmp;
+                } else {
+                    pec->dc.rtc_time += (uint64_t)(pec->dc.timer_override);
+                }
+            }   
+        } else {
+            pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
         }
-
-        if (pec->dc.timer_override > 0) {
-            if (pec->dc.timer_prev == 0u) {
-                int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
-                pec->dc.timer_prev = (uint64_t)tmp;
-            } else {
-                pec->dc.timer_prev += (uint64_t)(pec->dc.timer_override);
-            }
-        }
-
-        pec->dc.rtc_time = act_rtc_time;
 
         if (ec_index_get(&pec->idx_q, &pec->dc.p_idx_dc) != EC_OK) {
             ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
@@ -1417,7 +1391,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
                 p_dg->len = 8;
                 p_dg->irq = 0;
 
-                (void)memcpy((uint8_t *)ec_datagram_payload(p_dg), (uint8_t *)&pec->dc.timer_prev, sizeof(pec->dc.timer_prev));
+                (void)memcpy((uint8_t *)ec_datagram_payload(p_dg), (uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
             } else {
                 p_dg->cmd = EC_CMD_FRMW;
                 p_dg->idx = pec->dc.p_idx_dc->idx;
@@ -1448,7 +1422,16 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
  */
 static int64_t signed64_diff(uint64_t a, uint64_t b) {
     uint64_t abs_diff = (a > b) ? (a - b) : (b - a);
-    assert(abs_diff <= INT64_MAX);
+    if (abs_diff > INT64_MAX) {
+        if (a > INT64_MAX) {
+            a = UINT64_MAX - a;
+            abs_diff = (a > b) ? (a - b) : (b - a);
+        } else if (b > INT64_MAX) {
+            b = UINT64_MAX - b;
+        }
+            
+        abs_diff = (a > b) ? (a - b) : (b - a);
+    }
     return (a > b) ? (int64_t)abs_diff : -(int64_t)abs_diff;
 }
 
@@ -1479,40 +1462,28 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                     "sem_timedwait distributed clocks (sent: %lld): %s\n", 
                     pec->dc.rtc_time, strerror(errno));
             ret = EC_ERROR_TIMEOUT;
-        } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-            // special mode where we distribute the EtherCAT master clock to all slaves.
-            ret = EC_OK;
         } else {
             p_dg = ec_datagram_cast(pec->dc.p_de_dc->data);
             wkc = ec_datagram_wkc(p_dg);
 
             if (wkc != 0u) {
-                uint64_t act_dc_time; 
-                (void)memcpy((uint8_t *)&act_dc_time, (uint8_t *)ec_datagram_payload(p_dg), 8);
-
-                // doing offset compensation in dc master clock
-                // getting current system time first relative to ecat start
-                uint64_t act_rtc_time = pec->dc.timer_prev;
+                (void)memcpy((uint8_t *)&pec->dc.dc_time, (uint8_t *)ec_datagram_payload(p_dg), 8);
 
                 // get clock difference
-                pec->dc.act_diff = signed64_diff(act_rtc_time, act_dc_time); 
+                pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time); 
 
-                // only compensate within one cycle, add rest to system time offset
-                int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
-                if (ticks_off != 0) {
-                    ec_log(10, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
-                            ticks_off, pec->dc.timer_prev, act_dc_time, pec->dc.act_diff);
-                    pec->dc.timer_prev -= ticks_off * (pec->dc.timer_override);
-                    pec->dc.act_diff    = pec->dc.timer_prev - act_dc_time;
-                }
+                if (pec->dc.mode == dc_mode_ref_clock) {
+                    // only compensate within one cycle, add rest to system time offset
+                    int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
+                    if (ticks_off != 0) {
+                        ec_log(10, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
+                                ticks_off, pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
+                        pec->dc.rtc_time -= ticks_off * (pec->dc.timer_override);
+                        pec->dc.act_diff  = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time);
+                    }
 
-                ec_log(100, __func__, "rtc %lu, dc %lu, act_diff %d\n", act_rtc_time, act_dc_time, pec->dc.act_diff);
-
-                pec->dc.prev_rtc = act_rtc_time;
-                pec->dc.prev_dc  = act_dc_time;
-
-                // dc_mode 1 is sync ref_clock to master_clock
-                if (pec->dc.mode == dc_mode_master_clock) {
+                    ec_log(100, __func__, "rtc %lu, dc %lu, act_diff %d\n", pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
+                } else if (pec->dc.mode == dc_mode_master_clock) {
                     // sending offset compensation value to dc master clock
                     pool_entry_t *p_entry_dc_sto;
                     idx_entry_t *p_idx_dc_sto;
@@ -1527,7 +1498,8 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                         ret = EC_ERROR_OUT_OF_DATAGRAMS;
                     } else {
                         // correct system time offset, sync ref_clock to master_clock
-                        pec->dc.dc_sto += pec->dc.act_diff;
+                        // only correct half diff to avoid overshoot in slave.
+                        pec->dc.dc_sto += pec->dc.act_diff / 2.;
                         p_dg = ec_datagram_cast(p_entry_dc_sto->data);
                         (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 10u);
                         p_dg->cmd = EC_CMD_FPWR;
@@ -1546,28 +1518,6 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                         pool_put(pec->phw->tx_low, p_entry_dc_sto);
                     }
                 }
-
-                if (pec->dc.dc_time > 0u) {
-                    if (act_dc_time < pec->dc.dc_time) {
-                        if (pec->dc.dc_time < (uint64_t)UINT_MAX) { // 32-bit dc clock
-                            pec->dc.dc_cycle_sum += ((uint64_t)UINT_MAX - pec->dc.dc_time) + act_dc_time;
-                        } else {
-                            pec->dc.dc_cycle_sum += (ULONG_MAX - pec->dc.dc_time) + act_dc_time;
-                        }
-                    } else {
-                        pec->dc.dc_cycle_sum += act_dc_time - pec->dc.dc_time;
-                    }
-
-                    pec->dc.dc_cycle_cnt++;                
-
-                    if (pec->dc.dc_cycle_cnt == DC_DCSOFF_SAMPLES) {                    
-                        pec->dc.dc_cycle = pec->dc.dc_cycle_sum / DC_DCSOFF_SAMPLES;
-                        pec->dc.dc_cycle_cnt = 0;
-                        pec->dc.dc_cycle_sum = 0;
-                    }
-                }
-
-                pec->dc.dc_time = act_dc_time;
             }
         }
 

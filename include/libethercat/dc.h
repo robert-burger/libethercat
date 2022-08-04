@@ -51,31 +51,18 @@ typedef struct ec_dc_info_slave {
     uint32_t cycle_shift;       //!< cycle shift time [ns]
 } ec_dc_info_slave_t;
 
-typedef struct __attribute__((__packed__)) ec_dc_info {
+typedef struct ec_dc_info {
     uint16_t master_address;
     int have_dc;
     int next;
     int prev;
 
     uint64_t dc_time;
-    uint64_t dc_cycle_sum;
-    uint64_t dc_cycle;
-    uint32_t dc_cycle_cnt;
     int64_t dc_sto;
-
-    int64_t rtc_sto;
     uint64_t rtc_time;
-    uint64_t rtc_cycle_sum;
-    uint64_t rtc_cycle;
-    uint32_t rtc_count;
-
-    int32_t act_diff;
-               
-    int64_t prev_rtc;   //!< rtc value of previous cycle (truncated to 32-bit)
-    int64_t prev_dc;    //!< dc  value of previous cycle (truncated to 32-bit)
-
-    int32_t timer_override;
-    uint64_t timer_prev;
+    int64_t rtc_sto;
+    int64_t act_diff;
+    int64_t timer_override;
 
     enum {
         dc_mode_master_clock = 0,

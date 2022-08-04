@@ -69,7 +69,6 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
         uint8_t dc_cuc = 0u;
         uint8_t dc_active = 0u;
         uint16_t wkc = 0u;
-        uint64_t rel_rtc_time = 0u;
         int64_t dc_start = 0;
         int64_t dc_time = 0;
         int64_t tmp_time = 0;
@@ -80,37 +79,14 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
 
         dc_active = active;
 
+        // program first trigger time and cycle time
+        check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
+
         // Calculate DC start time as a sum of the actual EtherCAT master time,
         // the generic first sync delay and the cycle shift. the first sync delay 
         // has to be a multiple of cycle time.  
-        switch (pec->dc.mode) {
-            default: 
-            case dc_mode_ref_clock:
-                tmp_time = (int64_t)pec->dc.timer_prev + 10000;
-                rel_rtc_time = (uint64_t)(tmp_time);
-                break;
-            case dc_mode_master_clock: {
-                if (dc_active == 1u) {
-                    while ((pec->dc.act_diff == 0) || (pec->dc.timer_prev == 0u)) {
-                        // wait until dc's are ready
-                        ec_sleep(1000000);
-                    }
-                }
-
-                tmp_time = (int64_t)pec->dc.timer_prev;
-                tmp_time = tmp_time - pec->dc.act_diff;
-                rel_rtc_time = (uint64_t)(tmp_time);
-                break;
-            }
-            case dc_mode_master_as_ref_clock:
-                rel_rtc_time = (uint64_t)pec->dc.timer_prev; 
-                break;
-        }
-
-        // program first trigger time and cycle time
-        check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
-        tmp_time = ((dc_time - (int64_t)rel_rtc_time) / (int64_t)pec->dc.timer_override) + 1000;
-        dc_start = (int64_t)rel_rtc_time + (tmp_time * (int64_t)pec->dc.timer_override) + cycle_shift;
+        tmp_time = ((dc_time - (int64_t)pec->dc.rtc_time) / (int64_t)pec->dc.timer_override) + 1000;
+        dc_start = (int64_t)pec->dc.rtc_time + (tmp_time * (int64_t)pec->dc.timer_override) + cycle_shift;
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
@@ -120,7 +96,7 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
             check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
             ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
-                    "%lld, slv dc_time %lld\n", slave, rel_rtc_time, dc_start, dc_time);
+                    "%lld, slv dc_time %lld\n", slave, pec->dc.rtc_time, dc_start, dc_time);
             ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
                     "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
         } else {
@@ -288,9 +264,7 @@ int ec_dc_config(struct ec *pec) {
             // first slave with enabled dc's
             pec->dc.master_address = slv->fixed_address;
             pec->dc.have_dc = 1;
-            pec->dc.timer_prev = 0;
-            pec->dc.prev_rtc = 0;
-            pec->dc.prev_dc = 0;
+            pec->dc.rtc_time = 0;
             pec->dc.next = slave;
             slv->dc.prev = -1;                
         } else {
