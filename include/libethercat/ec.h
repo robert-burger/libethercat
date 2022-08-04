@@ -141,10 +141,10 @@ typedef struct ec {
                                      * again by the master.
                                      */
 
-    uint16_t slave_cnt;                  //!< count of found EtherCAT slaves
+    uint16_t slave_cnt;             //!< count of found EtherCAT slaves
     ec_slave_t *slaves;             //!< array with EtherCAT slaves
 
-    uint16_t pd_group_cnt;               //!< count of process data groups
+    uint16_t pd_group_cnt;          //!< count of process data groups
     ec_pd_group_t *pd_groups;       //!< array with process data groups
 
     ec_dc_info_t dc;                //!< distributed clocks master settings
@@ -172,7 +172,6 @@ typedef struct ec {
     pool_entry_t *p_de_state;       //!< EtherCAT datagram from pool for ec_state read
     idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
 } ec_t;
-
 
 #ifdef __cplusplus
 extern "C" {
