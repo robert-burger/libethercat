@@ -293,7 +293,7 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
  */
 int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
     uint16_t wkc = 0;
-    int ret = 0;
+    int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
@@ -304,23 +304,26 @@ int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_
     ec_timer_init(&timer, nsec);
 
     // wait for send mailbox available 
-    if (ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec) != EC_OK) {
+    ret = ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec);
+    if (ret != EC_OK) {
         ec_log(1, __func__, "slave %d: waiting for empty send mailbox failed!\n", slave);
     } else {
+        ret = EC_ERROR_MAILBOX_TIMEOUT;
+
         // send request
         do {
             ec_log(100, __func__, "slave %d: writing mailbox\n", slave);
             (void)ec_fpwr(pec, slv->fixed_address, slv->sm[MAILBOX_WRITE].adr, buf, buf_len, &wkc);
 
             if (wkc != 0u) {
-                ret = wkc;
+                ret = EC_OK;
                 break;
             }
 
             ec_sleep(EC_DEFAULT_DELAY);
         } while (!ec_timer_expired(&timer));
 
-        if (ret == 0) {
+        if (ret != EC_OK) {
             ec_log(1, __func__, "slave %d: did not respond on writing to write mailbox\n", slave);
         }
     }
@@ -504,8 +507,6 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
  *                      (usually the n'th slave attached).
  */
 void ec_mbx_handler(ec_t *pec, uint16_t slave) {
-    int wkc = 0;
-    
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -622,12 +623,12 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
                     int retry_cnt = 10;
 
                     do {
-                        wkc = ec_mbx_send(pec, slave, p_entry->data, 
+                        ret = ec_mbx_send(pec, slave, p_entry->data, 
                                 min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
                         --retry_cnt;
-                    } while ((wkc == 0) && (retry_cnt > 0));
+                    } while ((ret != EC_OK) && (retry_cnt > 0));
 
-                    if (!wkc) {
+                    if (ret != EC_OK) {
                         ec_log(1, __func__, "slave %2d: error on writing send mailbox -> requeue\n", slave);
                         ec_mbx_enqueue_head(pec, slave, p_entry);
                     } else {                    
