@@ -24,10 +24,12 @@ AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
+PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
+
 # Checks for pthread support
-ACX_PTHREAD
-LIBS="$PTHREAD_LIBS $LIBS"
-CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+#ACX_PTHREAD
+#LIBS="$PTHREAD_LIBS $LIBS"
+#CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 # Checks for libraries.
 AC_CHECK_LIB([rt], [sem_init])
@@ -54,7 +56,7 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([clock_gettime memset socket strdup strerror strndup pthread_setaffinity_np])
+AC_CHECK_FUNCS([clock_gettime memset socket strdup strerror strndup]) #pthread_setaffinity_np])
 
 AC_CONFIG_FILES([Makefile src/Makefile tools/ethercatdiag/Makefile tools/eepromtool/Makefile libethercat.pc])
 AC_OUTPUT

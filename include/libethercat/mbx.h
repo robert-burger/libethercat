@@ -31,6 +31,8 @@
 #ifndef LIBETHERCAT_MBX_H
 #define LIBETHERCAT_MBX_H
 
+#include <libosal/osal.h>
+
 #include "libethercat/common.h"
 #include "libethercat/coe.h"
 #include "libethercat/soe.h"
@@ -38,8 +40,8 @@
 #include "libethercat/eoe.h"
 #include "libethercat/pool.h"
 
-#define MAILBOX_WRITE   (uint16_t)(0u)
-#define MAILBOX_READ    (uint16_t)(1u)
+#define MAILBOX_WRITE   (osal_uint16_t)(0u)
+#define MAILBOX_READ    (osal_uint16_t)(1u)
 
 // forward declarations
 struct ec;
@@ -68,11 +70,11 @@ enum {
 
 //! ethercat mailbox header
 typedef struct PACKED ec_mbx_header {
-    uint16_t  length;           //!< \brief mailbox length
-    uint16_t  address;          //!< \brief mailbox address
-    uint8_t   priority;         //!< \brief priority
-    uint8_t   mbxtype : 4;      //!< \brief mailbox type
-    uint8_t   counter : 4;      //!< \brief counter
+    osal_uint16_t  length;           //!< \brief mailbox length
+    osal_uint16_t  address;          //!< \brief mailbox address
+    osal_uint8_t   priority;         //!< \brief priority
+    osal_uint8_t   mbxtype : 4;      //!< \brief mailbox type
+    osal_uint8_t   counter : 4;      //!< \brief counter
 } PACKED ec_mbx_header_t;
 
 //! ethercat mailbox data
@@ -82,9 +84,9 @@ typedef struct PACKED ec_mbx_buffer {
 } PACKED ec_mbx_buffer_t;
 
 typedef struct ec_mbx {
-    uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
-    pthread_mutex_t sync_mutex; //!< \brief Sync mutex for handler flags.
-    sem_t sync_sem;
+    osal_uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
+    osal_mutex_t sync_mutex;    //!< \brief Sync mutex for handler flags.
+    osal_binary_semaphore_t sync_sem;
 
     int handler_running;        //!< \brief Mailbox handler thread running flag.
     ec_t *pec;                  //!< \brief Pointer to ethercat master structure.
@@ -97,9 +99,9 @@ typedef struct ec_mbx {
                                  * Used by handler thread wrapper to call mailbox
                                  * handler function.
                                  */
-    pthread_t handler_tid;      //!< \brief Mailbox handler thread handle.
+    osal_task_t handler_tid;    //!< \brief Mailbox handler thread handle.
     
-    pthread_mutex_t lock;       //!< mailbox lock
+    osal_mutex_t lock;          //!< mailbox lock
                                 /*!<
                                  * Only one simoultaneous access to the 
                                  * EtherCAT slave mailbox is possible at the 
@@ -116,7 +118,7 @@ typedef struct ec_mbx {
     ec_foe_t foe;               //!< \brief Structure for File over EtherCAT mailbox.
     ec_eoe_t eoe;               //!< \brief Strucutre for Ethernet over EtherCAT mailbox.
     
-    uint8_t *sm_state;          //!< Sync manager state of read mailbox.
+    osal_uint8_t *sm_state;          //!< Sync manager state of read mailbox.
                                 /*!<
                                  * The field is used to receive the mailbox 
                                  * sync manager state. This is useful to 
@@ -137,7 +139,7 @@ extern "C" {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_mbx_init(ec_t *pec, uint16_t slave);
+void ec_mbx_init(ec_t *pec, osal_uint16_t slave);
 
 //! \brief Deinit mailbox structure
 /*!
@@ -147,7 +149,7 @@ void ec_mbx_init(ec_t *pec, uint16_t slave);
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_mbx_deinit(ec_t *pec, uint16_t slave);
+void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave);
 
 //! \brief Enqueue mailbox message to send queue.
 /*!
@@ -158,7 +160,7 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave);
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_mbx_enqueue_head(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
 //! \brief Enqueue mailbox message to send queue.
 /*!
@@ -169,7 +171,7 @@ void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_mbx_enqueue_tail(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
 //! \brief Trigger read of mailbox.
 /*!
@@ -179,7 +181,7 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
  */
-void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
+void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave);
 
 //! \brief Checks if mailbox protocol is supported by slave
 /*!
@@ -192,7 +194,7 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave);
  *
  * \return 1 if supported, 0 otherwise
  */
-int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag);
+int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag);
 
 #define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) \
     pool_get((pec)->slaves[(slave)].mbx.message_pool_recv_free, &(entry), (timeout))
@@ -213,7 +215,7 @@ int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag);
  *
  * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
  */
-int ec_mbx_get_free_send_buffer(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry, ec_timer_t *timeout);
+int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, ec_timer_t *timeout);
 
 #define ec_mbx_return_free_send_buffer(pec, slave, entry) \
     pool_put((pec)->slaves[(slave)].mbx.message_pool_send_free, (entry)) 

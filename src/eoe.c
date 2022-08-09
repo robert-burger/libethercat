@@ -160,7 +160,7 @@ void ec_eoe_init(ec_t *pec, uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
 
-    pthread_mutex_init(&slv->mbx.eoe.lock, NULL);
+    osal_mutex_init(&slv->mbx.eoe.lock, NULL);
 
     (void)pool_open(&slv->mbx.eoe.recv_pool, 0, 1518);
     (void)pool_open(&slv->mbx.eoe.response_pool, 0, 1518);
@@ -184,7 +184,7 @@ void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     
-    pthread_mutex_lock(&slv->mbx.eoe.lock);
+    osal_mutex_lock(&slv->mbx.eoe.lock);
 
     sem_destroy(&slv->mbx.eoe.send_sync);
     (void)pool_close(slv->mbx.eoe.eth_frames_recv_pool);
@@ -192,8 +192,8 @@ void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
     (void)pool_close(slv->mbx.eoe.response_pool);
     (void)pool_close(slv->mbx.eoe.recv_pool);
     
-    pthread_mutex_unlock(&slv->mbx.eoe.lock);
-    pthread_mutex_destroy(&slv->mbx.eoe.lock);
+    osal_mutex_unlock(&slv->mbx.eoe.lock);
+    osal_mutex_destroy(&slv->mbx.eoe.lock);
 }
 
 //! \brief Wait for EoE message received from slave.
@@ -297,7 +297,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     ec_slave_ptr(slv, pec, slave);
     
-    pthread_mutex_lock(&slv->mbx.eoe.lock);
+    osal_mutex_lock(&slv->mbx.eoe.lock);
     
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE;
@@ -355,7 +355,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx.eoe.lock);
+    osal_mutex_unlock(&slv->mbx.eoe.lock);
 
     return ret;
 }
@@ -391,7 +391,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_le
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     ec_slave_ptr(slv, pec, slave);
     
-    pthread_mutex_lock(&slv->mbx.eoe.lock);
+    osal_mutex_lock(&slv->mbx.eoe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE;
@@ -445,7 +445,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_le
         } while(frame_offset < frame_len);
     }
 
-    pthread_mutex_unlock(&slv->mbx.eoe.lock);
+    osal_mutex_unlock(&slv->mbx.eoe.lock);
     
     return ret;
 }
@@ -715,7 +715,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
             ret = EC_ERROR_UNAVAILABLE;
         } else {
             pec->tun_running = 1;
-            pthread_create(&pec->tun_tid, NULL, ec_eoe_tun_handler_wrapper, pec);
+            osal_task_create(&pec->tun_tid, NULL, ec_eoe_tun_handler_wrapper, pec);
         }
     }
 
@@ -732,7 +732,7 @@ void ec_eoe_destroy_tun(ec_t *pec) {
 
     if (pec->tun_running == 1) {
         pec->tun_running = 0;
-        pthread_join(pec->tun_tid, NULL);
+        osal_task_join(&pec->tun_tid, NULL);
 
         close(pec->tun_fd);
         pec->tun_fd = 0;

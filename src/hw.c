@@ -42,8 +42,6 @@
 #include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
-#include <pthread.h>
-
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -335,7 +333,7 @@ static int internal_hw_open(hw_t *phw, const char *devname) {
                                     } else {
                                         (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
 
-                                        pthread_mutex_init(&phw->hw_lock, NULL);
+                                        osal_mutex_init(&phw->hw_lock, NULL);
                                     }
                                 }
                             }
@@ -387,7 +385,11 @@ int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_pa
         (*pphw)->rxthreadprio = prio;
         (*pphw)->rxthreadcpumask = cpumask;
         (*pphw)->rxthreadrunning = 1;
-        pthread_create(&(*pphw)->rxthread, NULL, hw_rx_thread, *pphw);
+
+        osal_task_attr_t attr;
+        attr.priority = prio;
+        attr.affinity = cpumask;
+        osal_task_create(&(*pphw)->rxthread, &attr, hw_rx_thread, *pphw);
     }
 
     if ((ret != EC_OK) && (*pphw) != NULL) {
@@ -408,14 +410,14 @@ int hw_close(hw_t *phw) {
 
     // stop receiver thread
     phw->rxthreadrunning = 0;
-    pthread_join(phw->rxthread, NULL);
+    osal_task_join(&phw->rxthread, NULL);
 
-    pthread_mutex_lock(&phw->hw_lock);
+    osal_mutex_lock(&phw->hw_lock);
     (void)pool_close(phw->tx_high);
     (void)pool_close(phw->tx_low);
 
-    pthread_mutex_unlock(&phw->hw_lock);
-    pthread_mutex_destroy(&phw->hw_lock);
+    osal_mutex_unlock(&phw->hw_lock);
+    osal_mutex_destroy(&phw->hw_lock);
 
     // cppcheck-suppress misra-c2012-21.3
     ec_free(phw);
@@ -465,45 +467,45 @@ void *hw_rx_thread(void *arg) {
     uint8_t recv_frame[ETH_FRAME_LEN];
     // cppcheck-suppress misra-c2012-11.3
     ec_frame_t *pframe = (ec_frame_t *) recv_frame;
-    struct sched_param param;
-    int policy;
+//    struct sched_param param;
+//    int policy;
 
     assert(phw != NULL);
 
-    // thread settings
-    if (pthread_getschedparam(pthread_self(), &policy, &param) != 0) {
-        ec_log(1, "RX_THREAD", "error on pthread_getschedparam %s\n",
-               strerror(errno));
-    } else {
-        policy = SCHED_FIFO;
-        param.sched_priority = phw->rxthreadprio;
-        if (pthread_setschedparam(pthread_self(), policy, &param) != 0) {
-            ec_log(1, "RX_THREAD", "error on pthread_setschedparam %s\n",
-                   strerror(errno));
-        }
-    }
-
-#ifdef __VXWORKS__
-    taskCpuAffinitySet(taskIdSelf(),  (cpuset_t)phw->rxthreadcpumask);
-#elif defined __QNX__
-    ThreadCtl(_NTO_TCTL_RUNMASK, (void *)phw->rxthreadcpumask);
-#else
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    for (uint32_t i = 0u; i < 32u; ++i) {
-        if ((phw->rxthreadcpumask & ((uint32_t)1u << i)) != 0u) {
-            CPU_SET(i, &cpuset);
-        }
-    }
-
-#ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
-        ec_log(1, "RX_THREAD", "error on pthread_setaffinity_np %s\n", 
-                strerror(errno));
-    }
-#endif
-
-#endif
+//    // thread settings
+//    if (pthread_getschedparam(pthread_self(), &policy, &param) != 0) {
+//        ec_log(1, "RX_THREAD", "error on pthread_getschedparam %s\n",
+//               strerror(errno));
+//    } else {
+//        policy = SCHED_FIFO;
+//        param.sched_priority = phw->rxthreadprio;
+//        if (pthread_setschedparam(pthread_self(), policy, &param) != 0) {
+//            ec_log(1, "RX_THREAD", "error on pthread_setschedparam %s\n",
+//                   strerror(errno));
+//        }
+//    }
+//
+//#ifdef __VXWORKS__
+//    taskCpuAffinitySet(taskIdSelf(),  (cpuset_t)phw->rxthreadcpumask);
+//#elif defined __QNX__
+//    ThreadCtl(_NTO_TCTL_RUNMASK, (void *)phw->rxthreadcpumask);
+//#else
+//    cpu_set_t cpuset;
+//    CPU_ZERO(&cpuset);
+//    for (uint32_t i = 0u; i < 32u; ++i) {
+//        if ((phw->rxthreadcpumask & ((uint32_t)1u << i)) != 0u) {
+//            CPU_SET(i, &cpuset);
+//        }
+//    }
+//
+//#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+//    if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
+//        ec_log(1, "RX_THREAD", "error on pthread_setaffinity_np %s\n", 
+//                strerror(errno));
+//    }
+//#endif
+//
+//#endif
 
     while (phw->rxthreadrunning != 0) {
 #ifdef HAVE_NET_BPF_H
@@ -639,7 +641,7 @@ int hw_tx(hw_t *phw) {
     ec_frame_t *pframe = (ec_frame_t *) send_frame;
     (void)memset(send_frame, 0, ETH_FRAME_LEN);
 
-    pthread_mutex_lock(&phw->hw_lock);
+    osal_mutex_lock(&phw->hw_lock);
 
     if (phw->mmap_packets > 0) {
         header = hw_get_next_tx_buffer(phw);
@@ -744,7 +746,7 @@ int hw_tx(hw_t *phw) {
         }
     }
 
-    pthread_mutex_unlock(&phw->hw_lock);
+    osal_mutex_unlock(&phw->hw_lock);
 
     return 0;
 }

@@ -31,7 +31,7 @@
 #ifndef LIBETHERCAT_HW_H
 #define LIBETHERCAT_HW_H
 
-#include <pthread.h>
+#include <libosal/task.h>
 
 #include "libethercat/pool.h"
 
@@ -41,7 +41,7 @@ typedef struct hw {
     uint32_t mtu_size;              //!< mtu size
 
     // receiver thread settings
-    pthread_t rxthread;             //!< receiver thread handle
+    osal_task_t rxthread;           //!< receiver thread handle
     int rxthreadrunning;            //!< receiver thread running flag
     int rxthreadprio;               //!< receiver thread priority
     uint32_t rxthreadcpumask;       //!< recevied thread cpu mask
@@ -53,7 +53,7 @@ typedef struct hw {
     off_t rx_ring_offset;
     off_t tx_ring_offset;
 
-    pthread_mutex_t hw_lock;        //!< transmit lock
+    osal_mutex_t hw_lock;           //!< transmit lock
 
     pool_t *tx_high;                //!< high priority datagrams
     pool_t *tx_low;                 //!< low priority datagrams

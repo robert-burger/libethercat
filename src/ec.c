@@ -536,7 +536,7 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 pec->slaves[slave].worker_arg.slave = slave;
                 pec->slaves[slave].worker_arg.state = state;
 
-                pthread_create(&(pec->slaves[slave].worker_tid), NULL, 
+                osal_task_create(&(pec->slaves[slave].worker_tid), NULL, 
                         prepare_state_transition_wrapper, 
                         &(pec->slaves[slave].worker_arg));
             }
@@ -544,7 +544,7 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
 
         for (uint32_t slave = 0u; slave < pec->slave_cnt; ++slave) {
             if (pec->slaves[slave].assigned_pd_group != -1) {
-                pthread_join(pec->slaves[slave].worker_tid, NULL);
+                osal_task_join(&pec->slaves[slave].worker_tid, NULL);
             }
         }
     } else { 
@@ -582,7 +582,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, uint8_t with_g
                 pec->slaves[slave].worker_arg.slave = slave;
                 pec->slaves[slave].worker_arg.state = state;
 
-                pthread_create(&(pec->slaves[slave].worker_tid), NULL, 
+                osal_task_create(&(pec->slaves[slave].worker_tid), NULL, 
                         set_state_wrapper, 
                         &(pec->slaves[slave].worker_arg));
             }
@@ -590,7 +590,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, uint8_t with_g
 
         for (uint32_t slave = 0u; slave < pec->slave_cnt; ++slave) {
             if ((with_group == 0u) || (pec->slaves[slave].assigned_pd_group != -1)) {
-                pthread_join(pec->slaves[slave].worker_tid, NULL);
+                osal_task_join(&pec->slaves[slave].worker_tid, NULL);
             }
         }
     } else {
@@ -1051,7 +1051,7 @@ static void cb_block(void *user_arg, struct pool_entry *p) {
 
     // cppcheck-suppress misra-c2012-11.5
     idx_entry_t *entry = (idx_entry_t *)user_arg;
-    sem_post(&entry->waiter);
+    osal_binary_semaphore_post(&entry->waiter);
 }
 
 //! syncronous ethercat read/write
@@ -1107,10 +1107,7 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
         }
 
         // wait for completion
-        ec_timer_t timeout;
-        ec_timer_init(&timeout, 100000000);   // roundtrip on bus should be shorter than 100ms
-        struct timespec ts = { timeout.sec, timeout.nsec };
-        int local_ret = sem_timedwait(&p_idx->waiter, &ts);
+        int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, 100000000);
         if (local_ret == -1) {
             ec_log(1, "ec_transceive", "sem_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
                     strerror(errno), cmd, adr);
@@ -1271,8 +1268,8 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
         p_dg = ec_datagram_cast(pd->p_entry->data);
 
         // wait for completion
-        struct timespec ts = { timeout->sec, timeout->nsec };
-        if (sem_timedwait(&pd->p_idx->waiter, &ts) != 0) {
+        if (osal_binary_semaphore_timedwait(&pd->p_idx->waiter, 
+                    (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec) != 0) {
             if (++pd->recv_missed < pec->consecutive_max_miss) {
                 ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
                         "sem_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
@@ -1344,14 +1341,14 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
-    static pthread_mutex_t send_dc_lock = PTHREAD_MUTEX_INITIALIZER;
+    static osal_mutex_t send_dc_lock = PTHREAD_MUTEX_INITIALIZER;
 
     assert(pec != NULL);
 
     int ret = EC_OK;
     ec_datagram_t *p_dg = NULL;
 
-    pthread_mutex_lock(&send_dc_lock);
+    osal_mutex_lock(&send_dc_lock);
 
     if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
         ret = EC_ERROR_UNAVAILABLE;
@@ -1408,7 +1405,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
         }
     }
       
-    pthread_mutex_unlock(&send_dc_lock);
+    osal_mutex_unlock(&send_dc_lock);
 
     return ret;
 }
@@ -1425,7 +1422,6 @@ static int64_t signed64_diff(uint64_t a, uint64_t b) {
     if (abs_diff > INT64_MAX) {
         if (a > INT64_MAX) {
             a = UINT64_MAX - a;
-            abs_diff = (a > b) ? (a - b) : (b - a);
         } else if (b > INT64_MAX) {
             b = UINT64_MAX - b;
         }
@@ -1456,8 +1452,9 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         // wait for completion
-        struct timespec ts = { timeout->sec, timeout->nsec };
-        if (sem_timedwait(&pec->dc.p_idx_dc->waiter, &ts) != 0) {
+        if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter,
+                    (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec) != 0) 
+        {
             ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
                     "sem_timedwait distributed clocks (sent: %lld): %s\n", 
                     pec->dc.rtc_time, strerror(errno));
@@ -1585,11 +1582,12 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
     ec_datagram_t *p_dg = NULL;
     int ret = EC_OK;
     uint16_t al_status = 0u;
-    struct timespec ts = { timeout->sec, timeout->nsec };
 
     if (pec->p_idx_state == NULL) {
         ret = EC_ERROR_UNAVAILABLE;
-    } else if (sem_timedwait(&pec->p_idx_state->waiter, &ts) != 0) { // wait for completion
+    } else if (osal_binary_semaphore_timedwait(&pec->p_idx_state->waiter, 
+                (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec) != 0) 
+    { // wait for completion
         ec_log(1, __func__, "sem_timedwait ec_state: %s\n", strerror(errno));
         ret = EC_ERROR_TIMEOUT;
     } else {

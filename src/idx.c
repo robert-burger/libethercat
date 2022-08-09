@@ -50,20 +50,18 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
     assert(idx_q != NULL);
     assert(entry != NULL);
 
-    pthread_mutex_lock(&idx_q->lock);
+    osal_mutex_lock(&idx_q->lock);
 
     *entry = (idx_entry_t *)TAILQ_FIRST(&idx_q->q);
     if ((*entry) != NULL) {
         TAILQ_REMOVE(&idx_q->q, *entry, qh);
         ret = EC_OK;
     
-        while (sem_trywait(&(*entry)->waiter) == 0) {
-            ;
-        }
+        osal_binary_semaphore_timedwait(&(*entry)->waiter, 0);
     }
 
     
-    pthread_mutex_unlock(&idx_q->lock);
+    osal_mutex_unlock(&idx_q->lock);
 
     return ret;
 }
@@ -77,9 +75,9 @@ void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
     assert(idx_q != NULL);
     assert(entry != NULL);
 
-    pthread_mutex_lock(&idx_q->lock);
+    osal_mutex_lock(&idx_q->lock);
     TAILQ_INSERT_TAIL(&idx_q->q, entry, qh);
-    pthread_mutex_unlock(&idx_q->lock);
+    osal_mutex_unlock(&idx_q->lock);
 }
 
 //! Initialize index queue structure.
@@ -96,7 +94,7 @@ int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
 
     assert(idx_q != NULL);
 
-    pthread_mutex_init(&idx_q->lock, NULL);
+    osal_mutex_init(&idx_q->lock, NULL);
     
     // fill index queue
     TAILQ_INIT(&idx_q->q);
@@ -109,8 +107,7 @@ int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
         }
 
         entry->idx = i;
-        (void)memset(&entry->waiter, 0, sizeof(sem_t));
-        sem_init(&entry->waiter, 0, 0);
+        osal_binary_semaphore_init(&entry->waiter, NULL);
         (void)ec_index_put(idx_q, entry);
     }
 
@@ -133,13 +130,13 @@ void ec_index_deinit(idx_queue_t *idx_q) {
     idx_entry_t *idx = TAILQ_FIRST(&idx_q->q);
     while (idx != NULL) {
         TAILQ_REMOVE(&idx_q->q, idx, qh);
-        sem_destroy(&idx->waiter);
+        osal_binary_semaphore_destroy(&idx->waiter);
 
         // cppcheck-suppress misra-c2012-21.3
         ec_free(idx);
         idx = TAILQ_FIRST(&idx_q->q);
     }
 
-    pthread_mutex_destroy(&idx_q->lock);
+    osal_mutex_destroy(&idx_q->lock);
 }
 

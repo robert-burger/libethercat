@@ -31,6 +31,8 @@
 #ifndef LIBETHERCAT_COE_H
 #define LIBETHERCAT_COE_H
 
+#include <libosal/mutex.h>
+
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
@@ -40,8 +42,8 @@ typedef struct ec_coe_emergency_message_entry {
     TAILQ_ENTRY(ec_coe_emergency_message_entry) qh;
                                 //!< handle to message entry queue
     ec_timer_t timestamp;       //!< timestamp, when emergency was received
-    size_t msg_len;             //!< length
-    uint8_t msg[1];             //!< message itself
+    osal_size_t msg_len;             //!< length
+    osal_uint8_t msg[1];             //!< message itself
 } ec_coe_emergency_message_entry_t;
 
 TAILQ_HEAD(ec_coe_emergency_message_queue, ec_coe_emergency_message_entry);
@@ -50,7 +52,7 @@ typedef struct ec_coe_emergency_message_queue ec_coe_emergency_message_queue_t;
 typedef struct ec_coe {
     pool_t *recv_pool;
     
-    pthread_mutex_t lock;       //!< \brief CoE mailbox lock.
+    osal_mutex_t lock;          //!< \brief CoE mailbox lock.
                                 /*!<
                                  * Only one simoultaneous access to the 
                                  * EtherCAT slave CoE mailbox is possible 
@@ -97,20 +99,20 @@ enum {
     
 //! CanOpen over EtherCAT sdo descriptor
 typedef struct PACKED ec_coe_sdo_desc {
-    uint16_t data_type;             //!< \brief element data type
-    uint8_t  obj_code;              //!< \brief object type
-    uint8_t  max_subindices;        //!< \brief maximum number of subindices
-    char     name[CANOPEN_MAXNAME]; //!< \brief element name
-    size_t   name_len;              //!< \brief element name len
+    osal_uint16_t data_type;             //!< \brief element data type
+    osal_uint8_t  obj_code;              //!< \brief object type
+    osal_uint8_t  max_subindices;        //!< \brief maximum number of subindices
+    osal_char_t   name[CANOPEN_MAXNAME]; //!< \brief element name
+    osal_size_t   name_len;              //!< \brief element name len
 } PACKED ec_coe_sdo_desc_t;
 
 typedef struct PACKED ec_coe_sdo_entry_desc {
-    uint8_t  value_info;            //!< \brief valueinfo, how to interpret data
-    uint16_t data_type;             //!< \brief entry data type
-    uint16_t bit_length;            //!< \brief entry bit length
-    uint16_t obj_access;            //!< \brief object access
-    uint8_t  data[CANOPEN_MAXDATA]; //!< \brief entry name
-    size_t   data_len;              //!< \brief length of name
+    osal_uint8_t  value_info;            //!< \brief valueinfo, how to interpret data
+    osal_uint16_t data_type;             //!< \brief entry data type
+    osal_uint16_t bit_length;            //!< \brief entry bit length
+    osal_uint16_t obj_access;            //!< \brief object access
+    osal_uint8_t  data[CANOPEN_MAXDATA]; //!< \brief entry name
+    osal_size_t   data_len;              //!< \brief length of name
 } PACKED ec_coe_sdo_entry_desc_t;
 
 #define EC_COE_SDO_VALUE_INFO_ACCESS_RIGHTS      0x01
@@ -140,7 +142,7 @@ extern "C" {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_coe_init(ec_t *pec, uint16_t slave);
+void ec_coe_init(ec_t *pec, osal_uint16_t slave);
 
 //! deinitialize CoE structure 
 /*!
@@ -150,7 +152,7 @@ void ec_coe_init(ec_t *pec, uint16_t slave);
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_coe_deinit(ec_t *pec, uint16_t slave);
+void ec_coe_deinit(ec_t *pec, osal_uint16_t slave);
 
 //! Read CoE service data object (SDO) 
 /*!
@@ -171,9 +173,9 @@ void ec_coe_deinit(ec_t *pec, uint16_t slave);
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t *len, 
-        uint32_t *abort_code);
+int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t *len, 
+        osal_uint32_t *abort_code);
 
 //! Write CoE service data object (SDO)
 /*!
@@ -191,9 +193,9 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t len,
-        uint32_t *abort_code);
+int ec_coe_sdo_write(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
+        osal_uint32_t *abort_code);
 
 //! Read CoE SDO description
 /*!
@@ -208,8 +210,8 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        ec_coe_sdo_desc_t *desc, uint32_t *error_code);
+int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code);
 
 //! Read CoE SDO entry description
 /*!
@@ -226,9 +228,9 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
-        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
-        uint32_t *error_code);
+int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
+        osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
+        osal_uint32_t *error_code);
 
 //! Read CoE object dictionary list
 /*!
@@ -242,7 +244,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len);
+int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t *len);
 
 //! generate sync manager process data mapping via coe
 /*!
@@ -254,14 +256,14 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len);
  *
  * \retval 0 on success
  */
-int ec_coe_generate_mapping(ec_t *pec, uint16_t slave);
+int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave);
 
 //! queue read mailbox content
 /*!
  * \param pec pointer to ethercat master
  * \param slave slave number
  */
-void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
 //! \brief Enqueue CoE message received from slave.
 /*!
@@ -273,14 +275,14 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_coe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
 //! \brief Get SDO INFO error string.
 /*!
  * \param[in] error_code    Error code number.
  * \return string with decoded error.
  */
-const char *get_sdo_info_error_string(uint32_t errorcode);
+const osal_char_t *get_sdo_info_error_string(osal_uint32_t errorcode);
 
 #if 0 
 {

@@ -44,15 +44,15 @@
 #define max(a, b)  ((a) > (b) ? (a) : (b))
 #endif
 
-#define MBX_HANDLER_FLAGS_SEND  ((uint32_t)0x00000001u)
-#define MBX_HANDLER_FLAGS_RECV  ((uint32_t)0x00000002u)
+#define MBX_HANDLER_FLAGS_SEND  ((osal_uint32_t)0x00000001u)
+#define MBX_HANDLER_FLAGS_RECV  ((osal_uint32_t)0x00000002u)
 
 // forward declarations
-static int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec);
-static int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec);
-static void ec_mbx_handler(ec_t *pec, uint16_t slave);
-static int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
-static int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec);
+static int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec);
+static int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec);
+static void ec_mbx_handler(ec_t *pec, osal_uint16_t slave);
+static int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
+static int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
 
 //! \brief Mailbox handler thread wrapper
 static void *ec_mbx_handler_thread(void *arg) {
@@ -70,7 +70,7 @@ static void *ec_mbx_handler_thread(void *arg) {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_mbx_init(ec_t *pec, uint16_t slave) {
+void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -83,9 +83,9 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
         (void)pool_open(&slv->mbx.message_pool_send_free, 1024, slv->sm[MAILBOX_WRITE].len);
         (void)pool_open(&slv->mbx.message_pool_send_queued, 0, slv->sm[MAILBOX_WRITE].len);
 
-        pthread_mutex_init(&slv->mbx.sync_mutex, NULL);
-        sem_init(&slv->mbx.sync_sem, 0, 0);
-        pthread_mutex_init(&slv->mbx.lock, NULL);
+        osal_mutex_init(&slv->mbx.sync_mutex, NULL);
+        osal_binary_semaphore_init(&slv->mbx.sync_sem, NULL);
+        osal_mutex_init(&slv->mbx.lock, NULL);
 
         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
             ec_coe_init(pec, slave);
@@ -105,7 +105,7 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
         slv->mbx.pec = pec;
         slv->mbx.slave = slave;
 
-        pthread_create(&slv->mbx.handler_tid, NULL, ec_mbx_handler_thread, &slv->mbx);
+        osal_task_create(&slv->mbx.handler_tid, NULL, ec_mbx_handler_thread, &slv->mbx);
     }
 }
 
@@ -117,7 +117,7 @@ void ec_mbx_init(ec_t *pec, uint16_t slave) {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
+void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -127,7 +127,7 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
         ec_log(10, __func__, "slave %2d: deinitilizing mailbox\n", slave);
 
         slv->mbx.handler_running = 0;
-        pthread_join(slv->mbx.handler_tid, NULL);
+        osal_task_join(&slv->mbx.handler_tid, NULL);
 
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == EC_OK) {
             ec_coe_deinit(pec, slave);
@@ -142,9 +142,9 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
             ec_eoe_deinit(pec, slave);
         }
 
-        pthread_mutex_destroy(&slv->mbx.lock);
-        sem_destroy(&slv->mbx.sync_sem);
-        pthread_mutex_destroy(&slv->mbx.sync_mutex);
+        osal_mutex_destroy(&slv->mbx.lock);
+        osal_binary_semaphore_destroy(&slv->mbx.sync_sem);
+        osal_mutex_destroy(&slv->mbx.sync_mutex);
 
         (void)pool_close(slv->mbx.message_pool_recv_free);
         (void)pool_close(slv->mbx.message_pool_send_free);
@@ -158,7 +158,7 @@ void ec_mbx_deinit(ec_t *pec, uint16_t slave) {
  *
  * \return Mailbox protocol string repr.
  */
-static const char *ec_mbx_get_protocol_string(uint16_t mbx_flag) {
+static const char *ec_mbx_get_protocol_string(osal_uint16_t mbx_flag) {
     static const char *MBX_PROTOCOL_STRING_COE = "CoE";
     static const char *MBX_PROTOCOL_STRING_SOE = "SoE";
     static const char *MBX_PROTOCOL_STRING_FOE = "FoE";
@@ -193,7 +193,7 @@ static const char *ec_mbx_get_protocol_string(uint16_t mbx_flag) {
  *
  * \return 1 if supported, 0 otherwise
  */
-int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag) {
+int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag) {
     int ret = EC_OK;
 
     if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {
@@ -216,9 +216,9 @@ int ec_mbx_check(ec_t *pec, int slave, uint16_t mbx_flag) {
  * \param[in] nsec      Timeout in nanoseconds.
  * \return full (EC_OK) or empty (EC_ERROR_MAILBOX_TIMEOUT)
  */
-int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
-    uint16_t wkc = 0;
-    uint8_t sm_state = 0;
+int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec) {
+    osal_uint16_t wkc = 0;
+    osal_uint8_t sm_state = 0;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
 
     assert(pec != NULL);
@@ -229,7 +229,7 @@ int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
 
     do {
         (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                (uint16_t)(EC_REG_SM0STAT + ((uint16_t)mbx_nr << 3u)), 
+                (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
                 &sm_state, sizeof(sm_state), &wkc);
 
         if (wkc && ((sm_state & 0x08u) == 0x08u)) {
@@ -254,9 +254,9 @@ int ec_mbx_is_full(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
  * \param[in] nsec      Timeout in nanoseconds.
  * \return full (EC_ERROR_MAILBOX_TIMEOUT) or empty (EC_OK)
  */
-int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
-    uint16_t wkc = 0;
-    uint8_t sm_state = 0;
+int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec) {
+    osal_uint16_t wkc = 0;
+    osal_uint8_t sm_state = 0;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
 
     assert(pec != NULL);
@@ -267,7 +267,7 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
 
     do {
         (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                (uint16_t)(EC_REG_SM0STAT + ((uint16_t)mbx_nr << 3u)), 
+                (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
                 &sm_state, sizeof(sm_state), &wkc);
 
         if (wkc && ((sm_state & 0x08u) == 0x00u)) {
@@ -291,8 +291,8 @@ int ec_mbx_is_empty(ec_t *pec, uint16_t slave, uint8_t mbx_nr, uint32_t nsec) {
  * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
-    uint16_t wkc = 0;
+int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec) {
+    osal_uint16_t wkc = 0;
     int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
 
@@ -342,8 +342,8 @@ int ec_mbx_send(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_
  * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint32_t nsec) {
-    uint16_t wkc = 0;
+int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec) {
+    osal_uint16_t wkc = 0;
     int ret = EC_ERROR_MAILBOX_READ;
     ec_slave_ptr(slv, pec, slave);
 
@@ -372,23 +372,23 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint
                 // lost receive mailbox ?
                 ec_log(10, __func__, "slave %d: lost receive mailbox ?\n", slave);
 
-                uint16_t sm_status = 0u;
-                uint8_t sm_control = 0u;
+                osal_uint16_t sm_status = 0u;
+                osal_uint8_t sm_control = 0u;
 
                 (void)ec_fprd(pec, slv->fixed_address, 
-                            (uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
+                            (osal_uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
                             &sm_status, sizeof(sm_status), &wkc);
 
                 sm_status ^= 0x0200; // toggle repeat request
 
                 (void)ec_fpwr(pec, slv->fixed_address, 
-                            (uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
+                            (osal_uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
                             &sm_status, sizeof(sm_status), &wkc);
 
                 do { 
                     // wait for toggle ack
                     (void)ec_fprd(pec, slv->fixed_address, 
-                                (uint16_t)(EC_REG_SM0CONTR + (MAILBOX_READ << 3u)),
+                                (osal_uint16_t)(EC_REG_SM0CONTR + (MAILBOX_READ << 3u)),
                                 &sm_control, sizeof(sm_control), &wkc);
 
                     if (wkc && ((sm_control & 0x02u) == 
@@ -436,7 +436,7 @@ int ec_mbx_receive(ec_t *pec, uint16_t slave, uint8_t *buf, size_t buf_len, uint
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_mbx_enqueue_head(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(p_entry != NULL);
@@ -445,11 +445,11 @@ void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 
     pool_put_head(slv->mbx.message_pool_send_queued, p_entry);
     
-    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
     
-    sem_post(&slv->mbx.sync_sem);
-    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_binary_semaphore_post(&slv->mbx.sync_sem);
+    osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Enqueue mailbox message to send queue.
@@ -461,7 +461,7 @@ void ec_mbx_enqueue_head(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_mbx_enqueue_tail(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(p_entry != NULL);
@@ -470,11 +470,11 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 
     pool_put(slv->mbx.message_pool_send_queued, p_entry);
     
-    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
     
-    sem_post(&slv->mbx.sync_sem);
-    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_binary_semaphore_post(&slv->mbx.sync_sem);
+    osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Trigger read of mailbox.
@@ -485,17 +485,17 @@ void ec_mbx_enqueue_tail(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
  */
-void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
+void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
     
-    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
 
-    sem_post(&slv->mbx.sync_sem);
-    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_binary_semaphore_post(&slv->mbx.sync_sem);
+    osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Mailbox handler for one slave
@@ -506,12 +506,11 @@ void ec_mbx_sched_read(ec_t *pec, uint16_t slave) {
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
  */
-void ec_mbx_handler(ec_t *pec, uint16_t slave) {
+void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    ec_timer_t timeout;
     pool_entry_t *p_entry = NULL;
 
     ec_log(10, __func__, "slave %2d: started mailbox handler\n", slave);
@@ -520,16 +519,13 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
         int ret;
 
         // wait for mailbox event
-        ec_timer_init(&timeout, 1000000);
-        struct timespec ts = { timeout.sec, timeout.nsec };
-
-        ret = sem_timedwait(&slv->mbx.sync_sem, &ts);
+        ret = osal_binary_semaphore_timedwait(&slv->mbx.sync_sem, 1000000000);
         int local_errno = errno;
         
-        pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
-        uint32_t flags = slv->mbx.handler_flags;
+        osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+        osal_uint32_t flags = slv->mbx.handler_flags;
         slv->mbx.handler_flags = 0;
-        pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+        osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 
         if (!flags && (ret != 0)) {
             if ((local_errno == ETIMEDOUT)) {
@@ -663,7 +659,7 @@ void ec_mbx_handler(ec_t *pec, uint16_t slave) {
  *
  * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
  */
-int ec_mbx_get_free_send_buffer(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry, ec_timer_t *timeout) {
+int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, ec_timer_t *timeout) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);

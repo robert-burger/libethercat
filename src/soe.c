@@ -235,7 +235,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
     
-    pthread_mutex_lock(&slv->mbx.lock);
+    osal_mutex_lock(&slv->mbx.soe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE;
@@ -316,7 +316,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         }
     }
     
-    pthread_mutex_unlock(&slv->mbx.lock);
+    osal_mutex_unlock(&slv->mbx.soe.lock);
     
     return ret;
 }
@@ -331,7 +331,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    osal_mutex_lock(&slv->mbx.soe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE;
@@ -420,7 +420,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    osal_mutex_unlock(&slv->mbx.soe.lock);
 
     return ret;
 }

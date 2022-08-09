@@ -31,7 +31,6 @@
 #ifndef LIBETHERCAT_EC_H
 #define LIBETHERCAT_EC_H
 
-#include <pthread.h>
 #include <stdint.h>
 #include <sys/select.h>
 
@@ -158,7 +157,7 @@ typedef struct ec {
     
     int tun_fd;                     //!< tun device file descriptor
     uint32_t tun_ip;                //!< tun device ip addres
-    pthread_t tun_tid;              //!< tun device handler thread id.
+    osal_task_t tun_tid;            //!< tun device handler thread id.
     int tun_running;                //!< tun device handler run flag.
     
     int eeprom_log;                 //!< flag whether to log eeprom to stdout

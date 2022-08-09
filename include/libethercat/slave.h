@@ -319,7 +319,7 @@ typedef struct ec_slave {
                                  * These arguments are used for worker thread 
                                  * when threaded startup is used.
                                  */
-    pthread_t worker_tid;       //!< Set state worker thread handle.
+    osal_task_t worker_tid;     //!< Set state worker thread handle.
                                 /*!<
                                  * Handle to spawned worker thread if threaded
                                  * startup is used.

@@ -31,24 +31,25 @@
 #define LIBETHERCAT_IDX_H
 
 #include <sys/queue.h>
-#include <semaphore.h>
+#include <libosal/binary_semaphore.h>
+#include <libosal/mutex.h>
 
 #include "libethercat/common.h"
 
 //! index entry
 typedef struct idx_entry {
-    uint8_t idx;                //!< datagram index
-    sem_t waiter;               //!< waiter semaphore for synchronous access
-    struct ec *pec;             //!< pointer to ethercat master structure
+    uint8_t idx;                    //!< datagram index
+    osal_binary_semaphore_t waiter; //!< waiter semaphore for synchronous access
+    struct ec *pec;                 //!< pointer to ethercat master structure
 
-    TAILQ_ENTRY(idx_entry) qh;  //!< queue handle
+    TAILQ_ENTRY(idx_entry) qh;      //!< queue handle
 } idx_entry_t;
 TAILQ_HEAD(idx_entry_queue, idx_entry);
 
 
 //! index queue
 typedef struct idx_queue {
-    pthread_mutex_t lock;       //!< queue lock
+    osal_mutex_t lock;          //!< queue lock
                                 /*!<
                                  * prevent concurrent queue access
                                  */

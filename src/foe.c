@@ -225,7 +225,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry_send;
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    osal_mutex_lock(&slv->mbx.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE;
@@ -317,7 +317,7 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         ec_log(10, __func__, "reading file \"%s\" finished\n", file_name);
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    osal_mutex_unlock(&slv->mbx.lock);
     return ret;
 }
 
@@ -335,7 +335,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
 
-    pthread_mutex_lock(&slv->mbx.lock);
+    osal_mutex_lock(&slv->mbx.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) != EC_OK) { 
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE;
@@ -467,7 +467,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx.lock);
+    osal_mutex_unlock(&slv->mbx.lock);
 
     return ret;
 }

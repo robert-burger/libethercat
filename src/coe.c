@@ -38,40 +38,40 @@
 #include <errno.h>
 #include <assert.h>
 
-const char *get_sdo_info_error_string(uint32_t errorcode) {
-    static const char *sdo_info_error_0x05030000 = "Toggle bit not changed";
-    static const char *sdo_info_error_0x05040000 = "SDO protocol timeout";
-    static const char *sdo_info_error_0x05040001 = "Client/Server command specifier not valid or unknown";
-    static const char *sdo_info_error_0x05040005 = "Out of memory";
-    static const char *sdo_info_error_0x06010000 = "Unsupported access to an object";
-    static const char *sdo_info_error_0x06010001 = "Attempt to read to a write only object";
-    static const char *sdo_info_error_0x06010002 = "Attempt to write to a read only object";
-    static const char *sdo_info_error_0x06010003 = "Subindex cannot be written, SI0 must be 0 for write access";
-    static const char *sdo_info_error_0x06010004 = "SDO Complete access not supported for objects of variable length such as ENUM object types";
-    static const char *sdo_info_error_0x06010005 = "Object length exceeds mailbox size";
-    static const char *sdo_info_error_0x06010006 = "Object mapped to RxPDO, SDO Download blocked";
-    static const char *sdo_info_error_0x06020000 = "The object does not exist in the object directory";
-    static const char *sdo_info_error_0x06040041 = "The object can not be mapped into the PDO";
-    static const char *sdo_info_error_0x06040042 = "The number and length of the objects to be mapped would exceed the PDO length";
-    static const char *sdo_info_error_0x06040043 = "General parameter incompatibility reason";
-    static const char *sdo_info_error_0x06040047 = "General internal incompatibility in the device";
-    static const char *sdo_info_error_0x06060000 = "Access failed due to a hardware error";
-    static const char *sdo_info_error_0x06070010 = "Data type does not match, length of service parameter does not match";
-    static const char *sdo_info_error_0x06070012 = "Data type does not match, length of service parameter too high";
-    static const char *sdo_info_error_0x06070013 = "Data type does not match, length of service parameter too low";
-    static const char *sdo_info_error_0x06090011 = "Subindex does not exist";
-    static const char *sdo_info_error_0x06090030 = "Value range of parameter exceeded (only for write access)";
-    static const char *sdo_info_error_0x06090031 = "Value of parameter written too high";
-    static const char *sdo_info_error_0x06090032 = "Value of parameter written too low";
-    static const char *sdo_info_error_0x06090036 = "Maximum value is less than minimum value";
-    static const char *sdo_info_error_0x08000000 = "General error";
-    static const char *sdo_info_error_0x08000020 = "Data cannot be transferred or stored to the application";
-    static const char *sdo_info_error_0x08000021 = "Data cannot be transferred or stored to the application because of local control";
-    static const char *sdo_info_error_0x08000022 = "Data cannot be transferred or stored to the application because of the present device state";
-    static const char *sdo_info_error_0x08000023 = "Object dictionary dynamic generation fails or no object dictionary is present";
-    static const char *sdo_info_error_unknown    = "UNKNOWN ERROR";
+const osal_char_t *get_sdo_info_error_string(osal_uint32_t errorcode) {
+    static const osal_char_t *sdo_info_error_0x05030000 = "Toggle bit not changed";
+    static const osal_char_t *sdo_info_error_0x05040000 = "SDO protocol timeout";
+    static const osal_char_t *sdo_info_error_0x05040001 = "Client/Server command specifier not valid or unknown";
+    static const osal_char_t *sdo_info_error_0x05040005 = "Out of memory";
+    static const osal_char_t *sdo_info_error_0x06010000 = "Unsupported access to an object";
+    static const osal_char_t *sdo_info_error_0x06010001 = "Attempt to read to a write only object";
+    static const osal_char_t *sdo_info_error_0x06010002 = "Attempt to write to a read only object";
+    static const osal_char_t *sdo_info_error_0x06010003 = "Subindex cannot be written, SI0 must be 0 for write access";
+    static const osal_char_t *sdo_info_error_0x06010004 = "SDO Complete access not supported for objects of variable length such as ENUM object types";
+    static const osal_char_t *sdo_info_error_0x06010005 = "Object length exceeds mailbox size";
+    static const osal_char_t *sdo_info_error_0x06010006 = "Object mapped to RxPDO, SDO Download blocked";
+    static const osal_char_t *sdo_info_error_0x06020000 = "The object does not exist in the object directory";
+    static const osal_char_t *sdo_info_error_0x06040041 = "The object can not be mapped into the PDO";
+    static const osal_char_t *sdo_info_error_0x06040042 = "The number and length of the objects to be mapped would exceed the PDO length";
+    static const osal_char_t *sdo_info_error_0x06040043 = "General parameter incompatibility reason";
+    static const osal_char_t *sdo_info_error_0x06040047 = "General internal incompatibility in the device";
+    static const osal_char_t *sdo_info_error_0x06060000 = "Access failed due to a hardware error";
+    static const osal_char_t *sdo_info_error_0x06070010 = "Data type does not match, length of service parameter does not match";
+    static const osal_char_t *sdo_info_error_0x06070012 = "Data type does not match, length of service parameter too high";
+    static const osal_char_t *sdo_info_error_0x06070013 = "Data type does not match, length of service parameter too low";
+    static const osal_char_t *sdo_info_error_0x06090011 = "Subindex does not exist";
+    static const osal_char_t *sdo_info_error_0x06090030 = "Value range of parameter exceeded (only for write access)";
+    static const osal_char_t *sdo_info_error_0x06090031 = "Value of parameter written too high";
+    static const osal_char_t *sdo_info_error_0x06090032 = "Value of parameter written too low";
+    static const osal_char_t *sdo_info_error_0x06090036 = "Maximum value is less than minimum value";
+    static const osal_char_t *sdo_info_error_0x08000000 = "General error";
+    static const osal_char_t *sdo_info_error_0x08000020 = "Data cannot be transferred or stored to the application";
+    static const osal_char_t *sdo_info_error_0x08000021 = "Data cannot be transferred or stored to the application because of local control";
+    static const osal_char_t *sdo_info_error_0x08000022 = "Data cannot be transferred or stored to the application because of the present device state";
+    static const osal_char_t *sdo_info_error_0x08000023 = "Object dictionary dynamic generation fails or no object dictionary is present";
+    static const osal_char_t *sdo_info_error_unknown    = "UNKNOWN ERROR";
 
-    const char *retval = sdo_info_error_unknown;
+    const osal_char_t *retval = sdo_info_error_unknown;
 
     switch (errorcode) {
         default:
@@ -117,26 +117,26 @@ const char *get_sdo_info_error_string(uint32_t errorcode) {
 }
 
 typedef struct {
-    uint16_t number   : 9;
-    uint16_t reserved : 3;
-    uint16_t service  : 4;
+    osal_uint16_t number   : 9;
+    osal_uint16_t reserved : 3;
+    osal_uint16_t service  : 4;
 } PACKED ec_coe_header_t;
 
 typedef struct {
-    uint8_t size_indicator     : 1;
-    uint8_t transfer_type      : 1;
-    uint8_t data_set_size      : 2;
-    uint8_t complete           : 1;
-    uint8_t command            : 3;
-    uint16_t index;
-    uint8_t  sub_index;
+    osal_uint8_t size_indicator     : 1;
+    osal_uint8_t transfer_type      : 1;
+    osal_uint8_t data_set_size      : 2;
+    osal_uint8_t complete           : 1;
+    osal_uint8_t command            : 3;
+    osal_uint16_t index;
+    osal_uint8_t  sub_index;
 } PACKED ec_sdo_init_download_header_t;
 
 typedef struct {
-    uint8_t more_follows       : 1;
-    uint8_t seg_data_size      : 3;
-    uint8_t toggle             : 1;
-    uint8_t command            : 3;
+    osal_uint8_t more_follows       : 1;
+    osal_uint8_t seg_data_size      : 3;
+    osal_uint8_t toggle             : 1;
+    osal_uint8_t command            : 3;
 } PACKED ec_sdo_seg_download_req_header_t;
 
 // ------------------------ EXPEDITED --------------------------
@@ -186,7 +186,7 @@ typedef struct {
     ec_mbx_header_t mbx_hdr;
     ec_coe_header_t coe_hdr;
     ec_sdo_init_download_header_t sdo_hdr;
-    uint32_t complete_size;
+    osal_uint32_t complete_size;
     ec_data_t sdo_data;
 } PACKED ec_sdo_normal_download_req_t, ec_sdo_normal_upload_resp_t;
 
@@ -198,7 +198,7 @@ typedef struct {
 } PACKED ec_sdo_normal_download_resp_t, ec_sdo_normal_upload_req_t;
 
 #define EC_SDO_NORMAL_HDR_LEN \
-    ((sizeof(ec_coe_header_t) + sizeof(ec_sdo_init_download_header_t) + sizeof(uint32_t)))
+    ((sizeof(ec_coe_header_t) + sizeof(ec_sdo_init_download_header_t) + sizeof(osal_uint32_t)))
 
 // ------------------------ ABORT --------------------------
 
@@ -206,25 +206,25 @@ typedef struct {
     ec_mbx_header_t mbx_hdr;
     ec_coe_header_t coe_hdr;
     ec_sdo_init_download_header_t sdo_hdr;
-    uint32_t abort_code;
+    osal_uint32_t abort_code;
 } PACKED ec_sdo_abort_request_t;
 
 #define MSG_BUF_LEN     256u
 
-static void ec_coe_print_msg(int level, const char *ctx, int slave, const char *msg, uint8_t *buf, size_t buflen) {
-    static char msg_buf[MSG_BUF_LEN];
+static void ec_coe_print_msg(int level, const osal_char_t *ctx, int slave, const osal_char_t *msg, osal_uint8_t *buf, osal_size_t buflen) {
+    static osal_char_t msg_buf[MSG_BUF_LEN];
 
-    char *tmp = msg_buf;
-    size_t pos = 0;
-    size_t max_pos = min(MSG_BUF_LEN, buflen);
-    for (uint32_t u = 0; (u < max_pos) && (MSG_BUF_LEN > pos); ++u) {
+    osal_char_t *tmp = msg_buf;
+    osal_size_t pos = 0;
+    osal_size_t max_pos = min(MSG_BUF_LEN, buflen);
+    for (osal_uint32_t u = 0; (u < max_pos) && (MSG_BUF_LEN > pos); ++u) {
         int ret = snprintf(&tmp[pos], MSG_BUF_LEN - pos, "%02X ", buf[u]);
 
         if (ret < 0) {
             break;
         } 
 
-        pos += (uint32_t)ret;
+        pos += (osal_uint32_t)ret;
     }
 
     ec_log(level, ctx, "slave %d: %s - %s\n", slave, msg, msg_buf);
@@ -239,13 +239,13 @@ static void ec_coe_print_msg(int level, const char *ctx, int slave, const char *
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_coe_init(ec_t *pec, uint16_t slave) {
+void ec_coe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
     (void)pool_open(&slv->mbx.coe.recv_pool, 0, 1518);
-    pthread_mutex_init(&slv->mbx.coe.lock, NULL);
+    osal_mutex_init(&slv->mbx.coe.lock, NULL);
                 
     TAILQ_INIT(&slv->mbx.coe.emergencies);
 }
@@ -258,13 +258,13 @@ void ec_coe_init(ec_t *pec, uint16_t slave) {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_coe_deinit(ec_t *pec, uint16_t slave) {
+void ec_coe_deinit(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
     
-    pthread_mutex_destroy(&slv->mbx.coe.lock);
+    osal_mutex_destroy(&slv->mbx.coe.lock);
     (void)pool_close(slv->mbx.coe.recv_pool);
 }
 
@@ -278,7 +278,7 @@ void ec_coe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-static void ec_coe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_coe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(pp_entry != NULL);
     assert(slave < pec->slave_cnt);
@@ -303,7 +303,7 @@ static void ec_coe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_coe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(p_entry != NULL);
     assert(slave < pec->slave_cnt);
@@ -322,9 +322,9 @@ void ec_coe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 }
 
 // read coe sdo 
-int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t *len, 
-        uint32_t *abort_code) 
+int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t *len, 
+        osal_uint32_t *abort_code) 
 { 
     assert(pec != NULL);
     assert(buf != NULL);
@@ -339,7 +339,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     (*abort_code) = 0;
 
     // getting index
-    pthread_mutex_lock(&slv->mbx.coe.lock);
+    osal_mutex_lock(&slv->mbx.coe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
@@ -413,7 +413,7 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
                 }
             } else {
                 ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
-                        (uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                        (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
             }
 
@@ -429,14 +429,14 @@ int ec_coe_sdo_read(ec_t *pec, uint16_t slave, uint16_t index,
     }
 
     // returning index and ulock 
-    pthread_mutex_unlock(&slv->mbx.coe.lock);
+    osal_mutex_unlock(&slv->mbx.coe.lock);
 
     return ret;
 }
 
-static int ec_coe_sdo_write_expedited(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t len,
-        uint32_t *abort_code) 
+static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
+        osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(buf != NULL);
@@ -449,7 +449,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, uint16_t slave, uint16_t index,
     // default error return
     (*abort_code) = 0;
 
-    pthread_mutex_lock(&slv->mbx.coe.lock);
+    osal_mutex_lock(&slv->mbx.coe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
@@ -503,7 +503,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, uint16_t slave, uint16_t index,
                 ret = EC_OK;
             } else {
                 ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
-                        (uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                        (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
             }
                 
@@ -518,13 +518,13 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, uint16_t slave, uint16_t index,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx.coe.lock);
+    osal_mutex_unlock(&slv->mbx.coe.lock);
     return ret;
 }
 
-static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t len,
-        uint32_t *abort_code) 
+static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
+        osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(buf != NULL);
@@ -537,7 +537,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
     // default error return
     (*abort_code) = 0;
 
-    pthread_mutex_lock(&slv->mbx.coe.lock);
+    osal_mutex_lock(&slv->mbx.coe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
@@ -549,9 +549,9 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
         // cppcheck-suppress misra-c2012-11.3
         ec_sdo_normal_download_req_t *write_buf = (ec_sdo_normal_download_req_t *)(p_entry->data);
 
-        size_t max_len = slv->sm[0].len - 0x10u;
-        size_t rest_len = len;
-        size_t seg_len = (rest_len > max_len) ? max_len : rest_len;
+        osal_size_t max_len = slv->sm[0].len - 0x10u;
+        osal_size_t rest_len = len;
+        osal_size_t seg_len = (rest_len > max_len) ? max_len : rest_len;
 
         // mailbox header
         // (mbxhdr (6) - mbxhdr.length (2)) + coehdr (2) + sdohdr (4)
@@ -567,7 +567,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
         write_buf->sdo_hdr.sub_index        = sub_index;
 
         // normal download
-        uint8_t *tmp = buf;
+        osal_uint8_t *tmp = buf;
         off_t tmp_pos = 0;
         write_buf->complete_size = len;
         (void)memcpy(&write_buf->sdo_data[0], &tmp[tmp_pos], seg_len);
@@ -598,7 +598,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
                 ret = EC_OK;
             } else {
                 ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
-                        (uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                        (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
             }
             
@@ -613,7 +613,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
         }
 
         if (ret == EC_OK) {
-            uint8_t toggle = 1u;
+            osal_uint8_t toggle = 1u;
 
             while (rest_len != 0u) {
                 if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
@@ -673,7 +673,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
                             ret = EC_OK;
                         } else {
                             ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
-                                    (uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                                    (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                             ret = EC_ERROR_MAILBOX_READ;
                         }
 
@@ -691,14 +691,14 @@ static int ec_coe_sdo_write_normal(ec_t *pec, uint16_t slave, uint16_t index,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx.coe.lock);
+    osal_mutex_unlock(&slv->mbx.coe.lock);
     return ret;
 }
 
 // write coe sdo 
-int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, int complete, uint8_t *buf, size_t len,
-        uint32_t *abort_code) 
+int ec_coe_sdo_write(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
+        osal_uint32_t *abort_code) 
 {
     int ret;
     if ((len <= 4u) && (complete == 0)) {
@@ -711,17 +711,17 @@ int ec_coe_sdo_write(ec_t *pec, uint16_t slave, uint16_t index,
 }
 
 typedef struct PACKED ec_sdoinfoheader {
-    uint16_t opcode     : 7;
-    uint16_t incomplete : 1; // cppcheck-suppress unusedStructMember
-    uint16_t reserved   : 8; // cppcheck-suppress unusedStructMember
-    uint16_t fragments_left;
+    osal_uint16_t opcode     : 7;
+    osal_uint16_t incomplete : 1; // cppcheck-suppress unusedStructMember
+    osal_uint16_t reserved   : 8; // cppcheck-suppress unusedStructMember
+    osal_uint16_t fragments_left;
 } PACKED ec_sdoinfoheader_t;
 
 typedef struct PACKED ec_sdo_odlist_req {
     ec_mbx_header_t      mbx_hdr;
     ec_coe_header_t      coe_hdr;
     ec_sdoinfoheader_t  sdo_info_hdr;
-    uint16_t            list_type;
+    osal_uint16_t            list_type;
 } PACKED ec_sdo_odlist_req_t;
 
 typedef struct PACKED ec_sdo_odlist_resp {
@@ -732,7 +732,7 @@ typedef struct PACKED ec_sdo_odlist_resp {
 } PACKED ec_sdo_odlist_resp_t;
 
 // read coe object dictionary list
-int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
+int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t *len) {
     assert(pec != NULL);
     assert(buf != NULL);
     assert(len != NULL);
@@ -742,7 +742,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     ec_slave_ptr(slv, pec, slave);
 
-    pthread_mutex_lock(&slv->mbx.coe.lock);
+    osal_mutex_lock(&slv->mbx.coe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
@@ -766,7 +766,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry);
 
-        size_t val = 0;
+        osal_size_t val = 0;
         int frag_left = 0;
 
         do {
@@ -777,7 +777,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
 
                 if (val == 0u) {
                     // first fragment, allocate buffer if not passed
-                    size_t od_len = (read_buf->mbx_hdr.length - 8u) +                             // first fragment
+                    osal_size_t od_len = (read_buf->mbx_hdr.length - 8u) +                             // first fragment
                         (read_buf->sdo_info_hdr.fragments_left * (read_buf->mbx_hdr.length - 6u)); // following fragments
 
                     if ((*len) < od_len) {
@@ -789,8 +789,8 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
                     (*len) = od_len;
                 }
 
-                uint8_t *from = (val == 0u) ? &read_buf->sdo_info_data[2] : &read_buf->sdo_info_data[0];
-                size_t act_len = (val == 0u) ? (read_buf->mbx_hdr.length - 8u) : (read_buf->mbx_hdr.length - 6u);
+                osal_uint8_t *from = (val == 0u) ? &read_buf->sdo_info_data[2] : &read_buf->sdo_info_data[0];
+                osal_size_t act_len = (val == 0u) ? (read_buf->mbx_hdr.length - 8u) : (read_buf->mbx_hdr.length - 6u);
 
                 if ((val + act_len) > (*len)) {
                     act_len = (*len) - val;
@@ -811,7 +811,7 @@ int ec_coe_odlist_read(ec_t *pec, uint16_t slave, uint8_t *buf, size_t *len) {
         *len = val;
     }
 
-    pthread_mutex_unlock(&slv->mbx.coe.lock);
+    osal_mutex_unlock(&slv->mbx.coe.lock);
 
     return ret;
 }
@@ -820,7 +820,7 @@ typedef struct PACKED ec_sdo_desc_req {
     ec_mbx_header_t      mbx_hdr;
     ec_coe_header_t      coe_hdr;
     ec_sdoinfoheader_t  sdo_info_hdr;
-    uint16_t            index;
+    osal_uint16_t            index;
 } PACKED ec_sdo_desc_req_t;
 
 typedef struct PACKED ec_sdo_desc_resp {
@@ -838,8 +838,8 @@ typedef struct PACKED ec_sdo_info_error_resp {
 } PACKED ec_sdo_info_error_resp_t;
 
 // read coe sdo description
-int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
-        ec_coe_sdo_desc_t *desc, uint32_t *error_code) {
+int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
+        ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code) {
     assert(pec != NULL);
     assert(desc != NULL);
     assert(slave < pec->slave_cnt);
@@ -848,7 +848,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     int ret = 0;
     ec_slave_ptr(slv, pec, slave);
 
-    pthread_mutex_lock(&slv->mbx.coe.lock);
+    osal_mutex_lock(&slv->mbx.coe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
@@ -887,7 +887,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
 
                     ret = EC_OK;
                 } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
-                    uint32_t ecode = read_buf->sdo_info_data[0];
+                    osal_uint32_t ecode = read_buf->sdo_info_data[0];
 
                     ec_log(5, __func__, "slave %2d: got sdo info error request on idx %#X, "
                             "error_code %X, message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
@@ -901,7 +901,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
             } else {
                 // not our answer, print out this message
                 ec_coe_print_msg(5, __func__, slave, "unexpected coe answer", 
-                        (uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
+                        (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                 (void)memset(desc, 0, sizeof(ec_coe_sdo_desc_t));
                 ret = EC_ERROR_MAILBOX_READ;
             }
@@ -917,7 +917,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx.coe.lock);
+    osal_mutex_unlock(&slv->mbx.coe.lock);
 
     return ret;
 }
@@ -926,28 +926,28 @@ typedef struct PACKED ec_sdo_entry_desc_req {
     ec_mbx_header_t      mbx_hdr;
     ec_coe_header_t      coe_hdr;
     ec_sdoinfoheader_t  sdo_info_hdr;
-    uint16_t            index;
-    uint8_t             sub_index;
-    uint8_t             value_info;
+    osal_uint16_t            index;
+    osal_uint8_t             sub_index;
+    osal_uint8_t             value_info;
 } PACKED ec_sdo_entry_desc_req_t;
 
 typedef struct PACKED ec_sdo_entry_desc_resp {
     ec_mbx_header_t      mbx_hdr;
     ec_coe_header_t      coe_hdr;
     ec_sdoinfoheader_t  sdo_info_hdr;
-    uint16_t            index;
-    uint8_t             sub_index;
-    uint8_t             value_info;
-    uint16_t            data_type;
-    uint16_t            bit_length;
-    uint16_t            obj_access;
+    osal_uint16_t            index;
+    osal_uint8_t             sub_index;
+    osal_uint8_t             value_info;
+    osal_uint16_t            data_type;
+    osal_uint16_t            bit_length;
+    osal_uint16_t            obj_access;
     ec_data_t           desc_data;
 } PACKED ec_sdo_entry_desc_resp_t;
         
 // read coe sdo entry description
-int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index, 
-        uint8_t sub_index, uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
-        uint32_t *error_code) 
+int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
+        osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
+        osal_uint32_t *error_code) 
 {
     assert(pec != NULL);
     assert(desc != NULL);
@@ -957,7 +957,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
     int ret = EC_ERROR_MAILBOX_READ;
     ec_slave_ptr(slv, pec, slave);
 
-    pthread_mutex_lock(&slv->mbx.coe.lock);
+    osal_mutex_lock(&slv->mbx.coe.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
@@ -1002,7 +1002,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
                 } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
                     ec_sdo_info_error_resp_t *read_buf_error = (void *)(p_entry->data);
 
-                    uint32_t ecode = read_buf_error->sdo_info_data[0];
+                    osal_uint32_t ecode = read_buf_error->sdo_info_data[0];
 
                     ec_log(5, __func__, "slave %2d: got sdo info error request on idx %#X, "
                             "error_code %X, message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
@@ -1016,7 +1016,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
             } else {
                 // not our answer, print out this message
                 ec_coe_print_msg(5, __func__, slave, "unexpected coe answer", 
-                        (uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
+                        (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                 (void)memset(desc, 0, sizeof(ec_coe_sdo_entry_desc_t));
                 ret = EC_ERROR_MAILBOX_READ;
             }
@@ -1032,23 +1032,23 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, uint16_t slave, uint16_t index,
         }
     }
 
-    pthread_mutex_unlock(&slv->mbx.coe.lock);
+    osal_mutex_unlock(&slv->mbx.coe.lock);
 
     return ret;
 }
 
-int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
+int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
-    uint8_t *buf = NULL;
+    osal_uint8_t *buf = NULL;
     ec_slave_ptr(slv, pec, slave);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_COE;
     } else {
-        uint16_t start_adr; 
+        osal_uint16_t start_adr; 
 
         if (slv->sm[0].adr > slv->sm[1].adr) {
             start_adr = slv->sm[0].adr + slv->sm[0].len;
@@ -1056,18 +1056,18 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
             start_adr = slv->sm[1].adr + slv->sm[1].len;
         }
 
-        for (uint32_t sm_idx = 2u; sm_idx <= 3u; ++sm_idx) {
-            uint32_t bit_len = 0u;
-            uint32_t idx = 0x1c10u + sm_idx;
-            uint8_t entry_cnt = 0u;
-            uint8_t entry_cnt_2 = 0u;
-            size_t entry_cnt_size = sizeof(entry_cnt);
-            uint32_t abort_code = 0u;
+        for (osal_uint32_t sm_idx = 2u; sm_idx <= 3u; ++sm_idx) {
+            osal_uint32_t bit_len = 0u;
+            osal_uint32_t idx = 0x1c10u + sm_idx;
+            osal_uint8_t entry_cnt = 0u;
+            osal_uint8_t entry_cnt_2 = 0u;
+            osal_size_t entry_cnt_size = sizeof(entry_cnt);
+            osal_uint32_t abort_code = 0u;
 
             // read count of mapping entries, stored in subindex 0
             // mapped entreis are stored at 0x1c12 and 0x1c13 and should usually be
             // written in state preop with an init command
-            buf = (uint8_t *)&entry_cnt;
+            buf = (osal_uint8_t *)&entry_cnt;
             ret = ec_coe_sdo_read(pec, slave, idx, 0, 0, buf, &entry_cnt_size, &abort_code);
             if (ret != 0) {
                 ec_log(5, "GENERATE_MAPPING COE", "slave %2d: sm%u reading "
@@ -1079,12 +1079,12 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
                     "count %d\n", slave, sm_idx, idx, entry_cnt); 
 
             // now read all mapped pdo's to retreave the mapped object lengths
-            for (uint8_t i = 1u; i <= entry_cnt; ++i) {
-                uint16_t entry_idx;
-                size_t entry_size = sizeof(entry_idx);
+            for (osal_uint8_t i = 1u; i <= entry_cnt; ++i) {
+                osal_uint16_t entry_idx;
+                osal_size_t entry_size = sizeof(entry_idx);
 
                 // read entry subindex with mapped value
-                buf = (uint8_t *)&entry_idx;
+                buf = (osal_uint8_t *)&entry_idx;
                 ret = ec_coe_sdo_read(pec, slave, idx, i, 0, buf, &entry_size, &abort_code);
                 if (ret != 0) {
                     ec_log(5, "GENERATE_MAPPING COE", "            "
@@ -1103,7 +1103,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
                 entry_cnt_size = sizeof(entry_cnt_2);
 
                 // read count of entries of mapped value
-                buf = (uint8_t *)&entry_cnt_2;
+                buf = (osal_uint8_t *)&entry_cnt_2;
                 ret = ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, buf, &entry_cnt_size, &abort_code);
                 if (ret != 0) {
                     ec_log(5, "GENERATE_MAPPING COE", "             "
@@ -1115,10 +1115,10 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
                 ec_log(100, "GENERATE_MAPPING COE", "             "
                         "pdo: 0x%04X count %d\n", entry_idx, entry_cnt_2); 
 
-                for (uint8_t j = 1u; j <= entry_cnt_2; ++j) {
-                    uint32_t entry;
+                for (osal_uint8_t j = 1u; j <= entry_cnt_2; ++j) {
+                    osal_uint32_t entry;
                     entry_size = sizeof(entry);
-                    buf = (uint8_t *)&entry;
+                    buf = (osal_uint8_t *)&entry;
                     ret = ec_coe_sdo_read(pec, slave, entry_idx, j, 0, buf, &entry_size, &abort_code);
                     if (ret != 0) {
                         ec_log(5, "GENERATE_MAPPING COE", "                "
@@ -1168,7 +1168,7 @@ int ec_coe_generate_mapping(ec_t *pec, uint16_t slave) {
  * \param pec pointer to ethercat master
  * \param slave slave number
  */
-void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(p_entry != NULL);
     assert(slave < pec->slave_cnt);
@@ -1180,13 +1180,13 @@ void ec_coe_emergency_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) 
     ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
 
     // don't copy any headers, we already know that we have a coe emergency
-    size_t msg_len = hdr->length - 2u;
+    osal_size_t msg_len = hdr->length - 2u;
 
     ec_coe_emergency_message_entry_t *qmsg = (ec_coe_emergency_message_entry_t *)
         ec_malloc(sizeof(ec_coe_emergency_message_entry_t) + msg_len);
 
     // skip mbx header and coe header
-    (void)memcpy(qmsg->msg, (uint8_t *)&(p_entry->data[6 + 2]), msg_len);
+    (void)memcpy(qmsg->msg, (osal_uint8_t *)&(p_entry->data[6 + 2]), msg_len);
 
     qmsg->msg_len = msg_len;
     (void)ec_timer_gettime(&qmsg->timestamp);

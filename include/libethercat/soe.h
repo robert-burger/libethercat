@@ -32,10 +32,13 @@
 #ifndef LIBETHERCAT_SOE_H
 #define LIBETHERCAT_SOE_H
 
+#include <libosal/mutex.h>
+
 #include "libethercat/common.h"
 
 typedef struct ec_soe {
     pool_t *recv_pool;
+    osal_mutex_t lock;
 } ec_soe_t;
 
 //! ServoDrive attributes of an IDN

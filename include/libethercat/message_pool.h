@@ -35,6 +35,8 @@
 #include <stdint.h>
 #include <semaphore.h>
 
+#include <libosal/mutex.h>
+
 #include "libethercat/common.h"
 #include "libethercat/timer.h"
 
@@ -69,7 +71,7 @@ typedef struct ec_message_pool_queue ec_message_pool_queue_t;
 typedef struct ec_message_pool {
     ec_message_pool_queue_t queue;  //!< message pool queue
     sem_t avail_cnt;                //!< available messages in pool queue
-    pthread_mutex_t lock;           //!< pool lock
+    osal_mutex_t lock;              //!< pool lock
 } ec_message_pool_t;
 
 typedef struct ec_async_message_loop {
@@ -77,7 +79,7 @@ typedef struct ec_async_message_loop {
     ec_message_pool_t exec;         //!< execute messages
 
     int loop_running;               //!< loop thread run flag
-    pthread_t loop_tid;             //!< loop thread id
+    osal_task_t loop_tid;           //!< loop thread id
     struct ec *pec;                 //!< ethercat master pointer
 
     ec_timer_t next_check_group;
