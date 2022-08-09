@@ -514,10 +514,10 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
     pool_entry_t *p_entry = NULL;
     int ret;
     
-    pthread_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     uint32_t flags = slv->mbx.handler_flags;
     slv->mbx.handler_flags = 0;
-    pthread_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
+    osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 
     // check event
     if ((flags & MBX_HANDLER_FLAGS_RECV) != 0u) {
@@ -638,13 +638,14 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
 
     while (slv->mbx.handler_running != 0) {
         int ret;
+        osal_timer_t to;
+        osal_timer_init(&to, 10000000);
 
         // wait for mailbox event
-        ret = osal_binary_semaphore_timedwait(&slv->mbx.sync_sem, 1000000000);
-        int local_errno = errno;
+        ret = osal_binary_semaphore_timedwait(&slv->mbx.sync_sem, &to);
 
-        if ((ret != 0)) {
-            if ((local_errno == ETIMEDOUT)) {
+        if (ret != OSAL_OK) {
+            if (ret == OSAL_ERR_TIMEOUT) {
                 osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
                 slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
 

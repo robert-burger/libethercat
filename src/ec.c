@@ -685,6 +685,8 @@ static void ec_scan(ec_t *pec) {
                 }
 
                 fixed++;
+            } else {
+                ec_log(1, __func__, "ec_aprd %d returned %d\n", auto_inc, local_ret);
             }
         }
 
@@ -1107,8 +1109,10 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
         }
 
         // wait for completion
-        int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, 100000000);
-        if (local_ret == -1) {
+        osal_timer_t to;
+        osal_timer_init(&to, 100000000);
+        int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
+        if (local_ret != OSAL_OK) {
             ec_log(1, "ec_transceive", "sem_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
                     strerror(errno), cmd, adr);
             *wkc = 0u;
@@ -1268,8 +1272,9 @@ int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
         p_dg = ec_datagram_cast(pd->p_entry->data);
 
         // wait for completion
-        if (osal_binary_semaphore_timedwait(&pd->p_idx->waiter, 
-                    (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec) != 0) {
+        osal_timer_t to;
+        osal_timer_init(&to, (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec);
+        if (osal_binary_semaphore_timedwait(&pd->p_idx->waiter, &to) != 0) {
             if (++pd->recv_missed < pec->consecutive_max_miss) {
                 ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
                         "sem_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
@@ -1452,8 +1457,9 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         // wait for completion
-        if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter,
-                    (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec) != 0) 
+        osal_timer_t to;
+        osal_timer_init(&to, (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec);
+        if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, &to) != 0) 
         {
             ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
                     "sem_timedwait distributed clocks (sent: %lld): %s\n", 
@@ -1582,11 +1588,12 @@ int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
     ec_datagram_t *p_dg = NULL;
     int ret = EC_OK;
     uint16_t al_status = 0u;
+    osal_timer_t to;
+    osal_timer_init(&to, (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec); 
 
     if (pec->p_idx_state == NULL) {
         ret = EC_ERROR_UNAVAILABLE;
-    } else if (osal_binary_semaphore_timedwait(&pec->p_idx_state->waiter, 
-                (osal_uint64_t)timeout->sec * 1E9 + timeout->nsec) != 0) 
+    } else if (osal_binary_semaphore_timedwait(&pec->p_idx_state->waiter, &to) != 0) 
     { // wait for completion
         ec_log(1, __func__, "sem_timedwait ec_state: %s\n", strerror(errno));
         ret = EC_ERROR_TIMEOUT;
