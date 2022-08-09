@@ -523,6 +523,8 @@ void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
         uint8_t *mac, uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
         uint8_t *dns, char *dns_name);
 
+const char *al_status_code_2_string(int code);
+
 #if 0 
 {
 #endif

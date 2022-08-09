@@ -374,7 +374,7 @@ void ec_slave_set_dc_config(struct ec *pec, uint16_t slave,
 #define AL_STATUS_CODE__EE_ERROR                       0x0051 
 #define AL_STATUS_CODE__EXT_HARDWARE_NOT_READY         0x0052 
 
-static const char *al_status_code_2_string(int code) {
+const char *al_status_code_2_string(int code) {
     const static char *AL_STATUS_CODE_STRING__NOERROR                       = "no error"; 
     const static char *AL_STATUS_CODE_STRING__UNSPECIFIEDERROR              = "unspecified error"; 
     const static char *AL_STATUS_CODE_STRING__NOMEMORY                      = "no memory"; 
@@ -710,6 +710,7 @@ int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, uint16_t *a
 
     if ((ret != EC_OK) || (wkc == 0u)) {
         *state = EC_STATE_UNKNOWN;
+        ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
         slv->act_state = (ec_state_t)value;
         *state = slv->act_state;
@@ -963,6 +964,12 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     ret = ec_slave_get_state(pec, slave, &act_state, NULL);
     if (ret != EC_OK) {
         ec_log(10, "ERROR", "could not get state of slave %d\n", slave);
+        
+        // rewrite fixed address
+        (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
+                (uint8_t *)&slv->fixed_address, 
+                sizeof(slv->fixed_address), &wkc); 
+
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
         if ((act_state & EC_STATE_ERROR) != 0u) { // reset error state first
@@ -1206,6 +1213,20 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     break;
                 }
             }
+            case UNKNOWN_2_INIT:
+                // rewrite fixed address
+                (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
+                        (uint8_t *)&slv->fixed_address, 
+                        sizeof(slv->fixed_address), &wkc); 
+
+                // disable ditributed clocks
+                uint8_t dc_active = 0;
+                (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
+                        &dc_active, sizeof(dc_active), &wkc);
+                
+                // write state to slave
+                ret = ec_slave_set_state(pec, slave, state);
+                break;
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
             case INIT_2_INIT: {
