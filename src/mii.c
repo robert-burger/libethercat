@@ -52,33 +52,33 @@
  *
  * \retval EC_OK    On success
  */
-int ec_miiread(struct ec *pec, uint16_t slave, 
-        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) 
+int ec_miiread(struct ec *pec, osal_uint16_t slave, 
+        osal_uint8_t phy_adr, osal_uint16_t phy_reg, osal_uint16_t *data) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(data != NULL);
 
     int ret = EC_OK;
-    uint16_t wkc;
-    uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
-    uint16_t ctrl_stat = 0;
+    osal_uint16_t wkc;
+    osal_uint16_t phy_adr_reg = phy_adr | ((osal_uint16_t)phy_reg << 8);
+    osal_uint16_t ctrl_stat = 0;
 
     // write phy address amd regoster
-    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg), &wkc);
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_ADR, (osal_uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg), &wkc);
 
     // execute read command
-    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
-    ctrl_stat &= ~(uint16_t)0x0300u;
-    ctrl_stat |= (uint16_t)0x0100u;
-    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (osal_uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+    ctrl_stat &= ~(osal_uint16_t)0x0300u;
+    ctrl_stat |= (osal_uint16_t)0x0100u;
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (osal_uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
     // set up timeout 100 ms
     osal_timer_t timeout;
     osal_timer_init(&timeout, 10000000000);
 
     do {
-        ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+        ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (osal_uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
         if ((ret == EC_OK) && (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT)) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
@@ -86,7 +86,7 @@ int ec_miiread(struct ec *pec, uint16_t slave,
         }
     } while (((ctrl_stat & 0x8000u) != 0u) && (ret == EC_OK));
 
-    ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data), &wkc);
+    ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (osal_uint8_t *)data, sizeof(*data), &wkc);
     return ret;
 }
 
@@ -103,34 +103,34 @@ int ec_miiread(struct ec *pec, uint16_t slave,
  *
  * \retval EC_OK    On success
  */
-int ec_miiwrite(struct ec *pec, uint16_t slave, 
-        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data) 
+int ec_miiwrite(struct ec *pec, osal_uint16_t slave, 
+        osal_uint8_t phy_adr, osal_uint16_t phy_reg, osal_uint16_t *data) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(data != NULL);
 
     int ret = EC_OK;
-    uint16_t wkc;
-    uint16_t phy_adr_reg = phy_adr | ((uint16_t)phy_reg << 8);
-    uint16_t ctrl_stat = 0;
+    osal_uint16_t wkc;
+    osal_uint16_t phy_adr_reg = phy_adr | ((osal_uint16_t)phy_reg << 8);
+    osal_uint16_t ctrl_stat = 0;
 
     // write phy address, register and data
-    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_ADR, (uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg), &wkc);      
-    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (uint8_t *)data, sizeof(*data), &wkc);
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_ADR, (osal_uint8_t *)&phy_adr_reg, sizeof(phy_adr_reg), &wkc);      
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_PHY_DATA, (osal_uint8_t *)data, sizeof(*data), &wkc);
 
     // execute write command
-    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
-    ctrl_stat &= ~(uint16_t)0x0300u;
-    ctrl_stat |= (uint16_t)0x0201u;
-    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+    check_ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (osal_uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+    ctrl_stat &= ~(osal_uint16_t)0x0300u;
+    ctrl_stat |= (osal_uint16_t)0x0201u;
+    check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (osal_uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
     // set up timeout 100 ms
     osal_timer_t timeout;
     osal_timer_init(&timeout, 100000000);
 
     do {
-        ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
+        ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (osal_uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
         if ((ret == EC_OK) && (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT)) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);

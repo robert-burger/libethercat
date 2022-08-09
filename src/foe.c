@@ -49,17 +49,17 @@
 
 //! FoE header
 typedef struct PACKED ec_foe_header {
-    uint8_t op_code;            //!< FoE op code
+    osal_uint8_t op_code;            //!< FoE op code
     // cppcheck-suppress unusedStructMember
-    uint8_t reserved;           //!< FoE reserved 
+    osal_uint8_t reserved;           //!< FoE reserved 
 } PACKED ec_foe_header_t;
 
 //! read/write request
 typedef struct PACKED ec_foe_rw_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        password;   //!< FoE password
-    char            file_name[MAX_FILE_NAME_SIZE];
+    osal_uint32_t        password;   //!< FoE password
+    osal_char_t            file_name[MAX_FILE_NAME_SIZE];
                                 //!< FoE filename to read/write
 } PACKED ec_foe_rw_request_t;
 
@@ -67,7 +67,7 @@ typedef struct PACKED ec_foe_rw_request {
 typedef struct PACKED ec_foe_data_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        packet_nr;  //!< FoE segmented packet number
+    osal_uint32_t        packet_nr;  //!< FoE segmented packet number
     ec_data_t       data;       //!< FoE segmented packet data
 } PACKED ec_foe_data_request_t;
 
@@ -75,15 +75,15 @@ typedef struct PACKED ec_foe_data_request {
 typedef struct PACKED ec_foe_ack_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        packet_nr;  //!< FoE segmented packet number
+    osal_uint32_t        packet_nr;  //!< FoE segmented packet number
 } PACKED ec_foe_ack_request_t;
 
 //! error request
 typedef struct PACKED ec_foe_error_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    uint32_t        error_code; //!< error code
-    char            error_text[MAX_ERROR_TEXT_SIZE];
+    osal_uint32_t        error_code; //!< error code
+    osal_char_t            error_text[MAX_ERROR_TEXT_SIZE];
                                 //!< error text
 } PACKED ec_foe_error_request_t;
 
@@ -95,7 +95,7 @@ typedef struct PACKED ec_foe_error_request {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_foe_init(ec_t *pec, uint16_t slave) {
+void ec_foe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -113,7 +113,7 @@ void ec_foe_init(ec_t *pec, uint16_t slave) {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_foe_deinit(ec_t *pec, uint16_t slave) {
+void ec_foe_deinit(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -133,7 +133,7 @@ void ec_foe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-static void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_foe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -159,7 +159,7 @@ static void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_foe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_foe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -168,35 +168,35 @@ void ec_foe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 }
 
 #define MSG_BUF_LEN     256u
-static void ec_foe_print_msg(int level, const char *ctx, int slave, const char *msg, uint8_t *buf, size_t buflen) {
-    static char msg_buf[MSG_BUF_LEN];
+static void ec_foe_print_msg(int level, const osal_char_t *ctx, int slave, const osal_char_t *msg, osal_uint8_t *buf, osal_size_t buflen) {
+    static osal_char_t msg_buf[MSG_BUF_LEN];
 
-    char *tmp = msg_buf;
-    size_t pos = 0;
-    size_t max_pos = min(MSG_BUF_LEN, buflen);
-    for (uint32_t u = 0u; (u < max_pos) && ((MSG_BUF_LEN-pos) > 0u); ++u) {
+    osal_char_t *tmp = msg_buf;
+    osal_size_t pos = 0;
+    osal_size_t max_pos = min(MSG_BUF_LEN, buflen);
+    for (osal_uint32_t u = 0u; (u < max_pos) && ((MSG_BUF_LEN-pos) > 0u); ++u) {
         int local_ret = snprintf(&tmp[pos], MSG_BUF_LEN - pos, "%02X ", buf[u]);
         if (local_ret < 0) {
             ec_log(1, ctx, "slave %2d: snprintf failed with %d\n", slave, local_ret);
             break;
         } 
 
-        pos += (size_t)local_ret;
+        pos += (osal_size_t)local_ret;
     }
 
     ec_log(level, ctx, "slave %d: %s - %s\n", slave, msg, msg_buf);
 }
 
-static const char *dump_foe_error_request(int slave, ec_foe_error_request_t *read_buf_error) {
-    static const char *EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND = "File not found!";
+static const osal_char_t *dump_foe_error_request(int slave, ec_foe_error_request_t *read_buf_error) {
+    static const osal_char_t *EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND = "File not found!";
 
-    const char *ret = NULL;
+    const osal_char_t *ret = NULL;
     ec_log(10, __func__, "got foe error code 0x%X\n", read_buf_error->error_code);
 
-    size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
+    osal_size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
     if (text_len > 0u) {
         // cppcheck-suppress misra-c2012-21.3
-        char *error_text = (char *)ec_malloc(text_len + 1u);
+        osal_char_t *error_text = (osal_char_t *)ec_malloc(text_len + 1u);
         (void)strncpy(error_text, read_buf_error->error_text, text_len);
         error_text[text_len] = '\0';
         ec_log(10, __func__, "error_text: %s\n", error_text);
@@ -212,9 +212,9 @@ static const char *dump_foe_error_request(int slave, ec_foe_error_request_t *rea
 }
 
 // read file over foe
-int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
-        char file_name[MAX_FILE_NAME_SIZE], uint8_t **file_data, 
-        size_t *file_data_len, const char **error_message) 
+int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
+        osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t **file_data, 
+        osal_size_t *file_data_len, const osal_char_t **error_message) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -236,8 +236,8 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
         ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry_send->data);
 
         // calc lengths
-        size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
-        size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
+        osal_size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
+        osal_size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
 
         // mailbox header
         write_buf->mbx_hdr.length    = 6u + file_name_len;
@@ -276,14 +276,14 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
                 } else if (read_buf_data->foe_hdr.op_code != EC_FOE_OP_CODE_DATA_REQUEST) {
                     ec_log(10, __func__, "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
                 } else {
-                    size_t len = read_buf_data->mbx_hdr.length - 6u;
+                    osal_size_t len = read_buf_data->mbx_hdr.length - 6u;
                     // cppcheck-suppress misra-c2012-21.3
-                    *file_data = (uint8_t *)realloc(*file_data, *file_data_len + len);
+                    *file_data = (osal_uint8_t *)realloc(*file_data, *file_data_len + len);
                     (void)memcpy(&(*file_data)[*file_data_len], &read_buf_data->data[0], len); 
                     *file_data_len += len;
 
                     int packet_nr = read_buf_data->packet_nr;
-                    uint32_t read_data_length = read_buf_data->mbx_hdr.length;
+                    osal_uint32_t read_data_length = read_buf_data->mbx_hdr.length;
 
                     if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry_send, NULL) != EC_OK) {
                         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
@@ -322,9 +322,9 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
 }
 
 // write file over foe
-int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
-        char file_name[MAX_FILE_NAME_SIZE], uint8_t *file_data, 
-        size_t file_data_len, const char **error_message) 
+int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
+        osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t *file_data, 
+        osal_size_t file_data_len, const osal_char_t **error_message) 
 {
     (void)error_message;
     assert(pec != NULL);
@@ -346,8 +346,8 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
         ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry->data);
 
         // calc lengths
-        size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
-        size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
+        osal_size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
+        osal_size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
 
         // mailbox header
         write_buf->mbx_hdr.length    = 6u + file_name_len;
@@ -393,7 +393,7 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
 
     if (ret == EC_OK) {
         // mailbox len - mailbox hdr (6) - foe header (6)
-        size_t data_len = slv->sm[1].len - 6u - 6u;
+        osal_size_t data_len = slv->sm[1].len - 6u - 6u;
         off_t file_offset = 0;
         int packet_nr = 0;
         int last_pkt = 0;
@@ -404,8 +404,8 @@ int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
                 // cppcheck-suppress misra-c2012-11.3
                 ec_foe_data_request_t *write_buf_data = (ec_foe_data_request_t *)p_entry->data;
 
-                size_t rest_len = file_data_len - file_offset;
-                size_t bytes_read = min(rest_len, data_len);
+                osal_size_t rest_len = file_data_len - file_offset;
+                osal_size_t bytes_read = min(rest_len, data_len);
                 (void)memcpy(&write_buf_data->data[0], &file_data[file_offset], bytes_read);
                 if (bytes_read < data_len) {
                     last_pkt = 1;

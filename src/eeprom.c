@@ -44,18 +44,18 @@
 #define SII_REG(ac, adr, val)                                          \
     cnt = 100u;                                                        \
     do { ret = ec_fp##ac(pec, pec->slaves[slave].fixed_address, (adr), \
-                (uint8_t *)&(val), sizeof(val), &wkc);                 \
+                (osal_uint8_t *)&(val), sizeof(val), &wkc);                 \
     } while ((--cnt > 0u) && (wkc != 1u) && (ret == EC_OK));
 
 // set eeprom control to pdi
-int ec_eeprom_to_pdi(ec_t *pec, uint16_t slave) {
+int ec_eeprom_to_pdi(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     int ret = EC_OK;
-    uint16_t wkc;
-    uint16_t cnt = 10u;
-    uint8_t eepctl = 2u;
+    osal_uint16_t wkc;
+    osal_uint16_t cnt = 10u;
+    osal_uint8_t eepctl = 2u;
 
     eepctl = 1; 
     SII_REG(wr, EC_REG_EEPCFG, eepctl);
@@ -67,14 +67,14 @@ int ec_eeprom_to_pdi(ec_t *pec, uint16_t slave) {
 }
 
 // set eeprom control to ec
-int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
+int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     int ret = EC_OK;
-    uint16_t wkc;
-    uint16_t cnt = 10;
-    uint8_t eepctl = 2;
+    osal_uint16_t wkc;
+    osal_uint16_t cnt = 10;
+    osal_uint8_t eepctl = 2;
     
     SII_REG(rd, EC_REG_EEPCFG, eepctl);
     if ((ret != EC_OK) || (cnt == 0u)) {
@@ -111,15 +111,15 @@ int ec_eeprom_to_ec(struct ec *pec, uint16_t slave) {
 }
 
 // read 32-bit word of eeprom
-int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
+int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uint32_t *data) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(data != NULL);
    
     int ret = EC_OK;
     int retry_cnt = 100;
-    uint16_t wkc = 0;
-    uint16_t eepcsr = 0x0100; // read access
+    osal_uint16_t wkc = 0;
+    osal_uint16_t eepcsr = 0x0100; // read access
     
     ret = ec_eeprom_to_ec(pec, slave);
     
@@ -130,7 +130,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                    (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                    (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
             retry_cnt--;
             if ((ret == EC_OK) && (retry_cnt == 0)) {
@@ -142,7 +142,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
 
     if (ret == EC_OK) {
         ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPADR,
-                (uint8_t *)&eepadr, sizeof(eepadr), &wkc);
+                (osal_uint8_t *)&eepadr, sizeof(eepadr), &wkc);
 
         if ((ret == EC_OK) && (wkc != 1u)) {
             ec_log(1, "EEPROM_READ", "writing eepadr failed\n");
@@ -153,7 +153,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     if (ret == EC_OK) {
         eepcsr = 0x0100;
         ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
         if ((ret == EC_OK) && (wkc != 1u)) {
             ec_log(1, "EEPROM_READ", "wirting eepctl failed\n");
             ret = EC_ERROR_EEPROM_READ_ERROR;
@@ -166,7 +166,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                    (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                    (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
             retry_cnt--;
             if ((ret == EC_OK) && (retry_cnt == 0)) {
@@ -179,7 +179,7 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
     if (ret == EC_OK) {
         *data = 0;
         ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPDAT,
-                (uint8_t *)data, sizeof(*data), &wkc);
+                (osal_uint8_t *)data, sizeof(*data), &wkc);
         if ((ret == EC_OK) && (wkc != 1u)) {
             ec_log(1, "EEPROM_READ", "reading data failed\n");
             ret = EC_ERROR_EEPROM_READ_ERROR;
@@ -214,15 +214,15 @@ int ec_eepromread(ec_t *pec, uint16_t slave, uint32_t eepadr, uint32_t *data) {
 }
 
 // write 32-bit word of eeprom
-int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
+int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uint16_t *data) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(data != NULL);
 
     int ret = EC_OK;
     int retry_cnt = 100;
-    uint16_t wkc = 0;
-    uint16_t eepcsr = 0x0100; // write access
+    osal_uint16_t wkc = 0;
+    osal_uint16_t eepcsr = 0x0100; // write access
     
     ret = ec_eeprom_to_ec(pec, slave);
     
@@ -234,7 +234,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                    (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                    (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
             retry_cnt--;
             if ((ret == EC_OK) && (retry_cnt == 0)) {
@@ -255,12 +255,12 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
             eepcsr = 0x0000u;
             do {
                 ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                        (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                        (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
             } while ((ret == EC_OK) && (wkc == 0u));
 
             if (ret == EC_OK) {
                 ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                    (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                    (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
             }
         }
     }
@@ -270,7 +270,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
     if (ret == EC_OK) {
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPADR,
-                    (uint8_t *)&eepadr, sizeof(eepadr), &wkc);
+                    (osal_uint8_t *)&eepadr, sizeof(eepadr), &wkc);
 
             retry_cnt--;
             if ((ret == EC_OK) && (retry_cnt == 0)) {
@@ -286,7 +286,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
     if (ret == EC_OK) {
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPDAT,
-                    (uint8_t *)data, sizeof(*data), &wkc);
+                    (osal_uint8_t *)data, sizeof(*data), &wkc);
 
             retry_cnt--;
             if ((ret == EC_OK) && (retry_cnt == 0)) {
@@ -308,7 +308,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
     if (ret == EC_OK) {
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                    (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                    (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
             retry_cnt--;
             if ((ret == EC_OK) && (retry_cnt == 0)) {
@@ -327,7 +327,7 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
-                    (uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
+                    (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
             retry_cnt--;
             if ((ret == EC_OK) && (retry_cnt == 0)) {
@@ -366,8 +366,8 @@ int ec_eepromwrite(ec_t *pec, uint16_t slave, uint32_t eepadr, uint16_t *data) {
 }
 
 // read a burst of eeprom
-int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
-        uint8_t *buf, size_t buflen) 
+int ec_eepromread_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, 
+        osal_uint8_t *buf, osal_size_t buflen) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -377,11 +377,11 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     int ret = EC_OK;
     
     while (offset < buflen) {
-        uint8_t val[4];
+        osal_uint8_t val[4];
         int i;
 
         // cppcheck-suppress misra-c2012-11.3
-        ret = ec_eepromread(pec, slave, eepadr+(offset/2u), (uint32_t *)&val[0]);
+        ret = ec_eepromread(pec, slave, eepadr+(offset/2u), (osal_uint32_t *)&val[0]);
         if (ret != EC_OK) {
             break;
         }
@@ -398,8 +398,8 @@ int ec_eepromread_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
 };
 
 // write a burst of eeprom
-int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr, 
-        const uint8_t *buf, size_t buflen) 
+int ec_eepromwrite_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, 
+        const osal_uint8_t *buf, osal_size_t buflen) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -410,16 +410,16 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
     int ret = EC_OK;
 
     while (offset < (buflen/2u)) {
-        uint8_t val[2];
+        osal_uint8_t val[2];
         for (i = 0; i < 2; ++i) {
             val[i] = buf[(offset*2)+i];
         }
                 
         ec_log(100, __func__, "slave %2d, writing adr %d : 0x%04X\n", 
-                        slave, eepadr+offset, *(uint16_t *)&val);
+                        slave, eepadr+offset, *(osal_uint16_t *)&val);
 
         do {
-            ret = ec_eepromwrite(pec, slave, eepadr+offset, (uint16_t *)&val);
+            ret = ec_eepromwrite(pec, slave, eepadr+offset, (osal_uint16_t *)&val);
         } while (ret != EC_OK);
 
         offset +=1u;
@@ -429,20 +429,20 @@ int ec_eepromwrite_len(ec_t *pec, uint16_t slave, uint32_t eepadr,
 };
 
 // read out whole eeprom and categories
-void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
+void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     off_t cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
-    uint32_t value32 = 0;
+    osal_uint32_t value32 = 0;
     
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->eeprom.read_eeprom == 0) {
-        uint16_t size;
+        osal_uint16_t size;
 
 #define ec_read_eeprom(adr, mem) \
-        ec_eepromread_len(pec, slave, (adr), (uint8_t *)&(mem), sizeof(mem));
+        ec_eepromread_len(pec, slave, (adr), (osal_uint8_t *)&(mem), sizeof(mem));
 #define do_eeprom_log(...) \
         if (pec->eeprom_log != 0) { ec_log(__VA_ARGS__); }
 
@@ -462,17 +462,17 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
 
         slv->eeprom.read_eeprom = 1;
 
-        size = (uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 125u); // convert kbit to byte
+        size = (osal_uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 125u); // convert kbit to byte
         if (size > 128u) {
-            uint16_t cat_type;
+            osal_uint16_t cat_type;
             do {
                 int ret = ec_read_eeprom(cat_offset, value32);
                 if (ret != 0) {
                     break;
                 }
 
-                cat_type = (uint16_t)(value32 & 0x0000FFFFu);
-                uint16_t cat_len  = (uint16_t)((value32 & 0xFFFF0000u) >> 16u);
+                cat_type = (osal_uint16_t)(value32 & 0x0000FFFFu);
+                osal_uint16_t cat_len  = (osal_uint16_t)((value32 & 0xFFFF0000u) >> 16u);
 
                 switch (cat_type) {
                     default: 
@@ -483,12 +483,12 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         do_eeprom_log(100, "EEPROM_STRINGS", "slave %2d: cat_len %d\n", slave, cat_len);
 
                         // cppcheck-suppress misra-c2012-21.3
-                        uint8_t *buf = (uint8_t *)ec_malloc((cat_len * 2u) + 1u);
+                        osal_uint8_t *buf = (osal_uint8_t *)ec_malloc((cat_len * 2u) + 1u);
                         buf[cat_len * 2u] = 0u;
                         (void)ec_eepromread_len(pec, slave, cat_offset+2, buf, cat_len * 2u);
 
-                        uint32_t local_offset = 0;
-                        uint32_t i;
+                        osal_uint32_t local_offset = 0;
+                        osal_uint32_t i;
                         slv->eeprom.strings_cnt = buf[local_offset];
                         local_offset++;
 
@@ -501,15 +501,15 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         }
 
                         // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.strings = (char **)ec_malloc(sizeof(char *) * slv->eeprom.strings_cnt);
+                        slv->eeprom.strings = (osal_char_t **)ec_malloc(sizeof(osal_char_t *) * slv->eeprom.strings_cnt);
 
                         for (i = 0; i < slv->eeprom.strings_cnt; ++i) {
-                            uint8_t string_len = buf[local_offset];
+                            osal_uint8_t string_len = buf[local_offset];
                             local_offset++;
 
                             // cppcheck-suppress misra-c2012-21.3
-                            slv->eeprom.strings[i] = (char *)ec_malloc(sizeof(char) * (string_len + 1u));
-                            (void)strncpy(slv->eeprom.strings[i], (char *)&buf[local_offset], string_len);
+                            slv->eeprom.strings[i] = (osal_char_t *)ec_malloc(sizeof(osal_char_t) * (string_len + 1u));
+                            (void)strncpy(slv->eeprom.strings[i], (osal_char_t *)&buf[local_offset], string_len);
                             local_offset += string_len;
 
                             slv->eeprom.strings[i][string_len] = '\0';
@@ -551,7 +551,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                                 slave, cat_len);
 
                         // skip cat type and len
-                        uint32_t local_offset = cat_offset + 2u;
+                        osal_uint32_t local_offset = cat_offset + 2u;
                         slv->eeprom.fmmus_cnt = cat_len * 2u;
 
                         if (!slv->eeprom.fmmus_cnt) {
@@ -563,13 +563,13 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         slv->eeprom.fmmus = (ec_eeprom_cat_fmmu_t *)ec_malloc(
                                 sizeof(ec_eeprom_cat_fmmu_t) * slv->eeprom.fmmus_cnt);
 
-                        uint32_t fmmu_idx = 0;
+                        osal_uint32_t fmmu_idx = 0;
                         while (local_offset < (cat_offset + cat_len + 2u)) {
-                            uint32_t i;
+                            osal_uint32_t i;
 
                             (void)ec_read_eeprom(local_offset, value32);
-                            uint8_t tmp[4];
-                            (void)memcpy(&tmp[0], (uint8_t *)&value32, 4);
+                            osal_uint8_t tmp[4];
+                            (void)memcpy(&tmp[0], (osal_uint8_t *)&value32, 4);
 
                             i = 0u;
                             while ((i < 4u) && (i < (cat_len * 2u))) {
@@ -594,7 +594,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                                 slave, cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u));
 
                         // skip cat type and len
-                        uint32_t j = 0;
+                        osal_uint32_t j = 0;
                         off_t local_offset = cat_offset + 2;
                         slv->eeprom.sms_cnt = cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u);
 
@@ -654,8 +654,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         do_eeprom_log(100, "EEPROM_TXPDO", "slave %2d:\n", slave);
 
                         // skip cat type and len
-                        uint32_t j = 0;
-                        size_t local_offset = cat_offset + 2u;
+                        osal_uint32_t j = 0;
+                        osal_size_t local_offset = cat_offset + 2u;
                         if (!cat_len) {
                             break;
                         }
@@ -673,10 +673,10 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                             // read pdo
                             // cppcheck-suppress misra-c2012-21.3
                             pdo = (ec_eeprom_cat_pdo_t *)ec_malloc(sizeof(ec_eeprom_cat_pdo_t));
-                            (void)memset((uint8_t *)pdo, 0, sizeof(ec_eeprom_cat_pdo_t));
+                            (void)memset((osal_uint8_t *)pdo, 0, sizeof(ec_eeprom_cat_pdo_t));
                             (void)ec_eepromread_len(pec, slave, local_offset, 
-                                    (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
-                            local_offset += (size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
+                                    (osal_uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
+                            local_offset += (osal_size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
 
                             do_eeprom_log(100, "EEPROM_TXPDO", "          0x%04X, entries %d\n",
                                     pdo->pdo_index, pdo->n_entry);
@@ -690,7 +690,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
                                     (void)ec_eepromread_len(pec, slave, local_offset,
-                                            (uint8_t *)entry, 
+                                            (osal_uint8_t *)entry, 
                                             sizeof(ec_eeprom_cat_pdo_entry_t));
 
                                     local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2u;
@@ -710,8 +710,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         do_eeprom_log(100, "EEPROM_RXPDO", "slave %2d:\n", slave);
 
                         // skip cat type and len
-                        uint32_t j = 0u;
-                        size_t local_offset = cat_offset + 2u;
+                        osal_uint32_t j = 0u;
+                        osal_size_t local_offset = cat_offset + 2u;
                         if (!cat_len) {
                             break;
                         }
@@ -730,8 +730,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                             // cppcheck-suppress misra-c2012-21.3
                             pdo = (ec_eeprom_cat_pdo_t *)ec_malloc(sizeof(ec_eeprom_cat_pdo_t));
                             (void)ec_eepromread_len(pec, slave, local_offset, 
-                                    (uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
-                            local_offset += (size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
+                                    (osal_uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
+                            local_offset += (osal_size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
 
                             do_eeprom_log(100, "EEPROM_RXPDO", "          0x%04X, entries %d\n",
                                     pdo->pdo_index, pdo->n_entry);
@@ -745,7 +745,7 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
                                     (void)ec_eepromread_len(pec, slave, local_offset,
-                                            (uint8_t *)entry, 
+                                            (osal_uint8_t *)entry, 
                                             sizeof(ec_eeprom_cat_pdo_entry_t));
 
                                     local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2u;
@@ -762,8 +762,8 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_DC: {
-                        uint32_t j = 0u;
-                        size_t local_offset = cat_offset + 2u;
+                        osal_uint32_t j = 0u;
+                        osal_size_t local_offset = cat_offset + 2u;
 
                         do_eeprom_log(100, "EEPROM_DC", "slave %2d:\n", slave);
 
@@ -776,15 +776,15 @@ void ec_eeprom_dump(ec_t *pec, uint16_t slave) {
                         }
 
                         // allocating new dcs
-                        slv->eeprom.dcs_cnt = cat_len / (size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
+                        slv->eeprom.dcs_cnt = cat_len / (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
                         // cppcheck-suppress misra-c2012-21.3
                         slv->eeprom.dcs = (ec_eeprom_cat_dc_t *)ec_malloc(EC_EEPROM_CAT_DC_LEN * slv->eeprom.dcs_cnt);
 
                         for (j = 0; j < slv->eeprom.dcs_cnt; ++j) {
                             ec_eeprom_cat_dc_t *dc = &slv->eeprom.dcs[j];
                             (void)ec_eepromread_len(pec, slave, local_offset,
-                                    (uint8_t *)dc, EC_EEPROM_CAT_DC_LEN);
-                            local_offset += (size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
+                                    (osal_uint8_t *)dc, EC_EEPROM_CAT_DC_LEN);
+                            local_offset += (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
 
                             do_eeprom_log(100, "EEPROM_DC", "          cycle_time_0 %d, "
                                     "shift_time_0 %d, shift_time_1 %d, "

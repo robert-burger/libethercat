@@ -44,23 +44,23 @@
 #include <errno.h>
 
 // forward declarations
-static int ec_eoe_process_recv(ec_t *pec, uint16_t slave);
+static int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave);
 
 typedef struct {
     // 8 bit
-    uint8_t frame_type         : 4;
-    uint8_t port               : 4;    
+    osal_uint8_t frame_type         : 4;
+    osal_uint8_t port               : 4;    
 
     // 8 bit
-    uint8_t last_fragment      : 1;
-    uint8_t time_appended      : 1;
-    uint8_t time_requested     : 1;
-    uint8_t reserved           : 5;
+    osal_uint8_t last_fragment      : 1;
+    osal_uint8_t time_appended      : 1;
+    osal_uint8_t time_requested     : 1;
+    osal_uint8_t reserved           : 5;
 
     // 16 bit
-    uint16_t fragment_number    : 6;
-    uint16_t complete_size      : 6;
-    uint16_t frame_number       : 4;
+    osal_uint16_t fragment_number    : 6;
+    osal_uint16_t complete_size      : 6;
+    osal_uint16_t frame_number       : 4;
 } PACKED ec_eoe_header_t;
 
 #define EOE_FRAME_TYPE_REQUEST                         0u
@@ -84,19 +84,19 @@ typedef struct {
 typedef struct {
     ec_mbx_header_t mbx_hdr;
     ec_eoe_header_t eoe_hdr;
-    uint32_t        time_stamp; // cppcheck-suppress unusedStructMember
+    osal_uint32_t        time_stamp; // cppcheck-suppress unusedStructMember
 } PACKED ec_eoe_response_t;
 
 // ------------------------ EoE SET IP ADDRESS REQUEST --------------------------
 
 typedef struct {
-    uint32_t mac_included           : 1;
-    uint32_t ip_address_included    : 1;
-    uint32_t subnet_included        : 1;
-    uint32_t gateway_included       : 1;
-    uint32_t dns_included           : 1;
-    uint32_t dns_name_included      : 1;
-    uint32_t reserved               : 26; // cppcheck-suppress unusedStructMember
+    osal_uint32_t mac_included           : 1;
+    osal_uint32_t ip_address_included    : 1;
+    osal_uint32_t subnet_included        : 1;
+    osal_uint32_t gateway_included       : 1;
+    osal_uint32_t dns_included           : 1;
+    osal_uint32_t dns_name_included      : 1;
+    osal_uint32_t reserved               : 26; // cppcheck-suppress unusedStructMember
 } PACKED ec_eoe_set_ip_parameter_header_t;
 
 //! initiate eoe set ip parameter request
@@ -110,17 +110,17 @@ typedef struct {
 
 typedef struct {
     // 8 bit
-    uint8_t frame_type         : 4; // cppcheck-suppress unusedStructMember
-    uint8_t port               : 4; // cppcheck-suppress unusedStructMember
+    osal_uint8_t frame_type         : 4; // cppcheck-suppress unusedStructMember
+    osal_uint8_t port               : 4; // cppcheck-suppress unusedStructMember
 
     // 8 bit
-    uint8_t last_fragment      : 1; // cppcheck-suppress unusedStructMember
-    uint8_t time_appended      : 1; // cppcheck-suppress unusedStructMember
-    uint8_t time_requested     : 1; // cppcheck-suppress unusedStructMember
-    uint8_t reserved           : 5; // cppcheck-suppress unusedStructMember
+    osal_uint8_t last_fragment      : 1; // cppcheck-suppress unusedStructMember
+    osal_uint8_t time_appended      : 1; // cppcheck-suppress unusedStructMember
+    osal_uint8_t time_requested     : 1; // cppcheck-suppress unusedStructMember
+    osal_uint8_t reserved           : 5; // cppcheck-suppress unusedStructMember
 
     // 16 bit
-    uint16_t result             : 16;
+    osal_uint16_t result             : 16;
 } PACKED ec_eoe_set_ip_parameter_response_header_t;
 
 typedef struct {
@@ -129,16 +129,16 @@ typedef struct {
 } PACKED ec_eoe_set_ip_parameter_response_t;
 
 typedef struct eth_frame {
-    size_t frame_size;
-    uint8_t frame_data[1518];
+    osal_size_t frame_size;
+    osal_uint8_t frame_data[1518];
 } eth_frame_t;
 
-static void eoe_debug_print(const char *msg, uint8_t *frame, size_t frame_len) {
+static void eoe_debug_print(const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
 #define EOE_DEBUG_BUFFER_SIZE   1024
-    static char eoe_debug_buffer[EOE_DEBUG_BUFFER_SIZE];
+    static osal_char_t eoe_debug_buffer[EOE_DEBUG_BUFFER_SIZE];
     
     int pos = snprintf(eoe_debug_buffer, EOE_DEBUG_BUFFER_SIZE, "%s: ", msg);
-    for (uint32_t i = 0; (i < frame_len) && (pos < EOE_DEBUG_BUFFER_SIZE); ++i) {
+    for (osal_uint32_t i = 0; (i < frame_len) && (pos < EOE_DEBUG_BUFFER_SIZE); ++i) {
         pos += snprintf(&eoe_debug_buffer[pos], EOE_DEBUG_BUFFER_SIZE-pos, "%02X", frame[i]);
     }
 
@@ -153,7 +153,7 @@ static void eoe_debug_print(const char *msg, uint8_t *frame, size_t frame_len) {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_eoe_init(ec_t *pec, uint16_t slave) {
+void ec_eoe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -177,7 +177,7 @@ void ec_eoe_init(ec_t *pec, uint16_t slave) {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
+void ec_eoe_deinit(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -205,7 +205,7 @@ void ec_eoe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-static void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_eoe_wait_response(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -230,7 +230,7 @@ static void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_en
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-static void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_eoe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -255,7 +255,7 @@ static void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(p_entry != NULL);
@@ -285,9 +285,9 @@ void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
 }
 
 // read coe sdo 
-int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
-        uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
-        uint8_t *dns, char *dns_name) 
+int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
+        osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, 
+        osal_uint8_t *dns, osal_char_t *dns_name) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -381,7 +381,7 @@ static void ec_eoe_send_sync(void *user_arg, struct pool_entry *p) {
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_len) 
+int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_size_t frame_len) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -395,13 +395,13 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_le
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE;
     } else {
-        size_t max_frag_len = (slv->sm[MAILBOX_WRITE].len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
+        osal_size_t max_frag_len = (slv->sm[MAILBOX_WRITE].len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
         ALIGN_32BIT_BLOCKS(max_frag_len);
         off_t frame_offset = 0;
         int frag_number = 0;
 
         do {
-            size_t frag_len = frame_len - frame_offset;
+            osal_size_t frag_len = frame_len - frame_offset;
             frag_len = min(frag_len, max_frag_len);
 
             // get mailbox buffer to write frame fragment request
@@ -457,7 +457,7 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_le
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-int ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
+int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -483,7 +483,7 @@ int ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
             ret = EC_OK; // signal that we might have further frames to process
         } else {
             eth_frame->frame_size = read_buf->eoe_hdr.complete_size << 5u;
-            size_t frag_len       = read_buf->mbx_hdr.length - 4u;
+            osal_size_t frag_len       = read_buf->mbx_hdr.length - 4u;
             off_t frame_offset    = 0;
 
             (void)memcpy(&(eth_frame->frame_data[frame_offset]), &read_buf->data[0], frag_len);
@@ -602,14 +602,14 @@ static void ec_eoe_tun_handler(ec_t *pec) {
                     // simple switch here 
                     eoe_debug_print("got eth frame", tmp_frame.frame_data, rd);
 
-                    static const uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-                    uint8_t *dst_mac = &tmp_frame.frame_data[0];
+                    static const osal_uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+                    osal_uint8_t *dst_mac = &tmp_frame.frame_data[0];
                     int is_broadcast = 0;
                     if (memcmp(broadcast_mac, dst_mac, 6) == 0) {
                         is_broadcast = 1;
                     }
 
-                    for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+                    for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
                         ec_slave_ptr(slv, pec, slave);
                         if (    !slv->eoe.use_eoe || 
                                 (slv->act_state == EC_STATE_INIT)   ||
@@ -703,7 +703,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
     if (ret == EC_OK) {
         // Set interface address
         struct sockaddr_in  my_addr;
-        bzero((char *) &my_addr, sizeof(my_addr));
+        bzero((osal_char_t *) &my_addr, sizeof(my_addr));
         my_addr.sin_family = AF_INET;
         my_addr.sin_addr.s_addr = htonl(pec->tun_ip);
         (void)memcpy(&ifr.ifr_addr, &my_addr, sizeof(struct sockaddr));

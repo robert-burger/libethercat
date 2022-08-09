@@ -38,8 +38,8 @@
 // 
 // allocate an n-byte block of memory from the heap.
 // if n is zero, allocate a 1-byte block.
-void *rpl_malloc(size_t n) {
-    size_t local_n = n;
+void *rpl_malloc(osal_size_t n) {
+    osal_size_t local_n = n;
 
     if (local_n == 0u) {
         local_n = 1u;
@@ -54,20 +54,20 @@ void *rpl_malloc(size_t n) {
 #ifdef __VXWORKS__ 
 
 
-char *strndup(const char *s, size_t n) {
-    const char* cp = s;
-    size_t i = 0;
+osal_char_t *strndup(const osal_char_t *s, osal_size_t n) {
+    const osal_char_t* cp = s;
+    osal_size_t i = 0;
     while((*cp) != '\0') {
         i++;
         if(i >= n) {
-            break; // enough chars
+            break; // enough osal_char_ts
         }
 
         cp++;
     }
     i ++;
     // cppcheck-suppress misra-c2012-21.3
-    char* result = (char*)malloc(i);
+    osal_char_t* result = (osal_char_t*)malloc(i);
     (void)memcpy(result, s, i);
     result[i - 1u] = 0;
     return result;

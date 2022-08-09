@@ -31,17 +31,19 @@
 #ifndef LIBETHERCAT_EOE_H
 #define LIBETHERCAT_EOE_H
 
+#include <libosal/types.h>
+
 #include "libethercat/common.h"
 
 typedef struct ec_eoe_slave_config {
     int use_eoe;            //!< \brief Using EoE on actual slave.
 
-    uint8_t *mac;           //!< \brief MAC address to configure (mandatory)
-    uint8_t *ip_address;    //!< \brief IP address to configure (optional, maybe NULL).
-    uint8_t *subnet;        //!< \brief Subnet to configure (optional, maybe NULL).
-    uint8_t *gateway;       //!< \brief Gateway to configure (optional, maybe NULL).
-    uint8_t *dns;           //!< \brief DNS to configure (optional, maybe NULL).
-    char *dns_name;         //!< \brief DNS name to configure (optional, maybe NULL).
+    osal_uint8_t *mac;           //!< \brief MAC address to configure (mandatory)
+    osal_uint8_t *ip_address;    //!< \brief IP address to configure (optional, maybe NULL).
+    osal_uint8_t *subnet;        //!< \brief Subnet to configure (optional, maybe NULL).
+    osal_uint8_t *gateway;       //!< \brief Gateway to configure (optional, maybe NULL).
+    osal_uint8_t *dns;           //!< \brief DNS to configure (optional, maybe NULL).
+    osal_char_t *dns_name;         //!< \brief DNS name to configure (optional, maybe NULL).
 } ec_eoe_slave_config_t;
 
 typedef struct ec_eoe {
@@ -58,9 +60,6 @@ typedef struct ec_eoe {
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if 0
-}
-#endif
 
 //! initialize EoE structure 
 /*!
@@ -70,7 +69,7 @@ extern "C" {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_eoe_init(ec_t *pec, uint16_t slave);
+void ec_eoe_init(ec_t *pec, osal_uint16_t slave);
 
 //! deinitialize EoE structure 
 /*!
@@ -80,7 +79,7 @@ void ec_eoe_init(ec_t *pec, uint16_t slave);
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_eoe_deinit(ec_t *pec, uint16_t slave);
+void ec_eoe_deinit(ec_t *pec, osal_uint16_t slave);
 
 //! \brief Enqueue EoE message received from slave.
 /*!
@@ -92,11 +91,11 @@ void ec_eoe_deinit(ec_t *pec, uint16_t slave);
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_eoe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
-int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
-        uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
-        uint8_t *dns, char *dns_name);
+int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
+        osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, 
+        osal_uint8_t *dns, osal_char_t *dns_name);
 
 // send ethernet frame, fragmented if needed
 /*!
@@ -110,7 +109,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, uint16_t slave, uint8_t *mac,
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, 
+int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, 
         size_t frame_len);
 
 // setup tun interface

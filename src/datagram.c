@@ -72,13 +72,13 @@ int ec_frame_init(ec_frame_t *frame) {
  * \param[in]       payload       Frame payload.
  * \param[in]       payload_len   Length of payload.
  */
-void ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
-        uint16_t adp, uint16_t ado, uint8_t *payload, size_t payload_len) {
+void ec_frame_add_datagram_phys(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_t idx, 
+        osal_uint16_t adp, osal_uint16_t ado, osal_uint8_t *payload, osal_size_t payload_len) {
     assert(frame != NULL);
     assert(payload != NULL);
 
     ec_frame_add_datagram_log(frame, cmd, idx, 
-            (((uint32_t)ado << 16u) || (uint32_t)adp), payload, payload_len);
+            (((osal_uint32_t)ado << 16u) || (osal_uint32_t)adp), payload, payload_len);
 }
 
 //! Add datagram at the end of frame.
@@ -90,29 +90,29 @@ void ec_frame_add_datagram_phys(ec_frame_t *frame, uint8_t cmd, uint8_t idx,
  * \param[in]       payload       Frame payload.
  * \param[in]       payload_len   Length of payload.
  */
-void ec_frame_add_datagram_log(ec_frame_t *frame, uint8_t cmd, uint8_t idx, 
-        uint32_t adr, uint8_t *payload, size_t payload_len) {
+void ec_frame_add_datagram_log(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_t idx, 
+        osal_uint32_t adr, osal_uint8_t *payload, osal_size_t payload_len) {
     assert(frame != NULL);
     assert(payload != NULL);
 
     // get address to first datagram
     // cppcheck-suppress misra-c2012-11.3
-    ec_datagram_t *d = (ec_datagram_t *)&((uint8_t *)frame)[sizeof(ec_frame_t)];
+    ec_datagram_t *d = (ec_datagram_t *)&((osal_uint8_t *)frame)[sizeof(ec_frame_t)];
 
-    while (((uint8_t *)d < (&((uint8_t *)frame)[frame->len])) && d->next) {
+    while (((osal_uint8_t *)d < (&((osal_uint8_t *)frame)[frame->len])) && d->next) {
         // cppcheck-suppress misra-c2012-11.3
-        d = (ec_datagram_t *)&((uint8_t *)d)[ec_datagram_length(d)];
+        d = (ec_datagram_t *)&((osal_uint8_t *)d)[ec_datagram_length(d)];
     }
 
     // get next 
     d->next = 1;
     // cppcheck-suppress misra-c2012-11.3
-    d = (ec_datagram_t *)&((uint8_t *)d)[ec_datagram_length(d)];
+    d = (ec_datagram_t *)&((osal_uint8_t *)d)[ec_datagram_length(d)];
 
     d->cmd = cmd; 
     d->idx = idx;
     d->adr = adr;
-    (void)memcpy(&((uint8_t *)d)[sizeof(ec_datagram_t)], payload, payload_len);
+    (void)memcpy(&((osal_uint8_t *)d)[sizeof(ec_datagram_t)], payload, payload_len);
     d->len = payload_len;
 
     frame->len += ec_datagram_length(d);

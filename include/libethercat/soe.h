@@ -32,6 +32,7 @@
 #ifndef LIBETHERCAT_SOE_H
 #define LIBETHERCAT_SOE_H
 
+#include <libosal/types.h>
 #include <libosal/mutex.h>
 
 #include "libethercat/common.h"
@@ -43,17 +44,17 @@ typedef struct ec_soe {
 
 //! ServoDrive attributes of an IDN
 typedef struct PACKED ec_soe_idn_attribute {
-    uint32_t evafactor   :16;       //!< Evalution factor .
-    uint32_t length      :2;        //!< IDN length.
-    uint32_t list        :1;        //!< IDN is list.
-    uint32_t command     :1;        //!< IDN is command.
-    uint32_t datatype    :3;        //!< Datatype according to ServoDrive Specification.
-    uint32_t reserved1   :1;
-    uint32_t decimals    :4;        //!< If float, number of decimals.
-    uint32_t wp_preop    :1;        //!< Write protect in PREOP.
-    uint32_t wp_safeop   :1;        //!< Write protect in SAFEOP.
-    uint32_t wp_op       :1;        //!< Write protect in OP.
-    uint32_t reserved2   :1;
+    osal_uint32_t evafactor   :16;       //!< Evalution factor .
+    osal_uint32_t length      :2;        //!< IDN length.
+    osal_uint32_t list        :1;        //!< IDN is list.
+    osal_uint32_t command     :1;        //!< IDN is command.
+    osal_uint32_t datatype    :3;        //!< Datatype according to ServoDrive Specification.
+    osal_uint32_t reserved1   :1;
+    osal_uint32_t decimals    :4;        //!< If float, number of decimals.
+    osal_uint32_t wp_preop    :1;        //!< Write protect in PREOP.
+    osal_uint32_t wp_safeop   :1;        //!< Write protect in SAFEOP.
+    osal_uint32_t wp_op       :1;        //!< Write protect in OP.
+    osal_uint32_t reserved2   :1;
 } PACKED ec_soe_idn_attribute_t;
 
 //! ServoDrive elements of an IDN
@@ -71,9 +72,6 @@ enum ec_soe_element {
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if 0
-}
-#endif
 
 //! initialize SoE structure 
 /*!
@@ -83,7 +81,7 @@ extern "C" {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_soe_init(ec_t *pec, uint16_t slave);
+void ec_soe_init(ec_t *pec, osal_uint16_t slave);
 
 //! deinitialize SoE structure 
 /*!
@@ -93,7 +91,7 @@ void ec_soe_init(ec_t *pec, uint16_t slave);
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_soe_deinit(ec_t *pec, uint16_t slave);
+void ec_soe_deinit(ec_t *pec, osal_uint16_t slave);
 
 //! \brief Enqueue SoE message received from slave.
 /*!
@@ -105,7 +103,7 @@ void ec_soe_deinit(ec_t *pec, uint16_t slave);
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
 //! Read elements of soe ID number
 /*!
@@ -133,8 +131,8 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  * \param[in,out] len   Length of \p buf, see 'buf' descriptions. Returns length of answer.
  * \return 0 on successs
  */
-int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
-        uint8_t *elements, uint8_t **buf, size_t *len);
+int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
+        osal_uint8_t *elements, osal_uint8_t **buf, osal_size_t *len);
 
 //! Write elements of soe ID number
 /*!
@@ -158,8 +156,8 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
  * \param[in] len       Length of \p buf.
  * \return 0 on successs
  */
-int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
-        uint8_t elements, uint8_t *buf, size_t len);
+int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
+        osal_uint8_t elements, osal_uint8_t *buf, osal_size_t len);
 
 //! Generate sync manager process data mapping via soe
 /*!
@@ -173,11 +171,8 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
  *                      (usually the n'th slave attached).
  * \return 0 on success
  */
-int ec_soe_generate_mapping(ec_t *pec, uint16_t slave);
+int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave);
 
-#if 0 
-{
-#endif
 #ifdef __cplusplus
 }
 #endif

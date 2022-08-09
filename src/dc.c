@@ -57,8 +57,8 @@
  * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
  * \param cycle_shift shift of first sync0 start in [ns]
  */
-void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active, 
-        uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift) 
+void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active, 
+        osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -66,12 +66,12 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
     ec_slave_ptr(slv, pec, slave);
 
     if ((slv->features & 0x04u) != 0u) { // dc available
-        uint8_t dc_cuc = 0u;
-        uint8_t dc_active = 0u;
-        uint16_t wkc = 0u;
-        int64_t dc_start = 0;
-        int64_t dc_time = 0;
-        int64_t tmp_time = 0;
+        osal_uint8_t dc_cuc = 0u;
+        osal_uint8_t dc_active = 0u;
+        osal_uint16_t wkc = 0u;
+        osal_int64_t dc_start = 0;
+        osal_int64_t dc_time = 0;
+        osal_int64_t tmp_time = 0;
 
         // deactivate DC's to stop cyclic operation, enable write access of dc's
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
@@ -85,8 +85,8 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
         // Calculate DC start time as a sum of the actual EtherCAT master time,
         // the generic first sync delay and the cycle shift. the first sync delay 
         // has to be a multiple of cycle time.  
-        tmp_time = ((dc_time - (int64_t)pec->dc.rtc_time) / (int64_t)pec->dc.timer_override) + 1000;
-        dc_start = (int64_t)pec->dc.rtc_time + (tmp_time * (int64_t)pec->dc.timer_override) + cycle_shift;
+        tmp_time = ((dc_time - (osal_int64_t)pec->dc.rtc_time) / (osal_int64_t)pec->dc.timer_override) + 1000;
+        dc_start = (osal_int64_t)pec->dc.rtc_time + (tmp_time * (osal_int64_t)pec->dc.timer_override) + cycle_shift;
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
@@ -108,11 +108,11 @@ void ec_dc_sync(ec_t *pec, uint16_t slave, uint8_t active,
 }
 
 // get port time or 0
-static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
+static inline osal_int32_t ec_dc_porttime(ec_t *pec, osal_uint16_t slave, osal_uint8_t port) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    int32_t ret_time = 0;
+    osal_int32_t ret_time = 0;
 
     if (port < 4u) {
         ret_time = pec->slaves[slave].dc.receive_times[port];
@@ -121,11 +121,11 @@ static inline int32_t ec_dc_porttime(ec_t *pec, uint16_t slave, uint8_t port) {
     return ret_time;
 }
 
-static uint8_t eval_port(ec_t *pec, uint16_t slave, uint8_t a, uint8_t b, uint8_t c, uint8_t def) {
+static osal_uint8_t eval_port(ec_t *pec, osal_uint16_t slave, osal_uint8_t a, osal_uint8_t b, osal_uint8_t c, osal_uint8_t def) {
     int ret_port = def;
 
-    const uint8_t port_idx[] = { a, b, c }; 
-    for (uint8_t i = 0u; i < 3u; ++i) { 
+    const osal_uint8_t port_idx[] = { a, b, c }; 
+    for (osal_uint8_t i = 0u; i < 3u; ++i) { 
         if ((pec->slaves[slave].active_ports & (1u << port_idx[i])) != 0u) { 
             ret_port = port_idx[i]; 
             break;
@@ -136,11 +136,11 @@ static uint8_t eval_port(ec_t *pec, uint16_t slave, uint8_t a, uint8_t b, uint8_
 }
 
 //! determine previous active port, starting at port
-static inline uint8_t ec_dc_previous_port(ec_t *pec, uint16_t slave, uint8_t port) {
+static inline osal_uint8_t ec_dc_previous_port(ec_t *pec, osal_uint16_t slave, osal_uint8_t port) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    uint8_t ret_port = port;
+    osal_uint8_t ret_port = port;
 
     switch(port) {
         case 0: {
@@ -168,10 +168,10 @@ static inline uint8_t ec_dc_previous_port(ec_t *pec, uint16_t slave, uint8_t por
 }
 
 //! search for available port and return
-static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
+static inline osal_uint8_t ec_dc_port_on_parent(ec_t *pec, osal_uint16_t parent) {
     // read et1100 docs about port order
-    const uint8_t port_idx[] = { 3, 1, 2, 0 };
-    uint8_t port_on_parent = 0;
+    const osal_uint8_t port_idx[] = { 3, 1, 2, 0 };
+    osal_uint8_t port_on_parent = 0;
     
     assert(pec != NULL);
     assert(parent < pec->slave_cnt);
@@ -180,7 +180,7 @@ static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
             parent, pec->slaves[parent].dc.available_ports);
 
     for (int i = 0; i < 4; ++i) {
-        uint8_t port = port_idx[i];
+        osal_uint8_t port = port_idx[i];
 
         if ((pec->slaves[parent].dc.available_ports & (1u << port)) != 0u) {
             // mask it out for next port search
@@ -215,25 +215,25 @@ static inline uint8_t ec_dc_port_on_parent(ec_t *pec, uint16_t parent) {
 int ec_dc_config(struct ec *pec) {
     assert(pec != NULL);
 
-    uint32_t i;
+    osal_uint32_t i;
     int parent;
     int child;
     int parenthold = 0;
-    int64_t delay_childs;
-    int64_t delay_previous_slaves;
-    int64_t delay_slave_with_childs;
-    uint16_t wkc;
+    osal_int64_t delay_childs;
+    osal_int64_t delay_previous_slaves;
+    osal_int64_t delay_slave_with_childs;
+    osal_uint16_t wkc;
 
     pec->dc.have_dc = 0;
     pec->dc.master_address = 0;
 
     // latch DC receive time on slaves
-    int32_t dc_time0 = 0;
+    osal_int32_t dc_time0 = 0;
     check_ec_bwr(pec, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
 
     int prev = -1;
 
-    for (uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
+    for (osal_uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
         ec_slave_ptr(slv, pec, slave);
         slv->dc.available_ports = slv->active_ports;
 
@@ -280,7 +280,7 @@ int ec_dc_config(struct ec *pec) {
         slv->entry_port = 0;
         for (i = 0u; i < 4u; ++i) {
             slv->dc.receive_times[i] = 0;
-            check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0 + (i * sizeof(int32_t)), 
+            check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0 + (i * sizeof(osal_int32_t)), 
                     &slv->dc.receive_times[i], sizeof(slv->dc.receive_times[i]), &wkc);
 
             if ((slv->active_ports & (1u << i)) != 0u) {
@@ -297,11 +297,11 @@ int ec_dc_config(struct ec *pec) {
         // remove entry_port from available ports
         ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: available_ports 0x%X, "
                 "entry_port %d\n", slave, slv->dc.available_ports, slv->entry_port);
-        slv->dc.available_ports &= (uint8_t)~(1u << (uint32_t)slv->entry_port);
+        slv->dc.available_ports &= (osal_uint8_t)~(1u << (osal_uint32_t)slv->entry_port);
 
         // read out distributed clock slave offset and use as offset 
         // to set local time to 0
-        int64_t dcsof = 0;
+        osal_int64_t dcsof = 0;
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSOF, &dcsof, sizeof(dcsof), &wkc);
         dcsof *= -1;
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSOFFSET, &dcsof, sizeof(dcsof), &wkc);
@@ -343,8 +343,8 @@ int ec_dc_config(struct ec *pec) {
             delay_previous_slaves = 0;
 
             int port_on_parent_previous = ec_dc_previous_port(pec, parent, slv->port_on_parent);
-            int64_t port_time_parent = ec_dc_porttime(pec, parent, slv->port_on_parent);
-            int64_t port_time_parent_previous = ec_dc_porttime(pec, parent, port_on_parent_previous);
+            osal_int64_t port_time_parent = ec_dc_porttime(pec, parent, slv->port_on_parent);
+            osal_int64_t port_time_parent_previous = ec_dc_porttime(pec, parent, port_on_parent_previous);
 
             ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: ports %d, %d, times "
                     "%d, %d\n", slave, slv->port_on_parent, port_on_parent_previous, 
@@ -391,7 +391,7 @@ int ec_dc_config(struct ec *pec) {
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSDELAY, &slv->pdelay, sizeof(slv->pdelay), &wkc);
     }
 
-    uint64_t temp_dc = 0;
+    osal_uint64_t temp_dc = 0;
     check_ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
 
     return EC_OK;

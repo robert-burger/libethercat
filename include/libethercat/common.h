@@ -34,6 +34,8 @@
 
 #include "config.h"
 
+#include <libosal/types.h>
+
 #include <stdint.h>
 
 #include "libethercat/memory.h"
@@ -60,37 +62,37 @@
 #define EC_MAX_DATA 4096u
 
 //typedef union ec_data {
-//    uint8_t  bdata[EC_MAX_DATA]; /* variants for easy data access */
-//    uint16_t wdata[EC_MAX_DATA>>1u];
-//    uint32_t ldata[EC_MAX_DATA>>2u];
+//    osal_uint8_t  bdata[EC_MAX_DATA]; /* variants for easy data access */
+//    osal_uint16_t wdata[EC_MAX_DATA>>1u];
+//    osal_uint32_t ldata[EC_MAX_DATA>>2u];
 //} ec_data_t;
 
-typedef uint8_t ec_data_t[EC_MAX_DATA]; /* variants for easy data access */
+typedef osal_uint8_t ec_data_t[EC_MAX_DATA]; /* variants for easy data access */
 
 //! process data structure
 typedef struct ec_pd {
-    uint8_t *pd;        //!< pointer to process data
-    size_t len;         //!< process data length
+    osal_uint8_t *pd;        //!< pointer to process data
+    osal_size_t len;         //!< process data length
 } ec_pd_t;
 
-typedef uint16_t ec_state_t;
-#define EC_STATE_UNKNOWN     ((uint16_t)(0x0000u))       //!< \brief unknown state
-#define EC_STATE_INIT        ((uint16_t)(0x0001u))       //!< \brief EtherCAT INIT state
-#define EC_STATE_PREOP       ((uint16_t)(0x0002u))       //!< \brief EtherCAT PREOP state
-#define EC_STATE_BOOT        ((uint16_t)(0x0003u))       //!< \brief EtherCAT BOOT state
-#define EC_STATE_SAFEOP      ((uint16_t)(0x0004u))       //!< \brief EtherCAT SAFEOP state
-#define EC_STATE_OP          ((uint16_t)(0x0008u))       //!< \brief EtherCAT OP state
-#define EC_STATE_MASK        ((uint16_t)(0x000Fu))       //!< \brief EtherCAT state mask
-#define EC_STATE_ERROR       ((uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR
-#define EC_STATE_RESET       ((uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR reset
+typedef osal_uint16_t ec_state_t;
+#define EC_STATE_UNKNOWN     ((osal_uint16_t)(0x0000u))       //!< \brief unknown state
+#define EC_STATE_INIT        ((osal_uint16_t)(0x0001u))       //!< \brief EtherCAT INIT state
+#define EC_STATE_PREOP       ((osal_uint16_t)(0x0002u))       //!< \brief EtherCAT PREOP state
+#define EC_STATE_BOOT        ((osal_uint16_t)(0x0003u))       //!< \brief EtherCAT BOOT state
+#define EC_STATE_SAFEOP      ((osal_uint16_t)(0x0004u))       //!< \brief EtherCAT SAFEOP state
+#define EC_STATE_OP          ((osal_uint16_t)(0x0008u))       //!< \brief EtherCAT OP state
+#define EC_STATE_MASK        ((osal_uint16_t)(0x000Fu))       //!< \brief EtherCAT state mask
+#define EC_STATE_ERROR       ((osal_uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR
+#define EC_STATE_RESET       ((osal_uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR reset
 
 // cppcheck-suppress misra-c2012-20.9
 #if HAVE_MALLOC == 0
-void *rpl_malloc(size_t n);
+void *rpl_malloc(osal_size_t n);
 #endif
 
 #ifdef __VXWORKS__ 
-char *strndup(const char *s, size_t n);
+osal_char_t *strndup(const osal_char_t *s, osal_size_t n);
 #endif
 
 //#define check_ret(cmd) { if ((cmd) != 0) { ec_log(1, __func__, #cmd " returned error\n"); } }

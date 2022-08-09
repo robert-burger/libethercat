@@ -32,9 +32,9 @@
 #define LIBETHERCAT_MESSAGE_POOL_H
 
 #include <sys/queue.h>
-#include <stdint.h>
 #include <semaphore.h>
 
+#include <libosal/types.h>
 #include <libosal/mutex.h>
 
 #include "libethercat/common.h"
@@ -47,7 +47,7 @@ typedef enum ec_async_message_id {
     EC_MSG_CHECK_SLAVE              //!< message type check slave
 } ec_async_message_id_t;
     
-typedef uint32_t ec_async_message_payload_t;
+typedef osal_uint32_t ec_async_message_payload_t;
 
 //! Message for asynchronous loop
 typedef struct ec_message {
@@ -115,7 +115,7 @@ int ec_async_message_pool_destroy(ec_async_message_loop_t *paml);
  * \param[in] paml  Handle to async message loop.
  * \param[in] gid   EtherCAT process data group id to check.
  */
-void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid);
+void ec_async_check_group(ec_async_message_loop_t *paml, osal_uint16_t gid);
 
 #ifdef __cplusplus
 }

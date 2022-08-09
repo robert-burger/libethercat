@@ -88,8 +88,8 @@ void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
  *
  * \return EC_OK 0 on success, oherwise error code
  */
-int ec_index_init(idx_queue_t *idx_q, size_t max_index) {
-    uint32_t i;
+int ec_index_init(idx_queue_t *idx_q, osal_size_t max_index) {
+    osal_uint32_t i;
     int ret = EC_OK;
 
     assert(idx_q != NULL);

@@ -31,6 +31,7 @@
 #ifndef LIBETHERCAT_MBX_H
 #define LIBETHERCAT_MBX_H
 
+#include <libosal/types.h>
 #include <libosal/osal.h>
 
 #include "libethercat/common.h"

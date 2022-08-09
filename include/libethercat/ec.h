@@ -31,7 +31,8 @@
 #ifndef LIBETHERCAT_EC_H
 #define LIBETHERCAT_EC_H
 
-#include <stdint.h>
+#include <libosal/types.h>
+
 #include <sys/select.h>
 
 #include "libethercat/common.h"
@@ -55,7 +56,7 @@ typedef struct ec_slave ec_slave_t;
     
 //! process data group structure
 typedef struct ec_pd_group {
-    uint32_t log;                   //!< logical address
+    osal_uint32_t log;              //!< logical address
                                     /*!<
                                      * This defines the logical start address
                                      * for the process data group. It is used
@@ -63,7 +64,7 @@ typedef struct ec_pd_group {
                                      * LRW, LRD, LWR, ...
                                      */
 
-    uint32_t log_len;               //!< byte length at logical address
+    osal_uint32_t log_len;          //!< byte length at logical address
                                     /*!<
                                      * This defines the byte length at logical 
                                      * start address for the process data 
@@ -71,7 +72,7 @@ typedef struct ec_pd_group {
                                      * addressing commands LRW, LRD, LWR, ...
                                      */
     
-    uint8_t *pd;                    //!< process data pointer
+    osal_uint8_t *pd;               //!< process data pointer
                                     /*!< 
                                      * This address holds the process data
                                      * of the whole group. At offset 0 the 
@@ -80,9 +81,9 @@ typedef struct ec_pd_group {
                                      * filled in by the LRW command.
                                      */
 
-    size_t   pdout_len;             //!< length of process data outputs
-    size_t   pdin_len;              //!< length of process data inputs
-    size_t   pd_lrw_len;            //!< inputs and outputs length if lrw is used
+    osal_size_t   pdout_len;        //!< length of process data outputs
+    osal_size_t   pdin_len;         //!< length of process data inputs
+    osal_size_t   pd_lrw_len;       //!< inputs and outputs length if lrw is used
 
     int use_lrw;                    //!< LRW flag
                                     /*!
@@ -91,7 +92,7 @@ typedef struct ec_pd_group {
                                      * data exchange
                                      */
 
-    uint16_t wkc_expected;          //!< expected working counter
+    osal_uint16_t wkc_expected;     //!< expected working counter
                                     /*!< 
                                      * This is the expected working counter 
                                      * for the LRW command. The working counter
@@ -144,10 +145,10 @@ typedef struct ec {
                                      * again by the master.
                                      */
 
-    uint16_t slave_cnt;             //!< count of found EtherCAT slaves
+    osal_uint16_t slave_cnt;        //!< count of found EtherCAT slaves
     ec_slave_t *slaves;             //!< array with EtherCAT slaves
 
-    uint16_t pd_group_cnt;          //!< count of process data groups
+    osal_uint16_t pd_group_cnt;     //!< count of process data groups
     ec_pd_group_t *pd_groups;       //!< array with process data groups
 
     ec_dc_info_t dc;                //!< distributed clocks master settings
@@ -160,7 +161,7 @@ typedef struct ec {
                                      */
     
     int tun_fd;                     //!< tun device file descriptor
-    uint32_t tun_ip;                //!< tun device ip addres
+    osal_uint32_t tun_ip;           //!< tun device ip addres
     osal_task_t tun_tid;            //!< tun device handler thread id.
     int tun_running;                //!< tun device handler run flag.
     
@@ -181,9 +182,9 @@ extern "C" {
 #endif
 
 extern void *ec_log_func_user;
-extern void (*ec_log_func)(int lvl, void *user, const char *format, ...);
+extern void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...);
 
-void ec_log(int lvl, const char *pre, const char *format, ...);
+void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...);
 
 //! \brief Open ethercat master.
 /*!
@@ -202,7 +203,7 @@ void ec_log(int lvl, const char *pre, const char *format, ...);
  * \param[in]  eeprom_log   Log eeprom to stdout.
  * \return 0 on succes, otherwise error code
  */
-int ec_open(ec_t **ppec, const char *ifname, int prio, int cpumask, int eeprom_log);
+int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int eeprom_log);
 
 //! \brief Closes ethercat master.
 /*!
@@ -218,7 +219,7 @@ int ec_close(ec_t *pec);
  *                          which you got from \link ec_open \endlink.
  * \param[in] ip_address    IP address to be set for tun device.
  */
-void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]);
+void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]);
 
 //! \brief Create process data groups.
 /*!
@@ -227,7 +228,7 @@ void ec_configure_tun(ec_t *pec, uint8_t ip_address[4]);
  * \param[in] pd_group_cnt  Number of groups to create.
  * \return 0 on success
  */
-int ec_create_pd_groups(ec_t *pec, uint32_t pd_group_cnt);
+int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt);
 
 //! \brief Destroy process data groups.
 /*!
@@ -248,8 +249,8 @@ int ec_destroy_pd_groups(ec_t *pec);
  * \param[out] wkc          Return value for working counter.
  * \return 0 on succes, otherwise error code
  */
-int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr, 
-        uint8_t *data, size_t datalen, uint16_t *wkc);
+int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr, 
+        osal_uint8_t *data, osal_size_t datalen, osal_uint16_t *wkc);
 
 //! \brief Asyncronous ethercat read/write, answer don't care.
 /*!
@@ -261,8 +262,8 @@ int ec_transceive(ec_t *pec, uint8_t cmd, uint32_t adr,
  * \param[in] datalen       Length of data.
  * \return 0 on succes, otherwise error code
  */
-int ec_transmit_no_reply(ec_t *pec, uint8_t cmd, uint32_t adr, 
-        uint8_t *data, size_t datalen);
+int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr, 
+        osal_uint8_t *data, osal_size_t datalen);
 
 //! \brief Set state on ethercat bus.
 /*! 
@@ -338,40 +339,40 @@ int ec_get_slave_count(ec_t *pec);
 #endif
 
 #define ec_to_adr(ado, adp) \
-    ((uint32_t)(adp) << 16u) | ((ado) & 0xFFFFu)
+    ((osal_uint32_t)(adp) << 16u) | ((ado) & 0xFFFFu)
 
 #define ec_brd(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BRD, ((uint32_t)(ado) << 16u), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_BRD, ((osal_uint32_t)(ado) << 16u), \
+            (osal_uint8_t *)(data), (datalen), (wkc))
 #define ec_bwr(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BWR, ((uint32_t)(ado) << 16u), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_BWR, ((osal_uint32_t)(ado) << 16u), \
+            (osal_uint8_t *)(data), (datalen), (wkc))
 #define ec_brw(pec, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_BRW, ((uint32_t)(ado) << 16u), \
-            (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_BRW, ((osal_uint32_t)(ado) << 16u), \
+            (osal_uint8_t *)(data), (datalen), (wkc))
 
 #define ec_aprd(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APRD, ((uint32_t)(ado) << 16u) | \
-            (*(uint16_t *)&(adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APRD, ((osal_uint32_t)(ado) << 16u) | \
+            (*(osal_uint16_t *)&(adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 #define ec_apwr(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APWR, ((uint32_t)(ado) << 16u) | \
-            (*(uint16_t *)&(adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APWR, ((osal_uint32_t)(ado) << 16u) | \
+            (*(osal_uint16_t *)&(adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 #define ec_aprw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_APRW, ((uint32_t)(ado) << 16u) | \
-            (*(uint16_t *)&(adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_APRW, ((osal_uint32_t)(ado) << 16u) | \
+            (*(osal_uint16_t *)&(adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 
 #define ec_fprd(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPRD, ((uint32_t)(ado) << 16lu) | \
-            (uint32_t)((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPRD, ((osal_uint32_t)(ado) << 16lu) | \
+            (osal_uint32_t)((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 #define ec_fpwr(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPWR, ((uint32_t)(ado) << 16u) | \
-            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPWR, ((osal_uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 #define ec_fprw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FPRW, ((uint32_t)(ado) << 16u) | \
-            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FPRW, ((osal_uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 #define ec_frmw(pec, adp, ado, data, datalen, wkc) \
-    ec_transceive((pec), EC_CMD_FRMW, ((uint32_t)(ado) << 16u) | \
-            ((adp) & 0xFFFFu), (uint8_t *)(data), (datalen), (wkc))
+    ec_transceive((pec), EC_CMD_FRMW, ((osal_uint32_t)(ado) << 16u) | \
+            ((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 
 #define check_ret(fcn, ...) { \
     if (fcn(__VA_ARGS__) != EC_OK) { \

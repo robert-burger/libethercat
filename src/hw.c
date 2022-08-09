@@ -116,7 +116,7 @@ static int try_grant_cap_net_raw_init() {
                     GRANT_CAP_NET_RAW_PROCFS, strerror(errno));
             ret = -1;
         } else {
-            char buffer[1024];
+            osal_char_t buffer[1024];
             int n = read(fd, buffer, 1024);
             close(fd);
             if ((n <= 0) || (strncmp(buffer, "OK", 2) != 0)) {
@@ -128,7 +128,7 @@ static int try_grant_cap_net_raw_init() {
     return ret;
 }
 
-static int internal_hw_open(hw_t *phw, const char *devname) {
+static int internal_hw_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
     
     if (try_grant_cap_net_raw_init() == -1) {
@@ -224,7 +224,7 @@ static int internal_hw_open(hw_t *phw, const char *devname) {
 #define RECEIVE(fd, frame, len)     read((fd), (frame), (len))
 #define SEND(fd, frame, len)        write((fd), (frame), (len))
     
-static int internal_hw_open(hw_t *phw, const char *devname) {
+static int internal_hw_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
 
     /* we use snarf link layer device driver */
@@ -251,14 +251,14 @@ static struct bpf_insn insns[] = {
     BPF_STMT(BPF_RET + BPF_K, 0),
 };
 
-static int internal_hw_open(hw_t *phw, const char *devname) {
+static int internal_hw_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
     const unsigned int btrue = 1;
     const unsigned int bfalse = 0;
 
     int n = 0;
     struct ifreq bound_if;
-    const char bpf_devname[] = "/dev/bpf";
+    const osal_char_t bpf_devname[] = "/dev/bpf";
 
     (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
 
@@ -359,7 +359,7 @@ static int internal_hw_open(hw_t *phw, const char *devname) {
  * \param mmap_packets  0 - using traditional send/recv, 1...n number of mmaped kernel packet buffers
  * \return 0 or negative error code
  */
-int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_packets) {
+int hw_open(hw_t **pphw, const osal_char_t *devname, int prio, int cpumask, int mmap_packets) {
     int ret = EC_OK;
 
     assert(pphw != NULL);
@@ -435,7 +435,7 @@ static void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
     } else {
         ec_datagram_t *d;
         for (d = ec_datagram_first(pframe); 
-                (uint8_t *) d < (uint8_t *) ec_frame_end(pframe);
+                (osal_uint8_t *) d < (osal_uint8_t *) ec_frame_end(pframe);
                 d = ec_datagram_next(d)) {
             pool_entry_t *entry = phw->tx_send[d->idx];
 
@@ -444,14 +444,14 @@ static void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
                 continue;
             }
 
-            size_t size = ec_datagram_length(d);
+            osal_size_t size = ec_datagram_length(d);
             if (entry->data_size < size) {
                 ec_log(1, "RX_THREAD",
                         "received idx %d, size %d is to big for pool entry size %d!\n", 
                         d->idx, size, entry->data_size);
             }
 
-            (void)memcpy(entry->data, (uint8_t *)d, min(size, entry->data_size));
+            (void)memcpy(entry->data, (osal_uint8_t *)d, min(size, entry->data_size));
 
             if ((entry->user_cb) != NULL) {
                 (*entry->user_cb)(entry->user_arg, entry);
@@ -464,7 +464,7 @@ static void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
 void *hw_rx_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     hw_t *phw = (hw_t *) arg;
-    uint8_t recv_frame[ETH_FRAME_LEN];
+    osal_uint8_t recv_frame[ETH_FRAME_LEN];
     // cppcheck-suppress misra-c2012-11.3
     ec_frame_t *pframe = (ec_frame_t *) recv_frame;
 //    struct sched_param param;
@@ -492,8 +492,8 @@ void *hw_rx_thread(void *arg) {
 //#else
 //    cpu_set_t cpuset;
 //    CPU_ZERO(&cpuset);
-//    for (uint32_t i = 0u; i < 32u; ++i) {
-//        if ((phw->rxthreadcpumask & ((uint32_t)1u << i)) != 0u) {
+//    for (osal_uint32_t i = 0u; i < 32u; ++i) {
+//        if ((phw->rxthreadcpumask & ((osal_uint32_t)1u << i)) != 0u) {
 //            CPU_SET(i, &cpuset);
 //        }
 //    }
@@ -509,7 +509,7 @@ void *hw_rx_thread(void *arg) {
 
     while (phw->rxthreadrunning != 0) {
 #ifdef HAVE_NET_BPF_H
-        ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
+        osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
         int local_errno = errno;
         
         if (bytesrx == -1) {
@@ -522,12 +522,12 @@ void *hw_rx_thread(void *arg) {
         }
         
         /* pointer to temporary bpf_frame if we have received more than one */
-        uint8_t *tmpframe2 = (uint8_t *)pframe;
+        osal_uint8_t *tmpframe2 = (osal_uint8_t *)pframe;
 
         while (bytesrx > 0) {
             /* calculate frame size, has to be aligned to word boundaries,
              * copy frame data to frame data buffer */
-            size_t bpf_frame_size = BPF_WORDALIGN(
+            osal_size_t bpf_frame_size = BPF_WORDALIGN(
                     // cppcheck-suppress misra-c2012-11.3
                     ((struct bpf_hdr *) tmpframe2)->bh_hdrlen +
                     // cppcheck-suppress misra-c2012-11.3
@@ -538,7 +538,7 @@ void *hw_rx_thread(void *arg) {
             hw_process_rx_frame(phw, real_frame);
 
             /* values for next frame */
-            bytesrx -= (ssize_t)bpf_frame_size;
+            bytesrx -= (osal_ssize_t)bpf_frame_size;
             tmpframe2 = &tmpframe2[bpf_frame_size];
         }
 #else
@@ -565,7 +565,7 @@ void *hw_rx_thread(void *arg) {
                     header = (struct tpacket_hdr *)(&phw->rx_ring[(phw->rx_ring_offset * pagesize)])) 
             {
                 // cppcheck-suppress misra-c2012-11.3
-                ec_frame_t *real_frame = (ec_frame_t *)(&((char *)header)[header->tp_mac]);
+                ec_frame_t *real_frame = (ec_frame_t *)(&((osal_char_t *)header)[header->tp_mac]);
                 hw_process_rx_frame(phw, real_frame);
 
                 header->tp_status = 0;
@@ -573,7 +573,7 @@ void *hw_rx_thread(void *arg) {
             }
         } else {
             // using tradional recv function
-            ssize_t bytesrx = RECEIVE(phw->sockfd, pframe, ETH_FRAME_LEN);
+            osal_ssize_t bytesrx = RECEIVE(phw->sockfd, pframe, ETH_FRAME_LEN);
             int local_errno = errno;
 
             if (bytesrx <= 0) {
@@ -631,12 +631,12 @@ static struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
 int hw_tx(hw_t *phw) {
     assert(phw != NULL);
 
-    static const uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    static const uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
+    static const osal_uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
     int ret = EC_OK;
     struct tpacket_hdr *header = NULL;
-    uint8_t send_frame[ETH_FRAME_LEN];
+    osal_uint8_t send_frame[ETH_FRAME_LEN];
     // cppcheck-suppress misra-c2012-11.3
     ec_frame_t *pframe = (ec_frame_t *) send_frame;
     (void)memset(send_frame, 0, ETH_FRAME_LEN);
@@ -646,7 +646,7 @@ int hw_tx(hw_t *phw) {
     if (phw->mmap_packets > 0) {
         header = hw_get_next_tx_buffer(phw);
         // cppcheck-suppress misra-c2012-11.3
-        pframe = (ec_frame_t *)(&((char *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
+        pframe = (ec_frame_t *)(&((osal_char_t *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
     } else {
     }
 
@@ -667,7 +667,7 @@ int hw_tx(hw_t *phw) {
 
     // send high priority cyclic frames
     while ((pool_idx < 2) && (ret == EC_OK)) {
-        size_t len = 0;
+        osal_size_t len = 0;
         (void)pool_peek(pools[pool_idx], &p_entry);
         if (p_entry !=  NULL) {
             // cppcheck-suppress misra-c2012-11.3
@@ -695,7 +695,7 @@ int hw_tx(hw_t *phw) {
                     // reset length to send new frame
                     header = hw_get_next_tx_buffer(phw);
                     // cppcheck-suppress misra-c2012-11.3
-                    pframe = (ec_frame_t *)(&((char *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
+                    pframe = (ec_frame_t *)(&((osal_char_t *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
 
                     // reset length to send new frame
                     (void)memcpy(pframe->mac_dest, mac_dest, 6);
@@ -706,9 +706,9 @@ int hw_tx(hw_t *phw) {
                     pdg = ec_datagram_first(pframe);
                 } else {
                     // no more datagrams need to be sent or no more space in frame
-                    ssize_t bytestx = SEND(phw->sockfd, pframe, pframe->len);
+                    osal_ssize_t bytestx = SEND(phw->sockfd, pframe, pframe->len);
 
-                    if ((ssize_t)pframe->len != bytestx) {
+                    if ((osal_ssize_t)pframe->len != bytestx) {
                         ec_log(1, "TX", "got only %d bytes out of %d bytes "
                                 "through.\n", bytestx, pframe->len);
 

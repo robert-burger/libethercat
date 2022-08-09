@@ -33,9 +33,9 @@
 #define POOL_H
 
 #include <sys/queue.h>
-#include <stdint.h>
 #include <semaphore.h>
 
+#include <libosal/types.h>
 #include <libosal/osal.h>
 
 #include "libethercat/common.h"
@@ -47,8 +47,8 @@ typedef struct pool_entry {
 
     TAILQ_ENTRY(pool_entry) qh;                             //!< \brief Queue handle of pool objects.
     
-    uint8_t *data;                                          //!< \brief Data entry.
-    size_t data_size;
+    osal_uint8_t *data;                                     //!< \brief Data entry.
+    osal_size_t data_size;
 } pool_entry_t;
 
 //! queue head for pool queue
@@ -74,7 +74,7 @@ extern "C" {
  *
  * \return EC_OK or error code
  */
-int pool_open(pool_t **pp, size_t cnt, size_t data_size);
+int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size);
 
 //! \brief Destroys a datagram pool.
 /*!

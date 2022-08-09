@@ -32,6 +32,8 @@
 #ifndef LIBETHERCAT_MII_H
 #define LIBETHERCAT_MII_H
 
+#include <libosal/types.h>
+
 #include "libethercat/common.h"
 #include "libethercat/ec.h"
 
@@ -48,8 +50,8 @@
  *
  * \retval EC_O    On success
  */
-int ec_miiread(struct ec *pec, uint16_t slave, 
-        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data);
+int ec_miiread(struct ec *pec, osal_uint16_t slave, 
+        osal_uint8_t phy_adr, osal_uint16_t phy_reg, osal_uint16_t *data);
 
 // Write 16-bit word via MII.
 /*
@@ -64,8 +66,8 @@ int ec_miiread(struct ec *pec, uint16_t slave,
  *
  * \retval EC_OK    On success
  */
-int ec_miiwrite(struct ec *pec, uint16_t slave, 
-        uint8_t phy_adr, uint16_t phy_reg, uint16_t *data);
+int ec_miiwrite(struct ec *pec, osal_uint16_t slave, 
+        osal_uint8_t phy_adr, osal_uint16_t phy_reg, osal_uint16_t *data);
 
 #endif // LIBETHERCAT_MII_H
 

@@ -31,6 +31,8 @@
 #define LIBETHERCAT_IDX_H
 
 #include <sys/queue.h>
+
+#include <libosal/types.h>
 #include <libosal/binary_semaphore.h>
 #include <libosal/mutex.h>
 
@@ -38,7 +40,7 @@
 
 //! index entry
 typedef struct idx_entry {
-    uint8_t idx;                    //!< datagram index
+    osal_uint8_t idx;                    //!< datagram index
     osal_binary_semaphore_t waiter; //!< waiter semaphore for synchronous access
     struct ec *pec;                 //!< pointer to ethercat master structure
 

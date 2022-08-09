@@ -43,28 +43,28 @@
 #include <assert.h>
 
 
-static const char *get_transition_string(ec_state_transition_t transition) {
-    static const char transition_string_boot_to_init[]     = "BOOT_2_INIT";
-    static const char transition_string_init_to_boot[]     = "INIT_2_BOOT";
-    static const char transition_string_init_to_init[]     = "INIT_2_INIT";
-    static const char transition_string_init_to_preop[]    = "INIT_2_PREOP";
-    static const char transition_string_init_to_safeop[]   = "INIT_2_SAFEOP";
-    static const char transition_string_init_to_op[]       = "INIT_2_OP";
-    static const char transition_string_preop_to_init[]    = "PREOP_2_INIT";
-    static const char transition_string_preop_to_preop[]   = "PREOP_2_PREOP";
-    static const char transition_string_preop_to_safeop[]  = "PREOP_2_SAFEOP";
-    static const char transition_string_preop_to_op[]      = "PREOP_2_OP";
-    static const char transition_string_safeop_to_init[]   = "SAFEOP_2_INIT";
-    static const char transition_string_safeop_to_preop[]  = "SAFEOP_2_PREOP";
-    static const char transition_string_safeop_to_safeop[] = "SAFEOP_2_SAFEOP";
-    static const char transition_string_safeop_to_op[]     = "SAFEOP_2_OP";
-    static const char transition_string_op_to_init[]       = "OP_2_INIT";
-    static const char transition_string_op_to_preop[]      = "OP_2_PREOP";
-    static const char transition_string_op_to_safeop[]     = "OP_2_SAFEOP";
-    static const char transition_string_op_to_op[]         = "OP_2_OP";
-    static const char transition_string_unknown[]          = "UNKNOWN";
+static const osal_char_t *get_transition_string(ec_state_transition_t transition) {
+    static const osal_char_t transition_string_boot_to_init[]     = "BOOT_2_INIT";
+    static const osal_char_t transition_string_init_to_boot[]     = "INIT_2_BOOT";
+    static const osal_char_t transition_string_init_to_init[]     = "INIT_2_INIT";
+    static const osal_char_t transition_string_init_to_preop[]    = "INIT_2_PREOP";
+    static const osal_char_t transition_string_init_to_safeop[]   = "INIT_2_SAFEOP";
+    static const osal_char_t transition_string_init_to_op[]       = "INIT_2_OP";
+    static const osal_char_t transition_string_preop_to_init[]    = "PREOP_2_INIT";
+    static const osal_char_t transition_string_preop_to_preop[]   = "PREOP_2_PREOP";
+    static const osal_char_t transition_string_preop_to_safeop[]  = "PREOP_2_SAFEOP";
+    static const osal_char_t transition_string_preop_to_op[]      = "PREOP_2_OP";
+    static const osal_char_t transition_string_safeop_to_init[]   = "SAFEOP_2_INIT";
+    static const osal_char_t transition_string_safeop_to_preop[]  = "SAFEOP_2_PREOP";
+    static const osal_char_t transition_string_safeop_to_safeop[] = "SAFEOP_2_SAFEOP";
+    static const osal_char_t transition_string_safeop_to_op[]     = "SAFEOP_2_OP";
+    static const osal_char_t transition_string_op_to_init[]       = "OP_2_INIT";
+    static const osal_char_t transition_string_op_to_preop[]      = "OP_2_PREOP";
+    static const osal_char_t transition_string_op_to_safeop[]     = "OP_2_SAFEOP";
+    static const osal_char_t transition_string_op_to_op[]         = "OP_2_OP";
+    static const osal_char_t transition_string_unknown[]          = "UNKNOWN";
 
-    const char *ret = transition_string_unknown;
+    const osal_char_t *ret = transition_string_unknown;
 
     switch (transition) {
         default:
@@ -132,7 +132,7 @@ static const char *get_transition_string(ec_state_transition_t transition) {
 // allocate init command structure
 static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) 
+        osal_char_t *data, osal_size_t datalen) 
 {
     // cppcheck-suppress misra-c2012-21.3
     ec_slave_mailbox_init_cmd_t *cmd = (void *)ec_malloc(COE_INIT_CMD_SIZE);
@@ -148,7 +148,7 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
         coe->si_el      = si_el;
         coe->ca_atn     = ca_atn;
         // cppcheck-suppress misra-c2012-21.3
-        coe->data       = (char *)ec_malloc(datalen);
+        coe->data       = (osal_char_t *)ec_malloc(datalen);
         coe->datalen    = datalen;
 
         if (coe->data == NULL) {
@@ -180,9 +180,9 @@ static void ec_slave_mailbox_coe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd)
 }
 
 // add master init command
-void ec_slave_add_coe_init_cmd(ec_t *pec, uint16_t slave,
+void ec_slave_add_coe_init_cmd(ec_t *pec, osal_uint16_t slave,
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) 
+        osal_char_t *data, osal_size_t datalen) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -211,7 +211,7 @@ void ec_slave_add_coe_init_cmd(ec_t *pec, uint16_t slave,
 // allocate init command structure
 static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) 
+        osal_char_t *data, osal_size_t datalen) 
 {
     // cppcheck-suppress misra-c2012-21.3
     ec_slave_mailbox_init_cmd_t *cmd = (void *)ec_malloc(SOE_INIT_CMD_SIZE);
@@ -227,7 +227,7 @@ static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
         soe->si_el      = si_el;
         soe->ca_atn     = ca_atn;
         // cppcheck-suppress misra-c2012-21.3
-        soe->data       = (char *)ec_malloc(datalen);
+        soe->data       = (osal_char_t *)ec_malloc(datalen);
         soe->datalen    = datalen;
 
         if (soe->data == NULL) {
@@ -259,9 +259,9 @@ static void ec_slave_mailbox_soe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd)
 }
 
 // add master init command
-void ec_slave_add_soe_init_cmd(ec_t *pec, uint16_t slave,
+void ec_slave_add_soe_init_cmd(ec_t *pec, osal_uint16_t slave,
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen) 
+        osal_char_t *data, osal_size_t datalen) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -306,9 +306,9 @@ void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
 }
 
 // Set Distributed Clocks config to slave
-void ec_slave_set_dc_config(struct ec *pec, uint16_t slave, 
-        int use_dc, int type, uint32_t cycle_time_0, 
-        uint32_t cycle_time_1, uint32_t cycle_shift) 
+void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, 
+        int use_dc, int type, osal_uint32_t cycle_time_0, 
+        osal_uint32_t cycle_time_1, osal_uint32_t cycle_shift) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -374,62 +374,62 @@ void ec_slave_set_dc_config(struct ec *pec, uint16_t slave,
 #define AL_STATUS_CODE__EE_ERROR                       0x0051 
 #define AL_STATUS_CODE__EXT_HARDWARE_NOT_READY         0x0052 
 
-const char *al_status_code_2_string(int code) {
-    const static char *AL_STATUS_CODE_STRING__NOERROR                       = "no error"; 
-    const static char *AL_STATUS_CODE_STRING__UNSPECIFIEDERROR              = "unspecified error"; 
-    const static char *AL_STATUS_CODE_STRING__NOMEMORY                      = "no memory"; 
-    const static char *AL_STATUS_CODE_STRING__FW_SII_NOT_MATCH              = "firmware sii not match"; 
-    const static char *AL_STATUS_CODE_STRING__FW_UPDATE_FAILED              = "firmware update failed"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDALCONTROL              = "invalid al control"; 
-    const static char *AL_STATUS_CODE_STRING__UNKNOWNALCONTROL              = "unknown al control"; 
-    const static char *AL_STATUS_CODE_STRING__BOOTNOTSUPP                   = "boot not supported"; 
-    const static char *AL_STATUS_CODE_STRING__NOVALIDFIRMWARE               = "no valid firmware"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDMBXCFGINBOOT           = "invalid mailbox config in boot"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDMBXCFGINPREOP          = "invalid mailbox config in prepop"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDSMCFG                  = "invalid sync manager config"; 
-    const static char *AL_STATUS_CODE_STRING__NOVALIDINPUTS                 = "invalid inputs"; 
-    const static char *AL_STATUS_CODE_STRING__NOVALIDOUTPUTS                = "invalid outputs"; 
-    const static char *AL_STATUS_CODE_STRING__SYNCERROR                     = "sync error"; 
-    const static char *AL_STATUS_CODE_STRING__SMWATCHDOG                    = "sync manager watchdog"; 
-    const static char *AL_STATUS_CODE_STRING__SYNCTYPESNOTCOMPATIBLE        = "sync types not compatible"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDSMOUTCFG               = "invalid sync manager out config"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDSMINCFG                = "invalid sync manager in config"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDWDCFG                  = "invalid watchdog config"; 
-    const static char *AL_STATUS_CODE_STRING__WAITFORCOLDSTART              = "wait for cold start"; 
-    const static char *AL_STATUS_CODE_STRING__WAITFORINIT                   = "wait for init"; 
-    const static char *AL_STATUS_CODE_STRING__WAITFORPREOP                  = "wait for preop"; 
-    const static char *AL_STATUS_CODE_STRING__WAITFORSAFEOP                 = "wait for safeop"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDINPUTMAPPING           = "invalid input mapping"; 
-    const static char *AL_STATUS_CODE_STRING__INVALIDOUTPUTMAPPING          = "invalid output mapping"; 
-    const static char *AL_STATUS_CODE_STRING__INCONSISTENTSETTINGS          = "inconsistent settings"; 
-    const static char *AL_STATUS_CODE_STRING__FREERUNNOTSUPPORTED           = "freerun not supported"; 
-    const static char *AL_STATUS_CODE_STRING__SYNCHRONNOTSUPPORTED          = "synchron not supported"; 
-    const static char *AL_STATUS_CODE_STRING__FREERUNNEEDS3BUFFERMODE       = "freerun needs 3 buffer mode"; 
-    const static char *AL_STATUS_CODE_STRING__BACKGROUNDWATCHDOG            = "background watchdog"; 
-    const static char *AL_STATUS_CODE_STRING__NOVALIDINPUTSANDOUTPUTS       = "no valid inputs and outputs"; 
-    const static char *AL_STATUS_CODE_STRING__FATALSYNCERROR                = "fatal sync error"; 
-    const static char *AL_STATUS_CODE_STRING__NOSYNCERROR                   = "no sync error"; 
-    const static char *AL_STATUS_CODE_STRING__CYCLETIMETOOSMALL             = "cycletime too small"; 
-    const static char *AL_STATUS_CODE_STRING__DCINVALIDSYNCCFG              = "dc invalid sync config"; 
-    const static char *AL_STATUS_CODE_STRING__DCINVALIDLATCHCFG             = "dc invalid latch config"; 
-    const static char *AL_STATUS_CODE_STRING__DCPLLSYNCERROR                = "dc pll sync error"; 
-    const static char *AL_STATUS_CODE_STRING__DCSYNCIOERROR                 = "dc sync io error"; 
-    const static char *AL_STATUS_CODE_STRING__DCSYNCMISSEDERROR             = "dc sync missed error"; 
-    const static char *AL_STATUS_CODE_STRING__DCINVALIDSYNCCYCLETIME        = "dc invalid sync cycletime"; 
-    const static char *AL_STATUS_CODE_STRING__DCSYNC0CYCLETIME              = "dc sync0 cycletime"; 
-    const static char *AL_STATUS_CODE_STRING__DCSYNC1CYCLETIME              = "dc sync1 cycletime"; 
-    const static char *AL_STATUS_CODE_STRING__MBX_AOE                       = "mailbox aoe"; 
-    const static char *AL_STATUS_CODE_STRING__MBX_EOE                       = "mailbox eoe"; 
-    const static char *AL_STATUS_CODE_STRING__MBX_COE                       = "mailbox coe"; 
-    const static char *AL_STATUS_CODE_STRING__MBX_FOE                       = "mailbox foe"; 
-    const static char *AL_STATUS_CODE_STRING__MBX_SOE                       = "mailbox soe"; 
-    const static char *AL_STATUS_CODE_STRING__MBX_VOE                       = "mailbox voe"; 
-    const static char *AL_STATUS_CODE_STRING__EE_NOACCESS                   = "ee no access"; 
-    const static char *AL_STATUS_CODE_STRING__EE_ERROR                      = "ee error"; 
-    const static char *AL_STATUS_CODE_STRING__EXT_HARDWARE_NOT_READY        = "ext hardware not ready"; 
-    const static char *AL_STATUS_CODE_STRING__UNKNOWN                       = "unknown"; 
+const osal_char_t *al_status_code_2_string(int code) {
+    const static osal_char_t *AL_STATUS_CODE_STRING__NOERROR                       = "no error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__UNSPECIFIEDERROR              = "unspecified error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__NOMEMORY                      = "no memory"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__FW_SII_NOT_MATCH              = "firmware sii not match"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__FW_UPDATE_FAILED              = "firmware update failed"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDALCONTROL              = "invalid al control"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__UNKNOWNALCONTROL              = "unknown al control"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__BOOTNOTSUPP                   = "boot not supported"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__NOVALIDFIRMWARE               = "no valid firmware"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDMBXCFGINBOOT           = "invalid mailbox config in boot"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDMBXCFGINPREOP          = "invalid mailbox config in prepop"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDSMCFG                  = "invalid sync manager config"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__NOVALIDINPUTS                 = "invalid inputs"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__NOVALIDOUTPUTS                = "invalid outputs"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__SYNCERROR                     = "sync error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__SMWATCHDOG                    = "sync manager watchdog"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__SYNCTYPESNOTCOMPATIBLE        = "sync types not compatible"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDSMOUTCFG               = "invalid sync manager out config"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDSMINCFG                = "invalid sync manager in config"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDWDCFG                  = "invalid watchdog config"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__WAITFORCOLDSTART              = "wait for cold start"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__WAITFORINIT                   = "wait for init"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__WAITFORPREOP                  = "wait for preop"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__WAITFORSAFEOP                 = "wait for safeop"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDINPUTMAPPING           = "invalid input mapping"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INVALIDOUTPUTMAPPING          = "invalid output mapping"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__INCONSISTENTSETTINGS          = "inconsistent settings"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__FREERUNNOTSUPPORTED           = "freerun not supported"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__SYNCHRONNOTSUPPORTED          = "synchron not supported"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__FREERUNNEEDS3BUFFERMODE       = "freerun needs 3 buffer mode"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__BACKGROUNDWATCHDOG            = "background watchdog"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__NOVALIDINPUTSANDOUTPUTS       = "no valid inputs and outputs"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__FATALSYNCERROR                = "fatal sync error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__NOSYNCERROR                   = "no sync error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__CYCLETIMETOOSMALL             = "cycletime too small"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCINVALIDSYNCCFG              = "dc invalid sync config"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCINVALIDLATCHCFG             = "dc invalid latch config"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCPLLSYNCERROR                = "dc pll sync error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCSYNCIOERROR                 = "dc sync io error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCSYNCMISSEDERROR             = "dc sync missed error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCINVALIDSYNCCYCLETIME        = "dc invalid sync cycletime"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCSYNC0CYCLETIME              = "dc sync0 cycletime"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__DCSYNC1CYCLETIME              = "dc sync1 cycletime"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__MBX_AOE                       = "mailbox aoe"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__MBX_EOE                       = "mailbox eoe"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__MBX_COE                       = "mailbox coe"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__MBX_FOE                       = "mailbox foe"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__MBX_SOE                       = "mailbox soe"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__MBX_VOE                       = "mailbox voe"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__EE_NOACCESS                   = "ee no access"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__EE_ERROR                      = "ee error"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__EXT_HARDWARE_NOT_READY        = "ext hardware not ready"; 
+    const static osal_char_t *AL_STATUS_CODE_STRING__UNKNOWN                       = "unknown"; 
 
-    const char *ret = AL_STATUS_CODE_STRING__UNKNOWN;
+    const osal_char_t *ret = AL_STATUS_CODE_STRING__UNKNOWN;
 
     switch (code) {
         default:
@@ -596,15 +596,15 @@ const char *al_status_code_2_string(int code) {
     return ret;
 }
 
-static const char *ecat_state_2_string(int state) {
-    const static char *ECAT_STATE_STRING_INIT     = "INIT";
-    const static char *ECAT_STATE_STRING_PREOP    = "PRE-OPERATIONAL";
-    const static char *ECAT_STATE_STRING_SAFEOP   = "SAFE-OPERATIONAL";
-    const static char *ECAT_STATE_STRING_OP       = "OPERATIONAL";
-    const static char *ECAT_STATE_STRING_BOOT     = "BOOT";
-    const static char *ECAT_STATE_STRING_UNKNOWN  = "UNKNOWN";
+static const osal_char_t *ecat_state_2_string(int state) {
+    const static osal_char_t *ECAT_STATE_STRING_INIT     = "INIT";
+    const static osal_char_t *ECAT_STATE_STRING_PREOP    = "PRE-OPERATIONAL";
+    const static osal_char_t *ECAT_STATE_STRING_SAFEOP   = "SAFE-OPERATIONAL";
+    const static osal_char_t *ECAT_STATE_STRING_OP       = "OPERATIONAL";
+    const static osal_char_t *ECAT_STATE_STRING_BOOT     = "BOOT";
+    const static osal_char_t *ECAT_STATE_STRING_UNKNOWN  = "UNKNOWN";
 
-    const char *ret = ECAT_STATE_STRING_UNKNOWN;
+    const osal_char_t *ret = ECAT_STATE_STRING_UNKNOWN;
 
     switch (state) {
         default:
@@ -630,11 +630,11 @@ static const char *ecat_state_2_string(int state) {
 }
 
 // Set EtherCAT state on slave 
-int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
+int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     int ret = EC_OK;
-    uint16_t wkc = 0u;
-    uint16_t act_state = 0u;
-    uint16_t value = 0u;
+    osal_uint16_t wkc = 0u;
+    osal_uint16_t act_state = 0u;
+    osal_uint16_t value = 0u;
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -695,14 +695,14 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
 }
 
 // get ethercat state from slave 
-int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, uint16_t *alstatcode) 
+int ec_slave_get_state(ec_t *pec, osal_uint16_t slave, ec_state_t *state, osal_uint16_t *alstatcode) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     int ret = EC_OK;
-    uint16_t wkc = 0u;
-    uint16_t value = 0u;
+    osal_uint16_t wkc = 0u;
+    osal_uint16_t value = 0u;
     
     ec_slave_ptr(slv, pec, slave);
     ret = ec_fprd(pec, pec->slaves[slave].fixed_address, 
@@ -729,7 +729,7 @@ int ec_slave_get_state(ec_t *pec, uint16_t slave, ec_state_t *state, uint16_t *a
 }
 
 // generate pd mapping
-int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
+int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -746,16 +746,16 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
             ret = ec_soe_generate_mapping(pec, slave);
         } else {
             // try eeprom
-            for (uint8_t sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
+            for (osal_uint8_t sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
                 int txpdos_cnt = 0;
                 int rxpdos_cnt = 0;
-                size_t bit_len = 0u;
+                osal_size_t bit_len = 0u;
                 ec_eeprom_cat_pdo_t *pdo;
 
                 // inputs and outputs
                 TAILQ_FOREACH(pdo, &slv->eeprom.txpdos, qh) {
                     if (sm_idx == pdo->sm_nr) { // cppcheck-suppress uninitvar
-                        for (uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
+                        for (osal_uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
                             ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
                                     "txpdo bit_len %d, sm %d\n", slave, 
                                     pdo->entries[entry_idx].bit_len, pdo->sm_nr);
@@ -769,7 +769,7 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
                 // outputs
                 TAILQ_FOREACH(pdo, &slv->eeprom.rxpdos, qh) {
                     if (sm_idx == pdo->sm_nr) {
-                        for (uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
+                        for (osal_uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
                             ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
                                     "rxpdo bit_len %d, sm %d\n", slave, 
                                     pdo->entries[entry_idx].bit_len, pdo->sm_nr);
@@ -799,7 +799,7 @@ int ec_slave_generate_mapping(ec_t *pec, uint16_t slave) {
 }
 
 // prepare state transition on ethercat slave
-int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave, 
+int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave, 
         ec_state_t state) 
 {
     ec_state_t act_state = 0;
@@ -842,9 +842,9 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                                     "ca %d, datalen %d, datap %p\n", slave, coe->id, 
                                     coe->si_el, coe->ca_atn, coe->datalen, coe->data);
 
-                            uint8_t *buf = (uint8_t *)coe->data;
-                            size_t buf_len = coe->datalen;
-                            uint32_t abort_code = 0;
+                            osal_uint8_t *buf = (osal_uint8_t *)coe->data;
+                            osal_size_t buf_len = coe->datalen;
+                            osal_uint32_t abort_code = 0;
 
                             int local_ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, coe->ca_atn, buf, buf_len, &abort_code);
                             if (local_ret != EC_OK) {
@@ -862,8 +862,8 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
                                     "atn %d, datalen %d, datap %p\n", slave, soe->id, 
                                     soe->si_el, soe->ca_atn, soe->datalen, soe->data);
 
-                            uint8_t *buf = (uint8_t *)soe->data;
-                            size_t buf_len = soe->datalen;
+                            osal_uint8_t *buf = (osal_uint8_t *)soe->data;
+                            osal_size_t buf_len = soe->datalen;
 
                             int local_ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, soe->si_el, buf, buf_len);
 
@@ -885,7 +885,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, uint16_t slave,
 }
 
 // free slave resources
-void ec_slave_free(ec_t *pec, uint16_t slave) {
+void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -895,7 +895,7 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
 
     // free resources
     if (slv->eeprom.strings != NULL) {
-        uint32_t string;
+        osal_uint32_t string;
         for (string = 0; string < slv->eeprom.strings_cnt; ++string) {
             // cppcheck-suppress misra-c2012-21.3
             ec_free(slv->eeprom.strings[string]);
@@ -943,8 +943,8 @@ void ec_slave_free(ec_t *pec, uint16_t slave) {
 }
 
 // state transition on ethercat slave
-int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
-    uint16_t wkc;
+int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
+    osal_uint16_t wkc;
     ec_state_t act_state = 0;
     int ret = EC_OK;
     
@@ -954,7 +954,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
     ec_slave_ptr(slv, pec, slave);
 
 #define ec_reg_read(reg, buf, buflen) {                                 \
-    uint16_t wkc;                                                       \
+    osal_uint16_t wkc;                                                       \
     (void)ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),         \
             (buf), (buflen), &wkc);                                     \
     if (!wkc) { ec_log(10, __func__,                                    \
@@ -967,7 +967,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
         
         // rewrite fixed address
         (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
-                (uint8_t *)&slv->fixed_address, 
+                (osal_uint8_t *)&slv->fixed_address, 
                 sizeof(slv->fixed_address), &wkc); 
 
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
@@ -1025,7 +1025,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
                     ec_mbx_init(pec, slave);
 
-                    for (uint32_t sm_idx = 0u; sm_idx < 2u; ++sm_idx) {
+                    for (osal_uint32_t sm_idx = 0u; sm_idx < 2u; ++sm_idx) {
                         ec_log(10, get_transition_string(transition), "slave %2d: "
                                 "sm%u, adr 0x%04X, len %3d, flags 0x%08X\n",
                                 slave, sm_idx, slv->sm[sm_idx].adr, 
@@ -1132,7 +1132,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
 
                 int start_sm = slv->eeprom.mbx_supported ? 2 : 0;
 
-                for (uint32_t sm_idx = start_sm; sm_idx < slv->sm_ch; ++sm_idx) {
+                for (osal_uint32_t sm_idx = start_sm; sm_idx < slv->sm_ch; ++sm_idx) {
                     if (!slv->sm[sm_idx].adr) {
                         continue;
                     }
@@ -1152,7 +1152,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     }
                 }
 
-                for (uint32_t fmmu_idx = 0; fmmu_idx < slv->fmmu_ch; ++fmmu_idx) { 
+                for (osal_uint32_t fmmu_idx = 0; fmmu_idx < slv->fmmu_ch; ++fmmu_idx) { 
                     if (!slv->fmmu[fmmu_idx].active) {
                         continue;
                     }
@@ -1171,7 +1171,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                             slv->fmmu[fmmu_idx].active);
 
                     (void)ec_fpwr(pec, slv->fixed_address, 0x600u + (16u * fmmu_idx),
-                            (uint8_t *)&slv->fmmu[fmmu_idx], 
+                            (osal_uint8_t *)&slv->fmmu[fmmu_idx], 
                             sizeof(ec_slave_fmmu_t), &wkc);
 
                 }
@@ -1202,7 +1202,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             case SAFEOP_2_PREOP:
             case SAFEOP_2_INIT:
             case PREOP_2_INIT: {
-                uint8_t dc_active = 0;
+                osal_uint8_t dc_active = 0;
                 (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
                         &dc_active, sizeof(dc_active), &wkc);
 
@@ -1216,11 +1216,11 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             case UNKNOWN_2_INIT:
                 // rewrite fixed address
                 (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
-                        (uint8_t *)&slv->fixed_address, 
+                        (osal_uint8_t *)&slv->fixed_address, 
                         sizeof(slv->fixed_address), &wkc); 
 
                 // disable ditributed clocks
-                uint8_t dc_active = 0;
+                osal_uint8_t dc_active = 0;
                 (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
                         &dc_active, sizeof(dc_active), &wkc);
                 
@@ -1232,11 +1232,11 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
             case INIT_2_INIT: {
                 // rewrite fixed address
                 (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
-                        (uint8_t *)&slv->fixed_address, 
+                        (osal_uint8_t *)&slv->fixed_address, 
                         sizeof(slv->fixed_address), &wkc); 
 
                 // disable ditributed clocks
-                uint8_t dc_active = 0;
+                osal_uint8_t dc_active = 0;
                 (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_DCSYNCACT, 
                         &dc_active, sizeof(dc_active), &wkc);
 
@@ -1250,10 +1250,10 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     alloc_resource(slv->sm, ec_slave_sm_t, 
                             slv->sm_ch * sizeof(ec_slave_sm_t));
 
-                    for (uint32_t i = 0u; i < slv->sm_ch; ++i) {
+                    for (osal_uint32_t i = 0u; i < slv->sm_ch; ++i) {
                         (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
                                 ec_to_adr(slv->fixed_address, 0x800u + (8u * i)),
-                                (uint8_t *)&slv->sm[i], sizeof(ec_slave_sm_t));
+                                (osal_uint8_t *)&slv->sm[i], sizeof(ec_slave_sm_t));
                     }
                 }
 
@@ -1264,17 +1264,17 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     alloc_resource(slv->fmmu, ec_slave_fmmu_t, 
                             slv->fmmu_ch * sizeof(ec_slave_fmmu_t));
 
-                    for (uint32_t i = 0; i < slv->fmmu_ch; ++i) {
+                    for (osal_uint32_t i = 0; i < slv->fmmu_ch; ++i) {
                         (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
                                 ec_to_adr(slv->fixed_address, 0x600u + (16u * i)),
-                                (uint8_t *)&slv->fmmu[i], sizeof(ec_slave_fmmu_t));
+                                (osal_uint8_t *)&slv->fmmu[i], sizeof(ec_slave_fmmu_t));
                     }
                 }
 
                 // get ram size
-                uint8_t ram_size = 0;
+                osal_uint8_t ram_size = 0;
                 ec_reg_read(EC_REG_RAM_SIZE, &ram_size, sizeof(ram_size));
-                slv->ram_size = (uint32_t)ram_size << 10u;
+                slv->ram_size = (osal_uint32_t)ram_size << 10u;
 
                 // get pdi control 
                 ec_reg_read(EC_REG_PDICTL, &slv->pdi_ctrl, sizeof(slv->pdi_ctrl));
@@ -1303,7 +1303,7 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
                     alloc_resource(slv->subdevs, ec_slave_subdev_t, 
                             slv->subdev_cnt * sizeof(ec_slave_subdev_t));
 
-                    for (uint32_t q = 0u; q < slv->subdev_cnt; q++) {
+                    for (osal_uint32_t q = 0u; q < slv->subdev_cnt; q++) {
                         slv->subdevs[q].pdin.pd = NULL;
                         slv->subdevs[q].pdout.pd = NULL;
                         slv->subdevs[q].pdin.len = 0;
@@ -1347,9 +1347,9 @@ int ec_slave_state_transition(ec_t *pec, uint16_t slave, ec_state_t state) {
  * \param[in] dns           Pointer to 4 byte DNS address (optional maybe NULL).
  * \param[in] dns_name      Null-terminated domain name server string.
  */
-void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
-        uint8_t *mac, uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
-        uint8_t *dns, char *dns_name) {
+void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
+        osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, 
+        osal_uint8_t *dns, osal_char_t *dns_name) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -1359,7 +1359,7 @@ void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
 
 #define EOE_ALLOC(field, sz) {                      \
     if ((field) != NULL) {                            \
-        slv->eoe.field = (uint8_t *)ec_malloc((sz));     \
+        slv->eoe.field = (osal_uint8_t *)ec_malloc((sz));     \
         (void)memcpy(slv->eoe.field, (field), (sz));    \
     } else { slv->eoe.field = NULL; } }
 

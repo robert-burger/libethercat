@@ -31,6 +31,7 @@
 #ifndef LIBETHERCAT_COE_H
 #define LIBETHERCAT_COE_H
 
+#include <libosal/types.h>
 #include <libosal/mutex.h>
 
 #include "libethercat/common.h"
@@ -129,9 +130,6 @@ typedef struct ec ec_t;
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-#if 0
-}
 #endif
 
 //! initialize CoE structure 
@@ -284,9 +282,6 @@ void ec_coe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
  */
 const osal_char_t *get_sdo_info_error_string(osal_uint32_t errorcode);
 
-#if 0 
-{
-#endif
 #ifdef __cplusplus
 }
 #endif

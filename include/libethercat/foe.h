@@ -32,6 +32,8 @@
 #ifndef LIBETHERCAT_FOE_H
 #define LIBETHERCAT_FOE_H
 
+#include <libosal/types.h>
+
 #include "libethercat/common.h"
 
 typedef struct ec_foe {
@@ -43,11 +45,11 @@ typedef struct ec_foe {
 
 //! firmware update 
 typedef struct ec_fw_update {
-    uint16_t cmd;               //!< firmware update command
-    uint16_t size;              //!< size of data
-    uint16_t address_low;       //!< destination/source address low WORD
-    uint16_t address_high;      //!< destination/source address high WORD
-    uint16_t data[(EC_MAX_DATA-8u)>>1u];
+    osal_uint16_t cmd;               //!< firmware update command
+    osal_uint16_t size;              //!< size of data
+    osal_uint16_t address_low;       //!< destination/source address low WORD
+    osal_uint16_t address_high;      //!< destination/source address high WORD
+    osal_uint16_t data[(EC_MAX_DATA-8u)>>1u];
                                 //!< firmware data bytes
 } ec_fw_update_t;
 
@@ -86,9 +88,6 @@ typedef struct ec_fw_update {
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if 0
-}
-#endif
 
 //! initialize FoE structure 
 /*!
@@ -98,7 +97,7 @@ extern "C" {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_foe_init(ec_t *pec, uint16_t slave);
+void ec_foe_init(ec_t *pec, osal_uint16_t slave);
 
 //! deinitialize FoE structure 
 /*!
@@ -108,7 +107,7 @@ void ec_foe_init(ec_t *pec, uint16_t slave);
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_foe_deinit(ec_t *pec, uint16_t slave);
+void ec_foe_deinit(ec_t *pec, osal_uint16_t slave);
 
 //! \brief Enqueue FoE message received from slave.
 /*!
@@ -120,7 +119,7 @@ void ec_foe_deinit(ec_t *pec, uint16_t slave);
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_foe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
+void ec_foe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
 //! Read file over FoE.
 /*!
@@ -143,9 +142,9 @@ void ec_foe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry);
  *
  * \return Working counter of the get state command, should be 1 if it was successfull.
  */
-int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
-        char file_name[MAX_FILE_NAME_SIZE], uint8_t **file_data, 
-        size_t *file_data_len, const char **error_message);
+int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
+        osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t **file_data, 
+        osal_size_t *file_data_len, const osal_char_t **error_message);
 
 //! Write file over FoE.
 /*!
@@ -166,13 +165,10 @@ int ec_foe_read(ec_t *pec, uint16_t slave, uint32_t password,
  *
  * \return Working counter of the get state command, should be 1 if it was successfull.
  */
-int ec_foe_write(ec_t *pec, uint16_t slave, uint32_t password,
-        char file_name[MAX_FILE_NAME_SIZE], uint8_t *file_data, 
-        size_t file_data_len, const char **error_message);
+int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
+        osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t *file_data, 
+        osal_size_t file_data_len, const osal_char_t **error_message);
 
-#if 0 
-{
-#endif
 #ifdef __cplusplus
 }
 #endif

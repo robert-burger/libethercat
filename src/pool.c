@@ -53,7 +53,7 @@
  *
  * \return EC_OK or error code
  */
-int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
+int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size) {
     assert(pp != NULL);
     int ret = EC_OK;
 
@@ -69,7 +69,7 @@ int pool_open(pool_t **pp, size_t cnt, size_t data_size) {
         sem_init(&(*pp)->avail_cnt, 0, cnt);
         TAILQ_INIT(&(*pp)->avail);
 
-        size_t i;
+        osal_size_t i;
         for (i = 0; i < cnt; ++i) {
             // cppcheck-suppress misra-c2012-21.3
             pool_entry_t *entry = (pool_entry_t *)ec_malloc(sizeof(pool_entry_t));

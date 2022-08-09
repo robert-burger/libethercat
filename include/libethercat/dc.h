@@ -33,6 +33,8 @@
 #ifndef LIBETHERCAT_DC_H
 #define LIBETHERCAT_DC_H
 
+#include <libosal/types.h>
+
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
@@ -42,27 +44,27 @@ typedef struct ec_dc_info_slave {
     int next;                   //!< marker for next dc slave
     int prev;                   //!< marker for previous dc slave
 
-    uint8_t available_ports;    //!< available ports for dc config
-    int32_t receive_times[4];   //!< latched port receive times
+    osal_uint8_t available_ports;    //!< available ports for dc config
+    osal_int32_t receive_times[4];   //!< latched port receive times
             
     int type;                   //!< dc type, 0 = sync0, 1 = sync01
-    uint32_t cycle_time_0;      //!< cycle time of sync 0 [ns]
-    uint32_t cycle_time_1;      //!< cycle time of sync 1 [ns]
-    uint32_t cycle_shift;       //!< cycle shift time [ns]
+    osal_uint32_t cycle_time_0;      //!< cycle time of sync 0 [ns]
+    osal_uint32_t cycle_time_1;      //!< cycle time of sync 1 [ns]
+    osal_uint32_t cycle_shift;       //!< cycle shift time [ns]
 } ec_dc_info_slave_t;
 
 typedef struct ec_dc_info {
-    uint16_t master_address;
+    osal_uint16_t master_address;
     int have_dc;
     int next;
     int prev;
 
-    uint64_t dc_time;
-    int64_t dc_sto;
-    uint64_t rtc_time;
-    int64_t rtc_sto;
-    int64_t act_diff;
-    int64_t timer_override;
+    osal_uint64_t dc_time;
+    osal_int64_t dc_sto;
+    osal_uint64_t rtc_time;
+    osal_int64_t rtc_sto;
+    osal_int64_t act_diff;
+    osal_int64_t timer_override;
 
     enum {
         dc_mode_master_clock = 0,
@@ -114,8 +116,8 @@ int ec_dc_config(struct ec *pec);
  * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
  * \param cycle_shift shift of first sync0 start in [ns]
  */
-void ec_dc_sync(struct ec *pec, uint16_t slave, uint8_t dc_active, 
-        uint32_t cycle_time_0, uint32_t cycle_time_1, int32_t cycle_shift);
+void ec_dc_sync(struct ec *pec, osal_uint16_t slave, osal_uint8_t dc_active, 
+        osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
 
 #ifdef __cplusplus
 }

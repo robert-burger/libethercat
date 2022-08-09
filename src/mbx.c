@@ -47,8 +47,8 @@
 #define MBX_HANDLER_FLAGS_RECV  ((osal_uint32_t)0x00000002u)
 
 // forward declarations
-static int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec);
-static int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec);
+static int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec);
+static int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec);
 static void ec_mbx_handler(ec_t *pec, osal_uint16_t slave);
 static int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
 static int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
@@ -157,14 +157,14 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
  *
  * \return Mailbox protocol string repr.
  */
-static const char *ec_mbx_get_protocol_string(osal_uint16_t mbx_flag) {
-    static const char *MBX_PROTOCOL_STRING_COE = "CoE";
-    static const char *MBX_PROTOCOL_STRING_SOE = "SoE";
-    static const char *MBX_PROTOCOL_STRING_FOE = "FoE";
-    static const char *MBX_PROTOCOL_STRING_EOE = "EoE";
-    static const char *MBX_PROTOCOL_STRING_UNKNOWN = "Unknown";
+static const osal_char_t *ec_mbx_get_protocol_string(osal_uint16_t mbx_flag) {
+    static const osal_char_t *MBX_PROTOCOL_STRING_COE = "CoE";
+    static const osal_char_t *MBX_PROTOCOL_STRING_SOE = "SoE";
+    static const osal_char_t *MBX_PROTOCOL_STRING_FOE = "FoE";
+    static const osal_char_t *MBX_PROTOCOL_STRING_EOE = "EoE";
+    static const osal_char_t *MBX_PROTOCOL_STRING_UNKNOWN = "Unknown";
 
-    const char *ret;
+    const osal_char_t *ret;
 
     if (mbx_flag == EC_EEPROM_MBX_COE) {
         ret = MBX_PROTOCOL_STRING_COE;
@@ -290,7 +290,7 @@ int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_ui
  * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec) {
+int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec) {
     osal_uint16_t wkc = 0;
     int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
@@ -341,7 +341,7 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_le
  * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_len, osal_uint32_t nsec) {
+int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec) {
     osal_uint16_t wkc = 0;
     int ret = EC_ERROR_MAILBOX_READ;
     ec_slave_ptr(slv, pec, slave);
@@ -533,7 +533,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
             (void)memset(p_entry->data, 0, p_entry->data_size);
 
             if (ec_mbx_receive(pec, slave, p_entry->data, 
-                        min(p_entry->data_size, (size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
+                        min(p_entry->data_size, (osal_size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
                 // cppcheck-suppress misra-c2012-11.3
                 ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
                 ec_log(100, __func__, "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);

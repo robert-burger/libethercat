@@ -31,7 +31,7 @@
 #ifndef LIBETHERCAT_SLAVE_H
 #define LIBETHERCAT_SLAVE_H
 
-#include <stdint.h>
+#include <libosal/types.h>
 
 #include "libethercat/common.h"
 #include "libethercat/eeprom.h"
@@ -70,23 +70,23 @@
 #define OP_2_SAFEOP      0x0804u  //!< \brief OP to SAFEOP state transition,
 #define OP_2_OP          0x0808u  //!< \brief OP to OP state transition,
 
-typedef uint16_t ec_state_transition_t;
+typedef osal_uint16_t ec_state_transition_t;
 
 //! slave sync manager settings
 typedef struct PACKED ec_slave_sm {
-    uint16_t adr;               //!< sync manager address
+    osal_uint16_t adr;          //!< sync manager address
                                 /*!<
                                  * This field specifies the physical address
                                  * where the sync manager starts.
                                  */
 
-    uint16_t len;               //!< sync manager length
+    osal_uint16_t len;          //!< sync manager length
                                 /*!>
                                  * This field specifies the length of the sync 
                                  * manager
                                  */
 
-    uint32_t flags;             //!< sync manager flags
+    osal_uint32_t flags;        //!< sync manager flags
                                 /*!<
                                  * Sync manager flags according to EtherCAT 
                                  * specifications
@@ -95,7 +95,7 @@ typedef struct PACKED ec_slave_sm {
 
 //! slave fielbus memory management unit (fmmu) settings
 typedef struct PACKED ec_slave_fmmu {
-    uint32_t log;               //!< logical bus address
+    osal_uint32_t log;          //!< logical bus address
                                 /*!< This specifys to logical 32-bit bus 
                                  * address to listen to. If any EtherCAT 
                                  * datagram with logical addressing is passing 
@@ -104,45 +104,45 @@ typedef struct PACKED ec_slave_fmmu {
                                  * datagram.
                                  */
 
-    uint16_t log_len;           //!< length of logical address area
+    osal_uint16_t log_len;      //!< length of logical address area
                                 /*!< 
                                  * length of bytes starting from logical 
                                  * address, which should be copyied from/to 
                                  * EtherCAT datagram
                                  */
 
-    uint8_t  log_bit_start;     //!< start bit at logical bus address
+    osal_uint8_t  log_bit_start;//!< start bit at logical bus address
                                 /*!<
                                  * start bit at logical start address
                                  */
 
-    uint8_t  log_bit_stop;      //!< stop bit at logical address plus length
+    osal_uint8_t  log_bit_stop; //!< stop bit at logical address plus length
                                 /*!<
                                  * end bit at logical end address
                                  */
 
-    uint16_t phys;              //!< physical (local) address in slave
+    osal_uint16_t phys;         //!< physical (local) address in slave
                                 /*!<
                                  * This defines the physical (local) address 
                                  * in the EtherCAT slave from where to start 
                                  * copying data from/to.
                                  */
 
-    uint8_t  phys_bit_start;    //!< physical start bit at physical address
+    osal_uint8_t  phys_bit_start;//!< physical start bit at physical address
                                 /*!<
                                  * This defines the first bit at physical start 
                                  * address to beging the copying.
                                  */
 
-    uint8_t  type;              //!< type, read or write
+    osal_uint8_t  type;         //!< type, read or write
                                 /*!<
                                  */
 
-    uint8_t  active;            //!< activation flag
+    osal_uint8_t  active;       //!< activation flag
                                 /*!<
                                  */
 
-    uint8_t reserverd[3];       //!< reserved for future use
+    osal_uint8_t reserverd[3];  //!< reserved for future use
 } PACKED ec_slave_fmmu_t;
 
 //! EtherCAT sub device
@@ -172,7 +172,7 @@ typedef struct ec_slave_mailbox_init_cmd {
 
     LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
 
-    uint8_t cmd[0];
+    osal_uint8_t cmd[0];
 } ec_slave_mailbox_init_cmd_t;
 
 typedef struct {
@@ -198,8 +198,8 @@ typedef struct {
                                  * CoE complete access mode, SoE atn, ...)
                                  */
 
-    char *data;                 //!< new id data
-    size_t datalen;             //!< new id data length
+    osal_char_t *data;                 //!< new id data
+    osal_size_t datalen;             //!< new id data length
 
 } ec_coe_init_cmd_t, ec_soe_init_cmd_t;
 
@@ -215,18 +215,18 @@ typedef struct worker_arg {
 } worker_arg_t;
 
 typedef struct ec_slave {
-    int16_t auto_inc_address;   //!< physical bus address
-    uint16_t fixed_address;     //!< virtual bus address, programmed on start
+    osal_int16_t auto_inc_address;   //!< physical bus address
+    osal_uint16_t fixed_address;//!< virtual bus address, programmed on start
 
-    uint8_t sm_ch;              //!< number of sync manager channels
-    uint8_t fmmu_ch;            //!< number of fmmu channels
-    uint32_t ram_size;               //!< ram size in bytes
-    uint16_t features;          //!< fmmu operation, dc available
-    uint16_t pdi_ctrl;          //!< configuration of process data interface
-    uint8_t link_cnt;           //!< link count
-    uint8_t active_ports;       //!< active ports with link
-    uint16_t ptype;             //!< ptype
-    int32_t pdelay;             //!< propagation delay of the slave
+    osal_uint8_t sm_ch;         //!< number of sync manager channels
+    osal_uint8_t fmmu_ch;       //!< number of fmmu channels
+    osal_uint32_t ram_size;     //!< ram size in bytes
+    osal_uint16_t features;     //!< fmmu operation, dc available
+    osal_uint16_t pdi_ctrl;     //!< configuration of process data interface
+    osal_uint8_t link_cnt;      //!< link count
+    osal_uint8_t active_ports;  //!< active ports with link
+    osal_uint16_t ptype;        //!< ptype
+    osal_int32_t pdelay;             //!< propagation delay of the slave
     
     int entry_port;             //!< entry port from parent slave
     int parent;                 //!< parent slave number
@@ -277,7 +277,7 @@ typedef struct ec_slave {
                                  * \endlink)
                                  */
 
-    size_t subdev_cnt;          //!< count of sub devices
+    osal_size_t subdev_cnt;          //!< count of sub devices
                                 /*!< 
                                  * An EtherCAT slave may have multiple sub
                                  * devices defines. These may be e.g. multiple
@@ -346,7 +346,7 @@ extern "C" {
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
  */
-void ec_slave_free(struct ec *pec, uint16_t slave);
+void ec_slave_free(struct ec *pec, osal_uint16_t slave);
 
 //! Set EtherCAT state on slave.
 /*!
@@ -362,7 +362,7 @@ void ec_slave_free(struct ec *pec, uint16_t slave);
  *
  * \return EC_OK on success, otherwise EC_ERROR_* code.
  */
-int ec_slave_set_state(struct ec *pec, uint16_t slave, ec_state_t state);
+int ec_slave_set_state(struct ec *pec, osal_uint16_t slave, ec_state_t state);
 
 //! Get EtherCAT state from slave.
 /*!
@@ -381,8 +381,8 @@ int ec_slave_set_state(struct ec *pec, uint16_t slave, ec_state_t state);
  *
  * \return EC_OK on success, otherwise EC_ERROR_* code.
  */
-int ec_slave_get_state(struct ec *pec, uint16_t slave, 
-        ec_state_t *state, uint16_t *alstatcode);
+int ec_slave_get_state(struct ec *pec, osal_uint16_t slave, 
+        ec_state_t *state, osal_uint16_t *alstatcode);
 
 //! Generate process data mapping.
 /*!
@@ -398,7 +398,7 @@ int ec_slave_get_state(struct ec *pec, uint16_t slave,
  *
  * \return EC_OK on success, otherwise EC_ERROR_* code.
  */
-int ec_slave_generate_mapping(struct ec *pec, uint16_t slave);
+int ec_slave_generate_mapping(struct ec *pec, osal_uint16_t slave);
 
 //! Prepare state transition on EtherCAT slave.
 /*!
@@ -416,7 +416,7 @@ int ec_slave_generate_mapping(struct ec *pec, uint16_t slave);
  *
  * \return Working counter of the used commands, should be 1 if it was successfull.
  */
-int ec_slave_prepare_state_transition(struct ec *pec, uint16_t slave, 
+int ec_slave_prepare_state_transition(struct ec *pec, osal_uint16_t slave, 
         ec_state_t state);
 
 //! Execute state transition on EtherCAT slave
@@ -433,7 +433,7 @@ int ec_slave_prepare_state_transition(struct ec *pec, uint16_t slave,
  *
  * \return Working counter of the used commands, should be 1 if it was successfull.
  */
-int ec_slave_state_transition(struct ec *pec, uint16_t slave, 
+int ec_slave_state_transition(struct ec *pec, osal_uint16_t slave, 
         ec_state_t state);
 
 //! Add master init command.
@@ -455,9 +455,9 @@ int ec_slave_state_transition(struct ec *pec, uint16_t slave,
  *                          be transfered.
  * \param[in] datalen       Length of \p data
  */
-void ec_slave_add_coe_init_cmd(struct ec *pec, uint16_t slave,
+void ec_slave_add_coe_init_cmd(struct ec *pec, osal_uint16_t slave,
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen);
+        osal_char_t *data, osal_size_t datalen);
 
 //! Add master init command.
 /*!
@@ -478,9 +478,9 @@ void ec_slave_add_coe_init_cmd(struct ec *pec, uint16_t slave,
  *                          be transfered.
  * \param[in] datalen       Length of \p data
  */
-void ec_slave_add_soe_init_cmd(struct ec *pec, uint16_t slave,
+void ec_slave_add_soe_init_cmd(struct ec *pec, osal_uint16_t slave,
         int transition, int id, int si_el, int ca_atn,
-        char *data, size_t datalen);
+        osal_char_t *data, osal_size_t datalen);
 
 //! Set Distributed Clocks config to slave
 /*! 
@@ -495,9 +495,9 @@ void ec_slave_add_soe_init_cmd(struct ec *pec, uint16_t slave,
  * \param[in] cycle_time_1  Cycle time of sync 1 [ns].
  * \param[in] cycle_shift   Cycle shift time [ns].
  */
-void ec_slave_set_dc_config(struct ec *pec, uint16_t slave, 
-        int use_dc, int type, uint32_t cycle_time_0, 
-        uint32_t cycle_time_1, uint32_t cycle_shift);
+void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, 
+        int use_dc, int type, osal_uint32_t cycle_time_0, 
+        osal_uint32_t cycle_time_1, osal_uint32_t cycle_shift);
 
 //! Freeing init command structure.
 /*!
@@ -519,11 +519,11 @@ void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
  * \param[in] dns           Pointer to 4 byte DNS address (optional maybe NULL).
  * \param[in] dns_name      Null-terminated domain name server string.
  */
-void ec_slave_set_eoe_settings(struct ec *pec, uint16_t slave,
-        uint8_t *mac, uint8_t *ip_address, uint8_t *subnet, uint8_t *gateway, 
-        uint8_t *dns, char *dns_name);
+void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
+        osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, 
+        osal_uint8_t *dns, osal_char_t *dns_name);
 
-const char *al_status_code_2_string(int code);
+const osal_char_t *al_status_code_2_string(int code);
 
 #if 0 
 {

@@ -43,12 +43,12 @@
 
 //! SoE mailbox structure
 typedef struct PACKED ec_soe_header {
-    uint8_t op_code    : 3;         //!< op code
-    uint8_t incomplete : 1;         //!< incompletion flag
-    uint8_t error      : 1;         //!< error flag
-    uint8_t atn        : 3;         //!< at number
-    uint8_t elements;               //!< servodrive element mask
-    uint16_t idn_fragments_left;    //!< fragments left
+    osal_uint8_t op_code    : 3;         //!< op code
+    osal_uint8_t incomplete : 1;         //!< incompletion flag
+    osal_uint8_t error      : 1;         //!< error flag
+    osal_uint8_t atn        : 3;         //!< at number
+    osal_uint8_t elements;               //!< servodrive element mask
+    osal_uint16_t idn_fragments_left;    //!< fragments left
 } PACKED ec_soe_header_t;
 
 typedef struct PACKED ec_soe_request {
@@ -78,7 +78,7 @@ static char soe_log_buf[SOE_LOG_BUF_SIZE];
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_soe_init(ec_t *pec, uint16_t slave) {
+void ec_soe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -96,7 +96,7 @@ void ec_soe_init(ec_t *pec, uint16_t slave) {
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  */
-void ec_soe_deinit(ec_t *pec, uint16_t slave) {
+void ec_soe_deinit(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -116,7 +116,7 @@ void ec_soe_deinit(ec_t *pec, uint16_t slave) {
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-static void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_soe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -142,7 +142,7 @@ static void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
+void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(p_entry != NULL);
@@ -162,23 +162,23 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
                 "atn %d, elements %d, idn %d", soe_hdr->op_code, soe_hdr->incomplete, soe_hdr->error, 
                 soe_hdr->atn, soe_hdr->elements, soe_hdr->idn_fragments_left);
         if (local_ret >= 0) {
-            uint32_t soe_log_pos = (uint32_t)local_ret;
+            osal_uint32_t soe_log_pos = (osal_uint32_t)local_ret;
 
             if ((mbx_hdr->length - sizeof(ec_soe_header_t)) > 0u) {
                 local_ret = snprintf(&soe_log_buf[soe_log_pos], SOE_LOG_BUF_SIZE - soe_log_pos, ", payload: ");
 
                 if (local_ret >= 0) {
-                    soe_log_pos += (uint32_t)local_ret;
+                    soe_log_pos += (osal_uint32_t)local_ret;
 
-                    uint8_t *payload = (uint8_t *)(&p_entry->data[sizeof(ec_mbx_header_t) + sizeof(ec_soe_header_t)]);
+                    osal_uint8_t *payload = (osal_uint8_t *)(&p_entry->data[sizeof(ec_mbx_header_t) + sizeof(ec_soe_header_t)]);
 
-                    for (uint32_t i = 0; i < (mbx_hdr->length - sizeof(ec_soe_header_t)); ++i) {
+                    for (osal_uint32_t i = 0; i < (mbx_hdr->length - sizeof(ec_soe_header_t)); ++i) {
                         local_ret = snprintf(&soe_log_buf[soe_log_pos], SOE_LOG_BUF_SIZE - soe_log_pos, "%02X", payload[i]);
                         if (local_ret < 0) {
                             break;
                         }
 
-                        soe_log_pos += (uint32_t)local_ret;
+                        soe_log_pos += (osal_uint32_t)local_ret;
                     }
                 }
             }
@@ -222,8 +222,8 @@ void ec_soe_enqueue(ec_t *pec, uint16_t slave, pool_entry_t *p_entry) {
  * \param[in,out] len   Length of \p buf, see 'buf' descriptions. Returns length of answer.
  * \return EC_OK on successs, EC_ERROR_MAILBOX_* otherwise.
  */
-int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
-        uint8_t *elements, uint8_t **buf, size_t *len) 
+int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
+        osal_uint8_t *elements, osal_uint8_t **buf, osal_size_t *len) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -256,9 +256,9 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry);
 
-        uint8_t *to = *buf;
-        ssize_t left_len = *len;
-        uint8_t first_fragment = 1u;
+        osal_uint8_t *to = *buf;
+        osal_ssize_t left_len = *len;
+        osal_uint8_t first_fragment = 1u;
 
         // wait for answer
         ec_soe_wait(pec, slave, &p_entry);
@@ -290,7 +290,7 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
                 if (*buf == NULL) {
                     // cppcheck-suppress misra-c2012-21.3
-                    *buf = (uint8_t *)ec_malloc(*len);
+                    *buf = (osal_uint8_t *)ec_malloc(*len);
                     to = *buf;
                 }
 
@@ -298,10 +298,10 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
             }
 
             if (left_len > 0) {
-                size_t read_len = read_buf->mbx_hdr.length - sizeof(ec_soe_header_t);
-                (void)memcpy(to, &read_buf->data, min(read_len, (size_t)left_len));
+                osal_size_t read_len = read_buf->mbx_hdr.length - sizeof(ec_soe_header_t);
+                (void)memcpy(to, &read_buf->data, min(read_len, (osal_size_t)left_len));
                 to = &to[read_len];
-                left_len -= (ssize_t)read_len;
+                left_len -= (osal_ssize_t)read_len;
             }
 
             ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
@@ -320,8 +320,8 @@ int ec_soe_read(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     return ret;
 }
 
-int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn, 
-        uint8_t elements, uint8_t *buf, size_t len) {
+int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
+        osal_uint8_t elements, osal_uint8_t *buf, osal_size_t len) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
@@ -335,21 +335,21 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE;
     } else {
-        uint8_t *from = buf;
-        size_t left_len = len;
-        size_t mbx_len = slv->sm[MAILBOX_WRITE].len 
+        osal_uint8_t *from = buf;
+        osal_size_t left_len = len;
+        osal_size_t mbx_len = slv->sm[MAILBOX_WRITE].len 
             - sizeof(ec_mbx_header_t) - sizeof(ec_soe_header_t);
 
         ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, "
                 "len %d, left %d, mbx_len %d\n", 
                 slave, atn, idn, elements, buf, len, left_len, mbx_len);
 
-        uint32_t soe_log_pos = 0;
+        osal_uint32_t soe_log_pos = 0;
 
-        for (uint32_t i = 0; i < len; ++i) {
+        for (osal_uint32_t i = 0; i < len; ++i) {
             int local_ret = snprintf(&soe_log_buf[soe_log_pos], SOE_LOG_BUF_SIZE - soe_log_pos, "%02X", buf[i]);
             if (local_ret >= 0) {
-                soe_log_pos += (uint32_t)local_ret;
+                soe_log_pos += (osal_uint32_t)local_ret;
             } else {
                 ec_log(1, __func__, "snprintf failed with %d!\n", local_ret);
             }
@@ -373,7 +373,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
                 write_buf->soe_hdr.elements   = elements;
                 write_buf->soe_hdr.idn_fragments_left = idn;
 
-                size_t send_len = min(left_len, mbx_len);
+                osal_size_t send_len = min(left_len, mbx_len);
                 write_buf->mbx_hdr.length = sizeof(ec_soe_header_t) + send_len;
                 (void)memcpy(&write_buf->data, from, send_len);
                 from = &from[send_len];
@@ -384,7 +384,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
 
                 if (left_len != 0u) {
                     write_buf->soe_hdr.incomplete = 1;
-                    write_buf->soe_hdr.idn_fragments_left = ((size_t)left_len / mbx_len) + 1u;
+                    write_buf->soe_hdr.idn_fragments_left = ((osal_size_t)left_len / mbx_len) + 1u;
                 } else {
                     write_buf->soe_hdr.incomplete = 0;
                     write_buf->soe_hdr.idn_fragments_left = idn;
@@ -403,7 +403,7 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
                             "atn %d, elements %d, idn %d\n", read_buf->soe_hdr.op_code, read_buf->soe_hdr.incomplete, read_buf->soe_hdr.error, 
                             read_buf->soe_hdr.atn, read_buf->soe_hdr.elements, read_buf->soe_hdr.idn_fragments_left);
 
-                    uint8_t op_code = read_buf->soe_hdr.op_code;
+                    osal_uint8_t op_code = read_buf->soe_hdr.op_code;
                     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
 
                     // check for correct op_code
@@ -424,45 +424,45 @@ int ec_soe_write(ec_t *pec, uint16_t slave, uint8_t atn, uint16_t idn,
     return ret;
 }
 
-static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn, 
-        uint16_t idn, uint32_t *bitsize) {
+static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, 
+        osal_uint16_t idn, osal_uint32_t *bitsize) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(bitsize != NULL);
     
     int ret = EC_OK;
-    uint16_t *idn_value = NULL;
-    uint8_t elements; 
+    osal_uint16_t *idn_value = NULL;
+    osal_uint8_t elements; 
 
     *bitsize = 16u; // control and status word are always present
 
     // read size of mapping idn first
-    uint16_t idn_len[2];
-    uint8_t *buf = (uint8_t *)&idn_len[0];
-    size_t idn_len_size = sizeof(idn_len);
+    osal_uint16_t idn_len[2];
+    osal_uint8_t *buf = (osal_uint8_t *)&idn_len[0];
+    osal_size_t idn_len_size = sizeof(idn_len);
     elements = EC_SOE_VALUE;
 
     ret = ec_soe_read(pec, slave, atn, idn, &elements, &buf, &idn_len_size);
 
     if (ret == EC_OK) {
         // read mapping idn
-        size_t idn_size = (idn_len[0] + 4u);
+        osal_size_t idn_size = (idn_len[0] + 4u);
         // cppcheck-suppress misra-c2012-21.3
-        idn_value = (uint16_t *)ec_malloc(idn_size);
+        idn_value = (osal_uint16_t *)ec_malloc(idn_size);
         elements = EC_SOE_VALUE;
-        ret = ec_soe_read(pec, slave, atn, idn, &elements, (uint8_t **)&idn_value, &idn_size);
+        ret = ec_soe_read(pec, slave, atn, idn, &elements, (osal_uint8_t **)&idn_value, &idn_size);
     }
 
     if (ret == EC_OK) {
-        uint16_t i;
+        osal_uint16_t i;
 
         // read all mapped idn's and add bit length, 
         // length is stored in idn attributes
         for (i = 0u; i < (idn_len[0]/2u); ++i) {
-            uint16_t sub_idn = idn_value[i+2u];
+            osal_uint16_t sub_idn = idn_value[i+2u];
             ec_soe_idn_attribute_t sub_idn_attr;
-            buf = (uint8_t *)&sub_idn_attr;
-            size_t sub_idn_attr_size = sizeof(sub_idn_attr);
+            buf = (osal_uint8_t *)&sub_idn_attr;
+            osal_size_t sub_idn_attr_size = sizeof(sub_idn_attr);
             elements = EC_SOE_ATTRIBUTE;
 
             ec_log(100, __func__, "atn %d, read mapped idn %d\n", atn, sub_idn);
@@ -487,7 +487,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, uint16_t slave, uint8_t atn,
     return ret;
 }
 
-int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
+int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -497,9 +497,9 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE;
     } else {
-        uint8_t atn;
-        const uint16_t idn_at = 16u;
-        uint32_t at_bits = 0u;
+        osal_uint8_t atn;
+        const osal_uint16_t idn_at = 16u;
+        osal_uint32_t at_bits = 0u;
 
         // generate at mapping over all at's of specified slave
         // at mapping is stored at idn 16 and should be written in preop
@@ -508,7 +508,7 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
             ec_log(100, __func__, "slave %2d: getting at pd len channel %d\n", 
                     slave, atn);
 
-            uint32_t bits = 0u;
+            osal_uint32_t bits = 0u;
             if (ec_soe_generate_mapping_local(pec, slave, atn, idn_at, &bits) != EC_OK) {
                 continue;
             }
@@ -521,7 +521,7 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
         }
 
         if (at_bits != 0u) {
-            const uint32_t at_sm = 3u;
+            const osal_uint32_t at_sm = 3u;
 
             ec_log(10, __func__, "slave %2d: sm%d length bits %d, bytes %d\n", 
                     slave, at_sm, at_bits, (at_bits + 7u) / 8u);
@@ -531,8 +531,8 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
             }
         }
 
-        const uint16_t idn_mdt = 24u;
-        uint32_t mdt_bits = 0u;
+        const osal_uint16_t idn_mdt = 24u;
+        osal_uint32_t mdt_bits = 0u;
 
         // generate mdt mapping over all mdt's of specified slave
         // mdt mapping is stored at idn 24 and should be written in preop
@@ -541,7 +541,7 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
             ec_log(100, __func__, "slave %2d: getting mdt pd len channel %d\n", 
                     slave, atn);
 
-            uint32_t bits = 0u;
+            osal_uint32_t bits = 0u;
             if (ec_soe_generate_mapping_local(pec, slave, atn, idn_mdt, &bits) != EC_OK) {
                 continue;
             }
@@ -554,7 +554,7 @@ int ec_soe_generate_mapping(ec_t *pec, uint16_t slave) {
         }
 
         if (mdt_bits != 0u) {
-            const uint32_t mdt_sm = 2u;
+            const osal_uint32_t mdt_sm = 2u;
             ec_log(10, __func__, "slave %2d: sm%d length bits %d, bytes %d\n", 
                     slave, mdt_sm, mdt_bits, (mdt_bits + 7u) / 8u);
 

@@ -32,23 +32,24 @@
 #define LIBETHERCAT_HW_H
 
 #include <libosal/task.h>
+#include <libosal/types.h>
 
 #include "libethercat/pool.h"
 
 //! hardware structure
 typedef struct hw {
     int sockfd;                     //!< raw socket file descriptor
-    uint32_t mtu_size;              //!< mtu size
+    osal_uint32_t mtu_size;              //!< mtu size
 
     // receiver thread settings
     osal_task_t rxthread;           //!< receiver thread handle
     int rxthreadrunning;            //!< receiver thread running flag
     int rxthreadprio;               //!< receiver thread priority
-    uint32_t rxthreadcpumask;       //!< recevied thread cpu mask
+    osal_uint32_t rxthreadcpumask;       //!< recevied thread cpu mask
 
     int mmap_packets;
-    char *rx_ring;                  //!< kernel mmap receive buffers
-    char *tx_ring;                  //!< kernel mmap send buffers
+    osal_char_t *rx_ring;                  //!< kernel mmap receive buffers
+    osal_char_t *tx_ring;                  //!< kernel mmap send buffers
 
     off_t rx_ring_offset;
     off_t tx_ring_offset;
@@ -74,7 +75,7 @@ extern "C" {
  * \param mmap_packets  0 - using traditional send/recv, 1...n number of mmaped kernel packet buffers
  * \return 0 or negative error code
  */
-int hw_open(hw_t **pphw, const char *devname, int prio, int cpumask, int mmap_packets);
+int hw_open(hw_t **pphw, const osal_char_t *devname, int prio, int cpumask, int mmap_packets);
 
 //! destroys a hw
 /*!

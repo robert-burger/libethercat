@@ -100,9 +100,9 @@ static int ec_async_message_loop_put(ec_message_pool_t *ppool,
 }
 
 // check slave expected state 
-static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) {
+static void ec_async_check_slave(ec_async_message_loop_t *paml, osal_uint16_t slave) {
     ec_state_t state = 0;
-    uint16_t alstatcode = 0;
+    osal_uint16_t alstatcode = 0;
     
     assert(paml != NULL);
     assert(paml->pec != NULL);
@@ -144,16 +144,16 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
             ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
                     "0x%04X : %s\n", slave, state, alstatcode, al_status_code_2_string(alstatcode));
             
-            uint16_t wkc;
-            uint8_t rx_error_counters[16];
+            osal_uint16_t wkc;
+            osal_uint8_t rx_error_counters[16];
             if (ec_fprd(paml->pec, paml->pec->slaves[slave].fixed_address, 
                 0x300, &rx_error_counters[0], 16, &wkc) == 0) {
 
                 if (wkc != 0u) {
                     int i;
                     int pos = 0;
-                    char msg[128];
-                    char *buf = msg;
+                    osal_char_t msg[128];
+                    osal_char_t *buf = msg;
 
                     for (i = 0; i < 16; ++i) {
                         pos += snprintf(&buf[pos], 128 - pos, "%02X ", rx_error_counters[i]);
@@ -197,7 +197,7 @@ static void *ec_async_message_loop_thread(void *arg) {
                 break;
             case EC_MSG_CHECK_GROUP: {
                 // do something
-                uint16_t slave;
+                osal_uint16_t slave;
                 for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
                     if (paml->pec->slaves[slave].assigned_pd_group != (int)me->msg.payload) {
                         continue;
@@ -220,7 +220,7 @@ static void *ec_async_message_loop_thread(void *arg) {
 }
 
 // execute asynchronous check group
-void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
+void ec_async_check_group(ec_async_message_loop_t *paml, osal_uint16_t gid) {
     osal_timer_t act;
     assert(paml != NULL);
 
