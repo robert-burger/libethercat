@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 
+#if 0 
 typedef uint8_t big_chunk[2048];
 typedef uint8_t small_chunk[128];
 
@@ -46,3 +47,12 @@ void ec_free(void *ptr) {
     (void)ptr;
 //    ec_log(5, __func__, "not possible\n");
 }
+#else
+void *ec_malloc(size_t size) { 
+    return malloc(size);
+}
+
+void ec_free(void *ptr) {
+    free(ptr);
+}
+#endif

@@ -1473,7 +1473,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
                     // only compensate within one cycle, add rest to system time offset
                     int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
                     if (ticks_off != 0) {
-                        ec_log(10, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
+                        ec_log(100, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
                                 ticks_off, pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
                         pec->dc.rtc_time -= ticks_off * (pec->dc.timer_override);
                         pec->dc.act_diff  = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time);

@@ -110,16 +110,39 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, uint16_t slave) 
 
     int ret = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
 
-    if (ret != EC_OK) {
+    if ((ret != EC_OK) || (state == EC_STATE_UNKNOWN)) {
         ec_log(10, "ec_async_thread", "slave %2d: error on "
                 "getting slave state, possible slave lost, try to reconfigure\n", slave);
         
-        (void)ec_set_state(paml->pec, EC_STATE_INIT);
+        ec_state_t expected_state = paml->pec->slaves[slave].expected_state;
+
+        // force it to INIT and then back to expected state
+        ret =ec_slave_state_transition(paml->pec, slave, EC_STATE_INIT);
+
+        if ((ret == EC_OK) && (EC_STATE_PREOP <= expected_state)) {
+            ret = ec_slave_state_transition(paml->pec, slave, EC_STATE_PREOP);
+        }
+
+        if ((ret == EC_OK) && (EC_STATE_SAFEOP <= expected_state)) {
+            ec_slave_prepare_state_transition(paml->pec, slave, EC_STATE_SAFEOP);
+            if (ec_slave_generate_mapping(paml->pec, slave) != EC_OK) {
+                ec_log(1, __func__, "ec_slave_generate_mapping failed!\n");
+            }
+            ret = ec_slave_state_transition(paml->pec, slave, EC_STATE_SAFEOP);
+        }
+
+        if ((ret == EC_OK) && (EC_STATE_OP <= expected_state)) {
+            ret = ec_slave_state_transition(paml->pec, slave, EC_STATE_OP);
+        }
+
+        if (ret != EC_OK) {
+            ec_log(1, __func__, "slave %2d: ec_slave_state_transition failed!\n", slave);
+        }
     } else {
         // if state != expected_state -> repair
         if (state != paml->pec->slaves[slave].expected_state) {
             ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
-                    "0x%02X\n", slave, state, alstatcode);
+                    "0x%04X : %s\n", slave, state, alstatcode, al_status_code_2_string(alstatcode));
             
             uint16_t wkc;
             uint8_t rx_error_counters[16];
@@ -204,8 +227,9 @@ void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
     if (ec_timer_gettime(&act) == 0) {
         if (ec_timer_cmp(&act, &paml->next_check_group, <)) {
             // no need to check now
+//            ec_log(5, __func__, "not checking now, timeout not reached\n");
         } else {
-            ec_timer_t interval = { 5, 0 };
+            ec_timer_t interval = { 1, 0 };
             ec_timer_add(&act, &interval, &paml->next_check_group);
 
             ec_timer_t timeout;
