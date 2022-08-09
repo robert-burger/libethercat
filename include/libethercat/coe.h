@@ -41,9 +41,9 @@
 typedef struct ec_coe_emergency_message_entry {
     TAILQ_ENTRY(ec_coe_emergency_message_entry) qh;
                                 //!< handle to message entry queue
-    ec_timer_t timestamp;       //!< timestamp, when emergency was received
-    osal_size_t msg_len;             //!< length
-    osal_uint8_t msg[1];             //!< message itself
+    osal_timer_t timestamp;     //!< timestamp, when emergency was received
+    osal_size_t msg_len;        //!< length
+    osal_uint8_t msg[1];        //!< message itself
 } ec_coe_emergency_message_entry_t;
 
 TAILQ_HEAD(ec_coe_emergency_message_queue, ec_coe_emergency_message_entry);

@@ -33,7 +33,6 @@
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
 #include "libethercat/soe.h"
-#include "libethercat/timer.h"
 #include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
@@ -126,8 +125,8 @@ static void ec_soe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
 
     ec_mbx_sched_read(pec, slave);
 
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
     // Do not care about return value here. In this case there are no new SoE messages.
     (void)pool_get(slv->mbx.soe.recv_pool, pp_entry, &timeout);

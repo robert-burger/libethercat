@@ -31,7 +31,6 @@
 
 #include "libethercat/mbx.h"
 #include "libethercat/ec.h"
-#include "libethercat/timer.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
@@ -224,8 +223,8 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_timer_t timer;
-    ec_timer_init(&timer, nsec);
+    osal_timer_t timer;
+    osal_timer_init(&timer, nsec);
 
     do {
         (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
@@ -237,8 +236,8 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
             break;
         }
 
-        ec_sleep(EC_DEFAULT_DELAY);
-    } while (!ec_timer_expired(&timer));
+        osal_sleep(EC_DEFAULT_DELAY);
+    } while (osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT);
 
     return ret;
 }
@@ -262,8 +261,8 @@ int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_ui
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_timer_t timer;
-    ec_timer_init(&timer, nsec);
+    osal_timer_t timer;
+    osal_timer_init(&timer, nsec);
 
     do {
         (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
@@ -275,8 +274,8 @@ int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_ui
             break;
         }
 
-        ec_sleep(EC_DEFAULT_DELAY);
-    } while (!ec_timer_expired(&timer));
+        osal_sleep(EC_DEFAULT_DELAY);
+    } while (osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT);
 
     return ret;
 }
@@ -300,8 +299,8 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_le
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
 
-    ec_timer_t timer;
-    ec_timer_init(&timer, nsec);
+    osal_timer_t timer;
+    osal_timer_init(&timer, nsec);
 
     // wait for send mailbox available 
     ret = ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec);
@@ -320,8 +319,8 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf_le
                 break;
             }
 
-            ec_sleep(EC_DEFAULT_DELAY);
-        } while (!ec_timer_expired(&timer));
+            osal_sleep(EC_DEFAULT_DELAY);
+        } while (osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT);
 
         if (ret != EC_OK) {
             ec_log(1, __func__, "slave %d: did not respond on writing to write mailbox\n", slave);
@@ -351,8 +350,8 @@ int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
     
-    ec_timer_t timer;
-    ec_timer_init(&timer, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timer;
+    osal_timer_init(&timer, EC_DEFAULT_TIMEOUT_MBX);
 
     // wait for receive mailbox available 
     if (ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec) == EC_OK) {
@@ -395,9 +394,9 @@ int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf
                                 ((sm_status & 0x0200u) >> 8u))) {
                         break;
                     }
-                } while (!ec_timer_expired(&timer) && !wkc);
+                } while ((osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT) && !wkc);
 
-                if (ec_timer_expired(&timer) != 0) {
+                if (osal_timer_expired(&timer) == OSAL_ERR_TIMEOUT) {
                     ec_log(1, __func__, "slave %d timeout waiting for toggle ack\n", slave);
                     ret = EC_ERROR_MAILBOX_TIMEOUT;
                 } else if (ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec) != EC_OK) { // wait for receive mailbox available 
@@ -413,10 +412,10 @@ int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, size_t buf
                 break;
             }
 
-            ec_sleep(EC_DEFAULT_DELAY);
-        } while (!ec_timer_expired(&timer));
+            osal_sleep(EC_DEFAULT_DELAY);
+        } while (osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT);
 
-        if (ec_timer_expired(&timer) != 0) {
+        if (osal_timer_expired(&timer) == OSAL_ERR_TIMEOUT) {
             ec_log(1, __func__, "slave %d did not respond "
                     "on reading from receive mailbox\n", slave);
         }
@@ -678,7 +677,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
  *
  * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
  */
-int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, ec_timer_t *timeout) {
+int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, osal_timer_t *timeout) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);

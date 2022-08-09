@@ -38,7 +38,6 @@
 #include <libosal/mutex.h>
 
 #include "libethercat/common.h"
-#include "libethercat/timer.h"
 
 struct ec;
 
@@ -82,7 +81,7 @@ typedef struct ec_async_message_loop {
     osal_task_t loop_tid;           //!< loop thread id
     struct ec *pec;                 //!< ethercat master pointer
 
-    ec_timer_t next_check_group;
+    osal_timer_t next_check_group;
 } ec_async_message_loop_t;
 
 #ifdef __cplusplus

@@ -48,7 +48,7 @@
 
 // get a message from a message pool
 static int ec_async_message_loop_get(ec_message_pool_t *ppool,
-        ec_message_entry_t **msg, ec_timer_t *timeout) {
+        ec_message_entry_t **msg, osal_timer_t *timeout) {
     int ret = EC_OK;
 
     assert(ppool != NULL);
@@ -183,8 +183,8 @@ static void *ec_async_message_loop_thread(void *arg) {
     assert(paml->pec != NULL);
 
     while (paml->loop_running == 1) {
-        ec_timer_t timeout;
-        ec_timer_init(&timeout, 100000000 );
+        osal_timer_t timeout;
+        osal_timer_init(&timeout, 100000000 );
         ec_message_entry_t *me = NULL;
 
         int ret = ec_async_message_loop_get(&paml->exec, &me, &timeout);
@@ -221,19 +221,19 @@ static void *ec_async_message_loop_thread(void *arg) {
 
 // execute asynchronous check group
 void ec_async_check_group(ec_async_message_loop_t *paml, uint16_t gid) {
-    ec_timer_t act;
+    osal_timer_t act;
     assert(paml != NULL);
 
-    if (ec_timer_gettime(&act) == 0) {
-        if (ec_timer_cmp(&act, &paml->next_check_group, <)) {
+    if (osal_timer_gettime(&act) == 0) {
+        if (osal_timer_cmp(&act, &paml->next_check_group, <)) {
             // no need to check now
 //            ec_log(5, __func__, "not checking now, timeout not reached\n");
         } else {
-            ec_timer_t interval = { 1, 0 };
-            ec_timer_add(&act, &interval, &paml->next_check_group);
+            osal_timer_t interval = { 1, 0 };
+            osal_timer_add(&act, &interval, &paml->next_check_group);
 
-            ec_timer_t timeout;
-            ec_timer_init(&timeout, 1000);
+            osal_timer_t timeout;
+            osal_timer_init(&timeout, 1000);
             ec_message_entry_t *me = NULL;
             int ret = ec_async_message_loop_get(&paml->avail, &me, &timeout);
             if (ret == -1) {
@@ -290,7 +290,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
 
         (*ppaml)->pec = pec;
         (*ppaml)->loop_running = 1;
-        if (ec_timer_gettime(&(*ppaml)->next_check_group) == 0) { 
+        if (osal_timer_gettime(&(*ppaml)->next_check_group) == 0) { 
             osal_task_create(&(*ppaml)->loop_tid, NULL, 
                     ec_async_message_loop_thread, (*ppaml));
         }

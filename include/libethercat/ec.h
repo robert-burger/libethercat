@@ -45,6 +45,10 @@
 #include "libethercat/message_pool.h"
 #include "libethercat/eeprom.h"
 
+#define EC_SHORT_TIMEOUT_MBX        10000000
+#define EC_DEFAULT_TIMEOUT_MBX      1000000000
+#define EC_DEFAULT_DELAY            2000000
+
 struct ec;
 struct ec_slave;
 typedef struct ec_slave ec_slave_t;
@@ -286,7 +290,7 @@ int ec_send_process_data_group(ec_t *pec, int group);
  * \param[in] timeout       Timeout for waiting for packet.
  * \return 0 on success
  */
-int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout);
+int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout);
 
 //! \brief Send distributed clocks sync datagram.
 /*!
@@ -303,7 +307,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec);
  * \param[in] timeout       Absolute timeout.
  * \return 0 on success
  */
-int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout);
+int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout);
 
 //! \brief Send broadcast read to ec state.
 /*!
@@ -320,7 +324,7 @@ int ec_send_brd_ec_state(ec_t *pec);
  * \param[in] timeout       Timeout for waiting for packet.
  * \return 0 on success
  */
-int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout);
+int ec_receive_brd_ec_state(ec_t *pec, osal_timer_t *timeout);
 
 //! \brief Return current slave count.
 /*!

@@ -36,10 +36,9 @@
 #include <stdint.h>
 #include <semaphore.h>
 
-#include <libosal/mutex.h>
+#include <libosal/osal.h>
 
 #include "libethercat/common.h"
-#include "libethercat/timer.h"
 
 //! \brief Pool queue entry. 
 typedef struct pool_entry {
@@ -93,7 +92,7 @@ int pool_close(pool_t *pp);
  *
  * \return EC_OK or error code
  */
-int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout);
+int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout);
 
 //! \brief Peek next entry from pool
 /*!

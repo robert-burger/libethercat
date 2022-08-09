@@ -74,13 +74,13 @@ int ec_miiread(struct ec *pec, uint16_t slave,
     check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
     // set up timeout 100 ms
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, 10000000000);
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, 10000000000);
 
     do {
         ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
-        if ((ret == EC_OK) && (ec_timer_expired(&timeout) == 1)) {
+        if ((ret == EC_OK) && (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT)) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
             ret = EC_ERROR_TIMEOUT;
         }
@@ -126,13 +126,13 @@ int ec_miiwrite(struct ec *pec, uint16_t slave,
     check_ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
     // set up timeout 100 ms
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, 100000000);
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, 100000000);
 
     do {
         ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_MII_CTRLSTAT, (uint8_t *)&ctrl_stat, sizeof(ctrl_stat), &wkc);
 
-        if ((ret == EC_OK) && (ec_timer_expired(&timeout) == 1)) {
+        if ((ret == EC_OK) && (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT)) {
             ec_log(10, __func__, "slave %2d did not respond on MII command\n", slave);
             ret = EC_ERROR_TIMEOUT;
         }

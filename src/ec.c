@@ -810,8 +810,8 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 
             // sending first time dc
             if (ec_send_distributed_clocks_sync(pec) == EC_OK) {
-                ec_timer_t dc_timeout;
-                ec_timer_init(&dc_timeout, 10000000);
+                osal_timer_t dc_timeout;
+                osal_timer_init(&dc_timeout, 10000000);
                 (void)ec_receive_distributed_clocks_sync(pec, &dc_timeout);
             } else {
                 ec_log(1, __func__, "was not able to send first dc frame\n");
@@ -1256,7 +1256,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
  * \param timeout for waiting for packet
  * \return 0 on success
  */
-int ec_receive_process_data_group(ec_t *pec, int group, ec_timer_t *timeout) {
+int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
     assert(pec != NULL);
     assert(timeout != NULL);
 
@@ -1360,7 +1360,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     } else if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
-        uint64_t act_rtc_time = ec_timer_gettime_nsec();
+        uint64_t act_rtc_time = osal_timer_gettime_nsec();
 
         if (pec->dc.mode == dc_mode_ref_clock) {
             if (pec->dc.timer_override > 0) {
@@ -1442,7 +1442,7 @@ static int64_t signed64_diff(uint64_t a, uint64_t b) {
  * \param timeout absolute timeout
  * \return 0 on success
  */
-int ec_receive_distributed_clocks_sync(ec_t *pec, ec_timer_t *timeout) {
+int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
     assert(pec != NULL);
     assert(timeout != NULL);
 
@@ -1578,7 +1578,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
  * \param timeout for waiting for packet
  * \return 0 on success
  */
-int ec_receive_brd_ec_state(ec_t *pec, ec_timer_t *timeout) {
+int ec_receive_brd_ec_state(ec_t *pec, osal_timer_t *timeout) {
     assert(pec != NULL);
     assert(timeout != NULL);
 

@@ -649,8 +649,8 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
 
         pec->slaves[slave].expected_state = state;
 
-        ec_timer_t timeout;
-        ec_timer_init(&timeout, 10000000000); // 10 second timeout
+        osal_timer_t timeout;
+        osal_timer_init(&timeout, 10000000000); // 10 second timeout
 
         do {
             if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) == EC_OK) { 
@@ -668,10 +668,10 @@ int ec_slave_set_state(ec_t *pec, uint16_t slave, ec_state_t state) {
                 }
             }
 
-            ec_sleep(1000000);
-        } while ((act_state != state) && (ec_timer_expired(&timeout) == 0));
+            osal_sleep(1000000);
+        } while ((act_state != state) && (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT));
  
-        if (ec_timer_expired(&timeout) == 1) {
+        if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
             ec_log(1, "EC_STATE_SET", "slave %2d: did not respond on state switch to %d\n", slave, state);
             ret = EC_ERROR_SLAVE_NOT_RESPONDING;
         }

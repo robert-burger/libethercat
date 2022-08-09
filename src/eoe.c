@@ -25,7 +25,6 @@
 
 #include "libethercat/ec.h"
 #include "libethercat/eoe.h"
-#include "libethercat/timer.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
@@ -215,8 +214,8 @@ static void ec_eoe_wait_response(ec_t *pec, uint16_t slave, pool_entry_t **pp_en
 
     ec_mbx_sched_read(pec, slave);
 
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
     (void)pool_get(slv->mbx.eoe.response_pool, pp_entry, &timeout);
 }
@@ -240,8 +239,8 @@ static void ec_eoe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
 
     ec_mbx_sched_read(pec, slave);
 
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
     (void)pool_get(slv->mbx.eoe.recv_pool, pp_entry, &timeout);
 }
@@ -407,8 +406,8 @@ int ec_eoe_send_frame(ec_t *pec, uint16_t slave, uint8_t *frame, size_t frame_le
 
             // get mailbox buffer to write frame fragment request
             pool_entry_t *p_entry;
-            ec_timer_t timeout;
-            (void)ec_timer_gettime(&timeout);
+            osal_timer_t timeout;
+            (void)osal_timer_gettime(&timeout);
             timeout.sec += 10;
             (void)ec_mbx_get_free_send_buffer(pec, slave, &p_entry, &timeout);
 

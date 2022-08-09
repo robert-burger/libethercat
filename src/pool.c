@@ -133,7 +133,7 @@ int pool_close(pool_t *pp) {
  *
  * \return EC_OK or error code
  */
-int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
+int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
     assert(pp != NULL);
     assert(entry != NULL);
 
@@ -144,8 +144,8 @@ int pool_get(pool_t *pp, pool_entry_t **entry, ec_timer_t *timeout) {
         ts.tv_sec = timeout->sec;
         ts.tv_nsec = timeout->nsec;
     } else {
-        ec_timer_t tim;
-        (void)ec_timer_gettime(&tim);
+        osal_timer_t tim;
+        (void)osal_timer_gettime(&tim);
         ts.tv_sec = tim.sec;
         ts.tv_nsec = tim.nsec;
     }

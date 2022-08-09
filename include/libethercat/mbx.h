@@ -215,7 +215,7 @@ int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag);
  *
  * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
  */
-int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, ec_timer_t *timeout);
+int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, osal_timer_t *timeout);
 
 #define ec_mbx_return_free_send_buffer(pec, slave, entry) \
     pool_put((pec)->slaves[(slave)].mbx.message_pool_send_free, (entry)) 

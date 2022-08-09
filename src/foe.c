@@ -142,8 +142,8 @@ static void ec_foe_wait(ec_t *pec, uint16_t slave, pool_entry_t **pp_entry) {
 
     ec_mbx_sched_read(pec, slave);
 
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
     // ignore return value here, may fail if no new message are currently available
     (void)pool_get(slv->mbx.foe.recv_pool, pp_entry, &timeout);

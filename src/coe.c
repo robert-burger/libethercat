@@ -28,7 +28,6 @@
 #include "libethercat/ec.h"
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
-#include "libethercat/timer.h"
 #include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
@@ -287,8 +286,8 @@ static void ec_coe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
 
     ec_mbx_sched_read(pec, slave);
 
-    ec_timer_t timeout;
-    ec_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
     (void)pool_get(slv->mbx.coe.recv_pool, pp_entry, &timeout);
 }
@@ -1189,7 +1188,7 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
     (void)memcpy(qmsg->msg, (osal_uint8_t *)&(p_entry->data[6 + 2]), msg_len);
 
     qmsg->msg_len = msg_len;
-    (void)ec_timer_gettime(&qmsg->timestamp);
+    (void)osal_timer_gettime(&qmsg->timestamp);
     TAILQ_INSERT_TAIL(&slv->mbx.coe.emergencies, qmsg, qh);
 
     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
