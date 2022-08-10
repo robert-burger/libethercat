@@ -65,8 +65,7 @@ int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size) {
         osal_mutex_init(&(*pp)->_pool_lock, NULL);
         osal_mutex_lock(&(*pp)->_pool_lock);
 
-        (void)memset(&(*pp)->avail_cnt, 0, sizeof(sem_t));
-        sem_init(&(*pp)->avail_cnt, 0, cnt);
+        osal_semaphore_init(&(*pp)->avail_cnt, 0, cnt);
         TAILQ_INIT(&(*pp)->avail);
 
         osal_size_t i;
@@ -117,7 +116,7 @@ int pool_close(pool_t *pp) {
     osal_mutex_unlock(&pp->_pool_lock);
     osal_mutex_destroy(&pp->_pool_lock);
     
-    sem_destroy(&pp->avail_cnt);
+    osal_semaphore_destroy(&pp->avail_cnt);
 
     // cppcheck-suppress misra-c2012-21.3
     ec_free(pp);
@@ -138,30 +137,21 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
     assert(entry != NULL);
 
     int ret = EC_OK;
-    struct timespec ts;
 
     if (timeout != NULL) {
-        ts.tv_sec = timeout->sec;
-        ts.tv_nsec = timeout->nsec;
-    } else {
-        osal_timer_t tim;
-        (void)osal_timer_gettime(&tim);
-        ts.tv_sec = tim.sec;
-        ts.tv_nsec = tim.nsec;
-    }
+        while (ret == EC_OK) {
+            int local_ret = osal_semaphore_timedwait(&pp->avail_cnt, timeout);
+            int tmp_errno = errno;
+            if (local_ret == 0) {
+                break;
+            }
 
-    while (ret == EC_OK) {
-        int local_ret = sem_timedwait(&pp->avail_cnt, &ts);
-        int tmp_errno = errno;
-        if (local_ret == 0) {
-            break;
-        }
-
-        if (tmp_errno != ETIMEDOUT) {
-            perror("sem_timedwait");
-        } else {
-            *entry = NULL;
-            ret = EC_ERROR_TIMEOUT;
+            if (tmp_errno != ETIMEDOUT) {
+                perror("osal_semaphore_timedwait");
+            } else {
+                *entry = NULL;
+                ret = EC_ERROR_TIMEOUT;
+            }
         }
     }
 
@@ -217,7 +207,7 @@ void pool_put(pool_t *pp, pool_entry_t *entry) {
     osal_mutex_lock(&pp->_pool_lock);
 
     TAILQ_INSERT_TAIL(&pp->avail, (pool_entry_t *)entry, qh);
-    sem_post(&pp->avail_cnt);
+    osal_semaphore_post(&pp->avail_cnt);
     
     osal_mutex_unlock(&pp->_pool_lock);
 }
@@ -234,7 +224,7 @@ void pool_put_head(pool_t *pp, pool_entry_t *entry) {
     osal_mutex_lock(&pp->_pool_lock);
 
     TAILQ_INSERT_HEAD(&pp->avail, (pool_entry_t *)entry, qh);
-    sem_post(&pp->avail_cnt);
+    osal_semaphore_post(&pp->avail_cnt);
     
     osal_mutex_unlock(&pp->_pool_lock);
 }

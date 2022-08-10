@@ -166,7 +166,7 @@ void ec_eoe_init(ec_t *pec, osal_uint16_t slave) {
     (void)pool_open(&slv->mbx.eoe.eth_frames_free_pool, 128, sizeof(eth_frame_t));
     (void)pool_open(&slv->mbx.eoe.eth_frames_recv_pool, 0, sizeof(eth_frame_t));
 
-    sem_init(&slv->mbx.eoe.send_sync, 0, 0);
+    osal_semaphore_init(&slv->mbx.eoe.send_sync, 0, 0);
 }
 
 //! deinitialize EoE structure 
@@ -185,7 +185,7 @@ void ec_eoe_deinit(ec_t *pec, osal_uint16_t slave) {
     
     osal_mutex_lock(&slv->mbx.eoe.lock);
 
-    sem_destroy(&slv->mbx.eoe.send_sync);
+    osal_semaphore_destroy(&slv->mbx.eoe.send_sync);
     (void)pool_close(slv->mbx.eoe.eth_frames_recv_pool);
     (void)pool_close(slv->mbx.eoe.eth_frames_free_pool);
     (void)pool_close(slv->mbx.eoe.response_pool);
@@ -364,7 +364,7 @@ static void ec_eoe_send_sync(void *user_arg, struct pool_entry *p) {
     // cppcheck-suppress misra-c2012-11.5
     ec_mbx_t *pmbx = (ec_mbx_t *)user_arg;
     
-    sem_post(&pmbx->pec->slaves[pmbx->slave].mbx.eoe.send_sync);
+    osal_semaphore_post(&pmbx->pec->slaves[pmbx->slave].mbx.eoe.send_sync);
 }
 
 #define ALIGN_32BIT_BLOCKS(a) { (a) = (((a) >> 5) << 5); }
@@ -440,7 +440,7 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
 
             // send request
             ec_mbx_enqueue_tail(pec, slave, p_entry);
-            sem_wait(&slv->mbx.eoe.send_sync);
+            osal_semaphore_wait(&slv->mbx.eoe.send_sync);
         } while(frame_offset < frame_len);
     }
 

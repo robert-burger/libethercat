@@ -55,12 +55,11 @@ static int ec_async_message_loop_get(ec_message_pool_t *ppool,
     assert(msg != NULL);
 
     if (timeout != NULL) {
-        struct timespec ts = { timeout->sec, timeout->nsec };
-        ret = sem_timedwait(&ppool->avail_cnt, &ts);
+        ret = osal_semaphore_timedwait(&ppool->avail_cnt, timeout);
         int local_errno = errno;
         if (ret != 0) {
             if (local_errno != ETIMEDOUT) {
-                perror("sem_timedwait");
+                perror("osal_semaphore_timedwait");
             }
 
             ret = EC_ERROR_TIMEOUT;
@@ -92,7 +91,7 @@ static int ec_async_message_loop_put(ec_message_pool_t *ppool,
     osal_mutex_lock(&ppool->lock);
 
     TAILQ_INSERT_TAIL(&ppool->queue, msg, qh);
-    sem_post(&ppool->avail_cnt);
+    osal_semaphore_post(&ppool->avail_cnt);
     
     osal_mutex_unlock(&ppool->lock);
     
@@ -267,8 +266,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
         // initiale pre-alocated async messages in avail queue
         osal_mutex_init(&(*ppaml)->avail.lock, NULL);
         osal_mutex_lock(&(*ppaml)->avail.lock);
-        //(void)memset(&(*ppaml)->avail.avail_cnt, 0, sizeof(sem_t));
-        sem_init(&(*ppaml)->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
+        osal_semaphore_init(&(*ppaml)->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
         TAILQ_INIT(&(*ppaml)->avail.queue);
 
         for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
@@ -283,8 +281,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
         // initialize execute queue
         osal_mutex_init(&(*ppaml)->exec.lock, NULL);
         osal_mutex_lock(&(*ppaml)->exec.lock);
-        //(void)memset(&(*ppaml)->exec.avail_cnt, 0, sizeof(sem_t));
-        sem_init(&(*ppaml)->exec.avail_cnt, 0, 0);
+        osal_semaphore_init(&(*ppaml)->exec.avail_cnt, 0, 0);
         TAILQ_INIT(&(*ppaml)->exec.queue);
         osal_mutex_unlock(&(*ppaml)->exec.lock);
 

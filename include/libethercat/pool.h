@@ -33,10 +33,10 @@
 #define POOL_H
 
 #include <sys/queue.h>
-#include <semaphore.h>
 
 #include <libosal/types.h>
 #include <libosal/osal.h>
+#include <libosal/semaphore.h>
 
 #include "libethercat/common.h"
 
@@ -57,7 +57,7 @@ TAILQ_HEAD(pool_queue, pool_entry);
 //! the datagram pool itself
 typedef struct pool {    
     struct pool_queue avail;                                //!< \brief Queue with available datagrams.
-    sem_t avail_cnt;                                        //!< \brief Available datagrams in pool.
+    osal_semaphore_t avail_cnt;                             //!< \brief Available datagrams in pool.
 
     osal_mutex_t _pool_lock;                                //!< \brief Pool lock.
 } pool_t;

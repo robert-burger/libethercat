@@ -32,10 +32,10 @@
 #define LIBETHERCAT_MESSAGE_POOL_H
 
 #include <sys/queue.h>
-#include <semaphore.h>
 
 #include <libosal/types.h>
 #include <libosal/mutex.h>
+#include <libosal/semaphore.h>
 
 #include "libethercat/common.h"
 
@@ -69,7 +69,7 @@ typedef struct ec_message_pool_queue ec_message_pool_queue_t;
 
 typedef struct ec_message_pool {
     ec_message_pool_queue_t queue;  //!< message pool queue
-    sem_t avail_cnt;                //!< available messages in pool queue
+    osal_semaphore_t avail_cnt;     //!< available messages in pool queue
     osal_mutex_t lock;              //!< pool lock
 } ec_message_pool_t;
 

@@ -32,6 +32,7 @@
 #define LIBETHERCAT_EOE_H
 
 #include <libosal/types.h>
+#include <libosal/semaphore.h>
 
 #include "libethercat/common.h"
 
@@ -54,7 +55,7 @@ typedef struct ec_eoe {
     pool_t *eth_frames_recv_pool;
 
     osal_mutex_t lock;
-    sem_t send_sync;
+    osal_semaphore_t send_sync;
 } ec_eoe_t;
 
 #ifdef __cplusplus

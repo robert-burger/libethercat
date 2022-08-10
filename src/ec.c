@@ -1113,7 +1113,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         osal_timer_init(&to, 100000000);
         int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
         if (local_ret != OSAL_OK) {
-            ec_log(1, "ec_transceive", "sem_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
+            ec_log(1, "ec_transceive", "osal_semaphore_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
                     strerror(errno), cmd, adr);
             *wkc = 0u;
             ret = EC_ERROR_TIMEOUT;
@@ -1277,7 +1277,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
         if (osal_binary_semaphore_timedwait(&pd->p_idx->waiter, &to) != 0) {
             if (++pd->recv_missed < pec->consecutive_max_miss) {
                 ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                        "sem_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
+                        "osal_semaphore_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
                         pd->recv_missed, pec->consecutive_max_miss);
             } else {
                 ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
@@ -1462,7 +1462,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
         if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, &to) != 0) 
         {
             ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
-                    "sem_timedwait distributed clocks (sent: %lld): %s\n", 
+                    "osal_semaphore_timedwait distributed clocks (sent: %lld): %s\n", 
                     pec->dc.rtc_time, strerror(errno));
             ret = EC_ERROR_TIMEOUT;
         } else {
@@ -1595,7 +1595,7 @@ int ec_receive_brd_ec_state(ec_t *pec, osal_timer_t *timeout) {
         ret = EC_ERROR_UNAVAILABLE;
     } else if (osal_binary_semaphore_timedwait(&pec->p_idx_state->waiter, &to) != 0) 
     { // wait for completion
-        ec_log(1, __func__, "sem_timedwait ec_state: %s\n", strerror(errno));
+        ec_log(1, __func__, "osal_semaphore_timedwait ec_state: %s\n", strerror(errno));
         ret = EC_ERROR_TIMEOUT;
     } else {
         osal_uint16_t wkc;
