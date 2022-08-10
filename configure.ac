@@ -24,18 +24,8 @@ AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
-PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
-
-# Checks for pthread support
-#ACX_PTHREAD
-#LIBS="$PTHREAD_LIBS $LIBS"
-#CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-
 # Checks for libraries.
-AC_CHECK_LIB([rt], [sem_init])
-
-# indead a good option, checks for processor features like avx, but then we get sigill on older machines
-# AX_GCC_ARCHFLAG([PORTABLE?], [], [])
+PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
 
 # Checks for header files.
 AC_HEADER_ASSERT

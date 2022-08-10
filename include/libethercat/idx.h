@@ -97,7 +97,6 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry);
  */
 void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry);
 
-
 #ifdef __cplusplus
 }
 #endif

@@ -57,7 +57,7 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
         TAILQ_REMOVE(&idx_q->q, *entry, qh);
         ret = EC_OK;
     
-        osal_binary_semaphore_timedwait(&(*entry)->waiter, 0);
+        osal_binary_semaphore_trywait(&(*entry)->waiter);
     }
 
     
