@@ -33,6 +33,7 @@
 
 #include <libosal/task.h>
 #include <libosal/types.h>
+#include <libosal/mutex.h>
 
 #include "libethercat/pool.h"
 
