@@ -50,7 +50,7 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
     assert(idx_q != NULL);
     assert(entry != NULL);
 
-    osal_mutex_lock(&idx_q->lock);
+    osal_spinlock_lock(&idx_q->lock);
 
     *entry = (idx_entry_t *)TAILQ_FIRST(&idx_q->q);
     if ((*entry) != NULL) {
@@ -61,7 +61,7 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
     }
 
     
-    osal_mutex_unlock(&idx_q->lock);
+    osal_spinlock_unlock(&idx_q->lock);
 
     return ret;
 }
@@ -75,9 +75,9 @@ void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
     assert(idx_q != NULL);
     assert(entry != NULL);
 
-    osal_mutex_lock(&idx_q->lock);
+    osal_spinlock_lock(&idx_q->lock);
     TAILQ_INSERT_TAIL(&idx_q->q, entry, qh);
-    osal_mutex_unlock(&idx_q->lock);
+    osal_spinlock_unlock(&idx_q->lock);
 }
 
 //! Initialize index queue structure.
@@ -94,7 +94,7 @@ int ec_index_init(idx_queue_t *idx_q, osal_size_t max_index) {
 
     assert(idx_q != NULL);
 
-    osal_mutex_init(&idx_q->lock, NULL);
+    osal_spinlock_init(&idx_q->lock, NULL);
     
     // fill index queue
     TAILQ_INIT(&idx_q->q);
@@ -137,6 +137,6 @@ void ec_index_deinit(idx_queue_t *idx_q) {
         idx = TAILQ_FIRST(&idx_q->q);
     }
 
-    osal_mutex_destroy(&idx_q->lock);
+    osal_spinlock_destroy(&idx_q->lock);
 }
 

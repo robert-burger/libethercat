@@ -35,7 +35,7 @@
 #include <sys/queue.h>
 
 #include <libosal/types.h>
-#include <libosal/osal.h>
+#include <libosal/spinlock.h>
 #include <libosal/semaphore.h>
 
 #include "libethercat/common.h"
@@ -59,7 +59,7 @@ typedef struct pool {
     struct pool_queue avail;                                //!< \brief Queue with available datagrams.
     osal_semaphore_t avail_cnt;                             //!< \brief Available datagrams in pool.
 
-    osal_mutex_t _pool_lock;                                //!< \brief Pool lock.
+    osal_spinlock_t _pool_lock;                             //!< \brief Pool lock.
 } pool_t;
 
 #ifdef __cplusplus
