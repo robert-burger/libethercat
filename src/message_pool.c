@@ -43,8 +43,6 @@
 #include <string.h>
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
-#include <pthread.h>
-
 
 // get a message from a message pool
 static int ec_async_message_loop_get(ec_message_pool_t *ppool,
