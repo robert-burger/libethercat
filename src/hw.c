@@ -467,45 +467,8 @@ void *hw_rx_thread(void *arg) {
     osal_uint8_t recv_frame[ETH_FRAME_LEN];
     // cppcheck-suppress misra-c2012-11.3
     ec_frame_t *pframe = (ec_frame_t *) recv_frame;
-//    struct sched_param param;
-//    int policy;
 
     assert(phw != NULL);
-
-//    // thread settings
-//    if (pthread_getschedparam(pthread_self(), &policy, &param) != 0) {
-//        ec_log(1, "RX_THREAD", "error on pthread_getschedparam %s\n",
-//               strerror(errno));
-//    } else {
-//        policy = SCHED_FIFO;
-//        param.sched_priority = phw->rxthreadprio;
-//        if (pthread_setschedparam(pthread_self(), policy, &param) != 0) {
-//            ec_log(1, "RX_THREAD", "error on pthread_setschedparam %s\n",
-//                   strerror(errno));
-//        }
-//    }
-//
-//#ifdef __VXWORKS__
-//    taskCpuAffinitySet(taskIdSelf(),  (cpuset_t)phw->rxthreadcpumask);
-//#elif defined __QNX__
-//    ThreadCtl(_NTO_TCTL_RUNMASK, (void *)phw->rxthreadcpumask);
-//#else
-//    cpu_set_t cpuset;
-//    CPU_ZERO(&cpuset);
-//    for (osal_uint32_t i = 0u; i < 32u; ++i) {
-//        if ((phw->rxthreadcpumask & ((osal_uint32_t)1u << i)) != 0u) {
-//            CPU_SET(i, &cpuset);
-//        }
-//    }
-//
-//#ifdef HAVE_PTHREAD_SETAFFINITY_NP
-//    if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
-//        ec_log(1, "RX_THREAD", "error on pthread_setaffinity_np %s\n", 
-//                strerror(errno));
-//    }
-//#endif
-//
-//#endif
 
     while (phw->rxthreadrunning != 0) {
 #ifdef HAVE_NET_BPF_H
