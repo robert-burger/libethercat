@@ -40,7 +40,7 @@
 
 //! index entry
 typedef struct idx_entry {
-    osal_uint8_t idx;                    //!< datagram index
+    osal_uint8_t idx;               //!< datagram index
     osal_binary_semaphore_t waiter; //!< waiter semaphore for synchronous access
     struct ec *pec;                 //!< pointer to ethercat master structure
 
