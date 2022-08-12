@@ -536,7 +536,11 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 pec->slaves[slave].worker_arg.slave = slave;
                 pec->slaves[slave].worker_arg.state = state;
 
-                osal_task_create(&(pec->slaves[slave].worker_tid), NULL, 
+                osal_task_attr_t attr;
+                attr.priority = 10;
+                attr.affinity = 0xFF;
+                snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%d", slave);
+                osal_task_create(&(pec->slaves[slave].worker_tid), &attr, 
                         prepare_state_transition_wrapper, 
                         &(pec->slaves[slave].worker_arg));
             }
@@ -582,7 +586,11 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
                 pec->slaves[slave].worker_arg.slave = slave;
                 pec->slaves[slave].worker_arg.state = state;
 
-                osal_task_create(&(pec->slaves[slave].worker_tid), NULL, 
+                osal_task_attr_t attr;
+                attr.priority = 10;
+                attr.affinity = 0xFF;
+                snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%d", slave);
+                osal_task_create(&(pec->slaves[slave].worker_tid), &attr, 
                         set_state_wrapper, 
                         &(pec->slaves[slave].worker_arg));
             }

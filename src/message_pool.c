@@ -286,7 +286,11 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
         (*ppaml)->pec = pec;
         (*ppaml)->loop_running = 1;
         if (osal_timer_gettime(&(*ppaml)->next_check_group) == 0) { 
-            osal_task_create(&(*ppaml)->loop_tid, NULL, 
+            osal_task_attr_t attr;
+            attr.priority = 0;
+            attr.affinity = 0xFF;
+            strcpy(&attr.task_name[0], "ecat.async");
+            osal_task_create(&(*ppaml)->loop_tid, &attr, 
                     ec_async_message_loop_thread, (*ppaml));
         }
     }

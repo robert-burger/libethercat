@@ -34,6 +34,7 @@
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -104,7 +105,11 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         slv->mbx.pec = pec;
         slv->mbx.slave = slave;
 
-        osal_task_create(&slv->mbx.handler_tid, NULL, ec_mbx_handler_thread, &slv->mbx);
+        osal_task_attr_t attr;
+        attr.priority = 0;
+        attr.affinity = 0xFF;
+        snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.mbx%d", slave);
+        osal_task_create(&slv->mbx.handler_tid, &attr, ec_mbx_handler_thread, &slv->mbx);
     }
 }
 

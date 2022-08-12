@@ -714,7 +714,11 @@ int ec_eoe_setup_tun(ec_t *pec) {
             ret = EC_ERROR_UNAVAILABLE;
         } else {
             pec->tun_running = 1;
-            osal_task_create(&pec->tun_tid, NULL, ec_eoe_tun_handler_wrapper, pec);
+            osal_task_attr_t attr;
+            attr.priority = 5;
+            attr.affinity = 0xFF;
+            strcpy(&attr.task_name[0], "ecat.tun");
+            osal_task_create(&pec->tun_tid, &attr, ec_eoe_tun_handler_wrapper, pec);
         }
     }
 

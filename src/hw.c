@@ -389,6 +389,7 @@ int hw_open(hw_t **pphw, const osal_char_t *devname, int prio, int cpumask, int 
         osal_task_attr_t attr;
         attr.priority = prio;
         attr.affinity = cpumask;
+        strcpy(&attr.task_name[0], "ecat.rx");
         osal_task_create(&(*pphw)->rxthread, &attr, hw_rx_thread, *pphw);
     }
 
