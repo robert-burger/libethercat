@@ -61,8 +61,8 @@ int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size) {
     if (!(*pp)) {
         ret = EC_ERROR_OUT_OF_MEMORY;
     } else {
-        osal_spinlock_init(&(*pp)->_pool_lock, NULL);
-        osal_spinlock_lock(&(*pp)->_pool_lock);
+        osal_mutex_init(&(*pp)->_pool_lock, NULL);
+        osal_mutex_lock(&(*pp)->_pool_lock);
 
         osal_semaphore_init(&(*pp)->avail_cnt, 0, cnt);
         TAILQ_INIT(&(*pp)->avail);
@@ -80,7 +80,7 @@ int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size) {
             TAILQ_INSERT_TAIL(&(*pp)->avail, entry, qh);
         }
 
-        osal_spinlock_unlock(&(*pp)->_pool_lock);
+        osal_mutex_unlock(&(*pp)->_pool_lock);
     }
 
     return ret;
@@ -95,7 +95,7 @@ int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size) {
 int pool_close(pool_t *pp) {
     assert(pp != NULL);
     
-    osal_spinlock_lock(&pp->_pool_lock);
+    osal_mutex_lock(&pp->_pool_lock);
 
     pool_entry_t *entry = TAILQ_FIRST(&pp->avail);
     while (entry != NULL) {
@@ -112,8 +112,8 @@ int pool_close(pool_t *pp) {
         entry = TAILQ_FIRST(&pp->avail);
     }
     
-    osal_spinlock_unlock(&pp->_pool_lock);
-    osal_spinlock_destroy(&pp->_pool_lock);
+    osal_mutex_unlock(&pp->_pool_lock);
+    osal_mutex_destroy(&pp->_pool_lock);
     
     osal_semaphore_destroy(&pp->avail_cnt);
 
@@ -155,7 +155,7 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
     }
 
     if (ret == EC_OK) {
-        osal_spinlock_lock(&pp->_pool_lock);
+        osal_mutex_lock(&pp->_pool_lock);
 
         *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
         if ((*entry) != NULL) {
@@ -164,7 +164,7 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
             ret = EC_ERROR_UNAVAILABLE;
         }
 
-        osal_spinlock_unlock(&pp->_pool_lock);
+        osal_mutex_unlock(&pp->_pool_lock);
     }
 
     return ret;
@@ -183,9 +183,9 @@ int pool_peek(pool_t *pp, pool_entry_t **entry) {
     assert(entry != NULL);
     int ret = EC_OK;
     
-    osal_spinlock_lock(&pp->_pool_lock);
+    osal_mutex_lock(&pp->_pool_lock);
     *entry = (pool_entry_t *)TAILQ_FIRST(&pp->avail);
-    osal_spinlock_unlock(&pp->_pool_lock);
+    osal_mutex_unlock(&pp->_pool_lock);
 
     if ((*entry) == NULL) {
         ret = EC_ERROR_UNAVAILABLE;
@@ -203,12 +203,12 @@ void pool_put(pool_t *pp, pool_entry_t *entry) {
     assert(pp != NULL);
     assert(entry != NULL);
     
-    osal_spinlock_lock(&pp->_pool_lock);
+    osal_mutex_lock(&pp->_pool_lock);
 
     TAILQ_INSERT_TAIL(&pp->avail, (pool_entry_t *)entry, qh);
     osal_semaphore_post(&pp->avail_cnt);
     
-    osal_spinlock_unlock(&pp->_pool_lock);
+    osal_mutex_unlock(&pp->_pool_lock);
 }
 
 //! \brief Put entry back to pool in front.
@@ -220,11 +220,11 @@ void pool_put_head(pool_t *pp, pool_entry_t *entry) {
     assert(pp != NULL);
     assert(entry != NULL);
     
-    osal_spinlock_lock(&pp->_pool_lock);
+    osal_mutex_lock(&pp->_pool_lock);
 
     TAILQ_INSERT_HEAD(&pp->avail, (pool_entry_t *)entry, qh);
     osal_semaphore_post(&pp->avail_cnt);
     
-    osal_spinlock_unlock(&pp->_pool_lock);
+    osal_mutex_unlock(&pp->_pool_lock);
 }
 

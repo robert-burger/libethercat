@@ -34,7 +34,7 @@
 
 #include <libosal/types.h>
 #include <libosal/binary_semaphore.h>
-#include <libosal/spinlock.h>
+#include <libosal/mutex.h>
 
 #include "libethercat/common.h"
 
@@ -51,7 +51,7 @@ TAILQ_HEAD(idx_entry_queue, idx_entry);
 
 //! index queue
 typedef struct idx_queue {
-    osal_spinlock_t lock;       //!< queue lock
+    osal_mutex_t lock;       //!< queue lock
                                 /*!<
                                  * prevent concurrent queue access
                                  */
