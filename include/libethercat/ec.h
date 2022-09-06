@@ -43,7 +43,7 @@
 #include "libethercat/idx.h"
 #include "libethercat/datagram.h"
 #include "libethercat/pool.h"
-#include "libethercat/message_pool.h"
+#include "libethercat/async_loop.h"
 #include "libethercat/eeprom.h"
 
 #define EC_SHORT_TIMEOUT_MBX        10000000
@@ -152,7 +152,7 @@ typedef struct ec {
     ec_pd_group_t *pd_groups;       //!< array with process data groups
 
     ec_dc_info_t dc;                //!< distributed clocks master settings
-    ec_async_message_loop_t *async_loop;
+    ec_async_loop_t *async_loop;
                                     //!< asynchronous message loop
                                     /*!<
                                      * This loop receives asynchronous messages

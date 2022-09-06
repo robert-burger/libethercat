@@ -34,7 +34,7 @@
 #include "libethercat/error_codes.h"
 #include "libethercat/slave.h"
 #include "libethercat/memory.h"
-#include "libethercat/message_pool.h"
+#include "libethercat/async_loop.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -45,7 +45,7 @@
 #include <stdio.h>
 
 // get a message from a message pool
-static int ec_async_message_loop_get(ec_message_pool_t *ppool,
+static int ec_async_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, osal_timer_t *timeout) {
     int ret = EC_OK;
 
@@ -81,7 +81,7 @@ static int ec_async_message_loop_get(ec_message_pool_t *ppool,
 }
 
 // return a message to message pool
-static int ec_async_message_loop_put(ec_message_pool_t *ppool, 
+static int ec_async_loop_put(ec_message_pool_t *ppool, 
         ec_message_entry_t *msg) {
     assert(ppool != NULL);
     assert(msg != NULL);
@@ -97,7 +97,7 @@ static int ec_async_message_loop_put(ec_message_pool_t *ppool,
 }
 
 // check slave expected state 
-static void ec_async_check_slave(ec_async_message_loop_t *paml, osal_uint16_t slave) {
+static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
     ec_state_t state = 0;
     osal_uint16_t alstatcode = 0;
     
@@ -172,9 +172,9 @@ static void ec_async_check_slave(ec_async_message_loop_t *paml, osal_uint16_t sl
 }
 
 // async loop thread
-static void *ec_async_message_loop_thread(void *arg) {
+static void *ec_async_loop_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
-    ec_async_message_loop_t *paml = (ec_async_message_loop_t *)arg;
+    ec_async_loop_t *paml = (ec_async_loop_t *)arg;
     
     assert(paml != NULL);
     assert(paml->pec != NULL);
@@ -184,7 +184,7 @@ static void *ec_async_message_loop_thread(void *arg) {
         osal_timer_init(&timeout, 100000000 );
         ec_message_entry_t *me = NULL;
 
-        int ret = ec_async_message_loop_get(&paml->exec, &me, &timeout);
+        int ret = ec_async_loop_get(&paml->exec, &me, &timeout);
         if (ret != EC_OK) {
             continue; // e.g. timeout
         }
@@ -210,14 +210,14 @@ static void *ec_async_message_loop_thread(void *arg) {
         };
 
         // return message to pool
-        if (ec_async_message_loop_put(&paml->avail, me) == 0) {};
+        if (ec_async_loop_put(&paml->avail, me) == 0) {};
     }
 
     return NULL;
 }
 
 // execute asynchronous check group
-void ec_async_check_group(ec_async_message_loop_t *paml, osal_uint16_t gid) {
+void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
     osal_timer_t act;
     assert(paml != NULL);
 
@@ -232,13 +232,13 @@ void ec_async_check_group(ec_async_message_loop_t *paml, osal_uint16_t gid) {
             osal_timer_t timeout;
             osal_timer_init(&timeout, 1000);
             ec_message_entry_t *me = NULL;
-            int ret = ec_async_message_loop_get(&paml->avail, &me, &timeout);
+            int ret = ec_async_loop_get(&paml->avail, &me, &timeout);
             if (ret == -1) {
                 // got no message buffer
             } else {
                 me->msg.id = EC_MSG_CHECK_GROUP;
                 me->msg.payload = gid;
-                if (ec_async_message_loop_put(&paml->exec, me) == 0) {
+                if (ec_async_loop_put(&paml->exec, me) == 0) {
                     ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);
                 }
             }
@@ -247,7 +247,7 @@ void ec_async_check_group(ec_async_message_loop_t *paml, osal_uint16_t gid) {
 }
 
 // creates a new async message loop
-int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
+int ec_async_loop_create(ec_async_loop_t **ppaml, ec_t *pec) {
     int ret = EC_OK;
     
     assert(ppaml != NULL);
@@ -255,7 +255,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
 
     // create memory for async message loop
     // cppcheck-suppress misra-c2012-21.3
-    (*ppaml) = (ec_async_message_loop_t *)ec_malloc(sizeof(ec_async_message_loop_t));
+    (*ppaml) = (ec_async_loop_t *)ec_malloc(sizeof(ec_async_loop_t));
     if (!(*ppaml)) {
         ret = ENOMEM;
     } else {
@@ -291,7 +291,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
             attr.affinity = 0xFF;
             strcpy(&attr.task_name[0], "ecat.async");
             osal_task_create(&(*ppaml)->loop_tid, &attr, 
-                    ec_async_message_loop_thread, (*ppaml));
+                    ec_async_loop_thread, (*ppaml));
         }
     }
 
@@ -299,7 +299,7 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, ec_t *pec) {
 }
 
 // destroys async message loop
-int ec_async_message_pool_destroy(ec_async_message_loop_t *paml) {
+int ec_async_loop_destroy(ec_async_loop_t *paml) {
     assert(paml != NULL);
     
     // stop async thread
