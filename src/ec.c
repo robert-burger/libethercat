@@ -982,7 +982,7 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
     }
 
     if (ret == EC_OK) {
-        ret = ec_async_message_loop_create(&pec->async_loop, pec);
+        ret = ec_async_loop_create(&pec->async_loop, pec);
     }
 
     // destruct everything if something failed
@@ -1022,8 +1022,8 @@ int ec_close(ec_t *pec) {
 
     ec_eoe_destroy_tun(pec);
 
-    ec_log(10, __func__, "destroying async message pool\n");
-    if (pec->async_loop != NULL) { (void)ec_async_message_pool_destroy(pec->async_loop);}
+    ec_log(10, __func__, "destroying async loop\n");
+    if (pec->async_loop != NULL) { (void)ec_async_loop_destroy(pec->async_loop);}
     ec_log(10, __func__, "closing hardware handle\n");
     if (pec->phw != NULL) { (void)hw_close(pec->phw);}
     ec_log(10, __func__, "freeing frame pool\n");

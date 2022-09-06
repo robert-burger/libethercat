@@ -73,7 +73,7 @@ typedef struct ec_message_pool {
     osal_mutex_t lock;              //!< pool lock
 } ec_message_pool_t;
 
-typedef struct ec_async_message_loop {
+typedef struct ec_async_loop {
     ec_message_pool_t avail;        //!< empty messages
     ec_message_pool_t exec;         //!< execute messages
 
@@ -82,7 +82,7 @@ typedef struct ec_async_message_loop {
     struct ec *pec;                 //!< ethercat master pointer
 
     osal_timer_t next_check_group;
-} ec_async_message_loop_t;
+} ec_async_loop_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,7 +98,7 @@ extern "C" {
  * \retval 0            On success
  * \retval error_code   On error
  */
-int ec_async_message_loop_create(ec_async_message_loop_t **ppaml, 
+int ec_async_loop_create(ec_async_loop_t **ppaml, 
         struct ec *pec);
 
 //! Destroys async message loop.
@@ -108,14 +108,14 @@ int ec_async_message_loop_create(ec_async_message_loop_t **ppaml,
  * \retval 0            On success
  * \retval error_code   On error
  */
-int ec_async_message_pool_destroy(ec_async_message_loop_t *paml);
+int ec_async_loop_destroy(ec_async_loop_t *paml);
 
 //! Execute asynchronous check group.
 /*!
  * \param[in] paml  Handle to async message loop.
  * \param[in] gid   EtherCAT process data group id to check.
  */
-void ec_async_check_group(ec_async_message_loop_t *paml, osal_uint16_t gid);
+void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid);
 
 #ifdef __cplusplus
 }
