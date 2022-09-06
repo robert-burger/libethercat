@@ -228,8 +228,9 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    osal_uint64_t timeout = nsec;
     osal_timer_t timer;
-    osal_timer_init(&timer, nsec);
+    osal_timer_init(&timer, timeout);
 
     do {
         (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
@@ -266,8 +267,9 @@ int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_ui
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    osal_uint64_t timeout = nsec;
     osal_timer_t timer;
-    osal_timer_init(&timer, nsec);
+    osal_timer_init(&timer, timeout);
 
     do {
         (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
@@ -304,8 +306,9 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
 
+    osal_uint64_t timeout = nsec;
     osal_timer_t timer;
-    osal_timer_init(&timer, nsec);
+    osal_timer_init(&timer, timeout);
 
     // wait for send mailbox available 
     ret = ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec);
