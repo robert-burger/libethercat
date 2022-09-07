@@ -84,6 +84,8 @@ typedef struct PACKED ec_mbx_buffer {
     ec_data_t      mbx_data;    //!< \brief mailbox data
 } PACKED ec_mbx_buffer_t;
 
+#define LEC_MBX_MAX_ENTRIES 16
+
 typedef struct ec_mbx {
     osal_uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
     osal_mutex_t sync_mutex;    //!< \brief Sync mutex for handler flags.
@@ -110,9 +112,11 @@ typedef struct ec_mbx {
                                  */
 
 
-    pool_t *message_pool_recv_free; 
-    pool_t *message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
-    pool_t *message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
+    pool_entry_t mp_recv_free_entries[LEC_MBX_MAX_ENTRIES];
+    pool_entry_t mp_send_free_entries[LEC_MBX_MAX_ENTRIES];
+    pool_t message_pool_recv_free; 
+    pool_t message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
+    pool_t message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
     ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
     ec_soe_t soe;               //!< \brief Structure for Servodrive over EtherCAT mailbox.
@@ -198,10 +202,10 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave);
 int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag);
 
 #define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) \
-    pool_get((pec)->slaves[(slave)].mbx.message_pool_recv_free, &(entry), (timeout))
+    pool_get(&(pec)->slaves[(slave)].mbx.message_pool_recv_free, &(entry), (timeout))
 
 #define ec_mbx_get_free_send_buffer_old(pec, slave, entry, timeout, lock) \
-    pool_get((pec)->slaves[(slave)].mbx.message_pool_send_free, &(entry), (timeout))
+    pool_get(&(pec)->slaves[(slave)].mbx.message_pool_send_free, &(entry), (timeout))
 
 //! \brief Get free mailbox send buffer from slaves send message pool.
 /*!
@@ -219,10 +223,10 @@ int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag);
 int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, osal_timer_t *timeout);
 
 #define ec_mbx_return_free_send_buffer(pec, slave, entry) \
-    pool_put((pec)->slaves[(slave)].mbx.message_pool_send_free, (entry)) 
+    pool_put(&(pec)->slaves[(slave)].mbx.message_pool_send_free, (entry)) 
 
 #define ec_mbx_return_free_recv_buffer(pec, slave, entry) \
-    pool_put((pec)->slaves[(slave)].mbx.message_pool_recv_free, (entry))
+    pool_put(&(pec)->slaves[(slave)].mbx.message_pool_recv_free, (entry))
 
 
 #ifdef __cplusplus

@@ -73,7 +73,10 @@ typedef struct ec_message_pool {
     osal_mutex_t lock;              //!< pool lock
 } ec_message_pool_t;
 
+#define EC_ASYNC_MESSAGE_LOOP_COUNT 100
 typedef struct ec_async_loop {
+    ec_message_entry_t entries[EC_ASYNC_MESSAGE_LOOP_COUNT];
+
     ec_message_pool_t avail;        //!< empty messages
     ec_message_pool_t exec;         //!< execute messages
 
@@ -87,8 +90,6 @@ typedef struct ec_async_loop {
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define EC_ASYNC_MESSAGE_LOOP_COUNT 100
 
 //! creates a new async message loop
 /*!

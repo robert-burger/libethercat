@@ -37,7 +37,7 @@
 #include "libethercat/common.h"
 
 typedef struct ec_foe {
-    pool_t *recv_pool;
+    pool_t recv_pool;
 } ec_foe_t;
 
 #define MAX_FILE_NAME_SIZE  512u //!< file name max size

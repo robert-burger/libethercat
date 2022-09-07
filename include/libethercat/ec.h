@@ -130,7 +130,8 @@ typedef struct ec {
                                      * is started.
                                      */
 
-    pool_t *pool;                   //!< datagram pool
+    pool_entry_t dg_entries[100];
+    pool_t pool;                    //!< datagram pool
                                     /*!<
                                      * All EtherCAT datagrams will be pre-
                                      * allocated and available in the datagram

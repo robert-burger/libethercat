@@ -57,8 +57,8 @@ typedef struct hw {
 
     osal_mutex_t hw_lock;           //!< transmit lock
 
-    pool_t *tx_high;                //!< high priority datagrams
-    pool_t *tx_low;                 //!< low priority datagrams
+    pool_t tx_high;                 //!< high priority datagrams
+    pool_t tx_low;                  //!< low priority datagrams
 
     pool_entry_t *tx_send[256];     //!< sent datagrams
 } hw_t;   

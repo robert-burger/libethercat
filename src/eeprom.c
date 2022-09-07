@@ -480,7 +480,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                     case EC_EEPROM_CAT_NOP:
                         break;
                     case EC_EEPROM_CAT_STRINGS: {
-                        do_eeprom_log(100, "EEPROM_STRINGS", "slave %2d: cat_len %d\n", slave, cat_len);
+                        do_eeprom_log(10, "EEPROM_STRINGS", "slave %2d: cat_len %d\n", slave, cat_len);
 
                         // cppcheck-suppress misra-c2012-21.3
                         osal_uint8_t *buf = (osal_uint8_t *)ec_malloc((cat_len * 2u) + 1u);
@@ -492,7 +492,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         slv->eeprom.strings_cnt = buf[local_offset];
                         local_offset++;
 
-                        do_eeprom_log(100, "EEPROM_STRINGS", "slave %2d: stored strings %d\n", slave, slv->eeprom.strings_cnt);
+                        do_eeprom_log(10, "EEPROM_STRINGS", "slave %2d: stored strings %d\n", slave, slv->eeprom.strings_cnt);
 
                         if (!slv->eeprom.strings_cnt) {
                             // cppcheck-suppress misra-c2012-21.3
@@ -514,7 +514,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                             slv->eeprom.strings[i][string_len] = '\0';
 
-                            do_eeprom_log(100, "EEPROM_STRINGS", 
+                            do_eeprom_log(10, "EEPROM_STRINGS", 
                                     "          string %2d, length %2d : %s\n", 
                                     i, string_len, slv->eeprom.strings[i]);
                             if (local_offset > (cat_len * 2u)) {
@@ -530,14 +530,14 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_DATATYPES:
-                        do_eeprom_log(100, "EEPROM_DATATYPES", "slave %2d:\n", slave);
+                        do_eeprom_log(10, "EEPROM_DATATYPES", "slave %2d:\n", slave);
                         break;
                     case EC_EEPROM_CAT_GENERAL: {
-                        do_eeprom_log(100, "EEPROM_GENERAL", "slave %2d:\n", slave);
+                        do_eeprom_log(10, "EEPROM_GENERAL", "slave %2d:\n", slave);
 
                         (void)ec_read_eeprom(cat_offset+2, slv->eeprom.general);
 
-                        do_eeprom_log(100, "EEPROM_GENERAL", 
+                        do_eeprom_log(10, "EEPROM_GENERAL", 
                                 "          group_idx %d, img_idx %d, "
                                 "order_idx %d, name_idx %d\n", 
                                 slave, slv->eeprom.general.group_idx,
@@ -547,7 +547,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_FMMU: {
-                        do_eeprom_log(100, "EEPROM_FMMU", "slave %2d: entries %d\n", 
+                        do_eeprom_log(10, "EEPROM_FMMU", "slave %2d: entries %d\n", 
                                 slave, cat_len);
 
                         // skip cat type and len
@@ -578,7 +578,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     slv->fmmu[fmmu_idx].type = tmp[i];
                                     slv->eeprom.fmmus[fmmu_idx].type = tmp[i];
 
-                                    do_eeprom_log(100, "EEPROM_FMMU", "          fmmu%d, type %d\n", fmmu_idx, tmp[i]);
+                                    do_eeprom_log(10, "EEPROM_FMMU", "          fmmu%d, type %d\n", fmmu_idx, tmp[i]);
                                 }
 
                                 i++;
@@ -590,7 +590,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_SM: {
-                        do_eeprom_log(100, "EEPROM_SM", "slave %2d: entries %d\n", 
+                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %d\n", 
                                 slave, cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u));
 
                         // skip cat type and len
@@ -631,18 +631,18 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                 slv->sm[j].flags = (slv->eeprom.sms[j].activate << 16)
                                     | slv->eeprom.sms[j].ctrl_reg;
 
-                                do_eeprom_log(100, "EEPROM_SM", 
+                                do_eeprom_log(10, "EEPROM_SM", 
                                         "          sm%d adr 0x%X, len %d, flags "
                                         "0x%X\n", j, slv->sm[j].adr, slv->sm[j].len, 
                                         slv->sm[j].flags);
                             } else {
-                                do_eeprom_log(100, "EEPROM_SM", "          sm%d adr "
+                                do_eeprom_log(10, "EEPROM_SM", "          sm%d adr "
                                         "0x%X, len %d, flags 0x%X\n", j, 
                                         slv->eeprom.sms[j].adr, slv->eeprom.sms[j].len,
                                         (slv->eeprom.sms[j].activate << 16) | 
                                         slv->eeprom.sms[j].ctrl_reg);
 
-                                do_eeprom_log(100, "EEPROM_SM", 
+                                do_eeprom_log(10, "EEPROM_SM", 
                                         "          sm%d already set by user\n", j);
                             }
 
@@ -678,7 +678,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     (osal_uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
                             local_offset += (osal_size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
 
-                            do_eeprom_log(100, "EEPROM_TXPDO", "          0x%04X, entries %d\n",
+                            do_eeprom_log(10, "EEPROM_TXPDO", "          0x%04X, entries %d\n",
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
@@ -695,7 +695,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                                     local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2u;
 
-                                    do_eeprom_log(100, "EEPROM_TXPDO", 
+                                    do_eeprom_log(10, "EEPROM_TXPDO", 
                                             "          0x%04X:%2d -> 0x%04X\n",
                                             pdo->pdo_index, j, entry->entry_index);
                                 }
@@ -707,7 +707,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_RXPDO: {
-                        do_eeprom_log(100, "EEPROM_RXPDO", "slave %2d:\n", slave);
+                        do_eeprom_log(10, "EEPROM_RXPDO", "slave %2d:\n", slave);
 
                         // skip cat type and len
                         osal_uint32_t j = 0u;
@@ -733,7 +733,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     (osal_uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
                             local_offset += (osal_size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
 
-                            do_eeprom_log(100, "EEPROM_RXPDO", "          0x%04X, entries %d\n",
+                            do_eeprom_log(10, "EEPROM_RXPDO", "          0x%04X, entries %d\n",
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
@@ -750,7 +750,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                                     local_offset += sizeof(ec_eeprom_cat_pdo_entry_t) / 2u;
 
-                                    do_eeprom_log(100, "EEPROM_RXPDO", 
+                                    do_eeprom_log(10, "EEPROM_RXPDO", 
                                             "          0x%04X:%2d -> 0x%04X\n",
                                             pdo->pdo_index, j, entry->entry_index);
                                 }
@@ -765,7 +765,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         osal_uint32_t j = 0u;
                         osal_size_t local_offset = cat_offset + 2u;
 
-                        do_eeprom_log(100, "EEPROM_DC", "slave %2d:\n", slave);
+                        do_eeprom_log(10, "EEPROM_DC", "slave %2d:\n", slave);
 
                         // freeing existing dcs ...
                         if (slv->eeprom.dcs > 0) {
@@ -786,7 +786,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     (osal_uint8_t *)dc, EC_EEPROM_CAT_DC_LEN);
                             local_offset += (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
 
-                            do_eeprom_log(100, "EEPROM_DC", "          cycle_time_0 %d, "
+                            do_eeprom_log(10, "EEPROM_DC", "          cycle_time_0 %d, "
                                     "shift_time_0 %d, shift_time_1 %d, "
                                     "sync_0_cycle_factor %d, sync_1_cycle_factor %d, "
                                     "assign_active %d\n", 

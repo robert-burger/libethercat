@@ -161,10 +161,10 @@ void ec_eoe_init(ec_t *pec, osal_uint16_t slave) {
 
     osal_mutex_init(&slv->mbx.eoe.lock, NULL);
 
-    (void)pool_open(&slv->mbx.eoe.recv_pool, 0, 1518);
-    (void)pool_open(&slv->mbx.eoe.response_pool, 0, 1518);
-    (void)pool_open(&slv->mbx.eoe.eth_frames_free_pool, 128, sizeof(eth_frame_t));
-    (void)pool_open(&slv->mbx.eoe.eth_frames_recv_pool, 0, sizeof(eth_frame_t));
+    (void)pool_open(&slv->mbx.eoe.recv_pool, 0, NULL);
+    (void)pool_open(&slv->mbx.eoe.response_pool, 0, NULL);
+    (void)pool_open(&slv->mbx.eoe.eth_frames_free_pool, 128, &slv->mbx.eoe.free_frames[0]);
+    (void)pool_open(&slv->mbx.eoe.eth_frames_recv_pool, 0, NULL);
 
     osal_semaphore_init(&slv->mbx.eoe.send_sync, 0, 0);
 }
@@ -186,10 +186,10 @@ void ec_eoe_deinit(ec_t *pec, osal_uint16_t slave) {
     osal_mutex_lock(&slv->mbx.eoe.lock);
 
     osal_semaphore_destroy(&slv->mbx.eoe.send_sync);
-    (void)pool_close(slv->mbx.eoe.eth_frames_recv_pool);
-    (void)pool_close(slv->mbx.eoe.eth_frames_free_pool);
-    (void)pool_close(slv->mbx.eoe.response_pool);
-    (void)pool_close(slv->mbx.eoe.recv_pool);
+    (void)pool_close(&slv->mbx.eoe.eth_frames_recv_pool);
+    (void)pool_close(&slv->mbx.eoe.eth_frames_free_pool);
+    (void)pool_close(&slv->mbx.eoe.response_pool);
+    (void)pool_close(&slv->mbx.eoe.recv_pool);
     
     osal_mutex_unlock(&slv->mbx.eoe.lock);
     osal_mutex_destroy(&slv->mbx.eoe.lock);
@@ -217,7 +217,7 @@ static void ec_eoe_wait_response(ec_t *pec, osal_uint16_t slave, pool_entry_t **
     osal_timer_t timeout;
     osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
-    (void)pool_get(slv->mbx.eoe.response_pool, pp_entry, &timeout);
+    (void)pool_get(&slv->mbx.eoe.response_pool, pp_entry, &timeout);
 }
 
 //! \brief Wait for EoE message received from slave.
@@ -242,7 +242,7 @@ static void ec_eoe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     osal_timer_t timeout;
     osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
-    (void)pool_get(slv->mbx.eoe.recv_pool, pp_entry, &timeout);
+    (void)pool_get(&slv->mbx.eoe.recv_pool, pp_entry, &timeout);
 }
 
 //! \brief Enqueue EoE message received from slave.
@@ -268,9 +268,9 @@ void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
             write_buf->eoe_hdr.frame_type);
     
     if ((write_buf->eoe_hdr.frame_type == EOE_FRAME_TYPE_SET_IP_ADDRESS_RESPONSE) != 0u) {
-        pool_put(slv->mbx.eoe.response_pool, p_entry);
+        pool_put(&slv->mbx.eoe.response_pool, p_entry);
     } else {
-        pool_put(slv->mbx.eoe.recv_pool, p_entry);
+        pool_put(&slv->mbx.eoe.recv_pool, p_entry);
 
         if (write_buf->eoe_hdr.last_fragment) {
             ec_log(100, __func__, "slave %2d: was last fragment\n", slave);
@@ -466,9 +466,9 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     pool_entry_t *p_entry = NULL;
     pool_entry_t *p_eth_entry = NULL;
 
-    if (pool_get(slv->mbx.eoe.recv_pool, &p_entry, NULL) != EC_OK) { // get first received EoE frame, should be start of ethernet frame
+    if (pool_get(&slv->mbx.eoe.recv_pool, &p_entry, NULL) != EC_OK) { // get first received EoE frame, should be start of ethernet frame
         ret = EC_ERROR_UNAVAILABLE; // no error here, but no frame to process
-    } else if (pool_get(slv->mbx.eoe.eth_frames_free_pool, &p_eth_entry, NULL) != EC_OK) {
+    } else if (pool_get(&slv->mbx.eoe.eth_frames_free_pool, &p_eth_entry, NULL) != EC_OK) {
         ret = EC_ERROR_OUT_OF_MEMORY;
     } else {
         // cppcheck-suppress misra-c2012-11.3
@@ -511,9 +511,9 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     if (read_buf->eoe_hdr.last_fragment) {
                         if (pec->tun_fd > 0) {
                             write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
-                            pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
+                            pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                         } else {
-                            pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+                            pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                         }
 
                         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
@@ -532,9 +532,9 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     eoe_debug_print("recv eth frame", eth_frame->frame_data, frame_offset);
 
                     write(pec->tun_fd, eth_frame->frame_data, frame_offset);
-                    pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
+                    pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
-                    pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+                    pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                 }
 
                 p_eth_entry = NULL;
@@ -544,7 +544,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     }
 
     if (p_eth_entry != NULL) {
-        pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+        pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
     }
         
     if (p_entry != NULL) {        

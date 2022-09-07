@@ -964,7 +964,7 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
         // eeprom logging level
         pec->eeprom_log         = eeprom_log;
 
-        ret = pool_open(&pec->pool, 100, 1518);
+        ret = pool_open(&pec->pool, 100, &pec->dg_entries[0]);
     }
 
     if (ret == EC_OK) {
@@ -975,6 +975,8 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
         ret = ec_async_loop_create(&pec->async_loop, pec);
     }
 
+    ec_log(1, __func__, "libethercat misra-2012-libosal-no-alloc\n");
+
     // destruct everything if something failed
     if (ret != EC_OK) {
         if (pec != NULL) {
@@ -983,7 +985,7 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
                 ec_log(1, __func__, "hw_close failed with %d\n", local_ret);
             }
             
-            local_ret = pool_close(pec->pool);
+            local_ret = pool_close(&pec->pool);
             if (local_ret != EC_OK) {
                 ec_log(1, __func__, "pool_close failed with %d\n", local_ret);
             }
@@ -1017,7 +1019,7 @@ int ec_close(ec_t *pec) {
     ec_log(10, __func__, "closing hardware handle\n");
     if (pec->phw != NULL) { (void)hw_close(pec->phw);}
     ec_log(10, __func__, "freeing frame pool\n");
-    if (pec->pool != NULL) { (void)pool_close(pec->pool); }
+    (void)pool_close(&pec->pool);
 
     ec_log(10, __func__, "destroying pd_groups\n");
     ec_index_deinit(&pec->idx_q);
@@ -1078,7 +1080,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
     if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
         ec_log(1, "EC_TRANSCEIVE", "error getting ethercat index\n");
         ret = EC_ERROR_OUT_OF_INDICES;
-    } else if (pool_get(pec->pool, &p_entry, NULL) != EC_OK) {
+    } else if (pool_get(&pec->pool, &p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, p_idx);
         ec_log(1, "EC_TRANSCEIVE", "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
@@ -1097,7 +1099,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         p_entry->user_arg = p_idx;
 
         // queue frame and trigger tx
-        pool_put(pec->phw->tx_low, p_entry);
+        pool_put(&pec->phw->tx_low, p_entry);
 
         // send frame immediately if in sync mode
         if (pec->tx_sync != 0) {
@@ -1122,7 +1124,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             }
         }
 
-        pool_put(pec->pool, p_entry);
+        pool_put(&pec->pool, p_entry);
         ec_index_put(&pec->idx_q, p_idx);
     }
 
@@ -1133,7 +1135,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
 static void cb_no_reply(void *user_arg, struct pool_entry *p) {
     // cppcheck-suppress misra-c2012-11.5
     idx_entry_t *entry = (idx_entry_t *)user_arg;
-    pool_put(entry->pec->pool, p);
+    pool_put(&entry->pec->pool, p);
     ec_index_put(&entry->pec->idx_q, entry);
 }
 
@@ -1159,7 +1161,7 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
     if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
         ec_log(1, "EC_TRANSMIT_NO_REPLY", "error getting ethercat index\n");
         ret = EC_ERROR_OUT_OF_INDICES;
-    } else if (pool_get(pec->pool, &p_entry, NULL) != EC_OK) {
+    } else if (pool_get(&pec->pool, &p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, p_idx);
         ec_log(1, "EC_TRANSMIT_NO_REPLY", "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
@@ -1180,7 +1182,7 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         p_entry->user_arg = p_idx;
 
         // queue frame and return, we don't care about an answer
-        pool_put(pec->phw->tx_low, p_entry);
+        pool_put(&pec->phw->tx_low, p_entry);
 
         // send frame immediately if in sync mode
         if (pec->tx_sync != 0) {
@@ -1212,7 +1214,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
     } else if (ec_index_get(&pec->idx_q, &pd->p_idx) != EC_OK) {
         ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting ethercat index\n");
         ret = EC_ERROR_OUT_OF_INDICES;
-    } else if (pool_get(pec->pool, &pd->p_entry, NULL) != EC_OK) {
+    } else if (pool_get(&pec->pool, &pd->p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, pd->p_idx);
         ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
@@ -1241,7 +1243,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
         pd->p_entry->user_arg = pd->p_idx;
 
         // queue frame and trigger tx
-        pool_put(pec->phw->tx_high, pd->p_entry);
+        pool_put(&pec->phw->tx_high, pd->p_entry);
     }
 
     return ret;
@@ -1326,7 +1328,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
             }
         }
 
-        pool_put(pec->pool, pd->p_entry);
+        pool_put(&pec->pool, pd->p_entry);
         ec_index_put(&pec->idx_q, pd->p_idx);
 
         pd->p_entry = NULL;
@@ -1374,7 +1376,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
         if (ec_index_get(&pec->idx_q, &pec->dc.p_idx_dc) != EC_OK) {
             ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
             ret = EC_ERROR_OUT_OF_INDICES;
-        } else if (pool_get(pec->pool, &pec->dc.p_de_dc, NULL) != EC_OK) {
+        } else if (pool_get(&pec->pool, &pec->dc.p_de_dc, NULL) != EC_OK) {
             ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
             ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
@@ -1402,7 +1404,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
             pec->dc.p_de_dc->user_arg = pec->dc.p_idx_dc;
 
             // queue frame and trigger tx
-            pool_put(pec->phw->tx_high, pec->dc.p_de_dc);
+            pool_put(&pec->phw->tx_high, pec->dc.p_de_dc);
         }
     }
       
@@ -1489,7 +1491,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
                     if (ec_index_get(&pec->idx_q, &p_idx_dc_sto) != EC_OK) {
                         ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
                         ret = EC_ERROR_OUT_OF_INDICES;
-                    } else if (pool_get(pec->pool, &p_entry_dc_sto, NULL) != EC_OK) {
+                    } else if (pool_get(&pec->pool, &p_entry_dc_sto, NULL) != EC_OK) {
                         ec_index_put(&pec->idx_q, p_idx_dc_sto);
                         ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
                         ret = EC_ERROR_OUT_OF_DATAGRAMS;
@@ -1512,13 +1514,13 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
                         p_entry_dc_sto->user_arg = p_idx_dc_sto;
 
                         // queue frame and trigger tx
-                        pool_put(pec->phw->tx_low, p_entry_dc_sto);
+                        pool_put(&pec->phw->tx_low, p_entry_dc_sto);
                     }
                 }
             }
         }
 
-        pool_put(pec->pool, pec->dc.p_de_dc);
+        pool_put(&pec->pool, pec->dc.p_de_dc);
         ec_index_put(&pec->idx_q, pec->dc.p_idx_dc);
 
         pec->dc.p_de_dc = NULL;
@@ -1542,7 +1544,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
     if (ec_index_get(&pec->idx_q, &pec->p_idx_state) != EC_OK) {
         ec_log(1, __func__, "error getting ethercat index\n");
         ret = EC_ERROR_OUT_OF_INDICES;
-    } else if (pool_get(pec->pool, &pec->p_de_state, NULL) != EC_OK) {
+    } else if (pool_get(&pec->pool, &pec->p_de_state, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, pec->p_idx_state);
         ec_log(1, __func__, "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
@@ -1560,7 +1562,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
         pec->p_de_state->user_arg = pec->p_idx_state;
 
         // queue frame and trigger tx
-        pool_put(pec->phw->tx_high, pec->p_de_state);
+        pool_put(&pec->phw->tx_high, pec->p_de_state);
     }
 
     return ret;
@@ -1619,7 +1621,7 @@ int ec_receive_brd_ec_state(ec_t *pec, osal_timer_t *timeout) {
             }
         }
 
-        pool_put(pec->pool, pec->p_de_state);
+        pool_put(&pec->pool, pec->p_de_state);
         ec_index_put(&pec->idx_q, pec->p_idx_state);
     }
 

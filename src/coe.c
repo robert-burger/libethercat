@@ -243,7 +243,7 @@ void ec_coe_init(ec_t *pec, osal_uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    (void)pool_open(&slv->mbx.coe.recv_pool, 0, 1518);
+    (void)pool_open(&slv->mbx.coe.recv_pool, 0, NULL);
     osal_mutex_init(&slv->mbx.coe.lock, NULL);
                 
     TAILQ_INIT(&slv->mbx.coe.emergencies);
@@ -264,7 +264,7 @@ void ec_coe_deinit(ec_t *pec, osal_uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
     
     osal_mutex_destroy(&slv->mbx.coe.lock);
-    (void)pool_close(slv->mbx.coe.recv_pool);
+    (void)pool_close(&slv->mbx.coe.recv_pool);
 }
 
 //! \brief Wait for CoE message received from slave.
@@ -289,7 +289,7 @@ static void ec_coe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     osal_timer_t timeout;
     osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
-    (void)pool_get(slv->mbx.coe.recv_pool, pp_entry, &timeout);
+    (void)pool_get(&slv->mbx.coe.recv_pool, pp_entry, &timeout);
 }
 
 //! \brief Enqueue CoE message received from slave.
@@ -314,7 +314,7 @@ void ec_coe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     if (coe_hdr->service == EC_COE_EMERGENCY) {
         ec_coe_emergency_enqueue(pec, slave, p_entry);
     } else if ((coe_hdr->service >= 0x01u) && (coe_hdr->service <= 0x08u)) {
-        pool_put(slv->mbx.coe.recv_pool, p_entry);
+        pool_put(&slv->mbx.coe.recv_pool, p_entry);
     } else {
         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
     }

@@ -40,6 +40,8 @@
 
 #include "libethercat/common.h"
 
+#define LEC_MAX_POOL_DATA_SIZE  1600
+
 //! \brief Pool queue entry. 
 typedef struct pool_entry {
     void (*user_cb)(void *user_arg, struct pool_entry *p);  //!< \brief User callback.
@@ -47,8 +49,7 @@ typedef struct pool_entry {
 
     TAILQ_ENTRY(pool_entry) qh;                             //!< \brief Queue handle of pool objects.
     
-    osal_uint8_t *data;                                     //!< \brief Data entry.
-    osal_size_t data_size;
+    osal_uint8_t data[LEC_MAX_POOL_DATA_SIZE];              //!< \brief Data entry.
 } pool_entry_t;
 
 //! queue head for pool queue
@@ -73,7 +74,7 @@ extern "C" {
  *
  * \return EC_OK or error code
  */
-int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size);
+int pool_open(pool_t *pp, osal_size_t cnt, pool_entry_t *entries);
 
 //! \brief Destroys a datagram pool.
 /*!

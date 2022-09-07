@@ -100,7 +100,7 @@ void ec_foe_init(ec_t *pec, osal_uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    if (pool_open(&slv->mbx.foe.recv_pool, 0, 1518) != EC_OK) {
+    if (pool_open(&slv->mbx.foe.recv_pool, 0, NULL) != EC_OK) {
         ec_log(1, __func__, "opening FoE receive pool failed!\n");
     }
 }
@@ -118,7 +118,7 @@ void ec_foe_deinit(ec_t *pec, osal_uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    if (pool_close(slv->mbx.foe.recv_pool) != EC_OK) {
+    if (pool_close(&slv->mbx.foe.recv_pool) != EC_OK) {
         ec_log(1, __func__, "closing FoE receive pool failed!\n");
     }
 }
@@ -146,7 +146,7 @@ static void ec_foe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
     // ignore return value here, may fail if no new message are currently available
-    (void)pool_get(slv->mbx.foe.recv_pool, pp_entry, &timeout);
+    (void)pool_get(&slv->mbx.foe.recv_pool, pp_entry, &timeout);
 }
 
 //! \brief Enqueue FoE message received from slave.
@@ -164,7 +164,7 @@ void ec_foe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    pool_put(slv->mbx.foe.recv_pool, p_entry);
+    pool_put(&slv->mbx.foe.recv_pool, p_entry);
 }
 
 #define MSG_BUF_LEN     256u

@@ -57,6 +57,9 @@ typedef struct PACKED ec_eeprom_cat_general {
     
 //------------------ Category PDO -------------------
 
+#define LEC_EEPROM_CAT_PDO_MAX          128
+#define LEC_EEPROM_CAT_PDO_ENTRIES_MAX   32
+
 typedef struct PACKED ec_eeprom_cat_pdo_entry {
     osal_uint16_t entry_index;       //!< PDO entry index (CoE)
     osal_uint8_t sub_index;          //!< PDO entry subindex 
@@ -78,7 +81,7 @@ typedef struct ec_eeprom_cat_pdo {
 #define EC_EEPROM_CAT_PDO_LEN   (osal_size_t)8u
     };
 
-    ec_eeprom_cat_pdo_entry_t *entries;
+    ec_eeprom_cat_pdo_entry_t entries[LEC_EEPROM_CAT_PDO_ENTRIES_MAX];
                                 //!< PDO entries, (n_entry count)
     
     TAILQ_ENTRY(ec_eeprom_cat_pdo) qh;
@@ -150,6 +153,9 @@ typedef struct eeprom_info {
 
     osal_uint8_t fmmus_cnt;                 //!< count of fmmu settings    
     ec_eeprom_cat_fmmu_t *fmmus;            //!< array of fmmu settings
+
+    ec_eeprom_cat_pdo_t free_pdos[LEC_EEPROM_CAT_PDO_MAX];
+    struct ec_eeprom_cat_pdo_queue free_pdo_queue;
 
     struct ec_eeprom_cat_pdo_queue txpdos;  //!< queue with TXPDOs
     struct ec_eeprom_cat_pdo_queue rxpdos;  //!< queue with RXPDOs

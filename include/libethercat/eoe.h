@@ -48,11 +48,12 @@ typedef struct ec_eoe_slave_config {
 } ec_eoe_slave_config_t;
 
 typedef struct ec_eoe {
-    pool_t *recv_pool;
-    pool_t *response_pool;
+    pool_t recv_pool;
+    pool_t response_pool;
 
-    pool_t *eth_frames_free_pool;
-    pool_t *eth_frames_recv_pool;
+    pool_entry_t free_frames[128];
+    pool_t eth_frames_free_pool;
+    pool_t eth_frames_recv_pool;
 
     osal_mutex_t lock;
     osal_semaphore_t send_sync;

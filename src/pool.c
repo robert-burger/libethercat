@@ -52,36 +52,24 @@
  *
  * \return EC_OK or error code
  */
-int pool_open(pool_t **pp, osal_size_t cnt, osal_size_t data_size) {
+int pool_open(pool_t *pp, osal_size_t cnt, pool_entry_t *entries) {
     assert(pp != NULL);
     int ret = EC_OK;
 
-    // cppcheck-suppress misra-c2012-21.3
-    (*pp) = (pool_t *)ec_malloc(sizeof(pool_t));
-    if (!(*pp)) {
-        ret = EC_ERROR_OUT_OF_MEMORY;
-    } else {
-        osal_mutex_init(&(*pp)->_pool_lock, NULL);
-        osal_mutex_lock(&(*pp)->_pool_lock);
+    osal_mutex_init(&pp->_pool_lock, NULL);
+    osal_mutex_lock(&pp->_pool_lock);
 
-        osal_semaphore_init(&(*pp)->avail_cnt, 0, cnt);
-        TAILQ_INIT(&(*pp)->avail);
+    osal_semaphore_init(&pp->avail_cnt, 0, cnt);
+    TAILQ_INIT(&pp->avail);
 
-        osal_size_t i;
-        for (i = 0; i < cnt; ++i) {
-            // cppcheck-suppress misra-c2012-21.3
-            pool_entry_t *entry = (pool_entry_t *)ec_malloc(sizeof(pool_entry_t));
-            (void)memset(entry, 0, sizeof(pool_entry_t));
-
-            entry->data_size = data_size;
-            // cppcheck-suppress misra-c2012-21.3
-            entry->data = (void *)ec_malloc(data_size);
-            (void)memset(entry->data, 0, data_size);
-            TAILQ_INSERT_TAIL(&(*pp)->avail, entry, qh);
-        }
-
-        osal_mutex_unlock(&(*pp)->_pool_lock);
+    osal_size_t i;
+    for (i = 0; i < cnt; ++i) {
+        // cppcheck-suppress misra-c2012-21.3
+        pool_entry_t *entry = &entries[i];
+        TAILQ_INSERT_TAIL(&pp->avail, entry, qh);
     }
+
+    osal_mutex_unlock(&pp->_pool_lock);
 
     return ret;
 }
@@ -100,15 +88,6 @@ int pool_close(pool_t *pp) {
     pool_entry_t *entry = TAILQ_FIRST(&pp->avail);
     while (entry != NULL) {
         TAILQ_REMOVE(&pp->avail, entry, qh);
-        if (entry->data != NULL) { 
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(entry->data); 
-            entry->data = NULL; 
-        }
-
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(entry);
-
         entry = TAILQ_FIRST(&pp->avail);
     }
     
@@ -116,9 +95,6 @@ int pool_close(pool_t *pp) {
     osal_mutex_destroy(&pp->_pool_lock);
     
     osal_semaphore_destroy(&pp->avail_cnt);
-
-    // cppcheck-suppress misra-c2012-21.3
-    ec_free(pp);
     
     return EC_OK;
 }

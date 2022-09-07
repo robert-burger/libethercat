@@ -83,7 +83,7 @@ void ec_soe_init(ec_t *pec, osal_uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    if (pool_open(&slv->mbx.soe.recv_pool, 0, 1518) != EC_OK) {
+    if (pool_open(&slv->mbx.soe.recv_pool, 0, NULL) != EC_OK) {
         ec_log(1, __func__, "pool_open failed!\n");
     }
 }
@@ -101,7 +101,7 @@ void ec_soe_deinit(ec_t *pec, osal_uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    if (pool_close(slv->mbx.soe.recv_pool) != EC_OK) {
+    if (pool_close(&slv->mbx.soe.recv_pool) != EC_OK) {
         ec_log(1, __func__, "pool_close failed!\n");
     }
 }
@@ -129,7 +129,7 @@ static void ec_soe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
 
     // Do not care about return value here. In this case there are no new SoE messages.
-    (void)pool_get(slv->mbx.soe.recv_pool, pp_entry, &timeout);
+    (void)pool_get(&slv->mbx.soe.recv_pool, pp_entry, &timeout);
 }
 
 //! \brief Enqueue SoE message received from slave.
@@ -192,7 +192,7 @@ void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
 
         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
     } else {
-        pool_put(slv->mbx.soe.recv_pool, p_entry);
+        pool_put(&slv->mbx.soe.recv_pool, p_entry);
     }
 }
 

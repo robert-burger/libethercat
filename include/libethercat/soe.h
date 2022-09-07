@@ -38,7 +38,7 @@
 #include "libethercat/common.h"
 
 typedef struct ec_soe {
-    pool_t *recv_pool;
+    pool_t recv_pool;
     osal_mutex_t lock;
 } ec_soe_t;
 

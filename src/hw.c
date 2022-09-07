@@ -374,8 +374,8 @@ int hw_open(hw_t **pphw, const osal_char_t *devname, int prio, int cpumask, int 
     
     (*pphw)->mmap_packets = mmap_packets;
 
-    (void)pool_open(&(*pphw)->tx_high, 0, 1518);
-    (void)pool_open(&(*pphw)->tx_low, 0, 1518);
+    (void)pool_open(&(*pphw)->tx_high, 0, NULL);
+    (void)pool_open(&(*pphw)->tx_low, 0, NULL);
 
     ret = internal_hw_open(*pphw, devname);
     }
@@ -414,8 +414,8 @@ int hw_close(hw_t *phw) {
     osal_task_join(&phw->rxthread, NULL);
 
     osal_mutex_lock(&phw->hw_lock);
-    (void)pool_close(phw->tx_high);
-    (void)pool_close(phw->tx_low);
+    (void)pool_close(&phw->tx_high);
+    (void)pool_close(&phw->tx_low);
 
     osal_mutex_unlock(&phw->hw_lock);
     osal_mutex_destroy(&phw->hw_lock);
@@ -446,13 +446,13 @@ static void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             }
 
             osal_size_t size = ec_datagram_length(d);
-            if (entry->data_size < size) {
+            if (LEC_MAX_POOL_DATA_SIZE < size) {
                 ec_log(1, "RX_THREAD",
                         "received idx %d, size %d is to big for pool entry size %d!\n", 
-                        d->idx, size, entry->data_size);
+                        d->idx, size, LEC_MAX_POOL_DATA_SIZE);
             }
 
-            (void)memcpy(entry->data, (osal_uint8_t *)d, min(size, entry->data_size));
+            (void)memcpy(entry->data, (osal_uint8_t *)d, min(size, LEC_MAX_POOL_DATA_SIZE));
 
             if ((entry->user_cb) != NULL) {
                 (*entry->user_cb)(entry->user_arg, entry);
@@ -623,8 +623,7 @@ int hw_tx(hw_t *phw) {
     ec_datagram_t *pdg = ec_datagram_first(pframe);
     ec_datagram_t *pdg_prev = NULL;
 
-    pool_t *pools[] = {
-            phw->tx_high, phw->tx_low};
+    pool_t *pools[] = { &phw->tx_high, &phw->tx_low};
     int pool_idx = 0;
     pool_entry_t *p_entry = NULL;
     ec_datagram_t *p_entry_dg = NULL;

@@ -51,7 +51,7 @@ TAILQ_HEAD(ec_coe_emergency_message_queue, ec_coe_emergency_message_entry);
 typedef struct ec_coe_emergency_message_queue ec_coe_emergency_message_queue_t;
 
 typedef struct ec_coe {
-    pool_t *recv_pool;
+    pool_t recv_pool;
     
     osal_mutex_t lock;          //!< \brief CoE mailbox lock.
                                 /*!<

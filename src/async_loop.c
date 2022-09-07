@@ -268,8 +268,7 @@ int ec_async_loop_create(ec_async_loop_t **ppaml, ec_t *pec) {
         TAILQ_INIT(&(*ppaml)->avail.queue);
 
         for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
-            // cppcheck-suppress misra-c2012-21.3
-            ec_message_entry_t *me = (ec_message_entry_t *)ec_malloc(sizeof(ec_message_entry_t));
+            ec_message_entry_t *me = &(*ppaml)->entries[0];
             (void)memset(me, 0, sizeof(ec_message_entry_t));
             TAILQ_INSERT_TAIL(&(*ppaml)->avail.queue, me, qh);
         }
@@ -311,9 +310,6 @@ int ec_async_loop_destroy(ec_async_loop_t *paml) {
     ec_message_entry_t *me = TAILQ_FIRST(&paml->avail.queue);
     while (me != NULL) {
         TAILQ_REMOVE(&paml->avail.queue, me, qh);
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(me);
-
         me = TAILQ_FIRST(&paml->avail.queue);
     }
     osal_mutex_unlock(&paml->avail.lock);

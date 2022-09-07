@@ -49,10 +49,11 @@ void ec_free(void *ptr) {
 }
 #else
 void *ec_malloc(size_t size) { 
+    ec_log(5, __func__, "size %d doing old-school-malloc!\n", size);
     return malloc(size);
 }
 
 void ec_free(void *ptr) {
-    free(ptr);
+//    free(ptr);
 }
 #endif

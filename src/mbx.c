@@ -79,9 +79,9 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
     if (slv->mbx.handler_running == 0) {
         ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
 
-        (void)pool_open(&slv->mbx.message_pool_recv_free, 1024, slv->sm[MAILBOX_READ].len);
-        (void)pool_open(&slv->mbx.message_pool_send_free, 1024, slv->sm[MAILBOX_WRITE].len);
-        (void)pool_open(&slv->mbx.message_pool_send_queued, 0, slv->sm[MAILBOX_WRITE].len);
+        (void)pool_open(&slv->mbx.message_pool_recv_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_recv_free_entries[0]);
+        (void)pool_open(&slv->mbx.message_pool_send_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_send_free_entries[0]);
+        (void)pool_open(&slv->mbx.message_pool_send_queued, 0, NULL);
 
         osal_mutex_init(&slv->mbx.sync_mutex, NULL);
         osal_binary_semaphore_init(&slv->mbx.sync_sem, NULL);
@@ -150,9 +150,9 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
         osal_binary_semaphore_destroy(&slv->mbx.sync_sem);
         osal_mutex_destroy(&slv->mbx.sync_mutex);
 
-        (void)pool_close(slv->mbx.message_pool_recv_free);
-        (void)pool_close(slv->mbx.message_pool_send_free);
-        (void)pool_close(slv->mbx.message_pool_send_queued);
+        (void)pool_close(&slv->mbx.message_pool_recv_free);
+        (void)pool_close(&slv->mbx.message_pool_send_free);
+        (void)pool_close(&slv->mbx.message_pool_send_queued);
     }
 }
 
@@ -450,7 +450,7 @@ void ec_mbx_enqueue_head(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) 
 
     ec_slave_ptr(slv, pec, slave);
 
-    pool_put_head(slv->mbx.message_pool_send_queued, p_entry);
+    pool_put_head(&slv->mbx.message_pool_send_queued, p_entry);
     
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
@@ -475,7 +475,7 @@ void ec_mbx_enqueue_tail(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) 
 
     ec_slave_ptr(slv, pec, slave);
 
-    pool_put(slv->mbx.message_pool_send_queued, p_entry);
+    pool_put(&slv->mbx.message_pool_send_queued, p_entry);
     
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
@@ -533,15 +533,15 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
         ec_log(100, __func__, "slave %2d: mailbox needs to be read\n", slave);
 
         do {
-            (void)pool_get(slv->mbx.message_pool_recv_free, &p_entry, NULL);
+            (void)pool_get(&slv->mbx.message_pool_recv_free, &p_entry, NULL);
             if (!p_entry) {
                 ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
                 break;
             }
-            (void)memset(p_entry->data, 0, p_entry->data_size);
+            (void)memset(p_entry->data, 0, LEC_MAX_POOL_DATA_SIZE);
 
             if (ec_mbx_receive(pec, slave, p_entry->data, 
-                        min(p_entry->data_size, (osal_size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
+                        min(LEC_MAX_POOL_DATA_SIZE, (osal_size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
                 // cppcheck-suppress misra-c2012-11.3
                 ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
                 ec_log(100, __func__, "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
@@ -597,7 +597,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
 
         // need to send a message to write mailbox
         ec_log(100, __func__, "slave %2d: mailbox needs to be written\n", slave);
-        (void)pool_get(slv->mbx.message_pool_send_queued, &p_entry, NULL);
+        (void)pool_get(&slv->mbx.message_pool_send_queued, &p_entry, NULL);
 
         if (p_entry != NULL) {
             ec_log(100, __func__, "slave %2d: got mailbox buffer to write\n", slave);
@@ -605,7 +605,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
 
             do {
                 ret = ec_mbx_send(pec, slave, p_entry->data, 
-                        min(p_entry->data_size, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
+                        min(LEC_MAX_POOL_DATA_SIZE, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
                 --retry_cnt;
             } while ((ret != EC_OK) && (retry_cnt > 0));
 
@@ -690,11 +690,11 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
 
-    int ret = pool_get(pec->slaves[slave].mbx.message_pool_send_free, pp_entry, timeout);
+    int ret = pool_get(&pec->slaves[slave].mbx.message_pool_send_free, pp_entry, timeout);
     if (ret == EC_OK) {
         (*pp_entry)->user_cb = NULL;
         (*pp_entry)->user_arg = NULL;
-        (void)memset((*pp_entry)->data, 0, (*pp_entry)->data_size);
+        (void)memset((*pp_entry)->data, 0, LEC_MAX_POOL_DATA_SIZE);
     }
 
     return ret;
