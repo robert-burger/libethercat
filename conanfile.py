@@ -13,7 +13,7 @@ class MainProject(ConanFile):
     default_options = {"shared": True}
 
     generators = "pkg_config"
-    requires = [ "libosal/main@burger-r/snapshot", ]
+    requires = [ "libosal/main@common/snapshot", ]
 
     def source(self):
         filedata = None
