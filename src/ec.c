@@ -86,12 +86,12 @@ void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
  */
 int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
     assert(pec != NULL);
+    assert(pd_group_cnt < LEC_MAX_GROUPS);
 
     (void)ec_destroy_pd_groups(pec);
 
     pec->pd_group_cnt = pd_group_cnt;
     // cppcheck-suppress misra-c2012-21.3
-    alloc_resource(pec->pd_groups, ec_pd_group_t, sizeof(ec_pd_group_t) * pd_group_cnt);
     for (osal_uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
         pec->pd_groups[i].log       = 0x10000u * ((osal_uint32_t)i+1u);
         pec->pd_groups[i].log_len   = 0u;
@@ -118,13 +118,9 @@ int ec_destroy_pd_groups(ec_t *pec) {
             // cppcheck-suppress misra-c2012-21.3
             free_resource(pec->pd_groups[i].pd);
         }
-
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(pec->pd_groups);
     }
 
     pec->pd_group_cnt = 0;
-    pec->pd_groups = NULL;
 
     return 0;
 }
@@ -639,8 +635,6 @@ static void ec_scan(ec_t *pec) {
         }
 
         pec->slave_cnt = 0;
-        // cppcheck-suppress misra-c2012-21.3
-        free_resource(pec->slaves);
     }
     
     // allocating slave structures
@@ -648,11 +642,9 @@ static void ec_scan(ec_t *pec) {
     if (ret != EC_OK) {
         ec_log(1, __func__, "broadcast read of slave types failed with %d\n", ret);
     } else {
-        pec->slave_cnt = wkc;
+        assert(wkc < LEC_MAX_SLAVES);
 
-        // cppcheck-suppress misra-c2012-21.3
-        alloc_resource(pec->slaves, ec_slave_t, pec->slave_cnt * 
-                sizeof(ec_slave_t));
+        pec->slave_cnt = wkc;
 
         for (i = 0; i < pec->slave_cnt; ++i) {
             int16_t auto_inc = (int16_t)-1 * (int16_t)i;
@@ -941,7 +933,7 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
     } 
 
     if (ret == EC_OK) {
-        ret = ec_index_init(&pec->idx_q, 256);
+        ret = ec_index_init(&pec->idx_q);
     }
     
     if (ret == EC_OK) {
@@ -951,8 +943,6 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
         pec->phw                = NULL;
         pec->slave_cnt          = 0;
         pec->pd_group_cnt       = 0;
-        pec->slaves             = NULL;
-        pec->pd_groups          = NULL;
         pec->tx_sync            = 1;
         pec->threaded_startup   = 0;
         pec->consecutive_max_miss   = 10;

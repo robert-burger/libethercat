@@ -71,7 +71,7 @@ extern "C" {
  *
  * \return EC_OK 0 on success, oherwise error code
  */
-int ec_index_init(idx_queue_t *idx_q, size_t max_index);
+int ec_index_init(idx_queue_t *idx_q);
 
 //! Deinitialize index queue structure.
 /*!

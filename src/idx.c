@@ -37,6 +37,8 @@
 #include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
+#define LEC_MAX_INDEX   256
+
 //! Get next free index entry.
 /*!
  * \param[in]   idx_q   Pointer to index queue.
@@ -88,7 +90,9 @@ void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
  *
  * \return EC_OK 0 on success, oherwise error code
  */
-int ec_index_init(idx_queue_t *idx_q, osal_size_t max_index) {
+int ec_index_init(idx_queue_t *idx_q) {
+    static idx_entry_t static_ec_index_entries[LEC_MAX_INDEX];
+
     osal_uint32_t i;
     int ret = EC_OK;
 
@@ -98,14 +102,8 @@ int ec_index_init(idx_queue_t *idx_q, osal_size_t max_index) {
     
     // fill index queue
     TAILQ_INIT(&idx_q->q);
-    for (i = 0; i < max_index; ++i) {
-        // cppcheck-suppress misra-c2012-21.3
-        idx_entry_t *entry = (idx_entry_t *)ec_malloc(sizeof(idx_entry_t));
-        if (entry == NULL) {
-            ret = EC_ERROR_OUT_OF_MEMORY;
-            break;
-        }
-
+    for (i = 0; i < LEC_MAX_INDEX; ++i) {
+        idx_entry_t *entry = &static_ec_index_entries[i];
         entry->idx = i;
         osal_binary_semaphore_init(&entry->waiter, NULL);
         (void)ec_index_put(idx_q, entry);
@@ -132,8 +130,6 @@ void ec_index_deinit(idx_queue_t *idx_q) {
         TAILQ_REMOVE(&idx_q->q, idx, qh);
         osal_binary_semaphore_destroy(&idx->waiter);
 
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(idx);
         idx = TAILQ_FIRST(&idx_q->q);
     }
 

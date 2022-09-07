@@ -46,6 +46,9 @@
 #include "libethercat/async_loop.h"
 #include "libethercat/eeprom.h"
 
+#define LEC_MAX_SLAVES  256
+#define LEC_MAX_GROUPS  16
+
 #define EC_SHORT_TIMEOUT_MBX        10000000
 #define EC_DEFAULT_TIMEOUT_MBX      1000000000
 #define EC_DEFAULT_DELAY            2000000
@@ -146,10 +149,10 @@ typedef struct ec {
                                      */
 
     osal_uint16_t slave_cnt;        //!< count of found EtherCAT slaves
-    ec_slave_t *slaves;             //!< array with EtherCAT slaves
+    ec_slave_t slaves[LEC_MAX_SLAVES];             //!< array with EtherCAT slaves
 
     osal_uint16_t pd_group_cnt;     //!< count of process data groups
-    ec_pd_group_t *pd_groups;       //!< array with process data groups
+    ec_pd_group_t pd_groups[LEC_MAX_GROUPS];       //!< array with process data groups
 
     ec_dc_info_t dc;                //!< distributed clocks master settings
     ec_async_loop_t *async_loop;
