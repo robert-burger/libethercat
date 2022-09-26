@@ -954,7 +954,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
     ec_slave_ptr(slv, pec, slave);
 
 #define ec_reg_read(reg, buf, buflen) {                                 \
-    osal_uint16_t wkc;                                                       \
     (void)ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),         \
             (buf), (buflen), &wkc);                                     \
     if (!wkc) { ec_log(10, __func__,                                    \
@@ -1213,7 +1212,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     break;
                 }
             }
-            case UNKNOWN_2_INIT:
+            case UNKNOWN_2_INIT: {
                 // rewrite fixed address
                 (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                         (osal_uint8_t *)&slv->fixed_address, 
@@ -1227,6 +1226,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // write state to slave
                 ret = ec_slave_set_state(pec, slave, state);
                 break;
+            }
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
             case INIT_2_INIT: {
