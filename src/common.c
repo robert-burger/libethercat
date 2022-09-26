@@ -23,16 +23,15 @@
  * If not, see <www.gnu.org/licenses/>.
  */
 
-#include <config.h>
-#include <sys/types.h>
+#include <libethercat/config.h>
+#include <libethercat/common.h>
+
 #ifdef __VXWORKS__
 #include <string.h>
 #endif // __VXWORKS__
 
-#include "libethercat/common.h"
-
 // cppcheck-suppress misra-c2012-20.9
-#if HAVE_MALLOC == 0
+#if LIBETHERCAT_HAVE_MALLOC == 0
 
 // wrapper around malloc to avoid allocation of 0 bytes
 // 

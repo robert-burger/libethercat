@@ -6,6 +6,8 @@ AC_INIT([libethercat],
 	m4_esyscmd_s([cat project.properties | grep VERSION    | cut -d'=' -f2 | xargs printf "%s"]),
 	m4_esyscmd_s([cat project.properties | grep MAINTAINER | cut -d'=' -f2 | xargs printf "%s"]))
 
+AC_CANONICAL_TARGET
+
 # Automake initialization
 AM_INIT_AUTOMAKE([-Wall -Werror foreign silent-rules])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -15,6 +17,7 @@ AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg)
+AX_PREFIX_CONFIG_H(include/libethercat/config.h) # prep mylib/_config.h from it..
 
 # Checks for programs.
 AC_PROG_CC
@@ -23,6 +26,25 @@ AC_PROG_CC_STDC
 AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
+        
+case $target_os in
+    linux*)
+        BUILD_POSIX=true
+        AC_DEFINE([BUILD_POSIX], [true], [Use POSIX build on linux])
+        ;;
+    vxworks*)
+        BUILD_VXWORKS=true
+        AC_DEFINE([BUILD_VXWORKS], [true], [Use VxWorks build])
+        ;;
+    pikeos*)
+        BUILD_PIKEOS=true
+        AC_DEFINE([BUILD_PIKEOS], [true], [Use PikeOS build])
+        ;;
+esac
+
+AM_CONDITIONAL([BUILD_POSIX], [ test x$BUILD_POSIX = xtrue]) 
+AM_CONDITIONAL([BUILD_VXWORKS], [ test x$BUILD_VXWORKS = xtrue]) 
+AM_CONDITIONAL([BUILD_PIKEOS], [ test x$BUILD_PIKEOS = xtrue]) 
 
 # Checks for libraries.
 PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])

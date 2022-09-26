@@ -28,7 +28,7 @@
  * If not, see <www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include <libethercat/config.h>
 
 #include <string.h>
 #include <assert.h>

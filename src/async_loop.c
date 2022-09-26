@@ -28,7 +28,7 @@
  * If not, see <www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include <libethercat/config.h>
 
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"

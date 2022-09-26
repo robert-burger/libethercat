@@ -26,7 +26,7 @@
  * along with robotkernel.  If not, see <www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include <libethercat/config.h>
 
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"

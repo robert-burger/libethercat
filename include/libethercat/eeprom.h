@@ -32,10 +32,10 @@
 #ifndef LIBETHERCAT_EEPROM_H
 #define LIBETHERCAT_EEPROM_H
 
+#include <libosal/queue.h>
 #include <libosal/types.h>
 
 #include "libethercat/common.h"
-#include <sys/queue.h>
 
 //------------------ Category General ---------------
 

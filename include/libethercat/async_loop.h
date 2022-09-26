@@ -31,7 +31,7 @@
 #ifndef LIBETHERCAT_MESSAGE_POOL_H
 #define LIBETHERCAT_MESSAGE_POOL_H
 
-#include <sys/queue.h>
+#include <libosal/queue.h>
 
 #include <libosal/types.h>
 #include <libosal/mutex.h>

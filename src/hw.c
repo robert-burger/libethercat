@@ -28,7 +28,7 @@
  * If not, see <www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include <libethercat/config.h>
 
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
 // cppcheck-suppress misra-c2012-21.1
@@ -45,8 +45,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h> 
@@ -59,9 +57,12 @@
 #ifdef __linux__
 
 //#include <netpacket/packet.h>
+#include <sys/ioctl.h>
 #include <linux/if_packet.h>
 #include <sys/mman.h>
 #include <poll.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #elif defined __VXWORKS__
 #include <vxWorks.h>
@@ -81,8 +82,6 @@
 
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <string.h>
 
 #define ETH_P_ECAT      0x88A4

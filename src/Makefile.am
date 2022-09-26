@@ -6,6 +6,7 @@ lib_LTLIBRARIES = libethercat.la
 
 include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 				  $(top_srcdir)/include/libethercat/common.h \
+				  $(top_srcdir)/include/libethercat/config.h \
 				  $(top_srcdir)/include/libethercat/datagram.h \
 				  $(top_srcdir)/include/libethercat/pool.h \
 				  $(top_srcdir)/include/libethercat/dc.h \

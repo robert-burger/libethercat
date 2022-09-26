@@ -32,7 +32,7 @@
  */
 
 /* autoconf header goes first */
-#include "config.h"
+#include <libethercat/config.h>
 
 /* system includes */
 #include <assert.h>

@@ -33,8 +33,6 @@
 
 #include <libosal/types.h>
 
-#include <sys/select.h>
-
 #include "libethercat/common.h"
 #include "libethercat/dc.h"
 #include "libethercat/slave.h"

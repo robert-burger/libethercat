@@ -30,7 +30,7 @@
  * If not, see <www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include <libethercat/config.h>
 
 #include "libethercat/eeprom.h"
 #include "libethercat/ec.h"

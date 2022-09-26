@@ -30,7 +30,7 @@
 #ifndef LIBETHERCAT_IDX_H
 #define LIBETHERCAT_IDX_H
 
-#include <sys/queue.h>
+#include <libosal/queue.h>
 
 #include <libosal/types.h>
 #include <libosal/binary_semaphore.h>

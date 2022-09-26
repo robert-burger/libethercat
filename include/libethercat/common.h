@@ -32,7 +32,7 @@
 #ifndef LIBETHERCAT_COMMON_H
 #define LIBETHERCAT_COMMON_H
 
-#include "config.h"
+#include <libethercat/config.h>
 
 #include <libosal/types.h>
 
