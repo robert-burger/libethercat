@@ -37,8 +37,6 @@
 #include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
-#define LEC_MAX_INDEX   256
-
 //! Get next free index entry.
 /*!
  * \param[in]   idx_q   Pointer to index queue.
@@ -91,8 +89,6 @@ void ec_index_put(idx_queue_t *idx_q, struct idx_entry *entry) {
  * \return EC_OK 0 on success, oherwise error code
  */
 int ec_index_init(idx_queue_t *idx_q) {
-    static idx_entry_t static_ec_index_entries[LEC_MAX_INDEX];
-
     osal_uint32_t i;
     int ret = EC_OK;
 
@@ -103,7 +99,7 @@ int ec_index_init(idx_queue_t *idx_q) {
     // fill index queue
     TAILQ_INIT(&idx_q->q);
     for (i = 0; i < LEC_MAX_INDEX; ++i) {
-        idx_entry_t *entry = &static_ec_index_entries[i];
+        idx_entry_t *entry = &idx_q->entries[i];
         entry->idx = i;
         osal_binary_semaphore_init(&entry->waiter, NULL);
         (void)ec_index_put(idx_q, entry);

@@ -38,6 +38,8 @@
 
 #include "libethercat/common.h"
 
+#define LEC_MAX_INDEX   256
+
 //! index entry
 typedef struct idx_entry {
     osal_uint8_t idx;               //!< datagram index
@@ -56,6 +58,7 @@ typedef struct idx_queue {
                                  * prevent concurrent queue access
                                  */
 
+    idx_entry_t entries[LEC_MAX_INDEX];
     struct idx_entry_queue q;   //!< the head of the index queue
 } idx_queue_t;
 
