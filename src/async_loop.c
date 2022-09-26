@@ -38,8 +38,6 @@
 
 #include <assert.h>
 #include <errno.h>
-// cppcheck-suppress misra-c2012-21.10
-#include <time.h>
 #include <string.h>
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
@@ -53,19 +51,14 @@ static int ec_async_loop_get(ec_message_pool_t *ppool,
     assert(msg != NULL);
 
     if (timeout != NULL) {
-        ret = osal_semaphore_timedwait(&ppool->avail_cnt, timeout);
-        int local_errno = errno;
-        if (ret != 0) {
-            if (local_errno != ETIMEDOUT) {
-                perror("osal_semaphore_timedwait");
-            }
-
-            ret = EC_ERROR_TIMEOUT;
+        osal_retval_t local_ret = osal_semaphore_timedwait(&ppool->avail_cnt, timeout);
+        if (local_ret != OSAL_OK) {
+            ret = EC_ERROR_UNAVAILABLE;
         }
     }
 
     if (ret == EC_OK) {
-        ret = ENODATA;
+        ret = EC_ERROR_UNAVAILABLE;
         osal_mutex_lock(&ppool->lock);
 
         *msg = (ec_message_entry_t *)TAILQ_FIRST(&ppool->queue);

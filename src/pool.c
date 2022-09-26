@@ -38,8 +38,6 @@
 
 #include <assert.h>
 #include <errno.h>
-// cppcheck-suppress misra-c2012-21.10
-#include <time.h>
 #include <string.h>
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
@@ -115,17 +113,9 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
 
     if (timeout != NULL) {
         while (ret == EC_OK) {
-            int local_ret = osal_semaphore_timedwait(&pp->avail_cnt, timeout);
-            int tmp_errno = errno;
-            if (local_ret == 0) {
-                break;
-            }
-
-            if (tmp_errno != ETIMEDOUT) {
-                perror("osal_semaphore_timedwait");
-            } else {
-                *entry = NULL;
-                ret = EC_ERROR_TIMEOUT;
+            osal_retval_t local_ret = osal_semaphore_timedwait(&pp->avail_cnt, timeout);
+            if (local_ret != OSAL_OK) {
+                ret = EC_ERROR_UNAVAILABLE;
             }
         }
     }
