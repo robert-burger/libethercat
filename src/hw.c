@@ -30,7 +30,7 @@
 
 #include <libethercat/config.h>
 
-#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+#ifdef LIBETHERCAT_HAVE_PTHREAD_SETAFFINITY_NP
 // cppcheck-suppress misra-c2012-21.1
 #define _GNU_SOURCE
 #include <sched.h>
@@ -46,17 +46,19 @@
 #include <errno.h>
 #include <string.h>
 
-#ifdef HAVE_NET_IF_H
+#ifdef LIBETHERCAT_HAVE_NET_IF_H
 #include <net/if.h> 
 #endif
 
-#ifdef HAVE_ARPA_INET_H
+#ifdef LIBETHERCAT_HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
 #ifdef __linux__
-
+#include <net/ethernet.h>
 //#include <netpacket/packet.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <linux/if_packet.h>
 #include <sys/mman.h>
@@ -68,7 +70,7 @@
 #include <vxWorks.h>
 #include <taskLib.h>
 #include <sys/ioctl.h>
-#elif defined HAVE_NET_BPF_H
+#elif defined LIBETHERCAT_HAVE_NET_BPF_H
 #include <sys/queue.h>
 #include <net/bpf.h>
 #include <net/if_types.h>
@@ -86,11 +88,13 @@
 
 #define ETH_P_ECAT      0x88A4
 
-#if defined HAVE_NET_BPF_H
+#ifndef ETH_FRAME_LEN
+#if defined LIBETHERCAT_HAVE_NET_BPF_H
 #define ETH_FRAME_LEN 4096
 #else
 #define ETH_FRAME_LEN 1518
 #endif
+#endif // ifndef ETH_FRAME_LEN
 
 //! receiver thread forward declaration
 static void *hw_rx_thread(void *arg);
@@ -238,7 +242,7 @@ static int internal_hw_open(hw_t *phw, const osal_char_t *devname) {
     return ret;
 }
 
-#elif defined HAVE_NET_BPF_H
+#elif defined LIBETHERCAT_HAVE_NET_BPF_H
 #define RECEIVE(fd, frame, len)     read((fd), (frame), (len))
 #define SEND(fd, frame, len)        write((fd), (frame), (len))
 
@@ -471,7 +475,7 @@ void *hw_rx_thread(void *arg) {
     assert(phw != NULL);
 
     while (phw->rxthreadrunning != 0) {
-#ifdef HAVE_NET_BPF_H
+#ifdef LIBETHERCAT_HAVE_NET_BPF_H
         osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
         int local_errno = errno;
         
