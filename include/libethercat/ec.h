@@ -146,6 +146,11 @@ typedef struct ec {
                                      * the frame with the datagram is received 
                                      * again by the master.
                                      */
+    
+    pool_entry_t mbx_mp_recv_free_entries[LEC_MBX_MAX_ENTRIES];
+    pool_entry_t mbx_mp_send_free_entries[LEC_MBX_MAX_ENTRIES];
+    pool_t mbx_message_pool_recv_free; 
+    pool_t mbx_message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
 
     osal_uint16_t slave_cnt;        //!< count of found EtherCAT slaves
     ec_slave_t slaves[LEC_MAX_SLAVES];             //!< array with EtherCAT slaves

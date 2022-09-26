@@ -59,7 +59,7 @@ TAILQ_HEAD(pool_queue, pool_entry);
 typedef struct pool {    
     struct pool_queue avail;                                //!< \brief Queue with available datagrams.
     osal_semaphore_t avail_cnt;                             //!< \brief Available datagrams in pool.
-    osal_mutex_t _pool_lock;                             //!< \brief Pool lock.
+    osal_mutex_t _pool_lock;                                //!< \brief Pool lock.
 } pool_t;
 
 #ifdef __cplusplus
