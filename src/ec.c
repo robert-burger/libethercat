@@ -1113,8 +1113,13 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         osal_timer_init(&to, 100000000);
         int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
         if (local_ret != OSAL_OK) {
-            ec_log(1, "ec_transceive", "osal_semaphore_wait returned: %s, cmd 0x%X, adr 0x%X\n", 
-                    strerror(errno), cmd, adr);
+            if (local_ret == OSAL_ERR_TIMEOUT) {
+                ec_log(1, "ec_transceive", "timeout on cmd 0x%X, adr 0x%X\n", cmd, adr);
+            } else {
+                ec_log(1, "ec_transceive", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
+                        local_ret, cmd, adr);
+            }
+
             *wkc = 0u;
             ret = EC_ERROR_TIMEOUT;
         } else {
