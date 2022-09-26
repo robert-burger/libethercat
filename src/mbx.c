@@ -79,8 +79,8 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
     if (slv->mbx.handler_running == 0) {
         ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
 
-        (void)pool_open(&slv->mbx.message_pool_recv_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_recv_free_entries[0]);
-        (void)pool_open(&slv->mbx.message_pool_send_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_send_free_entries[0]);
+//        (void)pool_open(&slv->mbx.message_pool_recv_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_recv_free_entries[0]);
+//        (void)pool_open(&slv->mbx.message_pool_send_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_send_free_entries[0]);
         (void)pool_open(&slv->mbx.message_pool_send_queued, 0, NULL);
 
         osal_mutex_init(&slv->mbx.sync_mutex, NULL);
@@ -150,8 +150,8 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
         osal_binary_semaphore_destroy(&slv->mbx.sync_sem);
         osal_mutex_destroy(&slv->mbx.sync_mutex);
 
-        (void)pool_close(&slv->mbx.message_pool_recv_free);
-        (void)pool_close(&slv->mbx.message_pool_send_free);
+//        (void)pool_close(&slv->mbx.message_pool_recv_free);
+//        (void)pool_close(&slv->mbx.message_pool_send_free);
         (void)pool_close(&slv->mbx.message_pool_send_queued);
     }
 }
@@ -533,7 +533,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
         ec_log(100, __func__, "slave %2d: mailbox needs to be read\n", slave);
 
         do {
-            (void)pool_get(&slv->mbx.message_pool_recv_free, &p_entry, NULL);
+            (void)pool_get(&pec->mbx_message_pool_recv_free, &p_entry, NULL);
             if (!p_entry) {
                 ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
                 break;
@@ -690,7 +690,7 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
 
-    int ret = pool_get(&pec->slaves[slave].mbx.message_pool_send_free, pp_entry, timeout);
+    int ret = pool_get(&pec->mbx_message_pool_send_free, pp_entry, timeout);
     if (ret == EC_OK) {
         (*pp_entry)->user_cb = NULL;
         (*pp_entry)->user_arg = NULL;

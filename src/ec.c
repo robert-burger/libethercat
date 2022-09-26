@@ -967,6 +967,9 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
         ret = pool_open(&pec->pool, 100, &pec->dg_entries[0]);
     }
 
+    (void)pool_open(&pec->mbx_message_pool_recv_free, LEC_MBX_MAX_ENTRIES, &pec->mbx_mp_recv_free_entries[0]);
+    (void)pool_open(&pec->mbx_message_pool_send_free, LEC_MBX_MAX_ENTRIES, &pec->mbx_mp_send_free_entries[0]);
+
     if (ret == EC_OK) {
         ret = hw_open(&pec->phw, ifname, prio, cpumask, 0);
     }
@@ -1038,6 +1041,9 @@ int ec_close(ec_t *pec) {
         // cppcheck-suppress misra-c2012-21.3
         ec_free(pec->slaves);
     }
+        
+    (void)pool_close(&pec->mbx_message_pool_recv_free);
+    (void)pool_close(&pec->mbx_message_pool_send_free);
 
     ec_log(10, __func__, "freeing master instance\n");
     // cppcheck-suppress misra-c2012-21.3
