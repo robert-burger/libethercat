@@ -682,10 +682,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
-                                // alloc entries
-                                // cppcheck-suppress misra-c2012-21.3
-                                pdo->entries = (ec_eeprom_cat_pdo_entry_t *)ec_malloc(pdo->n_entry * 
-                                        sizeof(ec_eeprom_cat_pdo_entry_t));
+                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_EEPROM_CAT_PDO_ENTRIES_MAX);
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
@@ -737,10 +734,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
-                                // alloc entries
-                                // cppcheck-suppress misra-c2012-21.3
-                                pdo->entries = (ec_eeprom_cat_pdo_entry_t *)ec_malloc(pdo->n_entry * 
-                                        sizeof(ec_eeprom_cat_pdo_entry_t));
+                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_EEPROM_CAT_PDO_ENTRIES_MAX);
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
