@@ -31,7 +31,7 @@ enum tool_mode {
 };
 
 int main(int argc, char **argv) {
-    ec_t *pec;
+    ec_t ec;
     int ret, slave = -1, i;
 
     char *intf = NULL, *fn = NULL;
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
     ec_log_func_user = NULL;
     ec_log_func = &no_verbose_log;
 
-    ret = ec_open(&pec, intf, 90, 1, 1);
+    ret = ec_open(&ec, intf, 90, 1, 1);
 
     switch (mode) {
         default: 
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
         case mode_read: {
             uint8_t bigbuf[2048];
             size_t bigbuf_len = 2048;
-            ec_eepromread_len(pec, slave, 0, (uint8_t *)bigbuf, bigbuf_len);
+            ec_eepromread_len(&ec, slave, 0, (uint8_t *)bigbuf, bigbuf_len);
 
             if (fn) {
                 // write to file
@@ -110,12 +110,12 @@ int main(int argc, char **argv) {
             } else
                 bytes = read(0, bigbuf, bigbuf_len);
             
-            ec_eepromwrite_len(pec, slave, 0, (uint8_t *)bigbuf, bigbuf_len);
+            ec_eepromwrite_len(&ec, slave, 0, (uint8_t *)bigbuf, bigbuf_len);
             break;
         }
     }
 
-    ec_close(pec);
+    ec_close(&ec);
 
     return 0;
 }

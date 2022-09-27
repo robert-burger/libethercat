@@ -305,17 +305,11 @@ int ec_async_loop_destroy(ec_async_loop_t *paml) {
     me = TAILQ_FIRST(&paml->exec.queue);
     while (me != NULL) {
         TAILQ_REMOVE(&paml->exec.queue, me, qh);
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(me);
-    
         me = TAILQ_FIRST(&paml->exec.queue);
     }
     osal_mutex_unlock(&paml->exec.lock);
     osal_mutex_destroy(&paml->exec.lock);
 
-    // cppcheck-suppress misra-c2012-21.3
-    ec_free(paml);
-    
     return 0;
 }
 

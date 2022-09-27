@@ -335,8 +335,6 @@ static int internal_hw_open(hw_t *phw, const osal_char_t *devname) {
                                         ret = -1;
                                     } else {
                                         (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
-
-                                        osal_mutex_init(&phw->hw_lock, NULL);
                                     }
                                 }
                             }
@@ -371,6 +369,8 @@ int hw_open(hw_t *phw, const osal_char_t *devname, int prio, int cpumask, int mm
 
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
+
+    osal_mutex_init(&phw->hw_lock, NULL);
 
     ret = internal_hw_open(phw, devname);
 
@@ -408,9 +408,6 @@ int hw_close(hw_t *phw) {
 
     osal_mutex_unlock(&phw->hw_lock);
     osal_mutex_destroy(&phw->hw_lock);
-
-    // cppcheck-suppress misra-c2012-21.3
-    ec_free(phw);
 
     return 0;
 }

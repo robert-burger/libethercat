@@ -33,12 +33,59 @@
 #define LIBETHERCAT_COMMON_H
 
 #include <libethercat/config.h>
+#include <libethercat/memory.h>
 
 #include <libosal/types.h>
 
 #include <stdint.h>
 
-#include "libethercat/memory.h"
+#ifndef LEC_MAX_SLAVES
+#define LEC_MAX_SLAVES          (      256u)
+#endif
+
+#ifndef LEC_MAX_GROUPS
+#define LEC_MAX_GROUPS          (        8u)
+#endif
+
+#ifndef LEC_MAX_PDLEN
+#define LEC_MAX_PDLEN           (2u * 1518u)
+#endif
+
+#ifndef LEC_MAX_MBX_ENTRIES
+#define LEC_MAX_MBX_ENTRIES     (       16u)
+#endif
+
+#ifndef LEC_MAX_INIT_CMD_DATA
+#define LEC_MAX_INIT_CMD_DATA   (     2048u)
+#endif
+
+#ifndef LEC_MAX_SLAVE_FMMU
+#define LEC_MAX_SLAVE_FMMU      (        8u)
+#endif
+
+#ifndef LEC_MAX_SLAVE_SM
+#define LEC_MAX_SLAVE_SM        (        8u)
+#endif
+
+#ifndef LEC_MAX_DATAGRAMS       
+#define LEC_MAX_DATAGRAMS       (      100u)
+#endif 
+
+#ifndef LEC_MAX_EEPROM_CAT_SM
+#define LEC_MAX_EEPROM_CAT_SM   LEC_MAX_SLAVE_SM
+#endif
+
+#ifndef LEC_MAX_EEPROM_CAT_FMMU
+#define LEC_MAX_EEPROM_CAT_FMMU LEC_MAX_SLAVE_FMMU
+#endif
+
+#ifndef LEC_MAX_EEPROM_CAT_PDO
+#define LEC_MAX_EEPROM_CAT_PDO          128
+#endif
+
+#ifndef LEC_MAX_EEPROM_CAT_PDO_ENTRIES
+#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES   32
+#endif
 
 #define PACKED __attribute__((__packed__))
 

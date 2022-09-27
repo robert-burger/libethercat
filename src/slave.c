@@ -129,179 +129,59 @@ static const osal_char_t *get_transition_string(ec_state_transition_t transition
     return ret;
 }
 
-// allocate init command structure
-static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_coe_init_cmd_alloc(
+// initialize init command structure
+void ec_slave_mailbox_coe_init_cmd_init(ec_init_cmd_t *cmd,
         int transition, int id, int si_el, int ca_atn,
         osal_char_t *data, osal_size_t datalen) 
 {
-    // cppcheck-suppress misra-c2012-21.3
-    ec_slave_mailbox_init_cmd_t *cmd = (void *)ec_malloc(COE_INIT_CMD_SIZE);
+    assert(cmd != NULL);
+    assert(datalen < LEC_MAX_INIT_CMD_DATA);
 
-    if (cmd == NULL) {
-        ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
-    } else {
-        cmd->type       = EC_MBX_COE;
-        cmd->transition = transition;
+    cmd->type       = EC_MBX_COE;
+    cmd->transition = transition;
+    cmd->id         = id; 
+    cmd->si_el      = si_el;
+    cmd->ca_atn     = ca_atn;
+    cmd->datalen    = datalen;
 
-        ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
-        coe->id         = id; 
-        coe->si_el      = si_el;
-        coe->ca_atn     = ca_atn;
-        // cppcheck-suppress misra-c2012-21.3
-        coe->data       = (osal_char_t *)ec_malloc(datalen);
-        coe->datalen    = datalen;
-
-        if (coe->data == NULL) {
-            ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(cmd);
-            cmd = NULL;
-        } else {
-            (void)memcpy(coe->data, data, datalen);
-        }
-    }
-
-    return cmd;
+    (void)memcpy(cmd->data, data, datalen);
 }
 
-// freeing init command strucuture
-static void ec_slave_mailbox_coe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
+// initialize init command structure
+void ec_slave_mailbox_soe_init_cmd_init(ec_init_cmd_t *cmd,
+        int transition, int id, int si_el, int ca_atn,
+        osal_char_t *data, osal_size_t datalen) 
+{
     assert(cmd != NULL);
-        
-    if (cmd->type == EC_MBX_COE) {
-        ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
+    assert(datalen < LEC_MAX_INIT_CMD_DATA);
 
-        // cppcheck-suppress misra-c2012-21.3
-        if (coe->data != NULL) { ec_free(coe->data); }
-    }
+    cmd->type       = EC_MBX_SOE;
+    cmd->transition = transition;
+    cmd->id         = id; 
+    cmd->si_el      = si_el;
+    cmd->ca_atn     = ca_atn;
+    cmd->datalen    = datalen;
 
-    // cppcheck-suppress misra-c2012-21.3
-    ec_free (cmd);
+    (void)memcpy(cmd->data, data, datalen);
 }
 
 // add master init command
-void ec_slave_add_coe_init_cmd(ec_t *pec, osal_uint16_t slave,
-        int transition, int id, int si_el, int ca_atn,
-        osal_char_t *data, osal_size_t datalen) 
+void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd)
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
-
-    ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_coe_init_cmd_alloc(
-            transition, id, si_el, ca_atn, data, datalen);
-
-    if (!cmd) {
-    } else {
-        ec_slave_mailbox_init_cmd_t *last_cmd = 
-            LIST_FIRST(&pec->slaves[slave].init_cmds);
-
-        while ( (last_cmd != NULL) && 
-                (LIST_NEXT(last_cmd, le) != NULL)) {
-            last_cmd = LIST_NEXT(last_cmd, le);
-        }
-
-        if (last_cmd != NULL) {
-            LIST_INSERT_AFTER(last_cmd, cmd, le);
-        } else {
-            LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
-        }
-    }
-}
-
-// allocate init command structure
-static ec_slave_mailbox_init_cmd_t *ec_slave_mailbox_soe_init_cmd_alloc(
-        int transition, int id, int si_el, int ca_atn,
-        osal_char_t *data, osal_size_t datalen) 
-{
-    // cppcheck-suppress misra-c2012-21.3
-    ec_slave_mailbox_init_cmd_t *cmd = (void *)ec_malloc(SOE_INIT_CMD_SIZE);
-
-    if (cmd == NULL) {
-        ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
-    } else {
-        cmd->type       = EC_MBX_SOE;
-        cmd->transition = transition;
-
-        ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
-        soe->id         = id; 
-        soe->si_el      = si_el;
-        soe->ca_atn     = ca_atn;
-        // cppcheck-suppress misra-c2012-21.3
-        soe->data       = (osal_char_t *)ec_malloc(datalen);
-        soe->datalen    = datalen;
-
-        if (soe->data == NULL) {
-            ec_log(10, __func__, "ec_malloc error %s\n", strerror(errno));
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(cmd);
-            cmd = NULL;
-        } else {
-            (void)memcpy(soe->data, data, datalen);
-        }
-    }
-
-    return cmd;
-}
-
-// freeing init command strucuture
-static void ec_slave_mailbox_soe_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
-    assert(cmd != NULL);
-    
-    if (cmd->type == EC_MBX_SOE) {
-        ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
-
-        // cppcheck-suppress misra-c2012-21.3
-        if (soe->data != NULL) { ec_free(soe->data); }
-    }
-
-    // cppcheck-suppress misra-c2012-21.3
-    ec_free (cmd);
-}
-
-// add master init command
-void ec_slave_add_soe_init_cmd(ec_t *pec, osal_uint16_t slave,
-        int transition, int id, int si_el, int ca_atn,
-        osal_char_t *data, osal_size_t datalen) 
-{
-    assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
-
-    ec_slave_mailbox_init_cmd_t *cmd = ec_slave_mailbox_soe_init_cmd_alloc(
-            transition, id, si_el, ca_atn, data, datalen);
-
-    if (!cmd) {
-    } else {
-        ec_slave_mailbox_init_cmd_t *last_cmd = 
-            LIST_FIRST(&pec->slaves[slave].init_cmds);
-
-        while ( (last_cmd != NULL) && 
-                (LIST_NEXT(last_cmd, le) != NULL)) {
-            last_cmd = LIST_NEXT(last_cmd, le);
-        }
-
-        if (last_cmd != NULL) {
-            LIST_INSERT_AFTER(last_cmd, cmd, le);
-        } else {
-            LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
-        }
-    }
-}
-
-// freeing init command strucuture
-void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd) {
     assert(cmd != NULL);
 
-    switch(cmd->type) {
-        case EC_MBX_COE:
-            ec_slave_mailbox_coe_init_cmd_free(cmd);
-            break;
-        case EC_MBX_SOE:
-            ec_slave_mailbox_soe_init_cmd_free(cmd);
-            break;
-        default: 
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(cmd);
-            break;
+    ec_init_cmd_t *last_cmd = LIST_FIRST(&pec->slaves[slave].init_cmds);
+
+    while ( (last_cmd != NULL) && (LIST_NEXT(last_cmd, le) != NULL)) {
+        last_cmd = LIST_NEXT(last_cmd, le);
+    }
+
+    if (last_cmd != NULL) {
+        LIST_INSERT_AFTER(last_cmd, cmd, le);
+    } else {
+        LIST_INSERT_HEAD(&pec->slaves[slave].init_cmds, cmd, le);
     }
 }
 
@@ -825,7 +705,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
             case PREOP_2_SAFEOP:
                 ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds\n", slave);
 
-                ec_slave_mailbox_init_cmd_t *cmd;
+                ec_init_cmd_t *cmd;
                 LIST_FOREACH(cmd, &slv->init_cmds, le) {
                     if (cmd->transition != 0x24) { // cppcheck-suppress uninitvar
                         continue;
@@ -835,18 +715,16 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                         default:
                             break;
                         case EC_MBX_COE: {
-                            ec_coe_init_cmd_t *coe = (void *)cmd->cmd;
-
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending CoE init cmd 0x%04X:%d, "
-                                    "ca %d, datalen %d, datap %p\n", slave, coe->id, 
-                                    coe->si_el, coe->ca_atn, coe->datalen, coe->data);
+                                    "ca %d, datalen %d, datap %p\n", slave, cmd->id, 
+                                    cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
 
-                            osal_uint8_t *buf = (osal_uint8_t *)coe->data;
-                            osal_size_t buf_len = coe->datalen;
+                            osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
+                            osal_size_t buf_len = cmd->datalen;
                             osal_uint32_t abort_code = 0;
 
-                            int local_ret = ec_coe_sdo_write(pec, slave, coe->id, coe->si_el, coe->ca_atn, buf, buf_len, &abort_code);
+                            int local_ret = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, cmd->ca_atn, buf, buf_len, &abort_code);
                             if (local_ret != EC_OK) {
                                 ec_log(10, get_transition_string(transition), 
                                         "slave %2d: writing sdo failed: error code 0x%X!\n", 
@@ -855,17 +733,15 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                             break;
                         }
                         case EC_MBX_SOE: {
-                            ec_soe_init_cmd_t *soe = (void *)cmd->cmd;
-
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending SoE init cmd 0x%04X:%d, "
-                                    "atn %d, datalen %d, datap %p\n", slave, soe->id, 
-                                    soe->si_el, soe->ca_atn, soe->datalen, soe->data);
+                                    "atn %d, datalen %d, datap %p\n", slave, cmd->id, 
+                                    cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
 
-                            osal_uint8_t *buf = (osal_uint8_t *)soe->data;
-                            osal_size_t buf_len = soe->datalen;
+                            osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
+                            osal_size_t buf_len = cmd->datalen;
 
-                            int local_ret = ec_soe_write(pec, slave, soe->ca_atn, soe->id, soe->si_el, buf, buf_len);
+                            int local_ret = ec_soe_write(pec, slave, cmd->ca_atn, cmd->id, cmd->si_el, buf, buf_len);
 
                             if (local_ret != EC_OK) {
                                 ec_log(10, get_transition_string(transition), 
@@ -925,21 +801,6 @@ void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
         // cppcheck-suppress misra-c2012-21.3
         ec_free(pdo);
     }
-
-    ec_slave_mailbox_init_cmd_t *cmd;
-    for (cmd = LIST_FIRST(&slv->init_cmds); cmd != NULL; cmd = LIST_FIRST(&slv->init_cmds)) {
-        LIST_REMOVE(cmd, le);
-        ec_slave_mailbox_init_cmd_free(cmd);                
-    }
-
-    // cppcheck-suppress misra-c2012-21.3
-    free_resource(slv->eeprom.sms);
-    // cppcheck-suppress misra-c2012-21.3
-    free_resource(slv->eeprom.fmmus);
-    // cppcheck-suppress misra-c2012-21.3
-    free_resource(slv->sm);
-    // cppcheck-suppress misra-c2012-21.3
-    free_resource(slv->fmmu);
 }
 
 // state transition on ethercat slave
@@ -1246,10 +1107,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // get number of sync managers
                 ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
                 if (slv->sm_ch != 0u) {
-                    // cppcheck-suppress misra-c2012-21.3
-                    alloc_resource(slv->sm, ec_slave_sm_t, 
-                            slv->sm_ch * sizeof(ec_slave_sm_t));
-
                     for (osal_uint32_t i = 0u; i < slv->sm_ch; ++i) {
                         (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
                                 ec_to_adr(slv->fixed_address, 0x800u + (8u * i)),
@@ -1260,10 +1117,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // get number of fmmus
                 ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
                 if (slv->fmmu_ch != 0u) {
-                    // cppcheck-suppress misra-c2012-21.3
-                    alloc_resource(slv->fmmu, ec_slave_fmmu_t, 
-                            slv->fmmu_ch * sizeof(ec_slave_fmmu_t));
-
                     for (osal_uint32_t i = 0; i < slv->fmmu_ch; ++i) {
                         (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
                                 ec_to_adr(slv->fixed_address, 0x600u + (16u * i)),

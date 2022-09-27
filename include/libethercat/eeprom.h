@@ -57,8 +57,8 @@ typedef struct PACKED ec_eeprom_cat_general {
     
 //------------------ Category PDO -------------------
 
-#define LEC_EEPROM_CAT_PDO_MAX          128
-#define LEC_EEPROM_CAT_PDO_ENTRIES_MAX   32
+#define LEC_MAX_EEPROM_CAT_PDO          128
+#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES   32
 
 typedef struct PACKED ec_eeprom_cat_pdo_entry {
     osal_uint16_t entry_index;       //!< PDO entry index (CoE)
@@ -81,7 +81,7 @@ typedef struct ec_eeprom_cat_pdo {
 #define EC_EEPROM_CAT_PDO_LEN   (osal_size_t)8u
     };
 
-    ec_eeprom_cat_pdo_entry_t entries[LEC_EEPROM_CAT_PDO_ENTRIES_MAX];
+    ec_eeprom_cat_pdo_entry_t entries[LEC_MAX_EEPROM_CAT_PDO_ENTRIES];
                                 //!< PDO entries, (n_entry count)
     
     TAILQ_ENTRY(ec_eeprom_cat_pdo) qh;
@@ -149,12 +149,12 @@ typedef struct eeprom_info {
     osal_char_t **strings;                  //!< array of strings 
 
     osal_uint8_t sms_cnt;                   //!< count of sync manager settings
-    ec_eeprom_cat_sm_t *sms;                //!< array of sync manager settings
+    ec_eeprom_cat_sm_t sms[LEC_MAX_EEPROM_CAT_SM];      //!< array of sync manager settings
 
     osal_uint8_t fmmus_cnt;                 //!< count of fmmu settings    
-    ec_eeprom_cat_fmmu_t *fmmus;            //!< array of fmmu settings
+    ec_eeprom_cat_fmmu_t fmmus[LEC_MAX_EEPROM_CAT_FMMU]; //!< array of fmmu settings
 
-    ec_eeprom_cat_pdo_t free_pdos[LEC_EEPROM_CAT_PDO_MAX];
+    ec_eeprom_cat_pdo_t free_pdos[LEC_MAX_EEPROM_CAT_PDO];
     struct ec_eeprom_cat_pdo_queue free_pdo_queue;
 
     struct ec_eeprom_cat_pdo_queue txpdos;  //!< queue with TXPDOs

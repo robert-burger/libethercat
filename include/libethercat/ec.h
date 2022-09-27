@@ -44,11 +44,6 @@
 #include "libethercat/async_loop.h"
 #include "libethercat/eeprom.h"
 
-#define LEC_MAX_SLAVES  256
-#define LEC_MAX_GROUPS  16
-
-#define LEC_MAX_PDLEN   (2*1518)
-
 #define EC_SHORT_TIMEOUT_MBX        10000000
 #define EC_DEFAULT_TIMEOUT_MBX      1000000000
 #define EC_DEFAULT_DELAY            2000000
@@ -130,7 +125,7 @@ typedef struct ec {
                                      * is started.
                                      */
 
-    pool_entry_t dg_entries[100];
+    pool_entry_t dg_entries[LEC_MAX_DATAGRAMS];
     pool_t pool;                    //!< datagram pool
                                     /*!<
                                      * All EtherCAT datagrams will be pre-
@@ -149,8 +144,8 @@ typedef struct ec {
                                      * again by the master.
                                      */
     
-    pool_entry_t mbx_mp_recv_free_entries[LEC_MBX_MAX_ENTRIES];
-    pool_entry_t mbx_mp_send_free_entries[LEC_MBX_MAX_ENTRIES];
+    pool_entry_t mbx_mp_recv_free_entries[LEC_MAX_MBX_ENTRIES];
+    pool_entry_t mbx_mp_send_free_entries[LEC_MAX_MBX_ENTRIES];
     pool_t mbx_message_pool_recv_free; 
     pool_t mbx_message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
 

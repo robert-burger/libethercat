@@ -84,8 +84,6 @@ typedef struct PACKED ec_mbx_buffer {
     ec_data_t      mbx_data;    //!< \brief mailbox data
 } PACKED ec_mbx_buffer_t;
 
-#define LEC_MBX_MAX_ENTRIES 16
-
 typedef struct ec_mbx {
     osal_uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
     osal_mutex_t sync_mutex;    //!< \brief Sync mutex for handler flags.
@@ -111,11 +109,6 @@ typedef struct ec_mbx {
                                  * moment.
                                  */
 
-
-    //pool_entry_t mp_recv_free_entries[LEC_MBX_MAX_ENTRIES];
-    //pool_entry_t mp_send_free_entries[LEC_MBX_MAX_ENTRIES];
-    //pool_t message_pool_recv_free; 
-    //pool_t message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
     pool_t message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
     ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.

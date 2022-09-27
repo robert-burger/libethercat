@@ -558,11 +558,6 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                             break;
                         }
 
-                        // alloc fmmus
-                        // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.fmmus = (ec_eeprom_cat_fmmu_t *)ec_malloc(
-                                sizeof(ec_eeprom_cat_fmmu_t) * slv->eeprom.fmmus_cnt);
-
                         osal_uint32_t fmmu_idx = 0;
                         while (local_offset < (cat_offset + cat_len + 2u)) {
                             osal_uint32_t i;
@@ -602,22 +597,9 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                             break;
                         }
 
-                        // alloc sms
-                        // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.sms = (ec_eeprom_cat_sm_t *)ec_malloc(
-                                sizeof(ec_eeprom_cat_sm_t) * slv->eeprom.sms_cnt);
-
                         // reallocate if we have more sm that previously declared
                         if ((cat_len/(sizeof(ec_eeprom_cat_sm_t) / 2u)) > slv->sm_ch) {
-                            if (slv->sm != NULL) {
-                                // cppcheck-suppress misra-c2012-21.3
-                                ec_free(slv->sm);
-                            }
-
                             slv->sm_ch = cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u);
-                            // cppcheck-suppress misra-c2012-21.3
-                            slv->sm = (ec_slave_sm_t *)ec_malloc(slv->sm_ch * 
-                                    sizeof(ec_slave_sm_t));
                             (void)memset(slv->sm, 0, slv->sm_ch * sizeof(ec_slave_sm_t));
                         }
 
@@ -682,7 +664,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
-                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_EEPROM_CAT_PDO_ENTRIES_MAX);
+                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
@@ -734,7 +716,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
-                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_EEPROM_CAT_PDO_ENTRIES_MAX);
+                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];

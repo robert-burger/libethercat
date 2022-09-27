@@ -117,7 +117,7 @@ enum tool_mode {
 };
 
 int main(int argc, char **argv) {
-    ec_t *pec;
+    ec_t ec;
     int ret, slave, i, phy = 0;
 
     char *intf = NULL, *fn = NULL;
@@ -178,34 +178,34 @@ int main(int argc, char **argv) {
     ec_log_func = &no_verbose_log;
             
 
-    ret = ec_open(&pec, intf, 90, 1, 1);
+    ret = ec_open(&ec, intf, 90, 1, 1);
 
 
     if (show_propagation_delays)
-        propagation_delays(pec);
+        propagation_delays(&ec);
 
     int j, fd;
     
     if (mode == mode_read) {
         if (fn) {
             fd = open(fn, O_CREAT | O_RDWR);
-            mii_read(fd, pec, slave, phy);
+            mii_read(fd, &ec, slave, phy);
             close(fd);
         } else
-            mii_read(1, pec, slave, phy);
+            mii_read(1, &ec, slave, phy);
     } else if (mode == mode_write) {
         uint16_t mii_value = val;
-        ec_miiwrite(pec, slave, phy, reg, &mii_value);
+        ec_miiwrite(&ec, slave, phy, reg, &mii_value);
     } else if (mode == mode_test) {
         printf("now in test mode...\n");
         while (1) {
             uint16_t tmp, wkc;
-            ec_brd(pec, 0, &tmp, 2, &wkc);
+            ec_brd(&ec, 0, &tmp, 2, &wkc);
         }
     }
         
 
-    ec_close(pec);
+    ec_close(&ec);
 
     return 0;
 }

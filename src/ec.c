@@ -948,11 +948,12 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         // eeprom logging level
         pec->eeprom_log         = eeprom_log;
 
+        memset(&pec->dg_entries[0], 0, sizeof(pool_entry_t) * LEC_MAX_DATAGRAMS);
         ret = pool_open(&pec->pool, 100, &pec->dg_entries[0]);
     }
 
-    (void)pool_open(&pec->mbx_message_pool_recv_free, LEC_MBX_MAX_ENTRIES, &pec->mbx_mp_recv_free_entries[0]);
-    (void)pool_open(&pec->mbx_message_pool_send_free, LEC_MBX_MAX_ENTRIES, &pec->mbx_mp_send_free_entries[0]);
+    (void)pool_open(&pec->mbx_message_pool_recv_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_recv_free_entries[0]);
+    (void)pool_open(&pec->mbx_message_pool_send_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_send_free_entries[0]);
 
     if (ret == EC_OK) {
         ret = hw_open(&pec->hw, ifname, prio, cpumask, 0);
@@ -962,7 +963,9 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         ret = ec_async_loop_create(&pec->async_loop, pec);
     }
 
-    ec_log(1, __func__, "libethercat misra-2012-libosal-no-alloc\n");
+    ec_log(10, __func__, "libethercat version: %s\n", LIBETHERCAT_VERSION);
+    ec_log(10, __func__, "  MAX_SLAVES: %d\n", LEC_MAX_SLAVES);
+    ec_log(10, __func__, "  MAX_GROUPS: %d\n", LEC_MAX_GROUPS);
 
     // destruct everything if something failed
     if (ret != EC_OK) {
@@ -1017,16 +1020,10 @@ int ec_close(ec_t *pec) {
         }
 
         pec->slave_cnt = 0;
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(pec->slaves);
     }
         
     (void)pool_close(&pec->mbx_message_pool_recv_free);
     (void)pool_close(&pec->mbx_message_pool_send_free);
-
-    ec_log(10, __func__, "freeing master instance\n");
-    // cppcheck-suppress misra-c2012-21.3
-    ec_free(pec);
 
     ec_log(10, __func__, "all done!\n");
     return 0;

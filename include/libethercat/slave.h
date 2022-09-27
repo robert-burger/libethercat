@@ -152,7 +152,7 @@ typedef struct ec_slave_subdev {
 } ec_slave_subdev_t;
 
 //! slave mailbox init commands
-typedef struct ec_slave_mailbox_init_cmd {
+typedef struct ec_init_cmd {
     int type;                   //!< Mailbox type
                                 /*!< 
                                  * The type defines which kind of Mailbox 
@@ -170,12 +170,8 @@ typedef struct ec_slave_mailbox_init_cmd {
                                  * target state. (e.g. 0x24 -> PRE to SAFE, ..)
                                  */
 
-    LIST_ENTRY(ec_slave_mailbox_init_cmd) le;
+    LIST_ENTRY(ec_init_cmd) le;
 
-    osal_uint8_t cmd[0];
-} ec_slave_mailbox_init_cmd_t;
-
-typedef struct {
     int id;                     //!< index 
                                 /*!< 
                                  * This depends of which Mailbox protocol is 
@@ -198,15 +194,13 @@ typedef struct {
                                  * CoE complete access mode, SoE atn, ...)
                                  */
 
-    osal_char_t *data;                 //!< new id data
-    osal_size_t datalen;             //!< new id data length
+    osal_char_t data[LEC_MAX_INIT_CMD_DATA];    //!< new id data
+    osal_size_t datalen;                        //!< new id data length
+} ec_init_cmd_t;
 
-} ec_coe_init_cmd_t, ec_soe_init_cmd_t;
-
-#define COE_INIT_CMD_SIZE       (sizeof(ec_slave_mailbox_init_cmd_t) + sizeof(ec_coe_init_cmd_t))
-#define SOE_INIT_CMD_SIZE       (sizeof(ec_slave_mailbox_init_cmd_t) + sizeof(ec_soe_init_cmd_t))
+#define INIT_CMD_SIZE       (sizeof(ec_init_cmd_t))
     
-LIST_HEAD(ec_slave_mailbox_init_cmds, ec_slave_mailbox_init_cmd);
+LIST_HEAD(ec_init_cmds, ec_init_cmd);
 
 typedef struct worker_arg {
     struct ec *pec;
@@ -242,7 +236,7 @@ typedef struct ec_slave {
                                  * available mailbox protocol or the EEPROM.
                                  */
 
-    ec_slave_sm_t *sm;          //!< array of sm settings
+    ec_slave_sm_t sm[LEC_MAX_SLAVE_SM];          //!< array of sm settings
                                 /*!<
                                  * These are the settings for the sync
                                  * managers of the EtherCAT slaves.
@@ -250,7 +244,7 @@ typedef struct ec_slave {
                                  * \endlink.
                                  */
 
-    ec_slave_fmmu_t *fmmu;      //!< array of fmmu settings
+    ec_slave_fmmu_t fmmu[LEC_MAX_SLAVE_FMMU];      //!< array of fmmu settings
                                 /*!<
                                  * These are the settings for the fielbus 
                                  * management units of the EtherCAT slaves.
@@ -303,7 +297,7 @@ typedef struct ec_slave {
     ec_state_t expected_state;  //!< Master expected slave state
     ec_state_t act_state;       //!< Actual/Last read slave state.
 
-    struct ec_slave_mailbox_init_cmds init_cmds;
+    struct ec_init_cmds init_cmds;
                                 //!< EtherCAT slave init commands
                                 /*!<
                                  * This is a list of EtherCAT slave init 
@@ -436,15 +430,11 @@ int ec_slave_prepare_state_transition(struct ec *pec, osal_uint16_t slave,
 int ec_slave_state_transition(struct ec *pec, osal_uint16_t slave, 
         ec_state_t state);
 
-//! Add master init command.
+//! Initialize CoE init command.
 /*!
  * This adds an EtherCAT slave init command. 
  *
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \param[in] slave         Number of ethercat slave. this depends on 
- *                          the physical order of the ethercat slaves 
- *                          (usually the n'th slave attached).
+ * \param[in] cmd           Init command to add.
  * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
  *                          the state we are coming from and 'b' is the state 
  *                          we want to get.
@@ -455,7 +445,26 @@ int ec_slave_state_transition(struct ec *pec, osal_uint16_t slave,
  *                          be transfered.
  * \param[in] datalen       Length of \p data
  */
-void ec_slave_add_coe_init_cmd(struct ec *pec, osal_uint16_t slave,
+void ec_slave_mailbox_coe_init_cmd_init(ec_init_cmd_t *cmd,
+        int transition, int id, int si_el, int ca_atn,
+        osal_char_t *data, osal_size_t datalen);
+
+//! Initialie SoE init command.
+/*!
+ * This adds an EtherCAT slave init command. 
+ *
+ * \param[in] cmd           Init command to add.
+ * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
+ *                          the state we are coming from and 'b' is the state 
+ *                          we want to get.
+ * \param[in] id            Either SoE Index number or the ServoDrive IDN.
+ * \param[in] si_el         Either SoE SubIndex or ServoDrive element number.
+ * \param[in] ca_atn        Either SoE complete access or ServoDrive ATN.
+ * \param[in] data          Pointer to memory buffer with data which should 
+ *                          be transfered.
+ * \param[in] datalen       Length of \p data
+ */
+void ec_slave_mailbox_soe_init_cmd_init(ec_init_cmd_t *cmd,
         int transition, int id, int si_el, int ca_atn,
         osal_char_t *data, osal_size_t datalen);
 
@@ -468,19 +477,9 @@ void ec_slave_add_coe_init_cmd(struct ec *pec, osal_uint16_t slave,
  * \param[in] slave         Number of ethercat slave. this depends on 
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
- * \param[in] transition    EtherCAT state transition in form 0xab, where 'a' is 
- *                          the state we are coming from and 'b' is the state 
- *                          we want to get.
- * \param[in] id            Either CoE Index number or the ServoDrive IDN.
- * \param[in] si_el         Either CoE SubIndex or ServoDrive element number.
- * \param[in] ca_atn        Either CoE complete access or ServoDrive ATN.
- * \param[in] data          Pointer to memory buffer with data which should 
- *                          be transfered.
- * \param[in] datalen       Length of \p data
+ * \param[in] cmd           Init command to add.
  */
-void ec_slave_add_soe_init_cmd(struct ec *pec, osal_uint16_t slave,
-        int transition, int id, int si_el, int ca_atn,
-        osal_char_t *data, osal_size_t datalen);
+void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd);
 
 //! Set Distributed Clocks config to slave
 /*! 
@@ -498,12 +497,6 @@ void ec_slave_add_soe_init_cmd(struct ec *pec, osal_uint16_t slave,
 void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, 
         int use_dc, int type, osal_uint32_t cycle_time_0, 
         osal_uint32_t cycle_time_1, osal_uint32_t cycle_shift);
-
-//! Freeing init command structure.
-/*!
- * \param[in] cmd           Pointer to init command which willed be freed.
- */
-void ec_slave_mailbox_init_cmd_free(ec_slave_mailbox_init_cmd_t *cmd);
 
 //! Adds master EoE settings.
 /*!
