@@ -69,14 +69,14 @@ extern "C" {
 
 //! open a new hw
 /*!
- * \param pphw return hw 
+ * \param phw return hw 
  * \param devname ethernet device name
  * \param prio receive thread prio
  * \param cpumask receive thread cpumask
  * \param mmap_packets  0 - using traditional send/recv, 1...n number of mmaped kernel packet buffers
  * \return 0 or negative error code
  */
-int hw_open(hw_t **pphw, const osal_char_t *devname, int prio, int cpumask, int mmap_packets);
+int hw_open(hw_t *phw, const osal_char_t *devname, int prio, int cpumask, int mmap_packets);
 
 //! destroys a hw
 /*!

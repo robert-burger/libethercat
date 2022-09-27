@@ -47,6 +47,8 @@
 #define LEC_MAX_SLAVES  256
 #define LEC_MAX_GROUPS  16
 
+#define LEC_MAX_PDLEN   (2*1518)
+
 #define EC_SHORT_TIMEOUT_MBX        10000000
 #define EC_DEFAULT_TIMEOUT_MBX      1000000000
 #define EC_DEFAULT_DELAY            2000000
@@ -73,7 +75,7 @@ typedef struct ec_pd_group {
                                      * addressing commands LRW, LRD, LWR, ...
                                      */
     
-    osal_uint8_t *pd;               //!< process data pointer
+    osal_uint8_t pd[LEC_MAX_PDLEN]; //!< process data pointer
                                     /*!< 
                                      * This address holds the process data
                                      * of the whole group. At offset 0 the 
@@ -111,7 +113,7 @@ typedef struct ec_pd_group {
 
 //! ethercat master structure
 typedef struct ec {
-    hw_t *phw;                      //!< pointer to hardware interface
+    hw_t hw;                        //!< pointer to hardware interface
     int tx_sync;                    //!< Synchronous call to send frames.
                                     /*!<
                                      * This defines if the actual call to 
@@ -159,7 +161,7 @@ typedef struct ec {
     ec_pd_group_t pd_groups[LEC_MAX_GROUPS];       //!< array with process data groups
 
     ec_dc_info_t dc;                //!< distributed clocks master settings
-    ec_async_loop_t *async_loop;
+    ec_async_loop_t async_loop;
                                     //!< asynchronous message loop
                                     /*!<
                                      * This loop receives asynchronous messages
@@ -203,14 +205,14 @@ void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...);
  * After the successfull completion of \link ec_open \endlink an EtherCAT 
  * scan should be performed with \link ec_scan \endlink.
  *
- * \param[out] ppec         Return value for ethercat master pointer.
+ * \param[out] pec          Ethercat master instance pointer.
  * \param[in]  ifname       Ethercat master interface name.
  * \param[in]  prio         Receive thread priority.
  * \param[in]  cpumask      Receive thread cpumask.
  * \param[in]  eeprom_log   Log eeprom to stdout.
  * \return 0 on succes, otherwise error code
  */
-int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int eeprom_log);
+int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eeprom_log);
 
 //! \brief Closes ethercat master.
 /*!

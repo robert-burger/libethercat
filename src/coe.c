@@ -242,6 +242,8 @@ void ec_coe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    ec_log(10, __func__, "slave %2d: initializing CoE mailbox.\n", slave);
+
     ec_slave_ptr(slv, pec, slave);
     (void)pool_open(&slv->mbx.coe.recv_pool, 0, NULL);
     osal_mutex_init(&slv->mbx.coe.lock, NULL);
@@ -287,7 +289,7 @@ static void ec_coe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     ec_mbx_sched_read(pec, slave);
 
     osal_timer_t timeout;
-    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_init(&timeout, (osal_int64_t)EC_DEFAULT_TIMEOUT_MBX*10);
 
     (void)pool_get(&slv->mbx.coe.recv_pool, pp_entry, &timeout);
 }
@@ -575,6 +577,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
 
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry);
+        p_entry = NULL;
 
         ec_coe_wait(pec, slave, &p_entry);
         while (p_entry != NULL) {
@@ -596,8 +599,9 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                 seg_len += (EC_SDO_NORMAL_HDR_LEN - EC_SDO_SEG_HDR_LEN);
                 ret = EC_OK;
             } else {
-                ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
-                        (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                ec_log(5, __func__, "slave %2d: got unexpected mailbox message (service 0x%X, command 0x%X)\n", 
+                        slave, read_buf->coe_hdr.service, read_buf->sdo_hdr.command);
+                ec_coe_print_msg(5, __func__, slave, "message was: ", (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                 ret = EC_ERROR_MAILBOX_READ;
             }
             

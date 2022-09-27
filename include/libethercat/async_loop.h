@@ -93,13 +93,13 @@ extern "C" {
 
 //! creates a new async message loop
 /*!
- * \param[out] ppaml        Return newly created handle to async message loop.
+ * \param[out] paml         Return newly created handle to async message loop.
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
  * \retval 0            On success
  * \retval error_code   On error
  */
-int ec_async_loop_create(ec_async_loop_t **ppaml, 
+int ec_async_loop_create(ec_async_loop_t *paml, 
         struct ec *pec);
 
 //! Destroys async message loop.

@@ -362,43 +362,29 @@ static int internal_hw_open(hw_t *phw, const osal_char_t *devname) {
  * \param mmap_packets  0 - using traditional send/recv, 1...n number of mmaped kernel packet buffers
  * \return 0 or negative error code
  */
-int hw_open(hw_t **pphw, const osal_char_t *devname, int prio, int cpumask, int mmap_packets) {
-    int ret = EC_OK;
+int hw_open(hw_t *phw, const osal_char_t *devname, int prio, int cpumask, int mmap_packets) {
+    assert(phw != NULL);
 
-    assert(pphw != NULL);
+    int ret;
 
-    // cppcheck-suppress misra-c2012-21.3
-    (*pphw) = (hw_t *)ec_malloc(sizeof(hw_t));
-    if ((*pphw) == NULL) {
-        ret = EC_ERROR_OUT_OF_MEMORY;
-    } else {
+    phw->mmap_packets = mmap_packets;
 
-    (void)memset(*pphw, 0, sizeof(hw_t));
-    
-    (*pphw)->mmap_packets = mmap_packets;
+    (void)pool_open(&phw->tx_high, 0, NULL);
+    (void)pool_open(&phw->tx_low, 0, NULL);
 
-    (void)pool_open(&(*pphw)->tx_high, 0, NULL);
-    (void)pool_open(&(*pphw)->tx_low, 0, NULL);
-
-    ret = internal_hw_open(*pphw, devname);
-    }
+    ret = internal_hw_open(phw, devname);
 
     if (ret == EC_OK) {
         // thread settings
-        (*pphw)->rxthreadprio = prio;
-        (*pphw)->rxthreadcpumask = cpumask;
-        (*pphw)->rxthreadrunning = 1;
+        phw->rxthreadprio = prio;
+        phw->rxthreadcpumask = cpumask;
+        phw->rxthreadrunning = 1;
 
         osal_task_attr_t attr;
         attr.priority = prio;
         attr.affinity = cpumask;
         strcpy(&attr.task_name[0], "ecat.rx");
-        osal_task_create(&(*pphw)->rxthread, &attr, hw_rx_thread, *pphw);
-    }
-
-    if ((ret != EC_OK) && (*pphw) != NULL) {
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(*pphw);
+        osal_task_create(&phw->rxthread, &attr, hw_rx_thread, phw);
     }
 
     return ret;

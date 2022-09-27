@@ -240,51 +240,44 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
 }
 
 // creates a new async message loop
-int ec_async_loop_create(ec_async_loop_t **ppaml, ec_t *pec) {
+int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
     int ret = EC_OK;
     
-    assert(ppaml != NULL);
+    assert(paml != NULL);
     assert(pec != NULL);
 
-    // create memory for async message loop
-    // cppcheck-suppress misra-c2012-21.3
-    (*ppaml) = (ec_async_loop_t *)ec_malloc(sizeof(ec_async_loop_t));
-    if (!(*ppaml)) {
-        ret = ENOMEM;
-    } else {
-        int i = 0;
+    int i = 0;
 
-        // initiale pre-alocated async messages in avail queue
-        osal_mutex_init(&(*ppaml)->avail.lock, NULL);
-        osal_mutex_lock(&(*ppaml)->avail.lock);
-        osal_semaphore_init(&(*ppaml)->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
-        TAILQ_INIT(&(*ppaml)->avail.queue);
+    // initiale pre-alocated async messages in avail queue
+    osal_mutex_init(&paml->avail.lock, NULL);
+    osal_mutex_lock(&paml->avail.lock);
+    osal_semaphore_init(&paml->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
+    TAILQ_INIT(&paml->avail.queue);
 
-        for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
-            ec_message_entry_t *me = &(*ppaml)->entries[0];
-            (void)memset(me, 0, sizeof(ec_message_entry_t));
-            TAILQ_INSERT_TAIL(&(*ppaml)->avail.queue, me, qh);
-        }
+    for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
+        ec_message_entry_t *me = &paml->entries[0];
+        (void)memset(me, 0, sizeof(ec_message_entry_t));
+        TAILQ_INSERT_TAIL(&paml->avail.queue, me, qh);
+    }
 
-        osal_mutex_unlock(&(*ppaml)->avail.lock);
+    osal_mutex_unlock(&paml->avail.lock);
 
-        // initialize execute queue
-        osal_mutex_init(&(*ppaml)->exec.lock, NULL);
-        osal_mutex_lock(&(*ppaml)->exec.lock);
-        osal_semaphore_init(&(*ppaml)->exec.avail_cnt, 0, 0);
-        TAILQ_INIT(&(*ppaml)->exec.queue);
-        osal_mutex_unlock(&(*ppaml)->exec.lock);
+    // initialize execute queue
+    osal_mutex_init(&paml->exec.lock, NULL);
+    osal_mutex_lock(&paml->exec.lock);
+    osal_semaphore_init(&paml->exec.avail_cnt, 0, 0);
+    TAILQ_INIT(&paml->exec.queue);
+    osal_mutex_unlock(&paml->exec.lock);
 
-        (*ppaml)->pec = pec;
-        (*ppaml)->loop_running = 1;
-        if (osal_timer_gettime(&(*ppaml)->next_check_group) == 0) { 
-            osal_task_attr_t attr;
-            attr.priority = 0;
-            attr.affinity = 0xFF;
-            strcpy(&attr.task_name[0], "ecat.async");
-            osal_task_create(&(*ppaml)->loop_tid, &attr, 
-                    ec_async_loop_thread, (*ppaml));
-        }
+    paml->pec = pec;
+    paml->loop_running = 1;
+    if (osal_timer_gettime(&paml->next_check_group) == 0) { 
+        osal_task_attr_t attr;
+        attr.priority = 0;
+        attr.affinity = 0xFF;
+        strcpy(&attr.task_name[0], "ecat.async");
+        osal_task_create(&paml->loop_tid, &attr, 
+                ec_async_loop_thread, paml);
     }
 
     return ret;

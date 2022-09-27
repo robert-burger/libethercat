@@ -110,11 +110,14 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
     assert(entry != NULL);
 
     int ret = EC_OK;
+    *entry = NULL;
 
     if (timeout != NULL) {
-        while (ret == EC_OK) {
-            osal_retval_t local_ret = osal_semaphore_timedwait(&pp->avail_cnt, timeout);
-            if (local_ret != OSAL_OK) {
+        osal_retval_t local_ret = osal_semaphore_timedwait(&pp->avail_cnt, timeout);
+        if (local_ret != OSAL_OK) {
+            if (local_ret == OSAL_ERR_TIMEOUT) {
+                ret = EC_ERROR_TIMEOUT;
+            } else {
                 ret = EC_ERROR_UNAVAILABLE;
             }
         }

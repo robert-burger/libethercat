@@ -95,7 +95,6 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
     for (osal_uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
         pec->pd_groups[i].log       = 0x10000u * ((osal_uint32_t)i+1u);
         pec->pd_groups[i].log_len   = 0u;
-        pec->pd_groups[i].pd        = NULL;
         pec->pd_groups[i].pdout_len = 0u;
         pec->pd_groups[i].pdin_len  = 0u;
         pec->pd_groups[i].use_lrw   = 1;
@@ -112,13 +111,6 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
  */
 int ec_destroy_pd_groups(ec_t *pec) {
     assert(pec != NULL);
-
-    if (pec->pd_groups != NULL) {
-        for (osal_uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
-            // cppcheck-suppress misra-c2012-21.3
-            free_resource(pec->pd_groups[i].pd);
-        }
-    }
 
     pec->pd_group_cnt = 0;
 
@@ -205,11 +197,8 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
             pd->pdin_len, pd->pd_lrw_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
-    // cppcheck-suppress misra-c2012-21.3
-    pd->pd = (osal_uint8_t *)ec_malloc(pd->log_len);
-    (void)memset(pd->pd, 0, pd->log_len);
 
-    osal_uint8_t *pdout = pd->pd;
+    osal_uint8_t *pdout = &pd->pd[0];
     osal_uint8_t *pdin = &pd->pd[pd->pdout_len];
 
     osal_uint32_t log_base = pd->log;
@@ -369,11 +358,8 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
             pd->pdout_len, pd->log + pd->pdout_len, pd->pdin_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
-    // cppcheck-suppress misra-c2012-21.3
-    pd->pd = (osal_uint8_t *)ec_malloc(pd->log_len);
-    (void)memset(pd->pd, 0, pd->log_len);
 
-    osal_uint8_t *pdout = pd->pd;
+    osal_uint8_t *pdout = &pd->pd[0];
     osal_uint8_t *pdin = &pd->pd[pd->pdout_len];
 
     osal_uint32_t log_base_out = pd->log;
@@ -611,6 +597,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
         }
     }
 }
+
 //! scan ethercat bus for slaves and create strucutres
 /*! 
  * \param pec ethercat master pointer
@@ -919,15 +906,13 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
  * \param eeprom_log log eeprom to stdout
  * \return 0 on succes, otherwise error code
  */
-int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int eeprom_log) {
-    assert(ppec != NULL);
+int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eeprom_log) {
+    assert(pec != NULL);
     assert(ifname != NULL);
 
     int ret = EC_OK;
 
     // cppcheck-suppress misra-c2012-21.3
-    ec_t *pec = (ec_t *)ec_malloc(sizeof(ec_t)); 
-    (*ppec) = pec;
     if (pec == NULL) {
         ret = EC_ERROR_OUT_OF_MEMORY;
     } 
@@ -940,7 +925,6 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
         pec->master_state       = EC_STATE_UNKNOWN;
 
         // slaves'n groups
-        pec->phw                = NULL;
         pec->slave_cnt          = 0;
         pec->pd_group_cnt       = 0;
         pec->tx_sync            = 1;
@@ -971,7 +955,7 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
     (void)pool_open(&pec->mbx_message_pool_send_free, LEC_MBX_MAX_ENTRIES, &pec->mbx_mp_send_free_entries[0]);
 
     if (ret == EC_OK) {
-        ret = hw_open(&pec->phw, ifname, prio, cpumask, 0);
+        ret = hw_open(&pec->hw, ifname, prio, cpumask, 0);
     }
 
     if (ret == EC_OK) {
@@ -983,7 +967,7 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
     // destruct everything if something failed
     if (ret != EC_OK) {
         if (pec != NULL) {
-            int local_ret = hw_close(pec->phw);
+            int local_ret = hw_close(&pec->hw);
             if (local_ret != EC_OK) {
                 ec_log(1, __func__, "hw_close failed with %d\n", local_ret);
             }
@@ -994,12 +978,7 @@ int ec_open(ec_t **ppec, const osal_char_t *ifname, int prio, int cpumask, int e
             }
 
             ec_index_deinit(&pec->idx_q);
-
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(pec);
         }
-
-        *ppec = NULL;
     }
 
     return ret;
@@ -1018,9 +997,9 @@ int ec_close(ec_t *pec) {
     ec_eoe_destroy_tun(pec);
 
     ec_log(10, __func__, "destroying async loop\n");
-    if (pec->async_loop != NULL) { (void)ec_async_loop_destroy(pec->async_loop);}
+    (void)ec_async_loop_destroy(&pec->async_loop);
     ec_log(10, __func__, "closing hardware handle\n");
-    if (pec->phw != NULL) { (void)hw_close(pec->phw);}
+    (void)hw_close(&pec->hw);
     ec_log(10, __func__, "freeing frame pool\n");
     (void)pool_close(&pec->pool);
 
@@ -1105,11 +1084,11 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         p_entry->user_arg = p_idx;
 
         // queue frame and trigger tx
-        pool_put(&pec->phw->tx_low, p_entry);
+        pool_put(&pec->hw.tx_low, p_entry);
 
         // send frame immediately if in sync mode
         if (pec->tx_sync != 0) {
-            if (hw_tx(pec->phw) != EC_OK) {
+            if (hw_tx(&pec->hw) != EC_OK) {
                 ec_log(1, __func__, "hw_tx failed!\n");
             }
         }
@@ -1193,11 +1172,11 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         p_entry->user_arg = p_idx;
 
         // queue frame and return, we don't care about an answer
-        pool_put(&pec->phw->tx_low, p_entry);
+        pool_put(&pec->hw.tx_low, p_entry);
 
         // send frame immediately if in sync mode
         if (pec->tx_sync != 0) {
-            if (hw_tx(pec->phw) != EC_OK) {
+            if (hw_tx(&pec->hw) != EC_OK) {
                 ec_log(1, __func__, "hw_tx failed!\n");
             }
         }
@@ -1254,7 +1233,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
         pd->p_entry->user_arg = pd->p_idx;
 
         // queue frame and trigger tx
-        pool_put(&pec->phw->tx_high, pd->p_entry);
+        pool_put(&pec->hw.tx_high, pd->p_entry);
     }
 
     return ret;
@@ -1320,7 +1299,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
                             pec->slave_cnt, wkc_mismatch_cnt);
                 }
 
-                ec_async_check_group(pec->async_loop, group);
+                ec_async_check_group(&pec->async_loop, group);
                 ret = EC_ERROR_WKC_MISMATCH;
             } else {
                 wkc_mismatch_cnt = 0;
@@ -1415,7 +1394,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
             pec->dc.p_de_dc->user_arg = pec->dc.p_idx_dc;
 
             // queue frame and trigger tx
-            pool_put(&pec->phw->tx_high, pec->dc.p_de_dc);
+            pool_put(&pec->hw.tx_high, pec->dc.p_de_dc);
         }
     }
       
@@ -1525,7 +1504,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
                         p_entry_dc_sto->user_arg = p_idx_dc_sto;
 
                         // queue frame and trigger tx
-                        pool_put(&pec->phw->tx_low, p_entry_dc_sto);
+                        pool_put(&pec->hw.tx_low, p_entry_dc_sto);
                     }
                 }
             }
@@ -1573,7 +1552,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
         pec->p_de_state->user_arg = pec->p_idx_state;
 
         // queue frame and trigger tx
-        pool_put(&pec->phw->tx_high, pec->p_de_state);
+        pool_put(&pec->hw.tx_high, pec->p_de_state);
     }
 
     return ret;
