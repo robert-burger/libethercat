@@ -9,8 +9,26 @@ class MainProject(ConanFile):
     description = "This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface"
     settings = "os", "compiler", "build_type", "arch"
     exports_sources = "src/*", "include/*", "README.md", "project.properties", "libethercat.pc.in", "Makefile.am", "m4/*", "configure.ac", "LICENSE", "aminclude.am", "acinclude.m4", "tools/*", "doxygen.cfg", "config.sub"
-    options = {"shared": [True, False], "max_slaves": "ANY", "max_groups": "ANY", "max_pdlen": "ANY", "max_mbx_entries": "ANY", "max_init_cmd_data": "ANY" }
-    default_options = {"shared": True, "max_slaves": 256, "max_groups": 8, "max_pdlen": 3036, "max_mbx_entries": 16, "max_init_cmd_data": 2048 }
+    options = {
+        "shared": [True, False],
+        "max_slaves": "ANY",
+        "max_groups": "ANY", 
+        "max_pdlen": "ANY", 
+        "max_mbx_entries": "ANY", 
+        "max_init_cmd_data": "ANY",
+        "max_slave_fmmu": "ANY",
+        "max_slave_sm": "ANY"
+    }
+    default_options = {
+        "shared": True, 
+        "max_slaves": 256, 
+        "max_groups": 8, 
+        "max_pdlen": 3036, 
+        "max_mbx_entries": 16, 
+        "max_init_cmd_data": 2048,
+        "max_slave_fmmu": 8,
+        "max_slave_sm": 8
+    }
 
     generators = "pkg_config"
     requires = [ "libosal/main@common/snapshot", ]
@@ -58,6 +76,10 @@ class MainProject(ConanFile):
             cflags += "-DLEC_MAX_MBX_ENTRIES=%d " % self.options.max_mbx_entries
         if self.options.max_init_cmd_data:
             cflags += "-DLEC_MAX_INIT_CMD_DATA=%d " % self.options.max_init_cmd_data
+        if self.options.max_slave_fmmu:
+            cflags += "-DLEC_MAX_SLAVE_FMMU=%d " % self.options.max_slave_fmmu
+        if self.options.max_slave_sm:
+            cflags += "-DLEC_MAX_SLAVE_SM=%d " % self.options.max_slave_sm
 
         if cflags != "":
             args.append("CFLAGS=%s" % cflags)

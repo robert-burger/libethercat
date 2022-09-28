@@ -59,7 +59,6 @@ int ec_index_get(idx_queue_t *idx_q, struct idx_entry **entry) {
         osal_binary_semaphore_trywait(&(*entry)->waiter);
     }
 
-    
     osal_mutex_unlock(&idx_q->lock);
 
     return ret;
