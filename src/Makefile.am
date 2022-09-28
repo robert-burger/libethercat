@@ -22,11 +22,10 @@ include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 				  $(top_srcdir)/include/libethercat/slave.h \
 				  $(top_srcdir)/include/libethercat/soe.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
-				  $(top_srcdir)/include/libethercat/mii.h \
-				  $(top_srcdir)/include/libethercat/memory.h 
+				  $(top_srcdir)/include/libethercat/mii.h
 
 libethercat_la_SOURCES	= coe.c common.c slave.c datagram.c pool.c async_loop.c ec.c \
-						  hw.c soe.c foe.c mbx.c eeprom.c dc.c idx.c mii.c eoe.c memory.c
+						  hw.c soe.c foe.c mbx.c eeprom.c dc.c idx.c mii.c eoe.c
 libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(top_srcdir)/include @LIBOSAL_CFLAGS@
 libethercat_la_LDFLAGS	= -Wall -Werror 
 libethercat_la_LIBS     = @LIBOSAL_LIBS@

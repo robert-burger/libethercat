@@ -49,7 +49,7 @@ typedef struct ec_fw_update {
     osal_uint16_t size;              //!< size of data
     osal_uint16_t address_low;       //!< destination/source address low WORD
     osal_uint16_t address_high;      //!< destination/source address high WORD
-    osal_uint16_t data[(EC_MAX_DATA-8u)>>1u];
+    osal_uint16_t data[(LEC_MAX_DATA-8u)>>1u];
                                 //!< firmware data bytes
 } ec_fw_update_t;
 

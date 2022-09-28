@@ -34,7 +34,6 @@
 
 #include "libethercat/ec.h"
 #include "libethercat/foe.h"
-#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 // cppcheck-suppress misra-c2012-21.6
@@ -195,11 +194,7 @@ static const osal_char_t *dump_foe_error_request(int slave, ec_foe_error_request
 
     osal_size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
     if (text_len > 0u) {
-        // cppcheck-suppress misra-c2012-21.3
-        osal_char_t *error_text = (osal_char_t *)ec_malloc(text_len + 1u);
-        (void)strncpy(error_text, read_buf_error->error_text, text_len);
-        error_text[text_len] = '\0';
-        ec_log(10, __func__, "error_text: %s\n", error_text);
+        ec_log(10, __func__, "error_text: %.*s\n", text_len, read_buf_error->error_text);
     } else {
         if (read_buf_error->error_code == 0x800Du) {
             ret = EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND;

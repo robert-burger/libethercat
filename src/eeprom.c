@@ -34,7 +34,6 @@
 
 #include "libethercat/eeprom.h"
 #include "libethercat/ec.h"
-#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
@@ -465,6 +464,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
         size = (osal_uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 125u); // convert kbit to byte
         if (size > 128u) {
             osal_uint16_t cat_type;
+            osal_uint32_t free_pdo_index = 0;
             do {
                 int ret = ec_read_eeprom(cat_offset, value32);
                 if (ret != 0) {
@@ -481,52 +481,49 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     case EC_EEPROM_CAT_STRINGS: {
                         do_eeprom_log(10, "EEPROM_STRINGS", "slave %2d: cat_len %d\n", slave, cat_len);
-
-                        // cppcheck-suppress misra-c2012-21.3
-                        osal_uint8_t *buf = (osal_uint8_t *)ec_malloc((cat_len * 2u) + 1u);
-                        buf[cat_len * 2u] = 0u;
-                        (void)ec_eepromread_len(pec, slave, cat_offset+2, buf, cat_len * 2u);
+                        static osal_uint8_t ec_eeprom_buf[4096];
+                        (void)ec_eepromread_len(pec, slave, cat_offset+2, &ec_eeprom_buf[0], cat_len * 2u);
 
                         osal_uint32_t local_offset = 0;
                         osal_uint32_t i;
-                        slv->eeprom.strings_cnt = buf[local_offset];
+                        slv->eeprom.strings_cnt = ec_eeprom_buf[local_offset];
                         local_offset++;
 
                         do_eeprom_log(10, "EEPROM_STRINGS", "slave %2d: stored strings %d\n", slave, slv->eeprom.strings_cnt);
+                        if (slv->eeprom.strings_cnt > LEC_MAX_EEPROM_CAT_STRINGS) {
+                            slv->eeprom.strings_cnt = LEC_MAX_EEPROM_CAT_STRINGS;
+                            do_eeprom_log(10, "EEPROM_STRINGS", "        : warning: can only red %d strings\n", slv->eeprom.strings_cnt);
+                        }
 
                         if (!slv->eeprom.strings_cnt) {
-                            // cppcheck-suppress misra-c2012-21.3
-                            ec_free(buf);
                             break;
                         }
 
-                        // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.strings = (osal_char_t **)ec_malloc(sizeof(osal_char_t *) * slv->eeprom.strings_cnt);
-
                         for (i = 0; i < slv->eeprom.strings_cnt; ++i) {
-                            osal_uint8_t string_len = buf[local_offset];
+                            osal_uint8_t string_len = ec_eeprom_buf[local_offset];
+                            osal_uint8_t read_string_len = 0u; //buf[local_offset];
                             local_offset++;
 
-                            // cppcheck-suppress misra-c2012-21.3
-                            slv->eeprom.strings[i] = (osal_char_t *)ec_malloc(sizeof(osal_char_t) * (string_len + 1u));
-                            (void)strncpy(slv->eeprom.strings[i], (osal_char_t *)&buf[local_offset], string_len);
+                            if (string_len > (LEC_MAX_STRING_LEN - 1u)) {
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        : warning string is %d bytes long, can only read %d bytes.\n", 
+                                        string_len, LEC_MAX_STRING_LEN - 1u);
+                                read_string_len = LEC_MAX_STRING_LEN - 1u;
+                            } else {
+                                read_string_len = string_len;
+                            }
+
+                            (void)strncpy(&slv->eeprom.strings[i][0], (osal_char_t *)&ec_eeprom_buf[local_offset], read_string_len);
                             local_offset += string_len;
 
-                            slv->eeprom.strings[i][string_len] = '\0';
+                            slv->eeprom.strings[i][read_string_len] = '\0';
 
-                            do_eeprom_log(10, "EEPROM_STRINGS", 
-                                    "          string %2d, length %2d : %s\n", 
-                                    i, string_len, slv->eeprom.strings[i]);
+                            do_eeprom_log(10, "EEPROM_STRINGS", "          string %2d, length %2d : %s\n", i, string_len, slv->eeprom.strings[i]);
                             if (local_offset > (cat_len * 2u)) {
-                                do_eeprom_log(5, "EEPROM_STRINGS", 
-                                        "          something wrong in eeprom "
-                                        "string section\n");
+                                do_eeprom_log(5, "EEPROM_STRINGS", "          something wrong in eeprom string section\n");
                                 break;
                             }
                         }
 
-                        // cppcheck-suppress misra-c2012-21.3
-                        ec_free(buf);
                         break;
                     }
                     case EC_EEPROM_CAT_DATATYPES:
@@ -646,15 +643,14 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         ec_eeprom_cat_pdo_t *pdo = TAILQ_FIRST(&slv->eeprom.txpdos);
                         while (pdo != NULL) {
                             TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
-                            // cppcheck-suppress misra-c2012-21.3
-                            ec_free(pdo);
                             pdo = TAILQ_FIRST(&slv->eeprom.txpdos);
                         }
 
                         do {
                             // read pdo
-                            // cppcheck-suppress misra-c2012-21.3
-                            pdo = (ec_eeprom_cat_pdo_t *)ec_malloc(sizeof(ec_eeprom_cat_pdo_t));
+                            pdo = &slv->eeprom.free_pdos[free_pdo_index];
+                            free_pdo_index++;
+
                             (void)memset((osal_uint8_t *)pdo, 0, sizeof(ec_eeprom_cat_pdo_t));
                             (void)ec_eepromread_len(pec, slave, local_offset, 
                                     (osal_uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
@@ -699,15 +695,14 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         ec_eeprom_cat_pdo_t *pdo = TAILQ_FIRST(&slv->eeprom.rxpdos);
                         while (pdo != NULL) {
                             TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
-                            // cppcheck-suppress misra-c2012-21.3
-                            ec_free(pdo);
                             pdo = TAILQ_FIRST(&slv->eeprom.rxpdos);
                         }
 
                         do {
                             // read pdo
-                            // cppcheck-suppress misra-c2012-21.3
-                            pdo = (ec_eeprom_cat_pdo_t *)ec_malloc(sizeof(ec_eeprom_cat_pdo_t));
+                            pdo = &slv->eeprom.free_pdos[free_pdo_index]; 
+                            free_pdo_index++;
+                            (void)memset((osal_uint8_t *)pdo, 0, sizeof(ec_eeprom_cat_pdo_t));
                             (void)ec_eepromread_len(pec, slave, local_offset, 
                                     (osal_uint8_t *)pdo, EC_EEPROM_CAT_PDO_LEN);
                             local_offset += (osal_size_t)(EC_EEPROM_CAT_PDO_LEN / 2u);
@@ -743,18 +738,13 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                         do_eeprom_log(10, "EEPROM_DC", "slave %2d:\n", slave);
 
-                        // freeing existing dcs ...
-                        if (slv->eeprom.dcs > 0) {
-                            // cppcheck-suppress misra-c2012-21.3
-                            ec_free(slv->eeprom.dcs);
-                            slv->eeprom.dcs = NULL;
-                            slv->eeprom.dcs_cnt = 0;
-                        }
-
                         // allocating new dcs
                         slv->eeprom.dcs_cnt = cat_len / (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
-                        // cppcheck-suppress misra-c2012-21.3
-                        slv->eeprom.dcs = (ec_eeprom_cat_dc_t *)ec_malloc(EC_EEPROM_CAT_DC_LEN * slv->eeprom.dcs_cnt);
+                        if (slv->eeprom.dcs_cnt > LEC_MAX_EEPROM_CAT_DC) {
+                            ec_log(5, "EEPROM_DC", "slave %2d: can only store %d dc settings but got %d!\n", 
+                                    slave, LEC_MAX_EEPROM_CAT_DC, slv->eeprom.dcs_cnt);
+                            slv->eeprom.dcs_cnt = LEC_MAX_EEPROM_CAT_DC;
+                        }
 
                         for (j = 0; j < slv->eeprom.dcs_cnt; ++j) {
                             ec_eeprom_cat_dc_t *dc = &slv->eeprom.dcs[j];

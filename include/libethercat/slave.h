@@ -279,7 +279,7 @@ typedef struct ec_slave {
                                  * axes per slave, ...
                                  */
 
-    ec_slave_subdev_t *subdevs; //!< array of sub devices
+    ec_slave_subdev_t subdevs[LEC_MAX_DS402_SUBDEVS]; //!< array of sub devices
                                 /*!< 
                                  * An EtherCAT slave may have multiple sub
                                  * devices defines. These may be e.g. multiple

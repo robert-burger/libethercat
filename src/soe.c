@@ -33,7 +33,6 @@
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
 #include "libethercat/soe.h"
-#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>
@@ -214,16 +213,12 @@ void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
  *                      IDN's in range 1...32767 are described in the Specification,
  *                      IDN's greater 32768 are manufacturer specific.
  * \param[in] elements  ServoDrive elements according to ServoDrive Bus Specification.
- * \param[in,out] buf   Buffer for where to store the answer. This can either be
- *                      NULL with 'len' also set to zero, or a pointer to a 
- *                      preallocated buffer with set \p len field. In case \p buf is NULL
- *                      it will be allocated by \link ec_soe_read \endlink call. Then 
- *                      you have to make sure, that the buffer is freed by your application.
+ * \param[in,out] buf   Buffer for where to store the answer. 
  * \param[in,out] len   Length of \p buf, see 'buf' descriptions. Returns length of answer.
  * \return EC_OK on successs, EC_ERROR_MAILBOX_* otherwise.
  */
 int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
-        osal_uint8_t *elements, osal_uint8_t **buf, osal_size_t *len) 
+        osal_uint8_t *elements, osal_uint8_t *buf, osal_size_t *len) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -256,7 +251,7 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry);
 
-        osal_uint8_t *to = *buf;
+        osal_uint8_t *to = buf;
         osal_ssize_t left_len = *len;
         osal_uint8_t first_fragment = 1u;
 
@@ -286,12 +281,6 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
                         *len = (read_buf->soe_hdr.idn_fragments_left + 1u) * (*len);
                         left_len = *len;
                     }
-                }
-
-                if (*buf == NULL) {
-                    // cppcheck-suppress misra-c2012-21.3
-                    *buf = (osal_uint8_t *)ec_malloc(*len);
-                    to = *buf;
                 }
 
                 first_fragment = 0;
@@ -431,7 +420,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_ui
     assert(bitsize != NULL);
     
     int ret = EC_OK;
-    osal_uint16_t *idn_value = NULL;
+    osal_uint16_t idn_value[512];
     osal_uint8_t elements; 
 
     *bitsize = 16u; // control and status word are always present
@@ -442,15 +431,13 @@ static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_ui
     osal_size_t idn_len_size = sizeof(idn_len);
     elements = EC_SOE_VALUE;
 
-    ret = ec_soe_read(pec, slave, atn, idn, &elements, &buf, &idn_len_size);
+    ret = ec_soe_read(pec, slave, atn, idn, &elements, buf, &idn_len_size);
 
     if (ret == EC_OK) {
         // read mapping idn
-        osal_size_t idn_size = (idn_len[0] + 4u);
-        // cppcheck-suppress misra-c2012-21.3
-        idn_value = (osal_uint16_t *)ec_malloc(idn_size);
+        osal_size_t idn_size = min((idn_len[0] + 4u), 512);
         elements = EC_SOE_VALUE;
-        ret = ec_soe_read(pec, slave, atn, idn, &elements, (osal_uint8_t **)&idn_value, &idn_size);
+        ret = ec_soe_read(pec, slave, atn, idn, &elements, (osal_uint8_t *)&idn_value[0], &idn_size);
     }
 
     if (ret == EC_OK) {
@@ -468,17 +455,12 @@ static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_ui
             ec_log(100, __func__, "atn %d, read mapped idn %d\n", atn, sub_idn);
 
             if (ec_soe_read(pec, slave, atn, sub_idn, &elements, 
-                        &buf, &sub_idn_attr_size) != EC_OK) {
+                        buf, &sub_idn_attr_size) != EC_OK) {
                 continue;
             }
 
             // 0 = 8 bit, 1 = 16 bit, ...
             *bitsize += 8u << sub_idn_attr.length;
-        }
-
-        if (idn_value != NULL) {
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(idn_value);
         }
 
         ec_log(10, __func__, "soe mapping for idn %d, bitsize %u\n", idn, *bitsize);

@@ -39,7 +39,6 @@
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
 #include "libethercat/idx.h"
-#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <assert.h>

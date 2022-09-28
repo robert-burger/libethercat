@@ -33,7 +33,6 @@
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
 #include "libethercat/slave.h"
-#include "libethercat/memory.h"
 #include "libethercat/async_loop.h"
 
 #include <assert.h>

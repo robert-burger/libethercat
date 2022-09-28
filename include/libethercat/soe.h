@@ -123,16 +123,12 @@ void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
  *                      IDN's in range 1...32767 are described in the Specification,
  *                      IDN's greater 32768 are manufacturer specific.
  * \param[in,out] elements  ServoDrive elements according to ServoDrive Bus Specification.
- * \param[in,out] buf   Buffer for where to store the answer. This can either be
- *                      NULL with 'len' also set to zero, or a pointer to a 
- *                      preallocated buffer with set \p len field. In case \p buf is NULL
- *                      it will be allocated by \link ec_soe_read \endlink call. Then 
- *                      you have to make sure, that the buffer is freed by your application.
+ * \param[in,out] buf   Buffer for where to store the answer. 
  * \param[in,out] len   Length of \p buf, see 'buf' descriptions. Returns length of answer.
  * \return 0 on successs
  */
 int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
-        osal_uint8_t *elements, osal_uint8_t **buf, osal_size_t *len);
+        osal_uint8_t *elements, osal_uint8_t *buf, osal_size_t *len);
 
 //! Write elements of soe ID number
 /*!

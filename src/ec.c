@@ -38,7 +38,6 @@
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
 #include "libethercat/dc.h"
-#include "libethercat/memory.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/error_codes.h"
 
@@ -652,7 +651,6 @@ static void ec_scan(ec_t *pec) {
                 pec->slaves[i].dc.use_dc = 1;
                 pec->slaves[i].sm_set_by_user = 0;
                 pec->slaves[i].subdev_cnt = 0;
-                pec->slaves[i].subdevs = NULL;
                 pec->slaves[i].eeprom.read_eeprom = 0;
                 TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
                 TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
@@ -683,6 +681,7 @@ static void ec_scan(ec_t *pec) {
             ec_slave_ptr(slv, pec, slave); 
             slv->link_cnt = 0;
             slv->active_ports = 0;
+            slv->mbx.handler_running = 0;
 
             osal_uint16_t topology = 0;
             int local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &topology, sizeof(topology), &wkc);
@@ -698,6 +697,7 @@ static void ec_scan(ec_t *pec) {
                 }
 
                 // read out physical type
+                slv->ptype = 0;
                 local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, sizeof(slv->ptype), &wkc);
             }
 
@@ -910,16 +910,11 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     assert(pec != NULL);
     assert(ifname != NULL);
 
+    // reset data structure
+    memset(pec, 0, sizeof(ec_t));
+
     int ret = EC_OK;
-
-    // cppcheck-suppress misra-c2012-21.3
-    if (pec == NULL) {
-        ret = EC_ERROR_OUT_OF_MEMORY;
-    } 
-
-    if (ret == EC_OK) {
-        ret = ec_index_init(&pec->idx_q);
-    }
+    ret = ec_index_init(&pec->idx_q);
     
     if (ret == EC_OK) {
         pec->master_state       = EC_STATE_UNKNOWN;

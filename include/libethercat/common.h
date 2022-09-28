@@ -33,58 +33,81 @@
 #define LIBETHERCAT_COMMON_H
 
 #include <libethercat/config.h>
-#include <libethercat/memory.h>
 
 #include <libosal/types.h>
 
 #include <stdint.h>
 
 #ifndef LEC_MAX_SLAVES
-#define LEC_MAX_SLAVES          (      256u)
+#define LEC_MAX_SLAVES                      (      256u)
 #endif
 
 #ifndef LEC_MAX_GROUPS
-#define LEC_MAX_GROUPS          (        8u)
+#define LEC_MAX_GROUPS                      (        8u)
 #endif
 
 #ifndef LEC_MAX_PDLEN
-#define LEC_MAX_PDLEN           (2u * 1518u)
+#define LEC_MAX_PDLEN                       (2u * 1518u)
 #endif
 
 #ifndef LEC_MAX_MBX_ENTRIES
-#define LEC_MAX_MBX_ENTRIES     (       16u)
+#define LEC_MAX_MBX_ENTRIES                 (       16u)
 #endif
 
 #ifndef LEC_MAX_INIT_CMD_DATA
-#define LEC_MAX_INIT_CMD_DATA   (     2048u)
+#define LEC_MAX_INIT_CMD_DATA               (     2048u)
 #endif
 
 #ifndef LEC_MAX_SLAVE_FMMU
-#define LEC_MAX_SLAVE_FMMU      (        8u)
+#define LEC_MAX_SLAVE_FMMU                  (        8u)
 #endif
 
 #ifndef LEC_MAX_SLAVE_SM
-#define LEC_MAX_SLAVE_SM        (        8u)
+#define LEC_MAX_SLAVE_SM                    (        8u)
 #endif
 
-#ifndef LEC_MAX_DATAGRAMS       
-#define LEC_MAX_DATAGRAMS       (      100u)
+#ifndef LEC_MAX_DATAGRAMS                   
+#define LEC_MAX_DATAGRAMS                   (      100u)
 #endif 
 
 #ifndef LEC_MAX_EEPROM_CAT_SM
-#define LEC_MAX_EEPROM_CAT_SM   LEC_MAX_SLAVE_SM
+#define LEC_MAX_EEPROM_CAT_SM               (LEC_MAX_SLAVE_SM)
 #endif
 
 #ifndef LEC_MAX_EEPROM_CAT_FMMU
-#define LEC_MAX_EEPROM_CAT_FMMU LEC_MAX_SLAVE_FMMU
+#define LEC_MAX_EEPROM_CAT_FMMU             (LEC_MAX_SLAVE_FMMU)
 #endif
 
 #ifndef LEC_MAX_EEPROM_CAT_PDO
-#define LEC_MAX_EEPROM_CAT_PDO          128
+#define LEC_MAX_EEPROM_CAT_PDO              (      128u)
 #endif
 
 #ifndef LEC_MAX_EEPROM_CAT_PDO_ENTRIES
-#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES   32
+#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES      (       32u)
+#endif
+
+#ifndef LEC_MAX_EEPROM_CAT_STRINGS      
+#define LEC_MAX_EEPROM_CAT_STRINGS          (      128u)
+#endif
+
+#ifndef LEC_MAX_EEPROM_CAT_DC      
+#define LEC_MAX_EEPROM_CAT_DC               (        8u)
+#endif
+
+#ifndef LEC_MAX_STRING_LEN
+#define LEC_MAX_STRING_LEN                  (      128u)
+#endif
+
+#ifndef LEC_MAX_DATA
+#define LEC_MAX_DATA                        (     4096u)
+#endif
+
+#ifndef LEC_MAX_DS402_SUBDEVS
+#define LEC_MAX_DS402_SUBDEVS               (        4u)
+#endif
+
+#ifndef LEC_MAX_COE_EMERGENCIES
+#define LEC_MAX_COE_EMERGENCIES             (       10u)
 #endif
 
 #define PACKED __attribute__((__packed__))
@@ -93,28 +116,7 @@
 #define min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
-#define ec_min(a, b)  ((a) < (b) ? (a) : (b))
-
-#define free_resource(a) {  \
-    if ((a) != NULL) {      \
-        (void)ec_free((a));          \
-        (a) = NULL;         \
-    } }
-
-#define alloc_resource(a, type, len) {      \
-    if ((len) > 0u) {                       \
-        (a) = (type *)ec_malloc((len));        \
-        (void)memset((a), 0u, (len)); } }
-
-#define EC_MAX_DATA 4096u
-
-//typedef union ec_data {
-//    osal_uint8_t  bdata[EC_MAX_DATA]; /* variants for easy data access */
-//    osal_uint16_t wdata[EC_MAX_DATA>>1u];
-//    osal_uint32_t ldata[EC_MAX_DATA>>2u];
-//} ec_data_t;
-
-typedef osal_uint8_t ec_data_t[EC_MAX_DATA]; /* variants for easy data access */
+typedef osal_uint8_t ec_data_t[LEC_MAX_DATA]; /* variants for easy data access */
 
 //! process data structure
 typedef struct ec_pd {
@@ -132,17 +134,6 @@ typedef osal_uint16_t ec_state_t;
 #define EC_STATE_MASK        ((osal_uint16_t)(0x000Fu))       //!< \brief EtherCAT state mask
 #define EC_STATE_ERROR       ((osal_uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR
 #define EC_STATE_RESET       ((osal_uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR reset
-
-// cppcheck-suppress misra-c2012-20.9
-#if HAVE_MALLOC == 0
-void *rpl_malloc(osal_size_t n);
-#endif
-
-#ifdef __VXWORKS__ 
-osal_char_t *strndup(const osal_char_t *s, osal_size_t n);
-#endif
-
-//#define check_ret(cmd) { if ((cmd) != 0) { ec_log(1, __func__, #cmd " returned error\n"); } }
 
 #endif // LIBETHERCAT_COMMON_H
 

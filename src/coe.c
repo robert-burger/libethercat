@@ -28,7 +28,6 @@
 #include "libethercat/ec.h"
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
-#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 // cppcheck-suppress misra-c2012-21.6
@@ -248,7 +247,8 @@ void ec_coe_init(ec_t *pec, osal_uint16_t slave) {
     (void)pool_open(&slv->mbx.coe.recv_pool, 0, NULL);
     osal_mutex_init(&slv->mbx.coe.lock, NULL);
                 
-    TAILQ_INIT(&slv->mbx.coe.emergencies);
+    slv->mbx.coe.emergency_next_read = 0;
+    slv->mbx.coe.emergency_next_write = 0;
 }
 
 //! deinitialize CoE structure 
@@ -1185,15 +1185,16 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
     // don't copy any headers, we already know that we have a coe emergency
     osal_size_t msg_len = hdr->length - 2u;
 
-    ec_coe_emergency_message_entry_t *qmsg = (ec_coe_emergency_message_entry_t *)
-        ec_malloc(sizeof(ec_coe_emergency_message_entry_t) + msg_len);
+    ec_coe_emergency_message_t *msg = &slv->mbx.coe.emergencies[slv->mbx.coe.emergency_next_write];
+    slv->mbx.coe.emergency_next_write = (slv->mbx.coe.emergency_next_write + 1) % LEC_MAX_COE_EMERGENCIES;
+    if (slv->mbx.coe.emergency_next_write == slv->mbx.coe.emergency_next_read) {
+        slv->mbx.coe.emergency_next_read = (slv->mbx.coe.emergency_next_read + 1) % LEC_MAX_COE_EMERGENCIES;
+    }
 
     // skip mbx header and coe header
-    (void)memcpy(qmsg->msg, (osal_uint8_t *)&(p_entry->data[6 + 2]), msg_len);
-
-    qmsg->msg_len = msg_len;
-    (void)osal_timer_gettime(&qmsg->timestamp);
-    TAILQ_INSERT_TAIL(&slv->mbx.coe.emergencies, qmsg, qh);
+    (void)memcpy(msg->msg, (osal_uint8_t *)&(p_entry->data[6 + 2]), msg_len);
+    msg->msg_len = msg_len;
+    (void)osal_timer_gettime(&msg->timestamp);
 
     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
 }

@@ -39,16 +39,11 @@
 #include "libethercat/pool.h"
 
 //! Message queue qentry
-typedef struct ec_coe_emergency_message_entry {
-    TAILQ_ENTRY(ec_coe_emergency_message_entry) qh;
-                                //!< handle to message entry queue
+typedef struct ec_coe_emergency_message {
     osal_timer_t timestamp;     //!< timestamp, when emergency was received
     osal_size_t msg_len;        //!< length
     osal_uint8_t msg[1];        //!< message itself
-} ec_coe_emergency_message_entry_t;
-
-TAILQ_HEAD(ec_coe_emergency_message_queue, ec_coe_emergency_message_entry);
-typedef struct ec_coe_emergency_message_queue ec_coe_emergency_message_queue_t;
+} ec_coe_emergency_message_t;
 
 typedef struct ec_coe {
     pool_t recv_pool;
@@ -59,7 +54,9 @@ typedef struct ec_coe {
                                  * EtherCAT slave CoE mailbox is possible 
                                  */
 
-    ec_coe_emergency_message_queue_t emergencies;    //!< message pool queue
+    int emergency_next_read;
+    int emergency_next_write;
+    ec_coe_emergency_message_t emergencies[LEC_MAX_COE_EMERGENCIES];    //!< message pool queue
 } ec_coe_t;
 
 //! CoE mailbox types

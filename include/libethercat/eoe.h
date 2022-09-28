@@ -36,15 +36,22 @@
 
 #include "libethercat/common.h"
 
-typedef struct ec_eoe_slave_config {
-    int use_eoe;            //!< \brief Using EoE on actual slave.
+#define LEC_EOE_MAC_LEN         (6u)
+#define LEC_EOE_IP_ADDRESS_LEN  (4u)
+#define LEC_EOE_SUBNET_LEN      (4u)
+#define LEC_EOE_GATEWAY_LEN     (4u)
+#define LEC_EOE_DNS_LEN         (4u)
+#define LEC_EOE_DNS_NAME_LEN    (128u)
 
-    osal_uint8_t *mac;           //!< \brief MAC address to configure (mandatory)
-    osal_uint8_t *ip_address;    //!< \brief IP address to configure (optional, maybe NULL).
-    osal_uint8_t *subnet;        //!< \brief Subnet to configure (optional, maybe NULL).
-    osal_uint8_t *gateway;       //!< \brief Gateway to configure (optional, maybe NULL).
-    osal_uint8_t *dns;           //!< \brief DNS to configure (optional, maybe NULL).
-    osal_char_t *dns_name;         //!< \brief DNS name to configure (optional, maybe NULL).
+typedef struct ec_eoe_slave_config {
+    int use_eoe;                                    //!< \brief Using EoE on actual slave.
+
+    osal_uint8_t mac[LEC_EOE_MAC_LEN];              //!< \brief MAC address to configure (mandatory)
+    osal_uint8_t ip_address[LEC_EOE_IP_ADDRESS_LEN];//!< \brief IP address to configure (optional, maybe NULL).
+    osal_uint8_t subnet[LEC_EOE_SUBNET_LEN];        //!< \brief Subnet to configure (optional, maybe NULL).
+    osal_uint8_t gateway[LEC_EOE_GATEWAY_LEN];      //!< \brief Gateway to configure (optional, maybe NULL).
+    osal_uint8_t dns[LEC_EOE_DNS_LEN];              //!< \brief DNS to configure (optional, maybe NULL).
+    osal_char_t dns_name[LEC_EOE_DNS_NAME_LEN];     //!< \brief DNS name to configure (optional, maybe NULL).
 } ec_eoe_slave_config_t;
 
 typedef struct ec_eoe {

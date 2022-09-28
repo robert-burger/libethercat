@@ -34,7 +34,6 @@
 
 #include "libethercat/idx.h"
 #include "libethercat/ec.h"
-#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 //! Get next free index entry.

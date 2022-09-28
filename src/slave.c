@@ -35,7 +35,6 @@
 #include "libethercat/foe.h"
 #include "libethercat/mbx.h"
 #include "libethercat/dc.h"
-#include "libethercat/memory.h"
 #include "libethercat/error_codes.h"
 
 #include <string.h>
@@ -765,42 +764,7 @@ void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_slave_ptr(slv, pec, slave);
-
     ec_mbx_deinit(pec, slave);
-
-    // free resources
-    if (slv->eeprom.strings != NULL) {
-        osal_uint32_t string;
-        for (string = 0; string < slv->eeprom.strings_cnt; ++string) {
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(slv->eeprom.strings[string]);
-        }
-
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(slv->eeprom.strings);
-    }
-
-    ec_eeprom_cat_pdo_t *pdo;
-    for (pdo = TAILQ_FIRST(&slv->eeprom.txpdos); pdo != NULL; pdo = TAILQ_FIRST(&slv->eeprom.txpdos)) {
-        TAILQ_REMOVE(&slv->eeprom.txpdos, pdo, qh);
-        if (pdo->entries != NULL) {
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(pdo->entries);
-        }
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(pdo);
-    }
-
-    for (pdo = TAILQ_FIRST(&slv->eeprom.rxpdos); pdo != NULL; pdo = TAILQ_FIRST(&slv->eeprom.rxpdos)) {
-        TAILQ_REMOVE(&slv->eeprom.rxpdos, pdo, qh);
-        if (pdo->entries != NULL) {
-            // cppcheck-suppress misra-c2012-21.3
-            ec_free(pdo->entries);
-        }
-        // cppcheck-suppress misra-c2012-21.3
-        ec_free(pdo);
-    }
 }
 
 // state transition on ethercat slave
@@ -1152,9 +1116,11 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 }
 
                 if (slv->subdev_cnt != 0u) {
-                    // cppcheck-suppress misra-c2012-21.3
-                    alloc_resource(slv->subdevs, ec_slave_subdev_t, 
-                            slv->subdev_cnt * sizeof(ec_slave_subdev_t));
+                    if (slv->subdev_cnt > LEC_MAX_DS402_SUBDEVS) {
+                        ec_log(5, get_transition_string(transition), "slave %2d: got %d ds402 sub devices but can "
+                                "only handle %d!\n", slave, slv->subdev_cnt, LEC_MAX_DS402_SUBDEVS);
+                        slv->subdev_cnt = LEC_MAX_DS402_SUBDEVS;
+                    }
 
                     for (osal_uint32_t q = 0u; q < slv->subdev_cnt; q++) {
                         slv->subdevs[q].pdin.pd = NULL;
@@ -1210,26 +1176,21 @@ void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
 
     slv->eoe.use_eoe = 1;
 
-#define EOE_ALLOC(field, sz) {                      \
+#define EOE_SET(field, sz) {                      \
     if ((field) != NULL) {                            \
-        slv->eoe.field = (osal_uint8_t *)ec_malloc((sz));     \
-        (void)memcpy(slv->eoe.field, (field), (sz));    \
-    } else { slv->eoe.field = NULL; } }
+        (void)memcpy(&slv->eoe.field[0], (field), (sz));    \
+    } else { memset(&slv->eoe.field[0], 0, sz); } }
 
     // cppcheck-suppress misra-c2012-21.3
-    EOE_ALLOC(mac, 6u);
-    // cppcheck-suppress misra-c2012-21.3
-    EOE_ALLOC(ip_address, 4u);
-    // cppcheck-suppress misra-c2012-21.3
-    EOE_ALLOC(subnet, 4u);
-    // cppcheck-suppress misra-c2012-21.3
-    EOE_ALLOC(gateway, 4u);
-    // cppcheck-suppress misra-c2012-21.3
-    EOE_ALLOC(dns, 4u);
-    if (dns_name != NULL) { slv->eoe.dns_name = strdup(dns_name); } else { slv->eoe.dns_name = NULL; }
+    EOE_SET(mac, LEC_EOE_MAC_LEN);
+    EOE_SET(ip_address, LEC_EOE_IP_ADDRESS_LEN);
+    EOE_SET(subnet, LEC_EOE_SUBNET_LEN);
+    EOE_SET(gateway, LEC_EOE_GATEWAY_LEN);
+    EOE_SET(dns, LEC_EOE_DNS_LEN);
+    EOE_SET(dns_name, min(LEC_EOE_DNS_NAME_LEN, strlen(dns_name)));
 
 // cppcheck-suppress misra-c2012-20.5
-#undef EOE_ALLOC
+#undef EOE_SET
 
 }
 

@@ -57,9 +57,6 @@ typedef struct PACKED ec_eeprom_cat_general {
     
 //------------------ Category PDO -------------------
 
-#define LEC_MAX_EEPROM_CAT_PDO          128
-#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES   32
-
 typedef struct PACKED ec_eeprom_cat_pdo_entry {
     osal_uint16_t entry_index;       //!< PDO entry index (CoE)
     osal_uint8_t sub_index;          //!< PDO entry subindex 
@@ -146,7 +143,7 @@ typedef struct eeprom_info {
     ec_eeprom_cat_general_t general;        //!< general category
 
     osal_uint8_t strings_cnt;               //!< count of strings
-    osal_char_t **strings;                  //!< array of strings 
+    osal_char_t strings[LEC_MAX_EEPROM_CAT_STRINGS][LEC_MAX_STRING_LEN];                  //!< array of strings 
 
     osal_uint8_t sms_cnt;                   //!< count of sync manager settings
     ec_eeprom_cat_sm_t sms[LEC_MAX_EEPROM_CAT_SM];      //!< array of sync manager settings
@@ -161,7 +158,7 @@ typedef struct eeprom_info {
     struct ec_eeprom_cat_pdo_queue rxpdos;  //!< queue with RXPDOs
 
     osal_uint8_t dcs_cnt;                   //!< count of distributed clocks settings                            
-    ec_eeprom_cat_dc_t *dcs;                //!< array of distributed clocks settings
+    ec_eeprom_cat_dc_t dcs[LEC_MAX_EEPROM_CAT_DC];                //!< array of distributed clocks settings
 } eeprom_info_t;
 
 #define EC_EEPROM_MBX_AOE                   (0x01u)     //!< \brief AoE mailbox support
