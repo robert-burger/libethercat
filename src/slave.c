@@ -1187,7 +1187,8 @@ void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
     EOE_SET(subnet, LEC_EOE_SUBNET_LEN);
     EOE_SET(gateway, LEC_EOE_GATEWAY_LEN);
     EOE_SET(dns, LEC_EOE_DNS_LEN);
-    EOE_SET(dns_name, min(LEC_EOE_DNS_NAME_LEN, strlen(dns_name)));
+    size_t tmp_len = min(LEC_EOE_DNS_NAME_LEN, strlen(dns_name));
+    EOE_SET(dns_name, tmp_len);
 
 // cppcheck-suppress misra-c2012-20.5
 #undef EOE_SET

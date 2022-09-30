@@ -51,6 +51,7 @@ class MainProject(ConanFile):
         args = []
 
         if self.settings.build_type == "Debug":
+            print("doing libethercat DEBUG build!\n")
             autotools.flags = ["-O0", "-g"]
             args.append("--enable-assert")
         else:
@@ -67,23 +68,20 @@ class MainProject(ConanFile):
         cflags=""
 
         if self.options.max_slaves:
-            cflags += "-DLEC_MAX_SLAVES=%d " % self.options.max_slaves
+            autotools.defines.append("LEC_MAX_SLAVES=%d" % self.options.max_slaves)
         if self.options.max_groups:
-            cflags += "-DLEC_MAX_GROUPS=%d " % self.options.max_groups
+            autotools.defines.append("LEC_MAX_GROUPS=%d" % self.options.max_groups)
         if self.options.max_pdlen:
-            cflags += "-DLEC_MAX_PDLEN=%d " % self.options.max_pdlen
+            autotools.defines.append("LEC_MAX_PDLEN=%d" % self.options.max_pdlen)
         if self.options.max_mbx_entries:
-            cflags += "-DLEC_MAX_MBX_ENTRIES=%d " % self.options.max_mbx_entries
+            autotools.defines.append("LEC_MAX_MBX_ENTRIES=%d" % self.options.max_mbx_entries)
         if self.options.max_init_cmd_data:
-            cflags += "-DLEC_MAX_INIT_CMD_DATA=%d " % self.options.max_init_cmd_data
+            autotools.defines.append("LEC_MAX_INIT_CMD_DATA=%d" % self.options.max_init_cmd_data)
         if self.options.max_slave_fmmu:
-            cflags += "-DLEC_MAX_SLAVE_FMMU=%d " % self.options.max_slave_fmmu
+            autotools.defines.append("LEC_MAX_SLAVE_FMMU=%d" % self.options.max_slave_fmmu)
         if self.options.max_slave_sm:
-            cflags += "-DLEC_MAX_SLAVE_SM=%d " % self.options.max_slave_sm
+            autotools.defines.append("LEC_MAX_SLAVE_SM=%d" % self.options.max_slave_sm)
 
-        if cflags != "":
-            args.append("CFLAGS=%s" % cflags)
-        
         args.append("--disable-silent-rules")
 
         autotools.configure(configure_dir=".", args=args)

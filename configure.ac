@@ -31,20 +31,41 @@ case $target_os in
     linux*)
         BUILD_POSIX=true
         AC_DEFINE([BUILD_POSIX], [true], [Use POSIX build on linux])
+        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [1], [Use SOCK_RAW device layer])
+        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
+        AC_DEFINE([BUILD_DEVICE_SNARF_LL],        [0], [Use VxWorks snarf device layer])
+        AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
+        AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
         ;;
     vxworks*)
         BUILD_VXWORKS=true
         AC_DEFINE([BUILD_VXWORKS], [true], [Use VxWorks build])
+        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
+        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
+        AC_DEFINE([BUILD_DEVICE_SNARF_LL],        [1], [Use VxWorks snarf device layer])
+        AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
+        AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
         ;;
     pikeos*)
         BUILD_PIKEOS=true
         AC_DEFINE([BUILD_PIKEOS], [true], [Use PikeOS build])
+        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
+        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
+        AC_DEFINE([BUILD_DEVICE_SNARF_LL],        [0], [Use VxWorks snarf device layer])
+        AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
+        AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
         ;;
 esac
 
 AM_CONDITIONAL([BUILD_POSIX], [ test x$BUILD_POSIX = xtrue]) 
 AM_CONDITIONAL([BUILD_VXWORKS], [ test x$BUILD_VXWORKS = xtrue]) 
 AM_CONDITIONAL([BUILD_PIKEOS], [ test x$BUILD_PIKEOS = xtrue]) 
+
+AM_CONDITIONAL([BUILD_DEVICE_SOCK_RAW_LEGACY], [ test x$BUILD_DEVICE_SOCK_RAW_LEGACY = x1]) 
+AM_CONDITIONAL([BUILD_DEVICE_SOCK_RAW_MMAPED], [ test x$BUILD_DEVICE_SOCK_RAW_MMAPED = x1]) 
+AM_CONDITIONAL([BUILD_DEVICE_SNARF_LL],        [ test x$BUILD_SNARF_LL = x1]) 
+AM_CONDITIONAL([BUILD_DEVICE_BPF],             [ test x$BUILD_BPF = x1]) 
+AM_CONDITIONAL([BUILD_DEVICE_FILE],            [ test x$BUILD_DEVICE_FILE = x1]) 
 
 # Checks for libraries.
 PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])

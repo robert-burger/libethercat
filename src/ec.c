@@ -951,7 +951,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     (void)pool_open(&pec->mbx_message_pool_send_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_send_free_entries[0]);
 
     if (ret == EC_OK) {
-        ret = hw_open(&pec->hw, ifname, prio, cpumask, 0);
+        ret = hw_open(&pec->hw, ifname, prio, cpumask);
     }
 
     if (ret == EC_OK) {
@@ -959,8 +959,13 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     }
 
     ec_log(10, __func__, "libethercat version: %s\n", LIBETHERCAT_VERSION);
-    ec_log(10, __func__, "  MAX_SLAVES: %d\n", LEC_MAX_SLAVES);
-    ec_log(10, __func__, "  MAX_GROUPS: %d\n", LEC_MAX_GROUPS);
+    ec_log(10, __func__, "  MAX_SLAVES:        %d\n", LEC_MAX_SLAVES);
+    ec_log(10, __func__, "  MAX_GROUPS:        %d\n", LEC_MAX_GROUPS);
+    ec_log(10, __func__, "  MAX_PDLEN:         %d\n", LEC_MAX_PDLEN);
+    ec_log(10, __func__, "  MAX_MBX_ENTRIES:   %d\n", LEC_MAX_MBX_ENTRIES);
+    ec_log(10, __func__, "  MAX_INIT_CMD_DATA: %d\n", LEC_MAX_INIT_CMD_DATA);
+    ec_log(10, __func__, "  MAX_SLAVE_FMMU:    %d\n", LEC_MAX_SLAVE_FMMU);
+    ec_log(10, __func__, "  MAX_SLAVE_SM:      %d\n", LEC_MAX_SLAVE_SM);
 
     // destruct everything if something failed
     if (ret != EC_OK) {

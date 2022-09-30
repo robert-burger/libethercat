@@ -45,6 +45,8 @@
 #define EC_ERROR_OUT_OF_DATAGRAMS               (EC_ERROR_GENERAL_MASK | 0x00000020)
 #define EC_ERROR_TIMEOUT                        (EC_ERROR_GENERAL_MASK | 0x00000040)
 #define EC_ERROR_UNAVAILABLE                    (EC_ERROR_GENERAL_MASK | 0x00000080)
+#define EC_ERROR_HW_SEND                        (EC_ERROR_GENERAL_MASK | 0x00000100)
+
 
 #define EC_ERROR_SLAVE_MASK                     0x00020000
 #define EC_ERROR_SLAVE_STATE_SWITCH             (EC_ERROR_SLAVE_MASK   | 0x00000001)

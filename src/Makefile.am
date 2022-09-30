@@ -26,6 +26,18 @@ include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 
 libethercat_la_SOURCES	= coe.c common.c slave.c datagram.c pool.c async_loop.c ec.c \
 						  hw.c soe.c foe.c mbx.c eeprom.c dc.c idx.c mii.c eoe.c
+
+if BUILD_POSIX
+libethercat_la_SOURCES += hw_sock_raw.c
+endif
+
+if BUILD_VXWORKS
+libethercat_la_SOURCES += hw_bpf.c
+endif
+
+if BUILD_PIKEOS
+endif
+
 libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(top_srcdir)/include @LIBOSAL_CFLAGS@
 libethercat_la_LDFLAGS	= -Wall -Werror 
 libethercat_la_LIBS     = @LIBOSAL_LIBS@
