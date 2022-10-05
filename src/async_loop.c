@@ -310,7 +310,7 @@ int ec_async_loop_destroy(ec_async_loop_t *paml) {
     (void)osal_mutex_destroy(&paml->avail.lock);
 
     if (osal_mutex_lock(&paml->exec.lock) == OSAL_OK) {
-        me = TAILQ_FIRST(&paml->exec.queue);
+        ec_message_entry_t *me = TAILQ_FIRST(&paml->exec.queue);
         while (me != NULL) {
             TAILQ_REMOVE(&paml->exec.queue, me, qh);
             me = TAILQ_FIRST(&paml->exec.queue);
