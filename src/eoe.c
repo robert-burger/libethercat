@@ -272,7 +272,7 @@ void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     } else {
         pool_put(&slv->mbx.eoe.recv_pool, p_entry);
 
-        if (write_buf->eoe_hdr.last_fragment) {
+        if (write_buf->eoe_hdr.last_fragment != 0u) {
             ec_log(100, __func__, "slave %2d: was last fragment\n", slave);
             
             int ret;
@@ -508,7 +508,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     (void)memcpy(&(eth_frame->frame_data[frame_offset]), &(read_buf->data[0]), frag_len);
                     frame_offset += frag_len;
 
-                    if (read_buf->eoe_hdr.last_fragment) {
+                    if (read_buf->eoe_hdr.last_fragment != 0u) {
                         if (pec->tun_fd > 0) {
                             write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
                             pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
@@ -717,7 +717,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
             osal_task_attr_t attr;
             attr.priority = 5;
             attr.affinity = 0xFF;
-            strcpy(&attr.task_name[0], "ecat.tun");
+            (void)strcpy(&attr.task_name[0], "ecat.tun");
             osal_task_create(&pec->tun_tid, &attr, ec_eoe_tun_handler_wrapper, pec);
         }
     }

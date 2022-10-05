@@ -75,7 +75,7 @@ int hw_open(hw_t *phw, const osal_char_t *devname, int prio, int cpumask) {
         osal_task_attr_t attr;
         attr.priority = prio;
         attr.affinity = cpumask;
-        strcpy(&attr.task_name[0], "ecat.rx");
+        (void)strcpy(&attr.task_name[0], "ecat.rx");
         osal_task_create(&phw->rxthread, &attr, hw_rx_thread, phw);
     }
 
@@ -150,7 +150,7 @@ void *hw_rx_thread(void *arg) {
     assert(phw != NULL);
 
     while (phw->rxthreadrunning != 0) {
-        hw_device_recv(phw);
+        (void)hw_device_recv(phw);
     }
     
     return NULL;

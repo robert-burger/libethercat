@@ -58,15 +58,15 @@ static int ec_async_loop_get(ec_message_pool_t *ppool,
 
     if (ret == EC_OK) {
         ret = EC_ERROR_UNAVAILABLE;
-        osal_mutex_lock(&ppool->lock);
+        if (osal_mutex_lock(&ppool->lock) == OSAL_OK) {
+            *msg = (ec_message_entry_t *)TAILQ_FIRST(&ppool->queue);
+            if ((*msg) != NULL) {
+                TAILQ_REMOVE(&ppool->queue, *msg, qh);
+                ret = EC_OK;
+            }
 
-        *msg = (ec_message_entry_t *)TAILQ_FIRST(&ppool->queue);
-        if ((*msg) != NULL) {
-            TAILQ_REMOVE(&ppool->queue, *msg, qh);
-            ret = EC_OK;
+            (void)osal_mutex_unlock(&ppool->lock);
         }
-
-        osal_mutex_unlock(&ppool->lock);
     }
 
     return ret;
@@ -78,12 +78,12 @@ static int ec_async_loop_put(ec_message_pool_t *ppool,
     assert(ppool != NULL);
     assert(msg != NULL);
 
-    osal_mutex_lock(&ppool->lock);
+    if (osal_mutex_lock(&ppool->lock) == OSAL_OK) {
+        TAILQ_INSERT_TAIL(&ppool->queue, msg, qh);
+        (void)osal_semaphore_post(&ppool->avail_cnt);
 
-    TAILQ_INSERT_TAIL(&ppool->queue, msg, qh);
-    osal_semaphore_post(&ppool->avail_cnt);
-    
-    osal_mutex_unlock(&ppool->lock);
+        (void)osal_mutex_unlock(&ppool->lock);
+    }
     
     return 0;
 }
@@ -113,11 +113,15 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
         }
 
         if ((ret == EC_OK) && (EC_STATE_SAFEOP <= expected_state)) {
-            ec_slave_prepare_state_transition(paml->pec, slave, EC_STATE_SAFEOP);
-            if (ec_slave_generate_mapping(paml->pec, slave) != EC_OK) {
-                ec_log(1, __func__, "ec_slave_generate_mapping failed!\n");
+            ret = ec_slave_prepare_state_transition(paml->pec, slave, EC_STATE_SAFEOP);
+
+            if (ret == EC_OK) {
+                ret = ec_slave_generate_mapping(paml->pec, slave);
             }
-            ret = ec_slave_state_transition(paml->pec, slave, EC_STATE_SAFEOP);
+
+            if (ret == EC_OK) {
+                ret = ec_slave_state_transition(paml->pec, slave, EC_STATE_SAFEOP);
+            }
         }
 
         if ((ret == EC_OK) && (EC_STATE_OP <= expected_state)) {
@@ -245,28 +249,30 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
     assert(paml != NULL);
     assert(pec != NULL);
 
-    int i = 0;
-
     // initiale pre-alocated async messages in avail queue
-    osal_mutex_init(&paml->avail.lock, NULL);
-    osal_mutex_lock(&paml->avail.lock);
-    osal_semaphore_init(&paml->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
-    TAILQ_INIT(&paml->avail.queue);
+    (void)osal_mutex_init(&paml->avail.lock, NULL);
+    if (osal_mutex_lock(&paml->avail.lock) == OSAL_OK) {
+        int i;
 
-    for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
-        ec_message_entry_t *me = &paml->entries[0];
-        (void)memset(me, 0, sizeof(ec_message_entry_t));
-        TAILQ_INSERT_TAIL(&paml->avail.queue, me, qh);
+        (void)osal_semaphore_init(&paml->avail.avail_cnt, 0, EC_ASYNC_MESSAGE_LOOP_COUNT);
+        TAILQ_INIT(&paml->avail.queue);
+
+        for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
+            ec_message_entry_t *me = &paml->entries[0];
+            (void)memset(me, 0, sizeof(ec_message_entry_t));
+            TAILQ_INSERT_TAIL(&paml->avail.queue, me, qh);
+        }
+
+        (void)osal_mutex_unlock(&paml->avail.lock);
     }
 
-    osal_mutex_unlock(&paml->avail.lock);
-
     // initialize execute queue
-    osal_mutex_init(&paml->exec.lock, NULL);
-    osal_mutex_lock(&paml->exec.lock);
-    osal_semaphore_init(&paml->exec.avail_cnt, 0, 0);
-    TAILQ_INIT(&paml->exec.queue);
-    osal_mutex_unlock(&paml->exec.lock);
+    (void)osal_mutex_init(&paml->exec.lock, NULL);
+    if (osal_mutex_lock(&paml->exec.lock) == OSAL_OK) {
+        (void)osal_semaphore_init(&paml->exec.avail_cnt, 0, 0);
+        TAILQ_INIT(&paml->exec.queue);
+        (void)osal_mutex_unlock(&paml->exec.lock);
+    }
 
     paml->pec = pec;
     paml->loop_running = 1;
@@ -274,9 +280,11 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
         osal_task_attr_t attr;
         attr.priority = 0;
         attr.affinity = 0xFF;
-        strcpy(&attr.task_name[0], "ecat.async");
-        osal_task_create(&paml->loop_tid, &attr, 
-                ec_async_loop_thread, paml);
+        (void)strcpy(&attr.task_name[0], "ecat.async");
+        if (osal_task_create(&paml->loop_tid, &attr, 
+                ec_async_loop_thread, paml) != OSAL_OK) {
+            ec_log(1, __func__, "error creating async loop task!\n");
+        }
     }
 
     return ret;
@@ -288,26 +296,28 @@ int ec_async_loop_destroy(ec_async_loop_t *paml) {
     
     // stop async thread
     paml->loop_running = 0;
-    osal_task_join(&paml->loop_tid, NULL);
+    (void)osal_task_join(&paml->loop_tid, NULL);
 
     // destroy message pools
-    osal_mutex_lock(&paml->avail.lock);
-    ec_message_entry_t *me = TAILQ_FIRST(&paml->avail.queue);
-    while (me != NULL) {
-        TAILQ_REMOVE(&paml->avail.queue, me, qh);
-        me = TAILQ_FIRST(&paml->avail.queue);
+    if (osal_mutex_lock(&paml->avail.lock) == OSAL_OK) {
+        ec_message_entry_t *me = TAILQ_FIRST(&paml->avail.queue);
+        while (me != NULL) {
+            TAILQ_REMOVE(&paml->avail.queue, me, qh);
+            me = TAILQ_FIRST(&paml->avail.queue);
+        }
+        (void)osal_mutex_unlock(&paml->avail.lock);
     }
-    osal_mutex_unlock(&paml->avail.lock);
-    osal_mutex_destroy(&paml->avail.lock);
+    (void)osal_mutex_destroy(&paml->avail.lock);
 
-    osal_mutex_lock(&paml->exec.lock);
-    me = TAILQ_FIRST(&paml->exec.queue);
-    while (me != NULL) {
-        TAILQ_REMOVE(&paml->exec.queue, me, qh);
+    if (osal_mutex_lock(&paml->exec.lock) == OSAL_OK) {
         me = TAILQ_FIRST(&paml->exec.queue);
+        while (me != NULL) {
+            TAILQ_REMOVE(&paml->exec.queue, me, qh);
+            me = TAILQ_FIRST(&paml->exec.queue);
+        }
+        (void)osal_mutex_unlock(&paml->exec.lock);
     }
-    osal_mutex_unlock(&paml->exec.lock);
-    osal_mutex_destroy(&paml->exec.lock);
+    (void)osal_mutex_destroy(&paml->exec.lock);
 
     return 0;
 }

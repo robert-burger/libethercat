@@ -660,7 +660,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
-                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
+                                (void)memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];
@@ -711,7 +711,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     pdo->pdo_index, pdo->n_entry);
 
                             if (pdo->n_entry > 0u) {
-                                memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
+                                (void)memset(&pdo->entries[0], 0, sizeof(ec_eeprom_cat_pdo_entry_t) * LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
 
                                 for (j = 0; j < pdo->n_entry; ++j) {
                                     ec_eeprom_cat_pdo_entry_t *entry = &pdo->entries[j];

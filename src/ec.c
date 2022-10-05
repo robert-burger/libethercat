@@ -117,12 +117,12 @@ int ec_destroy_pd_groups(ec_t *pec) {
 }
 
 static const osal_char_t *get_state_string(ec_state_t state) {
-    static const osal_char_t state_string_boot[]    = "EC_STATE_BOOT";
-    static const osal_char_t state_string_init[]    = "EC_STATE_INIT";
-    static const osal_char_t state_string_preop[]   = "EC_STATE_PREOP";
-    static const osal_char_t state_string_safeop[]  = "EC_STATE_SAFEOP";
-    static const osal_char_t state_string_op[]      = "EC_STATE_OP";
-    static const osal_char_t state_string_unknown[] = "EC_STATE_UNKNOWN";
+    static const osal_char_t state_string_boot[]    = { "EC_STATE_BOOT" };
+    static const osal_char_t state_string_init[]    = { "EC_STATE_INIT" };
+    static const osal_char_t state_string_preop[]   = { "EC_STATE_PREOP" };
+    static const osal_char_t state_string_safeop[]  = { "EC_STATE_SAFEOP" };
+    static const osal_char_t state_string_op[]      = { "EC_STATE_OP" };
+    static const osal_char_t state_string_unknown[] = { "EC_STATE_UNKNOWN" };
 
     const osal_char_t *ret;
 
@@ -520,8 +520,8 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 osal_task_attr_t attr;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
-                snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%d", slave);
-                osal_task_create(&(pec->slaves[slave].worker_tid), &attr, 
+                (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
+                (void)osal_task_create(&(pec->slaves[slave].worker_tid), &attr, 
                         prepare_state_transition_wrapper, 
                         &(pec->slaves[slave].worker_arg));
             }
@@ -529,7 +529,7 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
 
         for (osal_uint32_t slave = 0u; slave < pec->slave_cnt; ++slave) {
             if (pec->slaves[slave].assigned_pd_group != -1) {
-                osal_task_join(&pec->slaves[slave].worker_tid, NULL);
+                (void)osal_task_join(&pec->slaves[slave].worker_tid, NULL);
             }
         }
     } else { 
@@ -570,7 +570,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
                 osal_task_attr_t attr;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
-                snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%d", slave);
+                (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
                 osal_task_create(&(pec->slaves[slave].worker_tid), &attr, 
                         set_state_wrapper, 
                         &(pec->slaves[slave].worker_arg));
@@ -911,7 +911,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     assert(ifname != NULL);
 
     // reset data structure
-    memset(pec, 0, sizeof(ec_t));
+    (void)memset(pec, 0, sizeof(ec_t));
 
     int ret = EC_OK;
     ret = ec_index_init(&pec->idx_q);
@@ -943,7 +943,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         // eeprom logging level
         pec->eeprom_log         = eeprom_log;
 
-        memset(&pec->dg_entries[0], 0, sizeof(pool_entry_t) * LEC_MAX_DATAGRAMS);
+        (void)memset(&pec->dg_entries[0], 0, sizeof(pool_entry_t) * LEC_MAX_DATAGRAMS);
         ret = pool_open(&pec->pool, 100, &pec->dg_entries[0]);
     }
 
@@ -1408,17 +1408,22 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
  * \return Difference 
  */
 static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
+    osal_uint64_t tmp_a = a;
+    osal_uint64_t tmp_b = b;
     osal_uint64_t abs_diff = (a > b) ? (a - b) : (b - a);
-    if (abs_diff > INT64_MAX) {
-        if (a > INT64_MAX) {
-            a = UINT64_MAX - a;
-        } else if (b > INT64_MAX) {
-            b = UINT64_MAX - b;
+    if (abs_diff > (osal_uint64_t)INT64_MAX) {
+        if (a > (osal_uint64_t)INT64_MAX) {
+            tmp_a = UINT64_MAX - a;
+            tmp_b = b;
+        } else if (b > (osal_uint64_t)INT64_MAX) {
+            tmp_a = a;
+            tmp_b = UINT64_MAX - b;
+        } else {
         }
             
-        abs_diff = (a > b) ? (a - b) : (b - a);
+        abs_diff = (tmp_a > tmp_b) ? (tmp_a - tmp_b) : (tmp_b - tmp_a);
     }
-    return (a > b) ? (int64_t)abs_diff : -(int64_t)abs_diff;
+    return (tmp_a > tmp_b) ? (int64_t)abs_diff : -(int64_t)abs_diff;
 }
 
 //! receive distributed clocks sync datagram
@@ -1503,6 +1508,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
                         // queue frame and trigger tx
                         pool_put(&pec->hw.tx_low, p_entry_dc_sto);
                     }
+                } else {
                 }
             }
         }

@@ -54,8 +54,8 @@ typedef struct ec_coe {
                                  * EtherCAT slave CoE mailbox is possible 
                                  */
 
-    int emergency_next_read;
-    int emergency_next_write;
+    uint32_t emergency_next_read;
+    uint32_t emergency_next_write;
     ec_coe_emergency_message_t emergencies[LEC_MAX_COE_EMERGENCIES];    //!< message pool queue
 } ec_coe_t;
 
