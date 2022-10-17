@@ -53,7 +53,7 @@ class MainProject(ConanFile):
     }
 
     generators = "pkg_config"
-    requires = [ "libosal/main@common/snapshot", ]
+    requires = [ "libosal/[~0]@common/unstable", ]
 
     def source(self):
         filedata = None
