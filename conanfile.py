@@ -13,11 +13,22 @@ class MainProject(ConanFile):
         "shared": [True, False],
         "max_slaves": "ANY",
         "max_groups": "ANY", 
-        "max_pdlen": "ANY", 
+        "max_pdlen": "ANY",
         "max_mbx_entries": "ANY", 
         "max_init_cmd_data": "ANY",
         "max_slave_fmmu": "ANY",
-        "max_slave_sm": "ANY"
+        "max_slave_sm": "ANY",
+        "max_datagrams": "ANY",
+        "max_eeprom_cat_sm": "ANY",
+        "max_eeprom_cat_fmmu": "ANY",
+        "max_eeprom_cat_pdo": "ANY",
+        "max_eeprom_cat_pdo_entries": "ANY",
+        "max_eeprom_cat_strings": "ANY",
+        "max_eeprom_cat_dc": "ANY",
+        "max_string_len": "ANY",
+        "max_data": "ANY",
+        "max_ds402_subdevs": "ANY",
+        "max_coe_emergencies": "ANY",
     }
     default_options = {
         "shared": True, 
@@ -27,7 +38,18 @@ class MainProject(ConanFile):
         "max_mbx_entries": 16, 
         "max_init_cmd_data": 2048,
         "max_slave_fmmu": 8,
-        "max_slave_sm": 8
+        "max_slave_sm": 8,
+        "max_datagrams": 100,
+        "max_eeprom_cat_sm": 8,
+        "max_eeprom_cat_fmmu": 8,
+        "max_eeprom_cat_pdo": 128,
+        "max_eeprom_cat_pdo_entries": 32,
+        "max_eeprom_cat_strings": 128,
+        "max_eeprom_cat_dc": 8,
+        "max_string_len": 128,
+        "max_data": 4096,
+        "max_ds402_subdevs": 4,
+        "max_coe_emergencies": 10,
     }
 
     generators = "pkg_config"
@@ -67,20 +89,24 @@ class MainProject(ConanFile):
 
         cflags=""
 
-        if self.options.max_slaves:
-            autotools.defines.append("LEC_MAX_SLAVES=%d" % self.options.max_slaves)
-        if self.options.max_groups:
-            autotools.defines.append("LEC_MAX_GROUPS=%d" % self.options.max_groups)
-        if self.options.max_pdlen:
-            autotools.defines.append("LEC_MAX_PDLEN=%d" % self.options.max_pdlen)
-        if self.options.max_mbx_entries:
-            autotools.defines.append("LEC_MAX_MBX_ENTRIES=%d" % self.options.max_mbx_entries)
-        if self.options.max_init_cmd_data:
-            autotools.defines.append("LEC_MAX_INIT_CMD_DATA=%d" % self.options.max_init_cmd_data)
-        if self.options.max_slave_fmmu:
-            autotools.defines.append("LEC_MAX_SLAVE_FMMU=%d" % self.options.max_slave_fmmu)
-        if self.options.max_slave_sm:
-            autotools.defines.append("LEC_MAX_SLAVE_SM=%d" % self.options.max_slave_sm)
+        autotools.defines.append("LEC_MAX_SLAVES=%d" % self.options.max_slaves)
+        autotools.defines.append("LEC_MAX_GROUPS=%d" % self.options.max_groups)
+        autotools.defines.append("LEC_MAX_PDLEN=%d" % self.options.max_pdlen)
+        autotools.defines.append("LEC_MAX_MBX_ENTRIES=%d" % self.options.max_mbx_entries)
+        autotools.defines.append("LEC_MAX_INIT_CMD_DATA=%d" % self.options.max_init_cmd_data)
+        autotools.defines.append("LEC_MAX_SLAVE_FMMU=%d" % self.options.max_slave_fmmu)
+        autotools.defines.append("LEC_MAX_SLAVE_SM=%d" % self.options.max_slave_sm)
+        autotools.defines.append("LEC_MAX_DATAGRAMS=%d" % self.options.max_datagrams)
+        autotools.defines.append("LEC_MAX_EEPROM_CAT_SM=%d" % self.options.max_eeprom_cat_sm)
+        autotools.defines.append("LEC_MAX_EEPROM_CAT_FMMU=%d" % self.options.max_eeprom_cat_fmmu)
+        autotools.defines.append("LEC_MAX_EEPROM_CAT_PDO=%d" % self.options.max_eeprom_cat_pdo)
+        autotools.defines.append("LEC_MAX_EEPROM_CAT_PDO_ENTRIES=%d" % self.options.max_eeprom_cat_pdo_entries)
+        autotools.defines.append("LEC_MAX_EEPROM_CAT_STRINGS=%d" % self.options.max_eeprom_cat_strings)
+        autotools.defines.append("LEC_MAX_EEPROM_CAT_DC=%d" % self.options.max_eeprom_cat_dc)
+        autotools.defines.append("LEC_MAX_STRING_LEN=%d" % self.options.max_string_len)
+        autotools.defines.append("LEC_MAX_DATA=%d" % self.options.max_data)
+        autotools.defines.append("LEC_MAX_DS402_SUBDEVS=%d" % self.options.max_ds402_subdevs)
+        autotools.defines.append("LEC_MAX_COE_EMERGENCIES=%d" % self.options.max_coe_emergencies)
 
         args.append("--disable-silent-rules")
 
