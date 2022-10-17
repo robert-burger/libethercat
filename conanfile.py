@@ -29,6 +29,7 @@ class MainProject(ConanFile):
         "max_data": "ANY",
         "max_ds402_subdevs": "ANY",
         "max_coe_emergencies": "ANY",
+        "ecat_device": "ANY"
     }
     default_options = {
         "shared": True, 
@@ -50,6 +51,7 @@ class MainProject(ConanFile):
         "max_data": 4096,
         "max_ds402_subdevs": 4,
         "max_coe_emergencies": 10,
+        "ecat_device": "sock_raw",
     }
 
     generators = "pkg_config"
@@ -86,6 +88,8 @@ class MainProject(ConanFile):
         else:
             args.append("--disable-shared")
             args.append("--enable-static")
+
+        args.append("--enable-device=%s" % (self.options.ecat_device))
 
         cflags=""
 
