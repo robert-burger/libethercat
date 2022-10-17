@@ -258,7 +258,7 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
         TAILQ_INIT(&paml->avail.queue);
 
         for (i = 0; i < EC_ASYNC_MESSAGE_LOOP_COUNT; ++i) {
-            ec_message_entry_t *me = &paml->entries[0];
+            ec_message_entry_t *me = &paml->entries[i];
             (void)memset(me, 0, sizeof(ec_message_entry_t));
             TAILQ_INSERT_TAIL(&paml->avail.queue, me, qh);
         }
@@ -300,20 +300,18 @@ int ec_async_loop_destroy(ec_async_loop_t *paml) {
 
     // destroy message pools
     if (osal_mutex_lock(&paml->avail.lock) == OSAL_OK) {
-        ec_message_entry_t *me = TAILQ_FIRST(&paml->avail.queue);
-        while (me != NULL) {
+        while (!TAILQ_EMPTY(&paml->avail.queue)) {
+            ec_message_entry_t *me = TAILQ_FIRST(&paml->avail.queue);
             TAILQ_REMOVE(&paml->avail.queue, me, qh);
-            me = TAILQ_FIRST(&paml->avail.queue);
         }
         (void)osal_mutex_unlock(&paml->avail.lock);
     }
     (void)osal_mutex_destroy(&paml->avail.lock);
 
     if (osal_mutex_lock(&paml->exec.lock) == OSAL_OK) {
-        ec_message_entry_t *me = TAILQ_FIRST(&paml->exec.queue);
-        while (me != NULL) {
+        while (!TAILQ_EMPTY(&paml->exec.queue)) {
+            ec_message_entry_t *me = TAILQ_FIRST(&paml->exec.queue);
             TAILQ_REMOVE(&paml->exec.queue, me, qh);
-            me = TAILQ_FIRST(&paml->exec.queue);
         }
         (void)osal_mutex_unlock(&paml->exec.lock);
     }
