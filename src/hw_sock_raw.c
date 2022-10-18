@@ -194,9 +194,6 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
  * \return 0 or negative error code
  */
 int hw_device_recv(hw_t *phw) {
-    // cppcheck-suppress misra-c2012-11.3
-    ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
-
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
     // using kernel mapped receive buffers
     // wait for received, non-processed packet
@@ -225,6 +222,9 @@ int hw_device_recv(hw_t *phw) {
         }           
     }
 #elif LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
+    // cppcheck-suppress misra-c2012-11.3
+    ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
+
     // using tradional recv function
     osal_ssize_t bytesrx = recv(phw->sockfd, pframe, ETH_FRAME_LEN, 0);
 
