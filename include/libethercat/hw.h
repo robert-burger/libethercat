@@ -73,6 +73,10 @@ typedef struct hw {
 #define ETH_FRAME_LEN   0x1518
     osal_uint8_t send_frame[ETH_FRAME_LEN];
     osal_uint8_t recv_frame[ETH_FRAME_LEN];
+#elif LIBETHERCAT_BUILD_DEVICE_FILE == 1
+#define ETH_FRAME_LEN   0x1518
+    osal_uint8_t send_frame[ETH_FRAME_LEN];
+    osal_uint8_t recv_frame[ETH_FRAME_LEN];
 #endif
 } hw_t;   
 
