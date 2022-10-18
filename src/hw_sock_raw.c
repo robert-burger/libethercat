@@ -201,7 +201,7 @@ int hw_device_recv(hw_t *phw) {
     pollset.fd = phw->sockfd;
     pollset.events = POLLIN;
     pollset.revents = 0;
-    int ret = poll(&pollset, 1, -1);
+    int ret = poll(&pollset, 1, 1);
     if (ret > 0) {
         int pagesize = getpagesize();
 
