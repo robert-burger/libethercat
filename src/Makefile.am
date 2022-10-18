@@ -27,11 +27,19 @@ include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 libethercat_la_SOURCES	= coe.c slave.c datagram.c pool.c async_loop.c ec.c \
 						  hw.c soe.c foe.c mbx.c eeprom.c dc.c idx.c mii.c eoe.c
 
-if BUILD_POSIX
+if BUILD_DEVICE_SOCK_RAW_LEGACY
 libethercat_la_SOURCES += hw_sock_raw.c
 endif
 
-if BUILD_VXWORKS
+if BUILD_DEVICE_SOCK_RAW_MMAPED
+libethercat_la_SOURCES += hw_sock_raw.c
+endif
+
+if BUILD_DEVICE_FILE
+libethercat_la_SOURCES += hw_file.c
+endif
+
+if BUILD_DEVICE_BPF
 libethercat_la_SOURCES += hw_bpf.c
 endif
 

@@ -30,28 +30,32 @@ m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig'
 AC_ARG_ENABLE([device],
               AS_HELP_STRING([--enable-device=LAYER], [Enable device layer. LAYER can be one of 'sock_raw', 'sock_raw_mmaped', 'file', 'bpf']))
 AS_IF([test "x$enable_device" = "xsock_raw" || test "x$enable_device" = "x" ], [
+       BUILD_DEVICE_SOCK_RAW_LEGACY=true
        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [1], [Use SOCK_RAW device layer])
        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
        AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
        AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
        AC_MSG_RESULT(using SOCK_RAW legacy device layer)
 ], AS_IF([test "x$enable_device" = "xsock_raw_mmaped"], [
+       BUILD_DEVICE_SOCK_RAW_MMAPED=true
        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [1], [Use SOCK_RAW mmaped device layer])
        AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
        AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
        AC_MSG_RESULT(using SOCK_RAW mmaped device layer)
 ], AS_IF([test "x$enable_device" = "xfile"], [
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
-       AC_DEFINE([BUILD_DEVICE_BPF],             [1], [Use BPF device layer])
-       AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
-       AC_MSG_RESULT(using file device layer)
-], AS_IF([test "x$enable_device" = "xbpf"], [
+       BUILD_DEVICE_FILE=true
        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
        AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
        AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
        AC_DEFINE([BUILD_DEVICE_FILE],            [1], [Use file device layer])
+       AC_MSG_RESULT(using file device layer)
+], AS_IF([test "x$enable_device" = "xbpf"], [
+       BUILD_DEVICE_BPF=true
+       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
+       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
+       AC_DEFINE([BUILD_DEVICE_BPF],             [1], [Use BPF device layer])
+       AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
        AC_MSG_RESULT(using BPF device layer)
 ], 
        AC_MSG_ERROR(unknown device layer: $enable_device)
@@ -76,11 +80,11 @@ AM_CONDITIONAL([BUILD_POSIX], [ test x$BUILD_POSIX = xtrue])
 AM_CONDITIONAL([BUILD_VXWORKS], [ test x$BUILD_VXWORKS = xtrue]) 
 AM_CONDITIONAL([BUILD_PIKEOS], [ test x$BUILD_PIKEOS = xtrue]) 
 
-AM_CONDITIONAL([BUILD_DEVICE_SOCK_RAW_LEGACY], [ test x$BUILD_DEVICE_SOCK_RAW_LEGACY = x1]) 
-AM_CONDITIONAL([BUILD_DEVICE_SOCK_RAW_MMAPED], [ test x$BUILD_DEVICE_SOCK_RAW_MMAPED = x1]) 
-AM_CONDITIONAL([BUILD_DEVICE_SNARF_LL],        [ test x$BUILD_SNARF_LL = x1]) 
-AM_CONDITIONAL([BUILD_DEVICE_BPF],             [ test x$BUILD_BPF = x1]) 
-AM_CONDITIONAL([BUILD_DEVICE_FILE],            [ test x$BUILD_DEVICE_FILE = x1]) 
+AM_CONDITIONAL([BUILD_DEVICE_SOCK_RAW_LEGACY], [ test x$BUILD_DEVICE_SOCK_RAW_LEGACY = xtrue]) 
+AM_CONDITIONAL([BUILD_DEVICE_SOCK_RAW_MMAPED], [ test x$BUILD_DEVICE_SOCK_RAW_MMAPED = xtrue]) 
+AM_CONDITIONAL([BUILD_DEVICE_SNARF_LL],        [ test x$BUILD_SNARF_LL = xtrue]) 
+AM_CONDITIONAL([BUILD_DEVICE_BPF],             [ test x$BUILD_BPF = xtrue]) 
+AM_CONDITIONAL([BUILD_DEVICE_FILE],            [ test x$BUILD_DEVICE_FILE = xtrue]) 
 
 # Checks for libraries.
 PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
