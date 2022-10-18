@@ -35,8 +35,10 @@
 
 #include <assert.h>
 #include <sys/queue.h>
-#include <net/bpf.h>
-#include <net/if_types.h>
+#include <linux/bpf.h>
+#include <linux/filter.h>
+//#include <net/bpf.h>
+//#include <net/if_types.h>
 
 #define RECEIVE(fd, frame, len)     read((fd), (frame), (len))
 #define SEND(fd, frame, len)        write((fd), (frame), (len))
