@@ -110,6 +110,10 @@
 #define LEC_MAX_COE_EMERGENCIES             (       10u)
 #endif
 
+#ifndef LEC_MAX_COE_EMERGENCY_MSG_LEN
+#define LEC_MAX_COE_EMERGENCY_MSG_LEN       (       32u)
+#endif
+
 #define PACKED __attribute__((__packed__))
 
 #ifndef min

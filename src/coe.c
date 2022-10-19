@@ -1203,18 +1203,24 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
     ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
 
     // don't copy any headers, we already know that we have a coe emergency
-    osal_size_t msg_len = hdr->length - 2u;
+    osal_size_t msg_len = min(LEC_MAX_COE_EMERGENCY_MSG_LEN, (hdr->length - 2u));
 
-    ec_coe_emergency_message_t *msg = &slv->mbx.coe.emergencies[slv->mbx.coe.emergency_next_write];
-    slv->mbx.coe.emergency_next_write = (slv->mbx.coe.emergency_next_write + 1u) % LEC_MAX_COE_EMERGENCIES;
-    if (slv->mbx.coe.emergency_next_write == slv->mbx.coe.emergency_next_read) {
-        slv->mbx.coe.emergency_next_read = (slv->mbx.coe.emergency_next_read + 1u) % LEC_MAX_COE_EMERGENCIES;
+    if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
+        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+    } else {
+        ec_coe_emergency_message_t *msg = &slv->mbx.coe.emergencies[slv->mbx.coe.emergency_next_write];
+        slv->mbx.coe.emergency_next_write = (slv->mbx.coe.emergency_next_write + 1u) % LEC_MAX_COE_EMERGENCIES;
+        if (slv->mbx.coe.emergency_next_write == slv->mbx.coe.emergency_next_read) {
+            slv->mbx.coe.emergency_next_read = (slv->mbx.coe.emergency_next_read + 1u) % LEC_MAX_COE_EMERGENCIES;
+        }
+
+        // skip mbx header and coe header
+        (void)memcpy(msg->msg, (osal_uint8_t *)&(p_entry->data[6 + 2]), msg_len);
+        msg->msg_len = msg_len;
+        (void)osal_timer_gettime(&msg->timestamp);
+
+        (void)osal_mutex_unlock(&slv->mbx.coe.lock);
     }
-
-    // skip mbx header and coe header
-    (void)memcpy(msg->msg, (osal_uint8_t *)&(p_entry->data[6 + 2]), msg_len);
-    msg->msg_len = msg_len;
-    (void)osal_timer_gettime(&msg->timestamp);
 
     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
 }

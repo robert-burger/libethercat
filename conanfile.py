@@ -29,6 +29,7 @@ class MainProject(ConanFile):
         "max_data": "ANY",
         "max_ds402_subdevs": "ANY",
         "max_coe_emergencies": "ANY",
+        "max_coe_emergency_msg_len": "ANY",
         "ecat_device": "ANY"
     }
     default_options = {
@@ -51,6 +52,7 @@ class MainProject(ConanFile):
         "max_data": 4096,
         "max_ds402_subdevs": 4,
         "max_coe_emergencies": 10,
+        "max_coe_emergency_msg_len": 32,
         "ecat_device": "sock_raw",
     }
 

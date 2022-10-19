@@ -42,7 +42,7 @@
 typedef struct ec_coe_emergency_message {
     osal_timer_t timestamp;     //!< timestamp, when emergency was received
     osal_size_t msg_len;        //!< length
-    osal_uint8_t msg[1];        //!< message itself
+    osal_uint8_t msg[LEC_MAX_COE_EMERGENCY_MSG_LEN];        //!< message itself
 } ec_coe_emergency_message_t;
 
 typedef struct ec_coe {
