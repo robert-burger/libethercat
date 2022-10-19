@@ -914,6 +914,9 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     (void)memset(pec, 0, sizeof(ec_t));
 
     int ret = EC_OK;
+    
+    (void)osal_mutex_init(&pec->dc.send_dc_lock, NULL);
+
     ret = ec_index_init(&pec->idx_q);
     
     if (ret == EC_OK) {
@@ -982,6 +985,8 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
 
             ec_index_deinit(&pec->idx_q);
         }
+    
+        (void)osal_mutex_destroy(&pec->dc.send_dc_lock);
     }
 
     return ret;
@@ -1331,14 +1336,12 @@ int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
-    static osal_mutex_t send_dc_lock = PTHREAD_MUTEX_INITIALIZER;
-
     assert(pec != NULL);
 
     int ret = EC_OK;
     ec_datagram_t *p_dg = NULL;
 
-    osal_mutex_lock(&send_dc_lock);
+    osal_mutex_lock(&pec->dc.send_dc_lock);
 
     if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
         ret = EC_ERROR_UNAVAILABLE;
@@ -1395,7 +1398,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
         }
     }
       
-    osal_mutex_unlock(&send_dc_lock);
+    osal_mutex_unlock(&pec->dc.send_dc_lock);
 
     return ret;
 }

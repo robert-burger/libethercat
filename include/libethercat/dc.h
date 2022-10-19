@@ -34,6 +34,7 @@
 #define LIBETHERCAT_DC_H
 
 #include <libosal/types.h>
+#include <libosal/mutex.h>
 
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
@@ -74,6 +75,8 @@ typedef struct ec_dc_info {
 
     pool_entry_t *p_de_dc;
     idx_entry_t *p_idx_dc;
+    
+    osal_mutex_t send_dc_lock;
 } ec_dc_info_t;
 
 struct ec;
