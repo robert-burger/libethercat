@@ -1225,3 +1225,37 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
 }
 
+//! Get next CoE emergency message.
+/*!
+ * \param[in]   pec     Pointer to EtherCAT mater struct.
+ * \param[in]   slave   Number of EtherCAT slave connected to bus.
+ * \param[out]  msg     Pointer to return emergency message.
+ *
+ * }return EC_OK on success, errorcode otherwise
+ */
+int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_message_t *msg) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(msg != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
+    int ret = EC_ERROR_UNAVAILABLE;
+
+    if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
+        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+    } else {
+        if (slv->mbx.coe.emergency_next_write != slv->mbx.coe.emergency_next_read) {
+            ec_coe_emergency_message_t *msg_tmp = &slv->mbx.coe.emergencies[slv->mbx.coe.emergency_next_read];
+            slv->mbx.coe.emergency_next_read++;
+
+            msg->timestamp.sec = msg_tmp->timestamp.sec;
+            msg->timestamp.nsec = msg_tmp->timestamp.nsec;
+            memcpy(&msg->msg[0], &msg_tmp->msg[0], LEC_MAX_COE_EMERGENCY_MSG_LEN);
+        }
+            
+        (void)osal_mutex_unlock(&slv->mbx.coe.lock);
+    }
+
+    return ret;
+}
+

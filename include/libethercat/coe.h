@@ -260,6 +260,16 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave);
  */
 void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
+//! Get next CoE emergency message.
+/*!
+ * \param[in]   pec     Pointer to EtherCAT mater struct.
+ * \param[in]   slave   Number of EtherCAT slave connected to bus.
+ * \param[out]  msg     Pointer to return emergency message.
+ *
+ * \return EC_OK on success, errorcode otherwise
+ */
+int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_message_t *msg);
+
 //! \brief Enqueue CoE message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 
