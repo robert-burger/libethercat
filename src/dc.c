@@ -95,8 +95,8 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
             // activate distributed clock on slave
             check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
-            ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lld, dc_start "
-                    "%lld, slv dc_time %lld\n", slave, pec->dc.rtc_time, dc_start, dc_time);
+            ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %lu, dc_start "
+                    "%lu, slv dc_time %lu\n", slave, pec->dc.rtc_time, dc_start, dc_time);
             ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
                     "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
         } else {
@@ -310,7 +310,7 @@ int ec_dc_config(struct ec *pec) {
         if (pec->dc.master_address == slv->fixed_address) {
             pec->dc.dc_sto = dcsof;
             pec->dc.rtc_sto = osal_timer_gettime_nsec();
-            ec_log(100, "DISTRIBUTED_CLOCK", "initial dc_sto %lld, rtc_sto %lld\n", pec->dc.dc_sto, pec->dc.rtc_sto);
+            ec_log(100, "DISTRIBUTED_CLOCK", "initial dc_sto %ld, rtc_sto %ld\n", pec->dc.dc_sto, pec->dc.rtc_sto);
         }
 
         // find parent with active distributed clocks
@@ -347,7 +347,7 @@ int ec_dc_config(struct ec *pec) {
             osal_int64_t port_time_parent_previous = ec_dc_porttime(pec, parent, port_on_parent_previous);
 
             ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: ports %d, %d, times "
-                    "%d, %d\n", slave, slv->port_on_parent, port_on_parent_previous, 
+                    "%ld, %ld\n", slave, slv->port_on_parent, port_on_parent_previous, 
                     port_time_parent, port_time_parent_previous);
 
             // this describes the delay from the actual slave and all it's 
@@ -379,8 +379,8 @@ int ec_dc_config(struct ec *pec) {
             slv->pdelay = (((delay_slave_with_childs - delay_childs) / 2) + 
                 delay_previous_slaves + pec->slaves[parent].pdelay);
 
-            ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, "
-                    "delay_previous_slaves %d, delay_slave_with_childs %d\n", 
+            ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %ld, "
+                    "delay_previous_slaves %ld, delay_slave_with_childs %ld\n", 
                     slave, delay_childs, delay_previous_slaves, 
                     delay_slave_with_childs);
 

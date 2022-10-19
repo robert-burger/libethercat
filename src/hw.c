@@ -126,7 +126,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             } else {
                 osal_size_t size = ec_datagram_length(d);
                 if (LEC_MAX_POOL_DATA_SIZE < size) {
-                    ec_log(1, "RX_THREAD", "received idx %d, size %d is to big for pool entry size %d!\n", 
+                    ec_log(1, "RX_THREAD", "received idx %d, size %lu is to big for pool entry size %d!\n", 
                             d->idx, size, LEC_MAX_POOL_DATA_SIZE);
                 }
 

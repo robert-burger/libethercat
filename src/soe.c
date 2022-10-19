@@ -330,7 +330,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
             - sizeof(ec_mbx_header_t) - sizeof(ec_soe_header_t);
 
         ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, "
-                "len %d, left %d, mbx_len %d\n", 
+                "len %lu, left %lu, mbx_len %lu\n", 
                 slave, atn, idn, elements, buf, len, left_len, mbx_len);
 
         osal_uint32_t soe_log_pos = 0;
@@ -368,7 +368,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                 from = &from[send_len];
                 left_len -= send_len;
 
-                ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d: sending fragment len %d (left %d)\n",
+                ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d: sending fragment len %lu (left %lu)\n",
                         slave, atn, idn, elements, send_len, left_len);
 
                 if (left_len != 0u) {

@@ -500,7 +500,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     read_buf = (ec_eoe_request_t *)(p_entry->data);
 
                     if (frame_offset != (read_buf->eoe_hdr.complete_size << 5u)) {
-                        ec_log(1, __func__, "slave %d: frame offset mismatch %d != %d\n", 
+                        ec_log(1, __func__, "slave %d: frame offset mismatch %ld != %d\n", 
                                 slave, frame_offset, read_buf->eoe_hdr.complete_size << 5u);
                     }
 

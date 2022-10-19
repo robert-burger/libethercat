@@ -194,7 +194,7 @@ static const osal_char_t *dump_foe_error_request(int slave, ec_foe_error_request
 
     osal_size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
     if (text_len > 0u) {
-        ec_log(10, __func__, "error_text: %.*s\n", text_len, read_buf_error->error_text);
+        ec_log(10, __func__, "error_text: %.*s\n", (int)text_len, read_buf_error->error_text);
     } else {
         if (read_buf_error->error_code == 0x800Du) {
             ret = EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND;
@@ -406,7 +406,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     last_pkt = 1;
                 }
 
-                ec_log(10, __func__, "slave %2d: sending file offset %d, bytes %d\n", 
+                ec_log(10, __func__, "slave %2d: sending file offset %ld, bytes %lu\n", 
                         slave, file_offset, bytes_read);
 
                 file_offset += bytes_read;
@@ -436,7 +436,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                             ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                         } else {
                             ec_log(10, __func__,
-                                    "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %d, data_len %d, packet_nr %d\n", 
+                                    "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %lu, data_len %lu, packet_nr %d\n", 
                                     read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
 
                             ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
@@ -448,7 +448,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 } else {
                     ec_log(10, __func__,
-                            "got no ack on foe write request, last_pkt %d, bytes_read %d, data_len %d\n", 
+                            "got no ack on foe write request, last_pkt %d, bytes_read %lu, data_len %lu\n", 
                             last_pkt, bytes_read, data_len);
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }

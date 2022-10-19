@@ -102,7 +102,7 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
         } else if (((eepctl & 0x0001u) == 0x0000u) && ((eepctl & 0x0100u) == 0x0000u)) {
             // ECAT has EEPROM control
         } else {
-            ec_log(1, __func__, "slave %2d: failed setting eeprom to EtherCAT: eepctl %04X\n", eepctl);
+            ec_log(1, __func__, "slave %2d: failed setting eeprom to EtherCAT: eepctl %04X\n", slave, eepctl);
         }
     }
 
@@ -414,7 +414,7 @@ int ec_eepromwrite_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
             val[i] = buf[(offset*2)+i];
         }
                 
-        ec_log(100, __func__, "slave %2d, writing adr %d : 0x%04X\n", 
+        ec_log(100, __func__, "slave %2d, writing adr %ld : 0x%04X\n", 
                         slave, eepadr+offset, *(osal_uint16_t *)&val);
 
         do {
@@ -537,7 +537,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         do_eeprom_log(10, "EEPROM_GENERAL", 
                                 "          group_idx %d, img_idx %d, "
                                 "order_idx %d, name_idx %d\n", 
-                                slave, slv->eeprom.general.group_idx,
+                                slv->eeprom.general.group_idx,
                                 slv->eeprom.general.img_idx,
                                 slv->eeprom.general.order_idx,
                                 slv->eeprom.general.name_idx);
@@ -582,7 +582,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_SM: {
-                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %d\n", 
+                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %lu\n", 
                                 slave, cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u));
 
                         // skip cat type and len

@@ -48,7 +48,10 @@
     ((a) > (b) ? (a) : (b))
 #endif
 
-static void default_log_func(int lvl, void* user, const osal_char_t *format, ...){
+// forward declaration
+static void default_log_func(int lvl, void* user, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
+
+void default_log_func(int lvl, void* user, const osal_char_t *format, ...) {
     (void)lvl;
     (void)user;
 
@@ -191,7 +194,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
     }
 
     ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3d bytes, in 0x%08X %3d bytes, lrw windows %3d bytes\n", 
+            "%3lu bytes, in 0x%08lX %3lu bytes, lrw windows %3lu bytes\n", 
             group, pd->log, pd->pdout_len, pd->log + pd->pdout_len, 
             pd->pdin_len, pd->pd_lrw_len);
 
@@ -353,7 +356,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
     }
 
     ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3d bytes, in 0x%08X %3d bytes\n", group, pd->log, 
+            "%3lu bytes, in 0x%08lX %3lu bytes\n", group, pd->log, 
             pd->pdout_len, pd->log + pd->pdout_len, pd->pdin_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
@@ -1453,7 +1456,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
         if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, timeout) != 0) 
         {
             ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
-                    "osal_semaphore_timedwait distributed clocks (sent: %lld): %s\n", 
+                    "osal_semaphore_timedwait distributed clocks (sent: %lu): %s\n", 
                     pec->dc.rtc_time, strerror(errno));
             ret = EC_ERROR_TIMEOUT;
         } else {
@@ -1470,13 +1473,13 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
                     // only compensate within one cycle, add rest to system time offset
                     int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
                     if (ticks_off != 0) {
-                        ec_log(100, __func__, "compensating %d cycles, rtc_time %lld, dc_time %lld, act_diff %d\n", 
+                        ec_log(100, __func__, "compensating %d cycles, rtc_time %lu, dc_time %lu, act_diff %ld\n", 
                                 ticks_off, pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
                         pec->dc.rtc_time -= ticks_off * (pec->dc.timer_override);
                         pec->dc.act_diff  = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time);
                     }
 
-                    ec_log(100, __func__, "rtc %lu, dc %lu, act_diff %d\n", pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
+                    ec_log(100, __func__, "rtc %lu, dc %lu, act_diff %ld\n", pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
                 } else if (pec->dc.mode == dc_mode_master_clock) {
                     // sending offset compensation value to dc master clock
                     pool_entry_t *p_entry_dc_sto;

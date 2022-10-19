@@ -188,7 +188,7 @@ extern "C" {
 extern void *ec_log_func_user;
 extern void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...);
 
-void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...);
+void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
 
 //! \brief Open ethercat master.
 /*!

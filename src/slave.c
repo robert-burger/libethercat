@@ -660,12 +660,12 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 }
 
                 ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: txpdos %d, "
-                        "rxpdos %d, bitlen%d %d\n", 
+                        "rxpdos %d, bitlen%d %lu\n", 
                         slave, txpdos_cnt, rxpdos_cnt, sm_idx, bit_len);
 
                 if (bit_len > 0u) {
                     ec_log(10, "GENERATE_MAPPING EEP", "slave %2d: sm%d length "
-                            "bits %d, bytes %d\n", 
+                            "bits %lu, bytes %lu\n", 
                             slave, sm_idx, bit_len, (bit_len + 7u) / 8u);
 
                     slv->sm[sm_idx].len = (bit_len + 7u) / 8u;
@@ -716,7 +716,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                         case EC_MBX_COE: {
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending CoE init cmd 0x%04X:%d, "
-                                    "ca %d, datalen %d, datap %p\n", slave, cmd->id, 
+                                    "ca %d, datalen %lu, datap %p\n", slave, cmd->id, 
                                     cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
 
                             osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
@@ -734,7 +734,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                         case EC_MBX_SOE: {
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending SoE init cmd 0x%04X:%d, "
-                                    "atn %d, datalen %d, datap %p\n", slave, cmd->id, 
+                                    "atn %d, datalen %lu, datap %p\n", slave, cmd->id, 
                                     cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
 
                             osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
@@ -782,7 +782,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
     (void)ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),         \
             (buf), (buflen), &wkc);                                     \
     if (!wkc) { ec_log(10, __func__,                                    \
-            "reading reg 0x%X : no answer from slave %2d\n", slave); } }
+            "reading reg 0x%X : no answer from slave %2d\n", reg, slave); } }
 
     // check error state
     ret = ec_slave_get_state(pec, slave, &act_state, NULL);
@@ -1117,7 +1117,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                 if (slv->subdev_cnt != 0u) {
                     if (slv->subdev_cnt > LEC_MAX_DS402_SUBDEVS) {
-                        ec_log(5, get_transition_string(transition), "slave %2d: got %d ds402 sub devices but can "
+                        ec_log(5, get_transition_string(transition), "slave %2d: got %lu ds402 sub devices but can "
                                 "only handle %d!\n", slave, slv->subdev_cnt, LEC_MAX_DS402_SUBDEVS);
                         slv->subdev_cnt = LEC_MAX_DS402_SUBDEVS;
                     }
