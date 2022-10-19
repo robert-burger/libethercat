@@ -133,7 +133,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     osal_ssize_t bytestx = write(phw->sockfd, pframe, pframe->len);
 
     if ((osal_ssize_t)pframe->len != bytestx) {
-        ec_log(1, "TX", "got only %d bytes out of %d bytes "
+        ec_log(1, "TX", "got only %ld bytes out of %d bytes "
                 "through.\n", bytestx, pframe->len);
 
         if (bytestx == -1) {
