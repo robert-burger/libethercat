@@ -119,7 +119,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
  * \return 0 on success, otherwise error code.
  */
 int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, 
-        size_t frame_len);
+        osal_size_t frame_len);
 
 // setup tun interface
 /*!

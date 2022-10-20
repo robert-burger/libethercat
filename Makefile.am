@@ -2,7 +2,12 @@ ACLOCAL_AMFLAGS = -I m4
 
 include $(top_srcdir)/aminclude.am
 
-SUBDIRS=src tools/ethercatdiag tools/eepromtool
+SUBDIRS=src 
+
+if BUILD_POSIX
+SUBDIRS+=tools/ethercatdiag 
+SUBDIRS+=tools/eepromtool
+endif
 
 pkgconfig_DATA = libethercat.pc
 

@@ -39,6 +39,11 @@
 #include <libethercat/pool.h>
 #include <libethercat/datagram.h>
 
+#if LIBETHERCAT_BUILD_PIKEOS == 1
+#include <vm_file_types.h>
+#include <drv/sbuf_hdr.h>
+#endif
+
 #define ETH_P_ECAT      0x88A4
 
 //! hardware structure
@@ -80,6 +85,9 @@ typedef struct hw {
 #elif LIBETHERCAT_BUILD_PIKEOS == 1
     vm_file_desc_t fd;
     drv_sbuf_desc_t sbuf;
+#define ETH_FRAME_LEN   0x1518
+    osal_uint8_t send_frame[ETH_FRAME_LEN];
+    osal_uint8_t recv_frame[ETH_FRAME_LEN];
 #endif
 } hw_t;   
 

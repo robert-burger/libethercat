@@ -1,9 +1,22 @@
+#include <libethercat/config.h>
+
 #include <stdio.h>
+
+#if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
+
+#if LIBETHERCAT_HAVE_SYS_STAT_H == 1
 #include <sys/stat.h>
+#endif
+
+#if LIBETHERCAT_HAVE_FCNTL_H == 1
 #include <fcntl.h>
+#endif
+
 #include <stdarg.h>
 
 #include "libethercat/ec.h"
@@ -85,6 +98,7 @@ void propagation_delays(ec_t *pec) {
 int max_print_level = 0;
 
 // only log level <= 10 
+void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
 void no_verbose_log(int lvl, void *user, const char *format, ...) {
     if (lvl > max_print_level)
         return;
@@ -96,16 +110,18 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 };
 
 void mii_read(int fd, ec_t *pec, int slave, int phy) {
-    int i, ret;
+    int i;
     for (i = 0; i < 0x20; ++i) {
         uint16_t data = 0;
         ec_miiread(pec, slave, phy, i, &data);
-        ret = write(fd, &data, sizeof(data));
+#if LIBETHERCAT_BUILD_POSIX == 1
+        int ret = write(fd, &data, sizeof(data));
 
         if (ret == -1) {
             perror("write returned:");
             break;
         }
+#endif
     }
 }
 
@@ -188,9 +204,13 @@ int main(int argc, char **argv) {
     
     if (mode == mode_read) {
         if (fn) {
+#if LIBETHERCAT_BUILD_POSIX == 1
             fd = open(fn, O_CREAT | O_RDWR);
+#endif
             mii_read(fd, &ec, slave, phy);
+#if LIBETHERCAT_BUILD_POSIX == 1
             close(fd);
+#endif
         } else
             mii_read(1, &ec, slave, phy);
     } else if (mode == mode_write) {

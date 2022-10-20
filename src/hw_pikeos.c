@@ -35,18 +35,25 @@
 
 #include <assert.h>
 
-#include <net/ethernet.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <linux/if_packet.h>
-#include <sys/mman.h>
-#include <poll.h>
-#include <fcntl.h>
-#include <unistd.h>
+//#include <net/ethernet.h>
+//#include <sys/socket.h>
+//#include <sys/ioctl.h>
+//#include <linux/if_packet.h>
+//#include <sys/mman.h>
+//#include <poll.h>
+//#include <fcntl.h>
+//#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 
-// NOTE: taken/inspired by https://github.com/Siviuze/KickCAT/blob/master/src/OS/PikeOS/Socket.cc
+#if LIBETHERCAT_HAVE_NET_UTIL_INET_H == 1
+#include <net/util/inet.h>
+#endif
+
+#include <p4ext_vmem.h>
+#include <vm_part.h>
+#include <drv/app_sbuf_svc.h>
+#include <drv/sbuf_common_svc.h>
 
 //! Opens EtherCAT hw device.
 /*!
@@ -63,6 +70,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     P4_size_t vsize;
     vm_partition_stat_t pinfo;
     P4_e_t local_retval;
+    P4_address_t vaddr;
 
     local_retval = vm_part_pstat(VM_RESPART_MYSELF, &pinfo);
     if (local_retval != P4_E_OK) {
@@ -94,7 +102,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     }
 
     if (ret == EC_OK) {
-        P4_address_t vaddr = p4ext_vmem_alloc(vsize);
+        vaddr = p4ext_vmem_alloc(vsize);
         if (vaddr == 0) {
             ec_log(1, __func__, "p4ext_vmem_alloc failed\n");
             ret = EC_ERROR_UNAVAILABLE;
@@ -198,14 +206,14 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     int ret = EC_OK;
     void* txbuf = NULL;
 
-    // get an empty txbuffer from TX ring (dontwait)
-    vm_io_buf_id_t txbuf = vm_io_sbuf_tx_alloc(&phw->sbuf, 1);
-    if (tx == VM_IO_BUF_ID_INVALID) {
+    // get an empty tx buffer from TX ring (dontwait)
+    vm_io_buf_id_t sbuftx = vm_io_sbuf_tx_alloc(&phw->sbuf, 1);
+    if (sbuftx == VM_IO_BUF_ID_INVALID) {
         ret = EC_ERROR_UNAVAILABLE;
     }
     
     if (ret == EC_OK) {
-        txbuf = (void*)vm_io_sbuf_tx_buf_addr(&phw->sbuf, txbuf);
+        txbuf = (void*)vm_io_sbuf_tx_buf_addr(&phw->sbuf, sbuftx);
         
         if (txbuf == NULL) {
             ret = EC_ERROR_UNAVAILABLE;
@@ -214,7 +222,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
 
     if (ret == EC_OK) {
         memcpy(txbuf, pframe, pframe->len);
-        vm_io_sbuf_tx_ready(&sbuf_, tx, pframe->len);
+        vm_io_sbuf_tx_ready(&phw->sbuf, sbuftx, pframe->len);
     }
 
     return ret;

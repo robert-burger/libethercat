@@ -44,6 +44,7 @@ libethercat_la_SOURCES += hw_bpf.c
 endif
 
 if BUILD_PIKEOS
+libethercat_la_SOURCES += hw_pikeos.c
 endif
 
 libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(top_srcdir)/include @LIBOSAL_CFLAGS@

@@ -56,6 +56,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#if LIBETHERCAT_HAVE_INTTYPES_H == 1
+#include <inttypes.h>
+#endif
+
 #if LIBETHERCAT_BUILD_POSIX
 #include <linux/if.h>
 #include <linux/if_tun.h>
@@ -338,7 +342,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
         write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_SET_IP_ADDRESS_REQUEST;
         write_buf->eoe_hdr.last_fragment      = 0x01;
 
-        off_t data_pos = 0;
+        osal_off_t data_pos = 0;
 
 #define EOE_SIZEOF_MAC           6u
 #define EOE_SIZEOF_IP_ADDRESS    4u
@@ -419,7 +423,7 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
     } else {
         osal_size_t max_frag_len = (slv->sm[MAILBOX_WRITE].len - sizeof(ec_mbx_header_t) - sizeof(ec_eoe_header_t));
         ALIGN_32BIT_BLOCKS(max_frag_len);
-        off_t frame_offset = 0;
+        osal_off_t frame_offset = 0;
         int frag_number = 0;
 
         do {
@@ -506,7 +510,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
         } else {
             eth_frame->frame_size = read_buf->eoe_hdr.complete_size << 5u;
             osal_size_t frag_len       = read_buf->mbx_hdr.length - 4u;
-            off_t frame_offset    = 0;
+            osal_off_t frame_offset    = 0;
 
             (void)memcpy(&(eth_frame->frame_data[frame_offset]), &read_buf->data[0], frag_len);
             frame_offset += frag_len;
@@ -522,7 +526,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     read_buf = (ec_eoe_request_t *)(p_entry->data);
 
                     if (frame_offset != (read_buf->eoe_hdr.complete_size << 5u)) {
-                        ec_log(1, __func__, "slave %d: frame offset mismatch %ld != %d\n", 
+                        ec_log(1, __func__, "slave %d: frame offset mismatch %" PRIu64 " != %d\n", 
                                 slave, frame_offset, read_buf->eoe_hdr.complete_size << 5u);
                     }
 
@@ -532,7 +536,9 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
 
                     if (read_buf->eoe_hdr.last_fragment != 0u) {
                         if (pec->tun_fd > 0) {
+#if LIBETHERCAT_BUILD_POSIX == 1
                             write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
+#endif
                             pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                         } else {
                             pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
@@ -553,7 +559,9 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                 if (pec->tun_fd > 0) {
                     eoe_debug_print("recv eth frame", eth_frame->frame_data, frame_offset);
 
+#if LIBETHERCAT_BUILD_POSIX == 1
                     write(pec->tun_fd, eth_frame->frame_data, frame_offset);
+#endif
                     pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
                     pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
@@ -576,6 +584,8 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     return ret;
 }
 
+#if LIBETHERCAT_BUILD_POSIX == 1
+
 //! \brief Handler thread for tap interface
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -585,19 +595,6 @@ static void ec_eoe_tun_handler(ec_t *pec) {
     assert(pec != NULL);
 
     eth_frame_t tmp_frame;
-    struct sched_param param;
-    int policy;
-
-    // thread settings$
-    if (pthread_getschedparam(pthread_self(), &policy, &param) != 0) {
-        ec_log(1, __func__, "error on pthread_getschedparam %s\n", strerror(errno));
-    } else {
-        policy = SCHED_FIFO;
-        param.sched_priority = sched_get_priority_min(policy);
-        if (pthread_setschedparam(pthread_self(), policy, &param) != 0) {
-            ec_log(1, __func__, "error on pthread_setschedparam %s\n", strerror(errno));
-        }
-    }
 
     while (pec->tun_running == 1) {
         int ret;
@@ -663,6 +660,8 @@ static void *ec_eoe_tun_handler_wrapper(void *arg) {
     return NULL;
 }
 
+#endif
+
 // setup tun interface
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -672,6 +671,8 @@ int ec_eoe_setup_tun(ec_t *pec) {
     assert(pec != NULL);
 
     int ret = EC_OK;
+
+#if LIBETHERCAT_BUILD_POSIX == 1
     int s;
     struct ifreq ifr;
     (void)memset(&ifr, 0, sizeof(ifr));
@@ -743,6 +744,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
             osal_task_create(&pec->tun_tid, &attr, ec_eoe_tun_handler_wrapper, pec);
         }
     }
+#endif
 
     return ret;
 }
@@ -757,10 +759,12 @@ void ec_eoe_destroy_tun(ec_t *pec) {
 
     if (pec->tun_running == 1) {
         pec->tun_running = 0;
+#if LIBETHERCAT_BUILD_POSIX == 1
         osal_task_join(&pec->tun_tid, NULL);
 
         close(pec->tun_fd);
         pec->tun_fd = 0;
+#endif
     }
 }
 

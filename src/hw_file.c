@@ -39,6 +39,10 @@
 #include <errno.h>
 #include <string.h>
 
+#if LIBETHERCAT_HAVE_UNISTD_H == 1
+#include <unistd.h>
+#endif
+
 #include <netinet/in.h>
 
 //! Opens EtherCAT hw device.
