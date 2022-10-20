@@ -4,5 +4,5 @@ configurations:
     ecat_device: { sock_raw, sock_raw_mmaped, file }
 - imports:
   - linux_defaults
-- pikeos5.1-armv8hf-gcc7
+- pikeos5.1-armv8hf-gcc7:
     ecat_device: { pikeos }
