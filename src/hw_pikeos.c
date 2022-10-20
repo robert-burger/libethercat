@@ -34,15 +34,6 @@
 #include <libethercat/error_codes.h>
 
 #include <assert.h>
-
-//#include <net/ethernet.h>
-//#include <sys/socket.h>
-//#include <sys/ioctl.h>
-//#include <linux/if_packet.h>
-//#include <sys/mman.h>
-//#include <poll.h>
-//#include <fcntl.h>
-//#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 
