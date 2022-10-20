@@ -31,16 +31,38 @@
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <string.h>
+
+#if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
+#endif
+
+#if LIBETHERCAT_HAVE_FCNTL_H == 1
 #include <fcntl.h>
+#endif
+
+#if LIBETHERCAT_HAVE_SYS_TYPES_H == 1
 #include <sys/types.h>
+#endif
+
+#if LIBETHERCAT_HAVE_SYS_STAT_H == 1
 #include <sys/stat.h>
+#endif
+
+#if LIBETHERCAT_HAVE_SYS_SOCKET_H == 1
 #include <sys/socket.h>
+#endif
+
+#if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
 #include <sys/ioctl.h>
+#endif
+
+#if LIBETHERCAT_BUILD_POSIX
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
+
 #include <errno.h>
 
 // forward declarations

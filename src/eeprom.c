@@ -38,6 +38,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <inttypes.h>
 
 // cppcheck-suppress misra-c2012-20.10
 #define SII_REG(ac, adr, val)                                          \
@@ -372,7 +373,7 @@ int ec_eepromread_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
 
-    off_t offset = 0;
+    osal_off_t offset = 0;
     int ret = EC_OK;
     
     while (offset < buflen) {
@@ -404,7 +405,7 @@ int ec_eepromwrite_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
 
-    off_t offset = 0;
+    osal_off_t offset = 0;
     int i;
     int ret = EC_OK;
 
@@ -414,7 +415,7 @@ int ec_eepromwrite_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
             val[i] = buf[(offset*2)+i];
         }
                 
-        ec_log(100, __func__, "slave %2d, writing adr %ld : 0x%04X\n", 
+        ec_log(100, __func__, "slave %2d, writing adr %" PRIu64 " : 0x%04X\n", 
                         slave, eepadr+offset, *(osal_uint16_t *)&val);
 
         do {
@@ -432,7 +433,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    off_t cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
+    osal_off_t cat_offset = EC_EEPROM_ADR_CAT_OFFSET;
     osal_uint32_t value32 = 0;
     
     ec_slave_ptr(slv, pec, slave);
@@ -587,7 +588,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                         // skip cat type and len
                         osal_uint32_t j = 0;
-                        off_t local_offset = cat_offset + 2;
+                        osal_off_t local_offset = cat_offset + 2;
                         slv->eeprom.sms_cnt = cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u);
 
                         if (!slv->eeprom.sms_cnt) {
@@ -602,7 +603,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                         while (local_offset < (cat_offset + cat_len + 2u)) {
                             (void)ec_read_eeprom(local_offset, slv->eeprom.sms[j]);
-                            local_offset += (off_t)(sizeof(ec_eeprom_cat_sm_t) / 2u);
+                            local_offset += (osal_off_t)(sizeof(ec_eeprom_cat_sm_t) / 2u);
 
                             if (slv->sm[j].adr == 0u) {
                                 slv->sm[j].adr = slv->eeprom.sms[j].adr;

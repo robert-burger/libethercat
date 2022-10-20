@@ -37,8 +37,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/eventfd.h>  
 
 #ifndef max
 #define max(a, b)  ((a) > (b) ? (a) : (b))

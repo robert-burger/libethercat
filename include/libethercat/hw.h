@@ -77,6 +77,9 @@ typedef struct hw {
 #define ETH_FRAME_LEN   0x1518
     osal_uint8_t send_frame[ETH_FRAME_LEN];
     osal_uint8_t recv_frame[ETH_FRAME_LEN];
+#elif LIBETHERCAT_BUILD_PIKEOS == 1
+    vm_file_desc_t fd;
+    drv_sbuf_desc_t sbuf;
 #endif
 } hw_t;   
 

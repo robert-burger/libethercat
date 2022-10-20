@@ -64,15 +64,21 @@ AS_IF([test "x$enable_device" = "xsock_raw" || test "x$enable_device" = "x" ], [
 case $target_os in
     linux*)
         BUILD_POSIX=true
-        AC_DEFINE([BUILD_POSIX], [true], [Use POSIX build on linux])
+        AC_DEFINE([BUILD_POSIX], [1], [Use POSIX build on linux])
+        AC_DEFINE([BUILD_VXWORKS], [0], [Use VxWorks build])
+        AC_DEFINE([BUILD_PIKEOS], [0], [Use PikeOS build])
         ;;
     vxworks*)
         BUILD_VXWORKS=true
-        AC_DEFINE([BUILD_VXWORKS], [true], [Use VxWorks build])
+        AC_DEFINE([BUILD_POSIX], [0], [Use POSIX build on linux])
+        AC_DEFINE([BUILD_VXWORKS], [1], [Use VxWorks build])
+        AC_DEFINE([BUILD_PIKEOS], [0], [Use PikeOS build])
         ;;
     pikeos*)
         BUILD_PIKEOS=true
-        AC_DEFINE([BUILD_PIKEOS], [true], [Use PikeOS build])
+        AC_DEFINE([BUILD_POSIX], [0], [Use POSIX build on linux])
+        AC_DEFINE([BUILD_VXWORKS], [0], [Use VxWorks build])
+        AC_DEFINE([BUILD_PIKEOS], [1], [Use PikeOS build])
         ;;
 esac
 
@@ -90,7 +96,7 @@ PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
 
 # Checks for header files.
 AC_HEADER_ASSERT
-AC_CHECK_HEADERS([arpa/inet.h net/if.h net/bpf.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h net/util/inet.h net/if.h net/bpf.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT16_T

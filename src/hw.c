@@ -37,11 +37,21 @@
 #include <errno.h>
 #include <string.h>
 
+#if LIBETHERCAT_HAVE_INTTYPES_H == 1
+#include <inttypes.h>
+#endif
+
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <string.h>
 
+#if LIBETHERCAT_HAVE_ARPA_INET_H == 1
 #include <arpa/inet.h>
+#endif
+
+#if LIBETHERCAT_HAVE_NET_UTIL_INET_H == 1
+#include <net/util/inet.h>
+#endif
 
 //! receiver thread forward declaration
 static void *hw_rx_thread(void *arg);
@@ -126,7 +136,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             } else {
                 osal_size_t size = ec_datagram_length(d);
                 if (LEC_MAX_POOL_DATA_SIZE < size) {
-                    ec_log(1, "RX_THREAD", "received idx %d, size %lu is to big for pool entry size %d!\n", 
+                    ec_log(1, "RX_THREAD", "received idx %d, size %" PRIu64 " is to big for pool entry size %d!\n", 
                             d->idx, size, LEC_MAX_POOL_DATA_SIZE);
                 }
 

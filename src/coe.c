@@ -578,7 +578,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
 
             // normal download
             osal_uint8_t *tmp = buf;
-            off_t tmp_pos = 0;
+            osal_off_t tmp_pos = 0;
             write_buf->complete_size = len;
             (void)memcpy(&write_buf->sdo_data[0], &tmp[tmp_pos], seg_len);
             rest_len -= seg_len;

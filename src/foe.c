@@ -40,9 +40,19 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <sys/stat.h>
+
+#if LIBETHERCAT_HAVE_INTTYPES_H == 1
+#include <inttypes.h>
+#endif
+
+#if LIBETHERCAT_HAVE_FCNTL_H == 1
 #include <fcntl.h>
+#endif
+
+#if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
+#endif 
+
 #include <errno.h>
 #include <stdlib.h>
 
@@ -389,7 +399,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
     if (ret == EC_OK) {
         // mailbox len - mailbox hdr (6) - foe header (6)
         osal_size_t data_len = slv->sm[1].len - 6u - 6u;
-        off_t file_offset = 0;
+        osal_off_t file_offset = 0;
         int packet_nr = 0;
         int last_pkt = 0;
 
@@ -406,7 +416,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     last_pkt = 1;
                 }
 
-                ec_log(10, __func__, "slave %2d: sending file offset %ld, bytes %lu\n", 
+                ec_log(10, __func__, "slave %2d: sending file offset %" PRIu64 ", bytes %" PRIu64 "\n", 
                         slave, file_offset, bytes_read);
 
                 file_offset += bytes_read;
@@ -436,7 +446,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                             ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                         } else {
                             ec_log(10, __func__,
-                                    "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %lu, data_len %lu, packet_nr %d\n", 
+                                    "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %" PRIu64 ", data_len %" PRIu64 ", packet_nr %d\n", 
                                     read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
 
                             ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
@@ -448,7 +458,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 } else {
                     ec_log(10, __func__,
-                            "got no ack on foe write request, last_pkt %d, bytes_read %lu, data_len %lu\n", 
+                            "got no ack on foe write request, last_pkt %d, bytes_read %" PRIu64 ", data_len %" PRIu64 "\n", 
                             last_pkt, bytes_read, data_len);
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }

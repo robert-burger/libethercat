@@ -33,6 +33,11 @@
 #include <limits.h>
 #include <assert.h>
 
+#if LIBETHERCAT_HAVE_INTTYPES_H == 1
+#include <inttypes.h>
+#endif
+
+
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"
 #include "libethercat/mbx.h"
@@ -62,7 +67,7 @@ void default_log_func(int lvl, void* user, const osal_char_t *format, ...) {
 }
 
 void *ec_log_func_user = NULL;
-void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...) = default_log_func;
+void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4))) = default_log_func;
 
 void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
     if (ec_log_func != NULL) {
@@ -194,7 +199,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
     }
 
     ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3lu bytes, in 0x%08lX %3lu bytes, lrw windows %3lu bytes\n", 
+            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes, lrw windows %3" PRIu64 " bytes\n", 
             group, pd->log, pd->pdout_len, pd->log + pd->pdout_len, 
             pd->pdin_len, pd->pd_lrw_len);
 
@@ -246,7 +251,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
                     wkc_expected |= 2u;
 
                     osal_uint32_t z;
-                    off_t pdoff = 0;
+                    osal_off_t pdoff = 0;
                     for (z = 0u; z < slv->subdev_cnt; ++z) {
                         slv->subdevs[z].pdout.pd = &pdout[pdoff];
                         pdoff += slv->subdevs[z].pdout.len;
@@ -274,7 +279,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
                     wkc_expected |= 1u;
 
                     osal_uint32_t z;
-                    off_t pdoff = 0;
+                    osal_off_t pdoff = 0;
                     for (z = 0; z < slv->subdev_cnt; ++z) {
                         slv->subdevs[z].pdin.pd = &pdin[pdoff];
                         pdoff += slv->subdevs[z].pdin.len;
@@ -356,7 +361,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
     }
 
     ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3lu bytes, in 0x%08lX %3lu bytes\n", group, pd->log, 
+            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes\n", group, pd->log, 
             pd->pdout_len, pd->log + pd->pdout_len, pd->pdin_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
@@ -1456,7 +1461,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
         if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, timeout) != 0) 
         {
             ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
-                    "osal_semaphore_timedwait distributed clocks (sent: %lu): %s\n", 
+                    "osal_semaphore_timedwait distributed clocks (sent: %" PRIu64 "): %s\n", 
                     pec->dc.rtc_time, strerror(errno));
             ret = EC_ERROR_TIMEOUT;
         } else {
@@ -1473,13 +1478,13 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
                     // only compensate within one cycle, add rest to system time offset
                     int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
                     if (ticks_off != 0) {
-                        ec_log(100, __func__, "compensating %d cycles, rtc_time %lu, dc_time %lu, act_diff %ld\n", 
+                        ec_log(100, __func__, "compensating %d cycles, rtc_time %" PRIu64 ", dc_time %" PRIu64 ", act_diff %" PRId64 "\n", 
                                 ticks_off, pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
                         pec->dc.rtc_time -= ticks_off * (pec->dc.timer_override);
                         pec->dc.act_diff  = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time);
                     }
 
-                    ec_log(100, __func__, "rtc %lu, dc %lu, act_diff %ld\n", pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
+                    ec_log(100, __func__, "rtc %" PRIu64 ", dc %" PRIu64 ", act_diff %" PRId64 "\n", pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
                 } else if (pec->dc.mode == dc_mode_master_clock) {
                     // sending offset compensation value to dc master clock
                     pool_entry_t *p_entry_dc_sto;

@@ -89,7 +89,7 @@ int ec_frame_init(ec_frame_t *frame);
  * \param[in]       payload_len   Length of payload.
  */
 void ec_frame_add_datagram_phys(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_t idx, 
-        osal_uint16_t adp, osal_uint16_t ado, osal_uint8_t *payload, size_t payload_len);
+        osal_uint16_t adp, osal_uint16_t ado, osal_uint8_t *payload, osal_size_t payload_len);
 
 //! Add datagram at the end of frame.
 /*/
@@ -101,7 +101,7 @@ void ec_frame_add_datagram_phys(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_
  * \param[in]       payload_len   Length of payload.
  */
 void ec_frame_add_datagram_log(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_t idx, 
-        osal_uint32_t adr, osal_uint8_t *payload, size_t payload_len);
+        osal_uint32_t adr, osal_uint8_t *payload, osal_size_t payload_len);
 
 static inline ec_datagram_t *ec_datagram_cast(osal_uint8_t *p) {
     // cppcheck-suppress misra-c2012-11.3
