@@ -77,6 +77,9 @@ typedef struct ec_dc_info {
     idx_entry_t *p_idx_dc;
     
     osal_mutex_t send_dc_lock;
+
+    int recv_timeout_ns;            //!< Receive timeout in [ns]
+    osal_timer_t timeout;
 } ec_dc_info_t;
 
 struct ec;

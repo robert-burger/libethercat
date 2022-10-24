@@ -1,8 +1,12 @@
-//! ethercat master slave registers
-/*!
- * author: Robert Burger
+/**
+ * \file pool.h
  *
- * $Id$
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 24 Sep 2022
+ *
+ * \brief EtherCAT master slave registers
+ *
  */
 
 /*

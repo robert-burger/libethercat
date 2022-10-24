@@ -10,7 +10,6 @@
  * 
  */
 
-
 /*
  * This file is part of libethercat.
  *

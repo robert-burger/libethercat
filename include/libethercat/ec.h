@@ -104,6 +104,13 @@ typedef struct ec_pd_group {
 
     pool_entry_t *p_entry;          //!< EtherCAT datagram from pool
     idx_entry_t *p_idx;             //!< EtherCAT datagram index from pool
+
+    int recv_timeout_ns;            //!< Group receive timeout in [ns]
+    osal_timer_t timeout;
+    int had_timeout;    
+
+    int divisor;                    //!< Timer Divisor
+    int divisor_cnt;                //!< Actual timer cycle count
 } ec_pd_group_t;
 
 //! ethercat master structure
@@ -179,6 +186,7 @@ typedef struct ec {
 
     pool_entry_t *p_de_state;       //!< EtherCAT datagram from pool for ec_state read
     idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
+    osal_timer_t state_timeout;
 } ec_t;
 
 #ifdef __cplusplus
@@ -278,6 +286,24 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
  */
 int ec_set_state(ec_t *pec, ec_state_t state);
 
+#define ec_group_will_be_sent(pec, group) (int)((((pec)->pd_groups[(group)].divisor_cnt+1) % (pec)->pd_groups[(group)].divisor) == 0)
+#define ec_group_was_sent(pec, group)     (int)((pec)->pd_groups[(group)].divisor_cnt == 0)
+
+//! send process data with logical commands
+/*!
+ * \param[in]   pec     Pointer to EtherCAT master struct.
+ * \return EC_OK on success
+ */
+int ec_send_process_data(ec_t *pec);
+
+//! \brief Receive process data with logical commands.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \return 0 on success
+ */
+int ec_receive_process_data(ec_t *pec);
+
 //! \brief Send process data for specific group with logical commands.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -292,10 +318,9 @@ int ec_send_process_data_group(ec_t *pec, int group);
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
  * \param[in] group         Group number.
- * \param[in] timeout       Timeout for waiting for packet.
  * \return 0 on success
  */
-int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout);
+int ec_receive_process_data_group(ec_t *pec, int group);
 
 //! \brief Send distributed clocks sync datagram.
 /*!
@@ -309,10 +334,9 @@ int ec_send_distributed_clocks_sync(ec_t *pec);
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
- * \param[in] timeout       Absolute timeout.
  * \return 0 on success
  */
-int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout);
+int ec_receive_distributed_clocks_sync(ec_t *pec);
 
 //! \brief Send broadcast read to ec state.
 /*!
@@ -329,7 +353,7 @@ int ec_send_brd_ec_state(ec_t *pec);
  * \param[in] timeout       Timeout for waiting for packet.
  * \return 0 on success
  */
-int ec_receive_brd_ec_state(ec_t *pec, osal_timer_t *timeout);
+int ec_receive_brd_ec_state(ec_t *pec);
 
 //! \brief Return current slave count.
 /*!

@@ -99,8 +99,7 @@ extern "C" {
  * \retval 0            On success
  * \retval error_code   On error
  */
-int ec_async_loop_create(ec_async_loop_t *paml, 
-        struct ec *pec);
+int ec_async_loop_create(ec_async_loop_t *paml, struct ec *pec);
 
 //! Destroys async message loop.
 /*!

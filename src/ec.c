@@ -106,6 +106,9 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
         pec->pd_groups[i].pdin_len  = 0u;
         pec->pd_groups[i].use_lrw   = 1;
         pec->pd_groups[i].recv_missed = 0;
+        pec->pd_groups[i].divisor   = 1;
+        pec->pd_groups[i].divisor_cnt = 0;
+        pec->pd_groups[i].recv_timeout_ns = 10000000; 
     }
 
     return 0;
@@ -805,9 +808,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 
             // sending first time dc
             if (ec_send_distributed_clocks_sync(pec) == EC_OK) {
-                osal_timer_t dc_timeout;
-                osal_timer_init(&dc_timeout, 10000000);
-                (void)ec_receive_distributed_clocks_sync(pec, &dc_timeout);
+                (void)ec_receive_distributed_clocks_sync(pec);
             } else {
                 ec_log(1, __func__, "was not able to send first dc frame\n");
             }
@@ -1244,6 +1245,35 @@ int ec_send_process_data_group(ec_t *pec, int group) {
 
         // queue frame and trigger tx
         pool_put(&pec->hw.tx_high, pd->p_entry);
+
+        // set timeout
+        osal_timer_init(&pd->timeout, pd->recv_timeout_ns);
+    }
+
+    return ret;
+}
+
+//! send process data with logical commands
+/*!
+ * \param[in]   pec     Pointer to EtherCAT master struct.
+ * \return EC_OK on success
+ */
+int ec_send_process_data(ec_t *pec) {
+    int ret = EC_OK;
+    int i;
+
+    for (i = 0; i < pec->pd_group_cnt; ++i) {
+        ec_pd_group_t *pd = &pec->pd_groups[i];
+
+        if ((++pd->divisor_cnt % pd->divisor) == 0) {
+            // reset divisor cnt and queue datagram
+            pd->divisor_cnt = 0;
+            ret = ec_send_process_data_group(pec, i);
+        }
+
+        if (ret != EC_OK) {
+            break;
+        }
     }
 
     return ret;
@@ -1253,12 +1283,10 @@ int ec_send_process_data_group(ec_t *pec, int group) {
 /*!
  * \param pec ethercat master pointer
  * \param group group number
- * \param timeout for waiting for packet
  * \return 0 on success
  */
-int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
+int ec_receive_process_data_group(ec_t *pec, int group) {
     assert(pec != NULL);
-    assert(timeout != NULL);
 
     int ret = EC_OK;
 
@@ -1272,7 +1300,7 @@ int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
         p_dg = ec_datagram_cast(pd->p_entry->data);
 
         // wait for completion
-        if (osal_binary_semaphore_timedwait(&pd->p_idx->waiter, timeout) != 0) {
+        if (osal_binary_semaphore_timedwait(&pd->p_idx->waiter, &pd->timeout) != 0) {
             if (++pd->recv_missed < pec->consecutive_max_miss) {
                 ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
                         "osal_semaphore_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
@@ -1338,6 +1366,31 @@ int ec_receive_process_data_group(ec_t *pec, int group, osal_timer_t *timeout) {
     return ret;
 }
 
+//! \brief Receive process data with logical commands.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \return 0 on success
+ */
+int ec_receive_process_data(ec_t *pec) {
+    int ret = EC_OK;
+    int i;
+
+    for (i = 0; i < pec->pd_group_cnt; ++i) {
+        ec_pd_group_t *pd = &pec->pd_groups[i];
+
+        if (pd->divisor_cnt == 0) {
+            if (ec_receive_process_data_group(pec, i) == EC_ERROR_TIMEOUT) {
+                pd->had_timeout = 1;
+            } else {
+                pd->had_timeout = 0;
+            }
+        }
+    }
+
+    return ret;
+}
+
 //! send distributed clock sync datagram
 /*!
  * \param pec ethercat master pointer
@@ -1351,7 +1404,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
     osal_mutex_lock(&pec->dc.send_dc_lock);
 
-    if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
+    if (!pec->dc.rtc_time || !pec->dc.have_dc || !pec->dc.rtc_sto) {
         ret = EC_ERROR_UNAVAILABLE;
     } else if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
         ret = EC_ERROR_UNAVAILABLE;
@@ -1403,6 +1456,8 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
             // queue frame and trigger tx
             pool_put(&pec->hw.tx_high, pec->dc.p_de_dc);
+
+            osal_timer_init(&pec->dc.timeout, pec->dc.recv_timeout_ns);
         }
     }
       
@@ -1440,12 +1495,10 @@ static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
 //! receive distributed clocks sync datagram
 /*!
  * \param pec ethercat master pointer
- * \param timeout absolute timeout
  * \return 0 on success
  */
-int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
+int ec_receive_distributed_clocks_sync(ec_t *pec) {
     assert(pec != NULL);
-    assert(timeout != NULL);
 
     int ret = EC_OK;
     osal_uint16_t wkc; 
@@ -1458,7 +1511,7 @@ int ec_receive_distributed_clocks_sync(ec_t *pec, osal_timer_t *timeout) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         // wait for completion
-        if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, timeout) != 0) 
+        if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, &pec->dc.timeout) != 0) 
         {
             ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
                     "osal_semaphore_timedwait distributed clocks (sent: %" PRIu64 "): %s\n", 
@@ -1567,6 +1620,8 @@ int ec_send_brd_ec_state(ec_t *pec) {
 
         // queue frame and trigger tx
         pool_put(&pec->hw.tx_high, pec->p_de_state);
+
+        osal_timer_init(&pec->state_timeout, 10000000);
     }
 
     return ret;
@@ -1578,9 +1633,8 @@ int ec_send_brd_ec_state(ec_t *pec) {
  * \param timeout for waiting for packet
  * \return 0 on success
  */
-int ec_receive_brd_ec_state(ec_t *pec, osal_timer_t *timeout) {
+int ec_receive_brd_ec_state(ec_t *pec) {
     assert(pec != NULL);
-    assert(timeout != NULL);
 
     static int wkc_mismatch_cnt_ec_state = 0;
     static int ec_state_mismatch_cnt = 0;
@@ -1591,7 +1645,7 @@ int ec_receive_brd_ec_state(ec_t *pec, osal_timer_t *timeout) {
 
     if (pec->p_idx_state == NULL) {
         ret = EC_ERROR_UNAVAILABLE;
-    } else if (osal_binary_semaphore_timedwait(&pec->p_idx_state->waiter, timeout) != 0) 
+    } else if (osal_binary_semaphore_timedwait(&pec->p_idx_state->waiter, &pec->state_timeout) != 0) 
     { // wait for completion
         ec_log(1, __func__, "osal_semaphore_timedwait ec_state: %s\n", strerror(errno));
         ret = EC_ERROR_TIMEOUT;
