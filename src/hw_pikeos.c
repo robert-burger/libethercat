@@ -81,6 +81,8 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         if (local_retval != P4_E_OK) {
             ec_log(1, __func__, "vm_open on %s failed\n", devname);
             ret = EC_ERROR_UNAVAILABLE;
+        } else {
+            ec_log(10, __func__, "opened %s\n", devname);
         }
     }
 
