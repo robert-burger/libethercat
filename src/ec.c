@@ -810,7 +810,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             if (ec_send_distributed_clocks_sync(pec) == EC_OK) {
                 (void)ec_receive_distributed_clocks_sync(pec);
             } else {
-                ec_log(1, __func__, "was not able to send first dc frame\n");
+                // don't care, someelse already sent first dc frame
             }
 
             ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
@@ -1405,7 +1405,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
     osal_mutex_lock(&pec->dc.send_dc_lock);
 
-    if (!pec->dc.rtc_time || !pec->dc.have_dc || !pec->dc.rtc_sto) {
+    if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
         ret = EC_ERROR_UNAVAILABLE;
     } else if ((pec->dc.p_de_dc != NULL) || (pec->dc.p_idx_dc != NULL)) {
         ret = EC_ERROR_UNAVAILABLE;
