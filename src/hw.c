@@ -159,9 +159,13 @@ void *hw_rx_thread(void *arg) {
 
     assert(phw != NULL);
 
+    ec_log(10, __func__, "receive thread running\n");
+
     while (phw->rxthreadrunning != 0) {
         (void)hw_device_recv(phw);
     }
+    
+    ec_log(10, __func__, "receive thread stopped\n");
     
     return NULL;
 }
