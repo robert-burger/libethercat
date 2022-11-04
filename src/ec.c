@@ -1300,10 +1300,11 @@ int ec_receive_process_data_group(ec_t *pec, int group) {
         p_dg = ec_datagram_cast(pd->p_entry->data);
 
         // wait for completion
-        if (osal_binary_semaphore_timedwait(&pd->p_idx->waiter, &pd->timeout) != 0) {
+        int local_ret = osal_binary_semaphore_timedwait(&pd->p_idx->waiter, &pd->timeout);
+        if (local_ret != OSAL_OK) {
             if (++pd->recv_missed < pec->consecutive_max_miss) {
                 ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                        "osal_semaphore_timedwait group id %d: %s, consecutive act %d limit %d\n", group, strerror(errno),
+                        "osal_binary_semaphore_timedwait group id %d: %d, consecutive act %d limit %d\n", group, local_ret,
                         pd->recv_missed, pec->consecutive_max_miss);
             } else {
                 ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
