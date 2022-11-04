@@ -110,6 +110,8 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         }
     }
 
+    phw->mtu_size = 1480;
+
     return ret;
 }
 
