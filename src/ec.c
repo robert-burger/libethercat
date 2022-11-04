@@ -1655,7 +1655,7 @@ int ec_receive_brd_ec_state(ec_t *pec) {
         p_dg = ec_datagram_cast(pec->p_de_state->data);
 
         wkc = ec_datagram_wkc(p_dg);
-        (void)memcpy((osal_uint8_t *)&al_status, ec_datagram_payload(p_dg), 2iu);
+        (void)memcpy((osal_uint8_t *)&al_status, ec_datagram_payload(p_dg), 2u);
 
         if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                     (pec->master_state == EC_STATE_OP)  ) && 
