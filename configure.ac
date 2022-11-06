@@ -27,6 +27,61 @@ AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
+AC_ARG_WITH([max-slaves],
+              AS_HELP_STRING([--with-max-slaves=MAX_SLAVES], [Set maximum number of slaves supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_SLAVES], [${withval}], [Maximum number of slaves supported.]), [])
+AC_ARG_WITH([max-groups],
+              AS_HELP_STRING([--with-max-groups=MAX_GROUPS], [Set maximum number of groups supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_GROUPS], [${withval}], [Maximum number of groups supported.]), [])
+AC_ARG_WITH([max-pdlen],
+              AS_HELP_STRING([--with-max-pdlen=MAX_PDLEN], [Set maximum number of pdlen supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_PDLEN], [${withval}], [Maximum number of pdlen supported.]), [])
+AC_ARG_WITH([max-mbx-entries],
+              AS_HELP_STRING([--with-max-mbx-entries=MAX_MBX_ENTRIES], [Set maximum number of mbx-entries supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_MBX_ENTRIES], [${withval}], [Maximum number of mbx-entries supported.]), [])
+AC_ARG_WITH([max-init-cmd-data],
+              AS_HELP_STRING([--with-max-init-cmd-data=MAX_INIT_CMD_DATA], [Set maximum number of init-cmd-data supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_INIT_CMD_DATA], [${withval}], [Maximum number of init-cmd-data supported.]), [])
+AC_ARG_WITH([max-slave-fmmu],
+              AS_HELP_STRING([--with-max-slave-fmmu=MAX_SLAVE_FMMU], [Set maximum number of slave-fmmu supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_SLAVE_FMMU], [${withval}], [Maximum number of slave-fmmu supported.]), [])
+AC_ARG_WITH([max-slave-sm],
+              AS_HELP_STRING([--with-max-slave-sm=MAX_SLAVE_SM], [Set maximum number of slave-sm supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_SLAVE_SM], [${withval}], [Maximum number of slave-sm supported.]), [])
+AC_ARG_WITH([max-datagrams],
+              AS_HELP_STRING([--with-max-datagrams=MAX_DATAGRAMS], [Set maximum number of datagrams supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_DATAGRAMS], [${withval}], [Maximum number of datagrams supported.]), [])
+AC_ARG_WITH([max-eeprom-cat-sm],
+              AS_HELP_STRING([--with-max-eeprom-cat-sm=MAX_EEPROM_CAT_SM], [Set maximum number of eeprom-cat-sm supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_EEPROM_CAT_SM], [${withval}], [Maximum number of eeprom-cat-sm supported.]), [])
+AC_ARG_WITH([max-eeprom-cat-fmmu],
+              AS_HELP_STRING([--with-max-eeprom-cat-fmmu=MAX_EEPROM_CAT_FMMU], [Set maximum number of eeprom-cat-fmmu supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_EEPROM_CAT_FMMU], [${withval}], [Maximum number of eeprom-cat-fmmu supported.]), [])
+AC_ARG_WITH([max-eeprom-cat-pdo],
+              AS_HELP_STRING([--with-max-eeprom-cat-pdo=MAX_EEPROM_CAT_PDO], [Set maximum number of eeprom-cat-pdo supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_EEPROM_CAT_PDO], [${withval}], [Maximum number of eeprom-cat-pdo supported.]), [])
+AC_ARG_WITH([max-eeprom-cat-pdo-entries],
+              AS_HELP_STRING([--with-max-eeprom-cat-pdo-entries=MAX_EEPROM_CAT_PDO_ENTRIES], [Set maximum number of eeprom-cat-pdo-entries supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_EEPROM_CAT_PDO_ENTRIES], [${withval}], [Maximum number of eeprom-cat-pdo-entries supported.]), [])
+AC_ARG_WITH([max-eeprom-cat-strings],
+              AS_HELP_STRING([--with-max-eeprom-cat-strings=MAX_EEPROM_CAT_STRINGS], [Set maximum number of eeprom-cat-strings supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_EEPROM_CAT_STRINGS], [${withval}], [Maximum number of eeprom-cat-strings supported.]), [])
+AC_ARG_WITH([max-eeprom-cat-dc],
+              AS_HELP_STRING([--with-max-eeprom-cat-dc=MAX_EEPROM_CAT_DC], [Set maximum number of eeprom-cat-dc supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_EEPROM_CAT_DC], [${withval}], [Maximum number of eeprom-cat-dc supported.]), [])
+AC_ARG_WITH([max-string-len],
+              AS_HELP_STRING([--with-max-string-len=MAX_STRING_LEN], [Set maximum number of string-len supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_STRING_LEN], [${withval}], [Maximum number of string-len supported.]), [])
+AC_ARG_WITH([max-data],
+              AS_HELP_STRING([--with-max-data=MAX_DATA], [Set maximum number of data supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_DATA], [${withval}], [Maximum number of data supported.]), [])
+AC_ARG_WITH([max-ds402-subdevs],
+              AS_HELP_STRING([--with-max-ds402-subdevs=MAX_DS402_SUBDEVS], [Set maximum number of ds402-subdevs supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_DS402_SUBDEVS], [${withval}], [Maximum number of ds402-subdevs supported.]), [])
+AC_ARG_WITH([max-coe-emergencies],
+              AS_HELP_STRING([--with-max-coe-emergencies=MAX_COE_EMERGENCIES], [Set maximum number of coe-emergencies supported.]), 
+              AC_DEFINE_UNQUOTED([MAX_COE_EMERGENCIES], [${withval}], [Maximum number of coe-emergencies supported.]), [])
+        
 AC_ARG_ENABLE([device],
               AS_HELP_STRING([--enable-device=LAYER], [Enable device layer. LAYER can be one of 'sock_raw', 'sock_raw_mmaped', 'file', 'bpf', 'pikeos']))
 AS_IF([test "x$enable_device" = "xsock_raw" || test "x$enable_device" = "x" ], [
@@ -72,7 +127,7 @@ AS_IF([test "x$enable_device" = "xsock_raw" || test "x$enable_device" = "x" ], [
 ], 
        AC_MSG_ERROR(unknown device layer: $enable_device)
 )))))
-        
+
 case $target_os in
     linux*)
         BUILD_POSIX=true

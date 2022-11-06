@@ -37,79 +37,117 @@
 
 #include <stdint.h>
 
-#ifndef LEC_MAX_SLAVES
+#ifdef LIBETHERCAT_MAX_SLAVES
+#define LEC_MAX_SLAVES                      ( LIBETHERCAT_MAX_SLAVES )
+#else
 #define LEC_MAX_SLAVES                      (      256u)
 #endif
 
-#ifndef LEC_MAX_GROUPS
+#ifdef LIBETHERCAT_MAX_GROUPS
+#define LEC_MAX_GROUPS                      ( LIBETHERCAT_MAX_GROUPS )
+#else
 #define LEC_MAX_GROUPS                      (        8u)
 #endif
 
-#ifndef LEC_MAX_PDLEN
+#ifdef LIBETHERCAT_MAX_PDLEN
+#define LEC_MAX_PDLEN                       ( LIBETHERCAT_MAX_PDLEN )
+#else
 #define LEC_MAX_PDLEN                       (2u * 1518u)
 #endif
 
-#ifndef LEC_MAX_MBX_ENTRIES
+#ifdef LIBETHERCAT_MAX_MBX_ENTRIES
+#define LEC_MAX_MBX_ENTRIES                 ( LIBETHERCAT_MAX_MBX_ENTRIES )
+#else
 #define LEC_MAX_MBX_ENTRIES                 (       16u)
 #endif
 
-#ifndef LEC_MAX_INIT_CMD_DATA
+#ifdef LIBETHERCAT_MAX_INIT_CMD_DATA
+#define LEC_MAX_INIT_CMD_DATA               ( LIBETHERCAT_MAX_INIT_CMD_DATA )
+#else
 #define LEC_MAX_INIT_CMD_DATA               (     2048u)
 #endif
 
-#ifndef LEC_MAX_SLAVE_FMMU
+#ifdef LIBETHERCAT_MAX_SLAVE_FMMU
+#define LEC_MAX_SLAVE_FMMU                  ( LIBETHERCAT_MAX_SLAVE_FMMU )
+#else
 #define LEC_MAX_SLAVE_FMMU                  (        8u)
 #endif
 
-#ifndef LEC_MAX_SLAVE_SM
+#ifdef LIBETHERCAT_MAX_SLAVE_SM
+#define LEC_MAX_SLAVE_SM                    ( LIBETHERCAT_MAX_SLAVE_SM )
+#else
 #define LEC_MAX_SLAVE_SM                    (        8u)
 #endif
 
-#ifndef LEC_MAX_DATAGRAMS                   
+#ifdef LIBETHERCAT_MAX_DATAGRAMS                   
+#define LEC_MAX_DATAGRAMS                   ( LIBETHERCAT_MAX_DATAGRAMS )
+#else
 #define LEC_MAX_DATAGRAMS                   (      100u)
 #endif 
 
-#ifndef LEC_MAX_EEPROM_CAT_SM
+#ifdef LIBETHERCAT_MAX_EEPROM_CAT_SM
+#define LEC_MAX_EEPROM_CAT_SM               ( LIBETHERCAT_MAX_EEPROM_CAT_SM )
+#else
 #define LEC_MAX_EEPROM_CAT_SM               (LEC_MAX_SLAVE_SM)
 #endif
 
-#ifndef LEC_MAX_EEPROM_CAT_FMMU
+#ifdef LIBETHERCAT_MAX_EEPROM_CAT_FMMU
+#define LEC_MAX_EEPROM_CAT_FMMU             ( LIBETHERCAT_MAX_EEPROM_CAT_FMMU )
+#else
 #define LEC_MAX_EEPROM_CAT_FMMU             (LEC_MAX_SLAVE_FMMU)
 #endif
 
-#ifndef LEC_MAX_EEPROM_CAT_PDO
+#ifdef LIBETHERCAT_MAX_EEPROM_CAT_PDO
+#define LEC_MAX_EEPROM_CAT_PDO              ( LIBETHERCAT_MAX_EEPROM_CAT_PDO )
+#else
 #define LEC_MAX_EEPROM_CAT_PDO              (      128u)
 #endif
 
-#ifndef LEC_MAX_EEPROM_CAT_PDO_ENTRIES
+#ifdef LIBETHERCAT_MAX_EEPROM_CAT_PDO_ENTRIES
+#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES      ( LIBETHERCAT_MAX_EEPROM_CAT_PDO_ENTRIES )
+#else
 #define LEC_MAX_EEPROM_CAT_PDO_ENTRIES      (       32u)
 #endif
 
-#ifndef LEC_MAX_EEPROM_CAT_STRINGS      
+#ifdef LIBETHERCAT_MAX_EEPROM_CAT_STRINGS      
+#define LEC_MAX_EEPROM_CAT_STRINGS          ( LIBETHERCAT_MAX_EEPROM_CAT_STRINGS )
+#else
 #define LEC_MAX_EEPROM_CAT_STRINGS          (      128u)
 #endif
 
-#ifndef LEC_MAX_EEPROM_CAT_DC      
+#ifdef LIBETHERCAT_MAX_EEPROM_CAT_DC      
+#define LEC_MAX_EEPROM_CAT_DC               ( LIBETHERCAT_MAX_EEPROM_CAT_DC )
+#else
 #define LEC_MAX_EEPROM_CAT_DC               (        8u)
 #endif
 
-#ifndef LEC_MAX_STRING_LEN
+#ifdef LIBETHERCAT_MAX_STRING_LEN
+#define LEC_MAX_STRING_LEN                  ( LIBETHERCAT_MAX_STRING_LEN )
+#else
 #define LEC_MAX_STRING_LEN                  (      128u)
 #endif
 
-#ifndef LEC_MAX_DATA
+#ifdef LIBETHERCAT_MAX_DATA
+#define LEC_MAX_DATA                        ( LIBETHERCAT_MAX_DATA )
+#else
 #define LEC_MAX_DATA                        (     4096u)
 #endif
 
-#ifndef LEC_MAX_DS402_SUBDEVS
+#ifdef LIBETHERCAT_MAX_DS402_SUBDEVS
+#define LEC_MAX_DS402_SUBDEVS               ( LIBETHERCAT_MAX_DS402_SUBDEVS )
+#else
 #define LEC_MAX_DS402_SUBDEVS               (        4u)
 #endif
 
-#ifndef LEC_MAX_COE_EMERGENCIES
+#ifdef LIBETHERCAT_MAX_COE_EMERGENCIES
+#define LEC_MAX_COE_EMERGENCIES             ( LIBETHERCAT_MAX_COE_EMERGENCIES )
+#else
 #define LEC_MAX_COE_EMERGENCIES             (       10u)
 #endif
 
-#ifndef LEC_MAX_COE_EMERGENCY_MSG_LEN
+#ifdef LIBETHERCAT_MAX_COE_EMERGENCY_MSG_LEN
+#define LEC_MAX_COE_EMERGENCY_MSG_LEN       ( LIBETHERCAT_MAX_COE_EMERGENCY_MSG_LEN )
+#else
 #define LEC_MAX_COE_EMERGENCY_MSG_LEN       (       32u)
 #endif
 
