@@ -158,8 +158,13 @@ void *hw_rx_thread(void *arg) {
     hw_t *phw = (hw_t *) arg;
 
     assert(phw != NULL);
+    
+    osal_task_sched_priority_t rx_prio;
+    if (osal_task_get_priority(&phw->rxthread, &rx_prio) != OSAL_OK) {
+        rx_prio = 0;
+    }
 
-    ec_log(10, __func__, "receive thread running\n");
+    ec_log(10, __func__, "receive thread running (prio %d)\n", rx_prio);
 
     while (phw->rxthreadrunning != 0) {
         (void)hw_device_recv(phw);
