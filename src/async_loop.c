@@ -212,6 +212,18 @@ static void *ec_async_loop_thread(void *arg) {
     return NULL;
 }
 
+//! Execute asynchronous check all slaves.
+/*!
+ * \param[in] paml  Handle to async message loop.
+ */
+void ec_async_check_all(ec_async_loop_t *paml) {
+    assert(paml != NULL);
+
+    for (int i = 0; i < paml->pec->pd_group_cnt; ++i) {
+        ec_async_check_group(paml, i);
+    }
+}
+
 // execute asynchronous check group
 void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
     osal_timer_t act;

@@ -44,7 +44,8 @@ struct ec;
 //! Message ID for asynchronous loop
 typedef enum ec_async_message_id {
     EC_MSG_CHECK_GROUP,             //!< message type check group
-    EC_MSG_CHECK_SLAVE              //!< message type check slave
+    EC_MSG_CHECK_SLAVE,             //!< message type check slave
+    EC_MSG_CHECK_ALL                //!< message type check all slaves
 } ec_async_message_id_t;
     
 typedef osal_uint32_t ec_async_message_payload_t;
@@ -116,6 +117,12 @@ int ec_async_loop_destroy(ec_async_loop_t *paml);
  * \param[in] gid   EtherCAT process data group id to check.
  */
 void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid);
+
+//! Execute asynchronous check all slaves.
+/*!
+ * \param[in] paml  Handle to async message loop.
+ */
+void ec_async_check_all(ec_async_loop_t *paml);
 
 #ifdef __cplusplus
 }

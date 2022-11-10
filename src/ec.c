@@ -1677,6 +1677,7 @@ int ec_receive_brd_ec_state(ec_t *pec) {
             if ((ec_state_mismatch_cnt++%1000) == 0) {
                 ec_log(1, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
                         al_status, pec->master_state);
+                ec_async_check_all(&pec->async_loop);
             }
         }
 
