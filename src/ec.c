@@ -296,7 +296,8 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
             fmmu_next++;
         }
 
-        if (slv->eeprom.mbx_supported != 0u) {
+        if (    (slv->eeprom.mbx_supported != 0u) &&
+                (slv->mbx.map_mbx_state == 1u)) {
             if (fmmu_next < slv->fmmu_ch) {
                 // add state of sync manager read mailbox
                 slv->fmmu[fmmu_next].log = log_base_in;
@@ -452,7 +453,8 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
             fmmu_next++;
         }
 
-        if (slv->eeprom.mbx_supported != 0u) {
+        if (    (slv->eeprom.mbx_supported != 0u) &&
+                (slv->mbx.map_mbx_state == 1u)) {
             if (fmmu_next < slv->fmmu_ch) {
                 // add state of sync manager read mailbox
                 slv->fmmu[fmmu_next].log = log_base_in;
