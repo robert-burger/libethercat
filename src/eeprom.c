@@ -416,7 +416,7 @@ int ec_eepromwrite_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
         }
                 
         ec_log(100, __func__, "slave %2d, writing adr %" PRIu64 " : 0x%04X\n", 
-                        slave, eepadr+offset, *(osal_uint16_t *)&val);
+                        slave, eepadr+offset, *(osal_uint16_t *)&val[0]);
 
         do {
             ret = ec_eepromwrite(pec, slave, eepadr+offset, (osal_uint16_t *)&val);
