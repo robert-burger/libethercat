@@ -1525,11 +1525,12 @@ int ec_receive_distributed_clocks_sync(ec_t *pec) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         // wait for completion
-        if (osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, &pec->dc.timeout) != 0) 
-        {
+        osal_retval_t local_ret;
+        local_ret = osal_binary_semaphore_timedwait(&pec->dc.p_idx_dc->waiter, &pec->dc.timeout);
+        if (local_ret != OSAL_OK) {
             ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC",
-                    "osal_semaphore_timedwait distributed clocks (sent: %" PRIu64 "): %s\n", 
-                    pec->dc.rtc_time, strerror(errno));
+                    "osal_binary_semaphore_timedwait distributed clocks (sent: %" PRIu64 "): %d\n", 
+                    pec->dc.rtc_time, local_ret);
             ret = EC_ERROR_TIMEOUT;
         } else {
             p_dg = ec_datagram_cast(pec->dc.p_de_dc->data);

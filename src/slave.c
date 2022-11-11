@@ -798,12 +798,15 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
         if ((act_state & EC_STATE_ERROR) != 0u) { // reset error state first
+            ec_log(10, __func__, "slave %2d is in ERROR, resetting first.\n", slave);
             (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
         }
 
         // generate transition
         ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | 
             (state & EC_STATE_MASK); 
+
+        ec_log(10, __func__, "slave %2d executing transition %X\n", slave, transition);
 
         switch (transition) {
             case BOOT_2_PREOP:
@@ -1056,10 +1059,14 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
             case INIT_2_INIT: {
+                ec_log(10, __func__, "slave %2d rewriting fixed address\n", slave);
+
                 // rewrite fixed address
                 (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                         (osal_uint8_t *)&slv->fixed_address, 
                         sizeof(slv->fixed_address), &wkc); 
+
+                ec_log(10, __func__, "slave %2d disable dcs\n", slave);
 
                 // disable ditributed clocks
                 osal_uint8_t dc_active = 0;
@@ -1068,6 +1075,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                 // free resources
                 ec_slave_free(pec, slave);
+
+                ec_log(10, __func__, "slave %2d get number of sm\n", slave);
 
                 // get number of sync managers
                 ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
@@ -1078,6 +1087,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                                 (osal_uint8_t *)&slv->sm[i], sizeof(ec_slave_sm_t));
                     }
                 }
+                
+                ec_log(10, __func__, "slave %2d get number of fmmu\n", slave);
 
                 // get number of fmmus
                 ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
