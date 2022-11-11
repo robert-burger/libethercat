@@ -40,6 +40,15 @@
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
 
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION              ( 0x01u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_SYNC0                   ( 0x02u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_SYNC1                   ( 0x04u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION         ( 0x08u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_EXT_64BIT               ( 0x10u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_START_TIME_CHECK        ( 0x20u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_NEAR_FUTURE_CONFIG      ( 0x40u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_DEBUG_PULSE             ( 0x80u )
+
 typedef struct ec_dc_info_slave {
     int use_dc;                 //!< flag, whether to use dc
     int next;                   //!< marker for next dc slave

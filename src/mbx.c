@@ -657,7 +657,8 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
                 slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
 
                 // check receive mailbox on timeout if PREOP or lower
-                if (slv->act_state != EC_STATE_OP) {
+                if (    (slv->act_state != EC_STATE_OP) ||
+                        (slv->mbx.map_mbx_state == OSAL_FALSE)) {
                     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
                 }
                 osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);

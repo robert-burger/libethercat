@@ -78,7 +78,7 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
 
-        dc_active = active;
+        dc_active = (active & ~EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION) | EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION;
 
         // program first trigger time and cycle time
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
