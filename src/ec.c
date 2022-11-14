@@ -1277,7 +1277,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
             ec_log(1, __func__, "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
         } else {
-            ec_datagram_t *p_dg = ec_datagram_cast(slv->mbx.p_entry_state->data);
+            p_dg = ec_datagram_cast(slv->mbx.p_entry_state->data);
             (void)memset(p_dg, 0, sizeof(ec_datagram_t) + sizeof(osal_uint8_t) + 2u);
             p_dg->cmd = EC_CMD_FPRD;
             p_dg->idx = slv->mbx.p_idx_state->idx;
