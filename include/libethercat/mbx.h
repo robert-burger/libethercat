@@ -124,6 +124,9 @@ typedef struct ec_mbx {
                                  * determine if the mailbox is full or empty
                                  * without the need to poll the state manually.
                                  */
+    pool_entry_t *p_entry_state;//!< Entry when mbx state is not mapped.
+    idx_entry_t *p_idx_state;   //!< Index entry when mbx state is not mapped.
+    osal_timer_t timeout_state; //!< Receive timeout for mbx state.
 } ec_mbx_t;
 
 #ifdef __cplusplus

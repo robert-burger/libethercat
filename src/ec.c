@@ -297,7 +297,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
         }
 
         if (    (slv->eeprom.mbx_supported != 0u) &&
-                (slv->mbx.map_mbx_state == 1u)) {
+                (slv->mbx.map_mbx_state == OSAL_TRUE)) {
             if (fmmu_next < slv->fmmu_ch) {
                 // add state of sync manager read mailbox
                 slv->fmmu[fmmu_next].log = log_base_in;
@@ -454,7 +454,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
         }
 
         if (    (slv->eeprom.mbx_supported != 0u) &&
-                (slv->mbx.map_mbx_state == 1u)) {
+                (slv->mbx.map_mbx_state == OSAL_TRUE)) {
             if (fmmu_next < slv->fmmu_ch) {
                 // add state of sync manager read mailbox
                 slv->fmmu[fmmu_next].log = log_base_in;
@@ -1262,6 +1262,39 @@ int ec_send_process_data_group(ec_t *pec, int group) {
         // set timeout
         osal_timer_init(&pd->timeout, pd->recv_timeout_ns);
     }
+           
+    for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+        ec_slave_ptr(slv, pec, slave);
+        if (    (slv->assigned_pd_group != group) ||
+                (slv->eeprom.mbx_supported == 0u) ||
+                (slv->mbx.map_mbx_state == OSAL_TRUE)) { continue; }
+
+        if (ec_index_get(&pec->idx_q, &slv->mbx.p_idx_state) != EC_OK) {
+            ec_log(1, __func__, "error getting ethercat index\n");
+            ret = EC_ERROR_OUT_OF_INDICES;
+        } else if (pool_get(&pec->pool, &slv->mbx.p_entry_state, NULL) != EC_OK) {
+            ec_index_put(&pec->idx_q, slv->mbx.p_idx_state);
+            ec_log(1, __func__, "error getting datagram from pool\n");
+            ret = EC_ERROR_OUT_OF_DATAGRAMS;
+        } else {
+            ec_datagram_t *p_dg = ec_datagram_cast(slv->mbx.p_entry_state->data);
+            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + sizeof(osal_uint8_t) + 2u);
+            p_dg->cmd = EC_CMD_FPRD;
+            p_dg->idx = slv->mbx.p_idx_state->idx;
+            p_dg->adr = ((0x080D) << 16lu) | (osal_uint32_t)((slv->fixed_address) & 0xFFFFu);
+            p_dg->len = sizeof(osal_uint8_t);
+            p_dg->irq = 0;
+
+            pd->p_entry->user_cb = cb_block;
+            pd->p_entry->user_arg = slv->mbx.p_idx_state;
+
+            // queue frame and trigger tx
+            pool_put(&pec->hw.tx_high, slv->mbx.p_entry_state);
+
+            // set timeout
+            osal_timer_init(&slv->mbx.timeout_state, 10000000);
+        }
+    }
 
     return ret;
 }
@@ -1375,6 +1408,41 @@ int ec_receive_process_data_group(ec_t *pec, int group) {
 
         pd->p_entry = NULL;
         pd->p_idx = NULL;
+    }
+    
+    for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+        ec_slave_ptr(slv, pec, slave);
+        if (    (slv->assigned_pd_group != group) ||
+                (slv->eeprom.mbx_supported == 0u) ||
+                (slv->mbx.map_mbx_state == OSAL_TRUE)) { continue; }
+
+        ec_datagram_t *p_dg = ec_datagram_cast(slv->mbx.p_entry_state->data);
+
+        // wait for completion
+        int local_ret = osal_binary_semaphore_timedwait(&slv->mbx.p_idx_state->waiter, &slv->mbx.timeout_state);
+        if (local_ret != OSAL_OK) {
+            ec_log(1, __func__, "osal_binary_semaphore_timedwait slave %2d: waiting for mbx state\n", slave);
+            ret = EC_ERROR_TIMEOUT;
+        } else {
+            osal_uint8_t mbx_state = 0u;
+            osal_uint16_t wkc = 0u;
+            wkc = ec_datagram_wkc(p_dg);
+            if (    (wkc = 0u) &&
+                    (pd->pd != NULL)) {
+                (void)memcpy(&mbx_state, ec_datagram_payload(p_dg), sizeof(osal_uint8_t));
+            }
+
+            if ((mbx_state & 0x08u) != 0u) {
+                ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, mbx_state);
+                ec_mbx_sched_read(pec, slave);
+            }
+        }
+
+        pool_put(&pec->pool, slv->mbx.p_entry_state);
+        ec_index_put(&pec->idx_q, slv->mbx.p_idx_state);
+
+        slv->mbx.p_entry_state = NULL;
+        slv->mbx.p_idx_state = NULL;
     }
 
     return ret;
