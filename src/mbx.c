@@ -78,6 +78,9 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
 
         slv->mbx.map_mbx_state = OSAL_TRUE;
+        slv->mbx.p_entry_state = NULL;
+        slv->mbx.p_idx_state = NULL;
+
 
 //        (void)pool_open(&slv->mbx.message_pool_recv_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_recv_free_entries[0]);
 //        (void)pool_open(&slv->mbx.message_pool_send_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_send_free_entries[0]);
@@ -104,7 +107,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         slv->mbx.handler_running = 1;
         slv->mbx.pec = pec;
         slv->mbx.slave = slave;
-
+    
         osal_task_attr_t attr;
         attr.priority = 0;
         attr.affinity = 0xFF;

@@ -1262,7 +1262,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
         // set timeout
         osal_timer_init(&pd->timeout, pd->recv_timeout_ns);
     }
-           
+
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
         ec_slave_ptr(slv, pec, slave);
         if (    (slv->assigned_pd_group != group) ||
@@ -1281,12 +1281,12 @@ int ec_send_process_data_group(ec_t *pec, int group) {
             (void)memset(p_dg, 0, sizeof(ec_datagram_t) + sizeof(osal_uint8_t) + 2u);
             p_dg->cmd = EC_CMD_FPRD;
             p_dg->idx = slv->mbx.p_idx_state->idx;
-            p_dg->adr = ((0x080D) << 16lu) | (osal_uint32_t)((slv->fixed_address) & 0xFFFFu);
+            p_dg->adr = ((EC_REG_SM1STAT) << 16lu) | (osal_uint32_t)((slv->fixed_address) & 0xFFFFu);
             p_dg->len = sizeof(osal_uint8_t);
             p_dg->irq = 0;
 
-            pd->p_entry->user_cb = cb_block;
-            pd->p_entry->user_arg = slv->mbx.p_idx_state;
+            slv->mbx.p_entry_state->user_cb = cb_block;
+            slv->mbx.p_entry_state->user_arg = slv->mbx.p_idx_state;
 
             // queue frame and trigger tx
             pool_put(&pec->hw.tx_high, slv->mbx.p_entry_state);
@@ -1414,7 +1414,9 @@ int ec_receive_process_data_group(ec_t *pec, int group) {
         ec_slave_ptr(slv, pec, slave);
         if (    (slv->assigned_pd_group != group) ||
                 (slv->eeprom.mbx_supported == 0u) ||
-                (slv->mbx.map_mbx_state == OSAL_TRUE)) { continue; }
+                (slv->mbx.map_mbx_state == OSAL_TRUE) ||
+                (slv->mbx.p_entry_state == NULL) ||
+                (slv->mbx.p_idx_state == NULL)) { continue; }
 
         ec_datagram_t *p_dg = ec_datagram_cast(slv->mbx.p_entry_state->data);
 
@@ -1427,8 +1429,7 @@ int ec_receive_process_data_group(ec_t *pec, int group) {
             osal_uint8_t mbx_state = 0u;
             osal_uint16_t wkc = 0u;
             wkc = ec_datagram_wkc(p_dg);
-            if (    (wkc = 0u) &&
-                    (pd->pd != NULL)) {
+            if (wkc != 0u) {
                 (void)memcpy(&mbx_state, ec_datagram_payload(p_dg), sizeof(osal_uint8_t));
             }
 
