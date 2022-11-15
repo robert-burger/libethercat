@@ -127,6 +127,7 @@ typedef struct ec_mbx {
     pool_entry_t *p_entry_state;//!< Entry when mbx state is not mapped.
     idx_entry_t *p_idx_state;   //!< Index entry when mbx state is not mapped.
     osal_timer_t timeout_state; //!< Receive timeout for mbx state.
+    osal_uint8_t mbx_state;	//!< State if not mapped.
 } ec_mbx_t;
 
 #ifdef __cplusplus

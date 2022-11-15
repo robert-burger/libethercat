@@ -80,10 +80,8 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         slv->mbx.map_mbx_state = OSAL_TRUE;
         slv->mbx.p_entry_state = NULL;
         slv->mbx.p_idx_state = NULL;
+        slv->mbx.sm_state = &slv->mbx.mbx_state; // this may be overwritten by logical mapping
 
-
-//        (void)pool_open(&slv->mbx.message_pool_recv_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_recv_free_entries[0]);
-//        (void)pool_open(&slv->mbx.message_pool_send_free, LEC_MBX_MAX_ENTRIES, &slv->mbx.mp_send_free_entries[0]);
         (void)pool_open(&slv->mbx.message_pool_send_queued, 0, NULL);
 
         osal_mutex_init(&slv->mbx.sync_mutex, NULL);
@@ -153,8 +151,6 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
         osal_binary_semaphore_destroy(&slv->mbx.sync_sem);
         osal_mutex_destroy(&slv->mbx.sync_mutex);
 
-//        (void)pool_close(&slv->mbx.message_pool_recv_free);
-//        (void)pool_close(&slv->mbx.message_pool_send_free);
         (void)pool_close(&slv->mbx.message_pool_send_queued);
     }
 }
@@ -227,6 +223,7 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
     osal_uint16_t wkc = 0;
     osal_uint8_t sm_state = 0;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
@@ -236,9 +233,17 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
     osal_timer_init(&timer, timeout);
 
     do {
-        (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
-                &sm_state, sizeof(sm_state), &wkc);
+        if (    (mbx_nr == MAILBOX_READ) && (slv->mbx.sm_state != NULL) &&
+                (    (slv->act_state == EC_STATE_OP) ||
+		     (slv->act_state == EC_STATE_SAFEOP))) {
+	    wkc = 1;
+            sm_state = *slv->mbx.sm_state;
+	    *slv->mbx.sm_state = 0;
+        } else {
+            (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
+                        (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
+                        &sm_state, sizeof(sm_state), &wkc);
+        }
 
         if (wkc && ((sm_state & 0x08u) == 0x08u)) {
             ret = EC_OK;

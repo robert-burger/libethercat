@@ -1426,15 +1426,14 @@ int ec_receive_process_data_group(ec_t *pec, int group) {
             ec_log(1, __func__, "osal_binary_semaphore_timedwait slave %2d: waiting for mbx state\n", slave);
             ret = EC_ERROR_TIMEOUT;
         } else {
-            osal_uint8_t mbx_state = 0u;
             osal_uint16_t wkc = 0u;
             wkc = ec_datagram_wkc(p_dg);
             if (wkc != 0u) {
-                (void)memcpy(&mbx_state, ec_datagram_payload(p_dg), sizeof(osal_uint8_t));
+                (void)memcpy(&slv->mbx.mbx_state, ec_datagram_payload(p_dg), sizeof(osal_uint8_t));
             }
 
-            if ((mbx_state & 0x08u) != 0u) {
-                ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, mbx_state);
+            if ((slv->mbx.mbx_state & 0x08u) != 0u) {
+                ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, slv->mbx.mbx_state);
                 ec_mbx_sched_read(pec, slave);
             }
         }

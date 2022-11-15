@@ -837,7 +837,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                         slv->sm[MAILBOX_READ].len = slv->eeprom.mbx_send_size;
                     }
                     slv->sm[MAILBOX_READ].flags = 0x00010022;
-                    slv->mbx.sm_state = NULL;
 
                     // write mailbox
                     if ((transition == INIT_2_BOOT) && 
