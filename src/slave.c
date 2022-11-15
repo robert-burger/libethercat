@@ -1074,7 +1074,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 
                 // write state to slave
                 ret = ec_slave_set_state(pec, slave, state);
-                break;
             }
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
