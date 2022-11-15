@@ -526,6 +526,7 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else if ((state & EC_STATE_RESET) != 0u) {
         // just return here, we did an error reset
+	osal_sleep(100000000);
     } else {
         ec_log(10, "EC_STATE_SET", "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
 
@@ -798,10 +799,30 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
         if ((act_state & EC_STATE_ERROR) != 0u) { // reset error state first
-            ec_log(10, __func__, "slave %2d is in ERROR, resetting first.\n", slave);
-            (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
-        }
+            osal_timer_t error_reset_timeout;
+            osal_timer_init(&error_reset_timeout, 1000000000);
 
+            do {
+                ec_log(10, __func__, "slave %2d is in ERROR, resetting first.\n", slave);
+                (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+    
+                ret = ec_slave_get_state(pec, slave, &act_state, NULL);
+                if (ret == EC_OK) {
+                    if ((act_state & EC_STATE_ERROR) == 0u) {
+                        break;
+                    }
+                } 
+            } while (osal_timer_expired(&error_reset_timeout) != OSAL_ERR_TIMEOUT);
+
+            if (osal_timer_expired(&error_reset_timeout)) {
+                ret = EC_ERROR_SLAVE_NOT_RESPONDING;
+            } else {
+                ret = EC_OK;
+            }
+        }
+    }
+
+    if (ret == EC_OK) {
         // generate transition
         ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | 
             (state & EC_STATE_MASK); 
