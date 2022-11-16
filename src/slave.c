@@ -761,12 +761,27 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
     return ret;
 }
 
+// init slave resources
+void ec_slave_init(struct ec *pec, osal_uint16_t slave) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    
+    ec_slave_ptr(slv, pec, slave);
+
+    slv->transition_active = OSAL_FALSE;
+    osal_mutex_init(&slv->transition_mutex, NULL);
+}
+
 // free slave resources
 void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    ec_slave_ptr(slv, pec, slave);
+
     ec_mbx_deinit(pec, slave);
+    
+    osal_mutex_destroy(&slv->transition_mutex);
 }
 
 // state transition on ethercat slave
@@ -785,6 +800,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             (buf), (buflen), &wkc);                                     \
     if (!wkc) { ec_log(10, __func__,                                    \
             "reading reg 0x%X : no answer from slave %2d\n", reg, slave); } }
+    
+    osal_mutex_lock(&slv->transition_mutex);
 
     // check error state
     ret = ec_slave_get_state(pec, slave, &act_state, NULL);
@@ -1179,6 +1196,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 break;
         };
     }
+    
+    osal_mutex_unlock(&slv->transition_mutex);
 
     return ret;
 }
