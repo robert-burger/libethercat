@@ -235,14 +235,14 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
     do {
         if (    (mbx_nr == MAILBOX_READ) && (slv->mbx.sm_state != NULL) &&
                 (    (slv->act_state == EC_STATE_OP) ||
-		     (slv->act_state == EC_STATE_SAFEOP))) {
-	    wkc = 1;
+                     (slv->act_state == EC_STATE_SAFEOP))) {
+            wkc = 1;
             sm_state = *slv->mbx.sm_state;
-	    *slv->mbx.sm_state = 0;
+            *slv->mbx.sm_state = 0;
         } else {
             (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                        (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
-                        &sm_state, sizeof(sm_state), &wkc);
+                    (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
+                    &sm_state, sizeof(sm_state), &wkc);
         }
 
         if (wkc && ((sm_state & 0x08u) == 0x08u)) {
@@ -359,84 +359,26 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
  */
 int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec) {
     osal_uint16_t wkc = 0;
-    int ret = EC_ERROR_MAILBOX_READ;
+    int ret = EC_ERROR_MAILBOX_READ_EMPTY;
     ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(buf != NULL);
     
-    osal_timer_t timer;
-    osal_timer_init(&timer, EC_DEFAULT_TIMEOUT_MBX);
-
     // wait for receive mailbox available 
     if (ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec) == EC_OK) {
-        // receive answer
-        do {
-            (void)ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr,
-                        buf, buf_len, &wkc);
+        (void)ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr,
+                buf, buf_len, &wkc);
 
-            if (wkc != 0u) {
-                // reset mailbox state 
-                if (slv->mbx.sm_state != NULL) {
-                    *slv->mbx.sm_state = 0u;
-                }
-
-                ret = EC_OK;
-            } else {
-                // lost receive mailbox ?
-                ec_log(10, __func__, "slave %d: lost receive mailbox ?\n", slave);
-
-                osal_uint16_t sm_status = 0u;
-                osal_uint8_t sm_control = 0u;
-
-                (void)ec_fprd(pec, slv->fixed_address, 
-                            (osal_uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
-                            &sm_status, sizeof(sm_status), &wkc);
-
-                sm_status ^= 0x0200; // toggle repeat request
-
-                (void)ec_fpwr(pec, slv->fixed_address, 
-                            (osal_uint16_t)(EC_REG_SM0STAT + (MAILBOX_READ << 3u)),
-                            &sm_status, sizeof(sm_status), &wkc);
-
-                do { 
-                    // wait for toggle ack
-                    (void)ec_fprd(pec, slv->fixed_address, 
-                                (osal_uint16_t)(EC_REG_SM0CONTR + (MAILBOX_READ << 3u)),
-                                &sm_control, sizeof(sm_control), &wkc);
-
-                    if (wkc && ((sm_control & 0x02u) == 
-                                ((sm_status & 0x0200u) >> 8u))) {
-                        break;
-                    }
-                } while ((osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT) && !wkc);
-
-                if (osal_timer_expired(&timer) == OSAL_ERR_TIMEOUT) {
-                    ec_log(1, __func__, "slave %d timeout waiting for toggle ack\n", slave);
-                    ret = EC_ERROR_MAILBOX_TIMEOUT;
-                } else if (ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec) != EC_OK) { // wait for receive mailbox available 
-                    ec_log(1, __func__, "slave %d waiting for full receive "
-                            "mailbox failed!\n", slave);
-                    ret = EC_ERROR_MAILBOX_READ_EMPTY;
-                } else {}
+        if (wkc != 0u) {
+            // reset mailbox state 
+            if (slv->mbx.sm_state != NULL) {
+                *slv->mbx.sm_state = 0u;
             }
 
-            if (    (ret == EC_OK) ||
-                    (ret == EC_ERROR_MAILBOX_READ_EMPTY) ||
-                    (ret == EC_ERROR_MAILBOX_TIMEOUT)) {
-                break;
-            }
-
-            osal_sleep(EC_DEFAULT_DELAY);
-        } while (osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT);
-
-        if (osal_timer_expired(&timer) == OSAL_ERR_TIMEOUT) {
-            ec_log(1, __func__, "slave %d did not respond "
-                    "on reading from receive mailbox\n", slave);
+            ret = EC_OK;
         }
-    } else {
-        ret = EC_ERROR_MAILBOX_READ_EMPTY;
     }
 
     return ret;
@@ -538,14 +480,10 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
     if ((flags & MBX_HANDLER_FLAGS_RECV) != 0u) {
         flags &= ~MBX_HANDLER_FLAGS_RECV;
 
-        ec_log(100, __func__, "slave %2d: mailbox needs to be read\n", slave);
-
-        do {
-            (void)pool_get(&pec->mbx_message_pool_recv_free, &p_entry, NULL);
-            if (!p_entry) {
-                ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
-                break;
-            }
+        (void)pool_get(&pec->mbx_message_pool_recv_free, &p_entry, NULL);
+        if (!p_entry) {
+            ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
+        } else {
             (void)memset(p_entry->data, 0, LEC_MAX_POOL_DATA_SIZE);
 
             if (ec_mbx_receive(pec, slave, p_entry->data, 
@@ -596,15 +534,13 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                 // returning to free pool
                 ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
             }
-
-        } while (ec_mbx_is_full(pec, slave, MAILBOX_READ, 0) == EC_OK);
+        }
     }
 
     if ((flags & MBX_HANDLER_FLAGS_SEND) != 0u) {
         flags &= ~MBX_HANDLER_FLAGS_SEND;
 
         // need to send a message to write mailbox
-        ec_log(100, __func__, "slave %2d: mailbox needs to be written\n", slave);
         (void)pool_get(&slv->mbx.message_pool_send_queued, &p_entry, NULL);
 
         if (p_entry != NULL) {
