@@ -1250,7 +1250,7 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
 
             msg->timestamp.sec = msg_tmp->timestamp.sec;
             msg->timestamp.nsec = msg_tmp->timestamp.nsec;
-            memcpy(&msg->msg[0], &msg_tmp->msg[0], LEC_MAX_COE_EMERGENCY_MSG_LEN);
+            (void)memcpy(&msg->msg[0], &msg_tmp->msg[0], LEC_MAX_COE_EMERGENCY_MSG_LEN);
         }
             
         (void)osal_mutex_unlock(&slv->mbx.coe.lock);

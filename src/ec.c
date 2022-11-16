@@ -1281,7 +1281,7 @@ int ec_send_process_data_group(ec_t *pec, int group) {
             (void)memset(p_dg, 0, sizeof(ec_datagram_t) + sizeof(osal_uint8_t) + 2u);
             p_dg->cmd = EC_CMD_FPRD;
             p_dg->idx = slv->mbx.p_idx_state->idx;
-            p_dg->adr = ((EC_REG_SM1STAT) << 16lu) | (osal_uint32_t)((slv->fixed_address) & 0xFFFFu);
+            p_dg->adr = ((EC_REG_SM1STAT) << 16u) | (osal_uint32_t)((slv->fixed_address) & 0xFFFFu);
             p_dg->len = sizeof(osal_uint8_t);
             p_dg->irq = 0;
 
