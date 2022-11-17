@@ -760,7 +760,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
     assert(pec != NULL);
     int ret = EC_OK;
 
-    ec_log(10, __func__, "switch to from %s to %s\n", 
+    ec_log(10, __func__, "switching from %s to %s\n", 
             get_state_string(pec->master_state), get_state_string(state));
 
     pec->state_transition_pending = 1;
@@ -782,9 +782,13 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             // ====> switch to INIT stuff
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             ec_scan(pec);
-            ec_state_transition_loop(pec, EC_STATE_INIT, 0);
+            if (pec->slave_cnt == 0) {
+                ret = EC_ERROR_UNAVAILABLE;
+            } else {
+                ec_state_transition_loop(pec, EC_STATE_INIT, 0);
+            }
 
-            if (state == EC_STATE_INIT) {
+            if ((state == EC_STATE_INIT) || (ret != EC_OK)) {
                 break;
             }
             // cppcheck-suppress misra-c2012-16.3
@@ -890,7 +894,10 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             break;
     };
         
-    pec->master_state = state;
+    if (ret == EC_OK) {
+        pec->master_state = state;
+    }
+
     pec->state_transition_pending = 0;
 
     return pec->master_state;
