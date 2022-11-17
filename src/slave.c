@@ -1100,8 +1100,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 ec_reg_read(EC_REG_ESCSUP, &slv->features, sizeof(slv->features));
 
                 ec_log(10, get_transition_string(transition), 
-                        "slave %2d: pdi ctrl 0x%04X, fmmus %d, syncm %d\n", 
-                        slave, slv->pdi_ctrl, slv->fmmu_ch, slv->sm_ch);
+                        "slave %2d: pdi ctrl 0x%04X, fmmus %d, syncm %d, features 0x%X\n", 
+                        slave, slv->pdi_ctrl, slv->fmmu_ch, slv->sm_ch, slv->features);
 
                 // init to preop stuff
                 slv->eeprom.read_eeprom = 0;
