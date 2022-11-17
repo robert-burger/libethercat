@@ -78,7 +78,9 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
 
-        dc_active = active;
+        dc_active = (active & ~EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION) | EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION;
+        // activate distributed clock on slave
+        check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
         // program first trigger time and cycle time
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
@@ -93,9 +95,6 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
 
         if (dc_active != 0u) {
-            // activate distributed clock on slave
-            check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
-
             ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %" PRIu64 ", dc_start "
                     "%" PRId64 ", slv dc_time %" PRId64 "\n", slave, pec->dc.rtc_time, dc_start, dc_time);
             ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: cycletime_0 %d, cycletime_1 %d, "

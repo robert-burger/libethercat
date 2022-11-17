@@ -55,10 +55,10 @@ int ec_eeprom_to_pdi(ec_t *pec, osal_uint16_t slave) {
     int ret = EC_OK;
     osal_uint16_t wkc;
     osal_uint16_t cnt = 10u;
-    osal_uint8_t eepctl = 2u;
+    osal_uint8_t eepcfg = 2u;
 
-    eepctl = 1; 
-    SII_REG(wr, EC_REG_EEPCFG, eepctl);
+    eepcfg = 1; 
+    SII_REG(wr, EC_REG_EEPCFG, eepcfg);
     if ((ret != EC_OK) || (cnt == 0u)) {
         ret = EC_ERROR_EEPROM_CONTROL_TO_PDI;
     }
@@ -74,20 +74,20 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     int ret = EC_OK;
     osal_uint16_t wkc;
     osal_uint16_t cnt = 10;
-    osal_uint8_t eepctl = 2;
+    osal_uint16_t eepcfgstat = 2;
     
-    SII_REG(rd, EC_REG_EEPCFG, eepctl);
+    SII_REG(rd, EC_REG_EEPCFG, eepcfgstat);
     if ((ret != EC_OK) || (cnt == 0u)) {
         ec_log(1, __func__, "slave %2d: unable to get eeprom config/control\n", slave);
         ret = EC_ERROR_EEPROM_CONTROL_TO_EC;
     }
 
     if (ret == EC_OK) {
-        if (((eepctl & 0x0001u) == 0x0000u) && ((eepctl & 0x0100u) == 0x0000u)) {
+        if (((eepcfgstat & 0x0001u) == 0x0000u) && ((eepcfgstat & 0x0100u) == 0x0000u)) {
         } else {
             // ECAT assigns EEPROM interface to ECAT by writing 0x0500[0]=0
-            eepctl = 0;
-            SII_REG(wr, EC_REG_EEPCFG, eepctl);
+            osal_uint8_t eepcfg = 0;
+            SII_REG(wr, EC_REG_EEPCFG, eepcfg);
             if ((ret != EC_OK) || (cnt == 0u)) {
                 ec_log(1, __func__, "slave %2d did not accept assigning EEPROM to PDI\n", slave);
                 ret = EC_ERROR_EEPROM_CONTROL_TO_EC;
@@ -96,14 +96,14 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     }
 
     if (ret == EC_OK) {
-        SII_REG(rd, EC_REG_EEPCFG, eepctl);
+        SII_REG(rd, EC_REG_EEPCFG, eepcfgstat);
         if ((ret != EC_OK) || (cnt == 0u)) {
             ec_log(1, __func__, "slave %2d: unable to get eeprom config/control\n", slave);
             ret = EC_ERROR_EEPROM_CONTROL_TO_EC;
-        } else if (((eepctl & 0x0001u) == 0x0000u) && ((eepctl & 0x0100u) == 0x0000u)) {
+        } else if (((eepcfgstat & 0x0001u) == 0x0000u) && ((eepcfgstat & 0x0100u) == 0x0000u)) {
             // ECAT has EEPROM control
         } else {
-            ec_log(1, __func__, "slave %2d: failed setting eeprom to EtherCAT: eepctl %04X\n", slave, eepctl);
+            ec_log(1, __func__, "slave %2d: failed setting eeprom to EtherCAT: eepcfgstat %04X\n", slave, eepcfgstat);
         }
     }
 
@@ -415,8 +415,8 @@ int ec_eepromwrite_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
             val[i] = buf[(offset*2)+i];
         }
                 
-        ec_log(100, __func__, "slave %2d, writing adr %" PRIu64 " : 0x%04X\n", 
-                        slave, eepadr+offset, *(osal_uint16_t *)&val);
+        ec_log(100, __func__, "slave %2d, writing adr %" PRIu64 " : 0x%02X%02X\n", 
+                        slave, eepadr+offset, val[1], val[0]);
 
         do {
             ret = ec_eepromwrite(pec, slave, eepadr+offset, (osal_uint16_t *)&val);

@@ -380,7 +380,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(100, __func__, "slave %2d: got sdo abort request on idx %#X, subidx %d, "
+                    ec_log(10, __func__, "slave %2d: got sdo abort request on idx %#X, subidx %d, "
                             "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
@@ -1250,7 +1250,7 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
 
             msg->timestamp.sec = msg_tmp->timestamp.sec;
             msg->timestamp.nsec = msg_tmp->timestamp.nsec;
-            memcpy(&msg->msg[0], &msg_tmp->msg[0], LEC_MAX_COE_EMERGENCY_MSG_LEN);
+            (void)memcpy(&msg->msg[0], &msg_tmp->msg[0], LEC_MAX_COE_EMERGENCY_MSG_LEN);
         }
             
         (void)osal_mutex_unlock(&slv->mbx.coe.lock);

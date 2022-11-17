@@ -526,6 +526,7 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else if ((state & EC_STATE_RESET) != 0u) {
         // just return here, we did an error reset
+        osal_sleep(100000000);
     } else {
         ec_log(10, "EC_STATE_SET", "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
 
@@ -760,12 +761,27 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
     return ret;
 }
 
+// init slave resources
+void ec_slave_init(struct ec *pec, osal_uint16_t slave) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    
+    ec_slave_ptr(slv, pec, slave);
+
+    slv->transition_active = OSAL_FALSE;
+    osal_mutex_init(&slv->transition_mutex, NULL);
+}
+
 // free slave resources
 void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    ec_slave_ptr(slv, pec, slave);
+
     ec_mbx_deinit(pec, slave);
+    
+    osal_mutex_destroy(&slv->transition_mutex);
 }
 
 // state transition on ethercat slave
@@ -784,6 +800,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             (buf), (buflen), &wkc);                                     \
     if (!wkc) { ec_log(10, __func__,                                    \
             "reading reg 0x%X : no answer from slave %2d\n", reg, slave); } }
+    
+    osal_mutex_lock(&slv->transition_mutex);
 
     // check error state
     ret = ec_slave_get_state(pec, slave, &act_state, NULL);
@@ -798,12 +816,35 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
         if ((act_state & EC_STATE_ERROR) != 0u) { // reset error state first
-            (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
-        }
+            osal_timer_t error_reset_timeout;
+            osal_timer_init(&error_reset_timeout, 1000000000);
 
+            do {
+                ec_log(10, __func__, "slave %2d is in ERROR, resetting first.\n", slave);
+                (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+    
+                ret = ec_slave_get_state(pec, slave, &act_state, NULL);
+                if (ret == EC_OK) {
+                    if ((act_state & EC_STATE_ERROR) == 0u) {
+                        break;
+                    }
+                } 
+            } while (osal_timer_expired(&error_reset_timeout) != OSAL_ERR_TIMEOUT);
+
+            if (osal_timer_expired(&error_reset_timeout)) {
+                ret = EC_ERROR_SLAVE_NOT_RESPONDING;
+            } else {
+                ret = EC_OK;
+            }
+        }
+    }
+
+    if (ret == EC_OK) {
         // generate transition
         ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | 
             (state & EC_STATE_MASK); 
+
+        ec_log(10, __func__, "slave %2d executing transition %X\n", slave, transition);
 
         switch (transition) {
             case BOOT_2_PREOP:
@@ -834,7 +875,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                         slv->sm[MAILBOX_READ].len = slv->eeprom.mbx_send_size;
                     }
                     slv->sm[MAILBOX_READ].flags = 0x00010022;
-                    slv->mbx.sm_state = NULL;
 
                     // write mailbox
                     if ((transition == INIT_2_BOOT) && 
@@ -1051,15 +1091,18 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 
                 // write state to slave
                 ret = ec_slave_set_state(pec, slave, state);
-                break;
             }
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
             case INIT_2_INIT: {
+                ec_log(10, __func__, "slave %2d rewriting fixed address\n", slave);
+
                 // rewrite fixed address
                 (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                         (osal_uint8_t *)&slv->fixed_address, 
                         sizeof(slv->fixed_address), &wkc); 
+
+                ec_log(10, __func__, "slave %2d disable dcs\n", slave);
 
                 // disable ditributed clocks
                 osal_uint8_t dc_active = 0;
@@ -1068,6 +1111,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                 // free resources
                 ec_slave_free(pec, slave);
+
+                ec_log(10, __func__, "slave %2d get number of sm\n", slave);
 
                 // get number of sync managers
                 ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
@@ -1078,6 +1123,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                                 (osal_uint8_t *)&slv->sm[i], sizeof(ec_slave_sm_t));
                     }
                 }
+                
+                ec_log(10, __func__, "slave %2d get number of fmmu\n", slave);
 
                 // get number of fmmus
                 ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
@@ -1149,6 +1196,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 break;
         };
     }
+    
+    osal_mutex_unlock(&slv->transition_mutex);
 
     return ret;
 }
@@ -1188,7 +1237,10 @@ void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
     EOE_SET(subnet, LEC_EOE_SUBNET_LEN);
     EOE_SET(gateway, LEC_EOE_GATEWAY_LEN);
     EOE_SET(dns, LEC_EOE_DNS_LEN);
-    size_t tmp_len = min(LEC_EOE_DNS_NAME_LEN, strlen(dns_name));
+    size_t tmp_len = LEC_EOE_DNS_NAME_LEN;
+    if (dns_name != NULL) {
+    	tmp_len = min(LEC_EOE_DNS_NAME_LEN, strlen(dns_name));
+    }
     EOE_SET(dns_name, tmp_len);
 
 // cppcheck-suppress misra-c2012-20.5

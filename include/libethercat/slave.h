@@ -297,6 +297,9 @@ typedef struct ec_slave {
     ec_state_t expected_state;  //!< Master expected slave state
     ec_state_t act_state;       //!< Actual/Last read slave state.
 
+    osal_mutex_t transition_mutex;
+    osal_bool_t transition_active;
+
     struct ec_init_cmds init_cmds;
                                 //!< EtherCAT slave init commands
                                 /*!<
@@ -331,6 +334,16 @@ extern "C" {
 #if 0
 }
 #endif
+
+// init slave resources
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ */
+void ec_slave_init(struct ec *pec, osal_uint16_t slave);
 
 // free slave resources
 /*!
