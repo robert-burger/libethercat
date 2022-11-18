@@ -69,12 +69,12 @@ typedef struct ec_dc_info {
     int next;
     int prev;
 
-    osal_uint64_t dc_time;
-    osal_int64_t dc_sto;
-    osal_uint64_t rtc_time;
-    osal_int64_t rtc_sto;
-    osal_int64_t act_diff;
-    osal_int64_t timer_override;
+    osal_uint64_t dc_time;          //! @brief Time from DC master clock.
+    osal_int64_t dc_sto;            //! @brief System time offset of DC master clock.
+    osal_uint64_t rtc_time;         //! @brief Time from realtime (EtherCAT master) clock.
+    osal_int64_t rtc_sto;           //! @brief System time offset of realtime clock.
+    osal_int64_t act_diff;          //! @brief Actual difference of DC and RTC clock.
+    osal_int64_t timer_override;    //! @brief Expected timer increment of one EtherCAT in [ns].
 
     enum {
         dc_mode_master_clock = 0,
@@ -82,13 +82,14 @@ typedef struct ec_dc_info {
         dc_mode_master_as_ref_clock
     } mode;
 
-    pool_entry_t *p_de_dc;
-    idx_entry_t *p_idx_dc;
+    pool_entry_t *p_de_dc;          //!< @brief Pool entry to DC datagram.
+    idx_entry_t *p_idx_dc;          //!< @brief Index of DC datagram.
     
-    osal_mutex_t send_dc_lock;
-
-    int recv_timeout_ns;            //!< Receive timeout in [ns]
-    osal_timer_t timeout;
+    int recv_timeout_ns;            //!< @brief Receive timeout in [ns].
+    osal_timer_t timeout;           //!< @brief Timeout waiting for DC datagram returned.
+   
+    void (*user_cb)(void *arg);     //!< @brief User callback to call when returned DC is processed.
+    void *user_cb_arg;              //!< @brief User argument for call to user_cb.
 } ec_dc_info_t;
 
 struct ec;

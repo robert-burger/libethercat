@@ -64,10 +64,12 @@ static void *hw_rx_thread(void *arg);
  * \param cpumask receive thread cpumask
  * \return 0 or negative error code
  */
-int hw_open(hw_t *phw, const osal_char_t *devname, int prio, int cpumask) {
+int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpumask) {
     assert(phw != NULL);
 
     int ret;
+
+    phw->pec = pec;
 
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
@@ -143,7 +145,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
                 (void)memcpy(entry->data, (osal_uint8_t *)d, min(size, LEC_MAX_POOL_DATA_SIZE));
 
                 if ((entry->user_cb) != NULL) {
-                    (*entry->user_cb)(entry->user_arg, entry);
+                    (*entry->user_cb)(phw->pec, entry->user_arg, entry);
                 }
             }
                 

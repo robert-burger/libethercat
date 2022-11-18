@@ -54,6 +54,7 @@ typedef struct ec_slave ec_slave_t;
     
 //! process data group structure
 typedef struct ec_pd_group {
+    osal_uint32_t group;
     osal_uint32_t log;              //!< logical address
                                     /*!<
                                      * This defines the logical start address
@@ -111,6 +112,9 @@ typedef struct ec_pd_group {
 
     int divisor;                    //!< Timer Divisor
     int divisor_cnt;                //!< Actual timer cycle count
+    
+    void (*user_cb)(void *arg, int group);  //!< \brief User callback.
+    void *user_cb_arg;                                         //!< \brief User argument for user_cb.
 } ec_pd_group_t;
 
 //! ethercat master structure
@@ -321,6 +325,8 @@ int ec_send_process_data_group(ec_t *pec, int group);
  * \return 0 on success
  */
 int ec_receive_process_data_group(ec_t *pec, int group);
+
+int ec_receive_mbx_state(ec_t *pec, int slave);
 
 //! \brief Send distributed clocks sync datagram.
 /*!

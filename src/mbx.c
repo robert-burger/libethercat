@@ -559,7 +559,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
             } else {                    
                 // all done
                 if (p_entry->user_cb != NULL) {
-                    (*p_entry->user_cb)(p_entry->user_arg, p_entry);
+                    (*p_entry->user_cb)(pec, p_entry->user_arg, p_entry);
 
                     p_entry->user_cb = NULL;
                     p_entry->user_arg = NULL;

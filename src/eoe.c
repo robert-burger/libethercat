@@ -385,7 +385,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
     return ret;
 }
     
-static void ec_eoe_send_sync(void *user_arg, struct pool_entry *p) {
+static void ec_eoe_send_sync(struct ec *pec, void *user_arg, struct pool_entry *p) {
     (void)p;
     // cppcheck-suppress misra-c2012-11.5
     ec_mbx_t *pmbx = (ec_mbx_t *)user_arg;

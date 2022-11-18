@@ -42,9 +42,12 @@
 
 #define LEC_MAX_POOL_DATA_SIZE  1600
 
+// forward declaration
+struct ec; 
+
 //! \brief Pool queue entry. 
 typedef struct pool_entry {
-    void (*user_cb)(void *user_arg, struct pool_entry *p);  //!< \brief User callback.
+    void (*user_cb)(struct ec *pec, void *user_arg, struct pool_entry *p);  //!< \brief User callback.
     void *user_arg;                                         //!< \brief User argument for user_cb.
 
     TAILQ_ENTRY(pool_entry) qh;                             //!< \brief Queue handle of pool objects.

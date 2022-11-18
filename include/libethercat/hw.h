@@ -46,8 +46,13 @@
 
 #define ETH_P_ECAT      0x88A4
 
+// forward decl
+struct ec;
+
 //! hardware structure
 typedef struct hw {
+    struct ec *pec;
+
     int sockfd;                     //!< raw socket file descriptor
     osal_uint32_t mtu_size;              //!< mtu size
 
@@ -103,7 +108,7 @@ extern "C" {
  * \param cpumask receive thread cpumask
  * \return 0 or negative error code
  */
-int hw_open(hw_t *phw, const osal_char_t *devname, int prio, int cpumask);
+int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpumask);
 
 //! destroys a hw
 /*!

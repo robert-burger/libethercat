@@ -79,10 +79,14 @@ int hw_device_recv(hw_t *phw) {
     ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
 
     // using tradional recv function
+    //ec_log(100, __func__, "start reading from ecat file\n");
     osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
+    //ec_log(100, __func__, "reading from ecat file returned %ld bytes\n", bytesrx);
 
     if (bytesrx > 0) {
+        //ec_log(100, __func__, "processing rx frame\n");
         hw_process_rx_frame(phw, pframe);
+        //ec_log(100, __func__, "done processing rx frame\n");
     }
 
     return EC_OK;

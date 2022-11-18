@@ -209,6 +209,8 @@ typedef struct worker_arg {
 } worker_arg_t;
 
 typedef struct ec_slave {
+    osal_uint32_t slave;
+
     osal_int16_t auto_inc_address;   //!< physical bus address
     osal_uint16_t fixed_address;//!< virtual bus address, programmed on start
 
