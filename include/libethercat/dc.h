@@ -1,7 +1,7 @@
 /**
  * \file dc.h
  *
- * \author Robert Burger <robert.burger@dlr.de>
+ * \author Robert Burger <robert.burger\dlr.de>
  *
  * \date 11 Nov 2016
  *
@@ -50,31 +50,31 @@
 #define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_DEBUG_PULSE             ( 0x80u )
 
 typedef struct ec_dc_info_slave {
-    int use_dc;                 //!< flag, whether to use dc
-    int next;                   //!< marker for next dc slave
-    int prev;                   //!< marker for previous dc slave
+    int use_dc;                     //!< \brief flag, whether to use dc
+    int next;                       //!< \brief marker for next dc slave
+    int prev;                       //!< \brief marker for previous dc slave
 
-    osal_uint8_t available_ports;    //!< available ports for dc config
-    osal_int32_t receive_times[4];   //!< latched port receive times
+    osal_uint8_t available_ports;   //!< \brief available ports for dc config
+    osal_int32_t receive_times[4];  //!< \brief latched port receive times
             
-    int type;                   //!< dc type, 0 = sync0, 1 = sync01
-    osal_uint32_t cycle_time_0;      //!< cycle time of sync 0 [ns]
-    osal_uint32_t cycle_time_1;      //!< cycle time of sync 1 [ns]
-    osal_uint32_t cycle_shift;       //!< cycle shift time [ns]
+    int type;                       //!< \brief dc type, 0 = sync0, 1 = sync01
+    osal_uint32_t cycle_time_0;     //!< \brief cycle time of sync 0 [ns]
+    osal_uint32_t cycle_time_1;     //!< \brief cycle time of sync 1 [ns]
+    osal_uint32_t cycle_shift;      //!< \brief cycle shift time [ns]
 } ec_dc_info_slave_t;
 
 typedef struct ec_dc_info {
     osal_uint16_t master_address;
-    int have_dc;
-    int next;
+    int have_dc;                    //!< \brief At least one slave is using DCs.
+    int next;                       
     int prev;
 
-    osal_uint64_t dc_time;          //! @brief Time from DC master clock.
-    osal_int64_t dc_sto;            //! @brief System time offset of DC master clock.
-    osal_uint64_t rtc_time;         //! @brief Time from realtime (EtherCAT master) clock.
-    osal_int64_t rtc_sto;           //! @brief System time offset of realtime clock.
-    osal_int64_t act_diff;          //! @brief Actual difference of DC and RTC clock.
-    osal_int64_t timer_override;    //! @brief Expected timer increment of one EtherCAT in [ns].
+    osal_uint64_t dc_time;          //!< \brief Time from DC master clock.
+    osal_int64_t dc_sto;            //!< \brief System time offset of DC master clock.
+    osal_uint64_t rtc_time;         //!< \brief Time from realtime (EtherCAT master) clock.
+    osal_int64_t rtc_sto;           //!< \brief System time offset of realtime clock.
+    osal_int64_t act_diff;          //!< \brief Actual difference of DC and RTC clock.
+    osal_int64_t timer_override;    //!< \brief Expected timer increment of one EtherCAT in [ns].
 
     enum {
         dc_mode_master_clock = 0,
@@ -82,14 +82,14 @@ typedef struct ec_dc_info {
         dc_mode_master_as_ref_clock
     } mode;
 
-    pool_entry_t *p_de_dc;          //!< @brief Pool entry to DC datagram.
-    idx_entry_t *p_idx_dc;          //!< @brief Index of DC datagram.
+    pool_entry_t *p_de_dc;          //!< \brief Pool entry to DC datagram.
+    idx_entry_t *p_idx_dc;          //!< \brief Index of DC datagram.
     
-    int recv_timeout_ns;            //!< @brief Receive timeout in [ns].
-    osal_timer_t timeout;           //!< @brief Timeout waiting for DC datagram returned.
+    int recv_timeout_ns;            //!< \brief Receive timeout in [ns].
+    osal_timer_t timeout;           //!< \brief Timeout waiting for DC datagram returned.
    
-    void (*user_cb)(void *arg);     //!< @brief User callback to call when returned DC is processed.
-    void *user_cb_arg;              //!< @brief User argument for call to user_cb.
+    void (*user_cb)(void *arg);     //!< \brief User callback to call when returned DC is processed.
+    void *user_cb_arg;              //!< \brief User argument for call to user_cb.
 } ec_dc_info_t;
 
 struct ec;

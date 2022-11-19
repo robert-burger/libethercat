@@ -1221,7 +1221,10 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
 
 //! local callack for syncronous read/write
 static void cb_distributed_clocks(struct ec *pec, void *user_arg, struct pool_entry *p) {
-//    ec_log(100, __func__, "received distributed clock\n");
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "received distributed clock\n");
+#endif
+
     ec_receive_distributed_clocks_sync(pec);
 
     if (pec->dc.user_cb) {
@@ -1236,7 +1239,9 @@ static void cb_process_data_group(struct ec *pec, void *user_arg, struct pool_en
     int group = *(osal_uint32_t *)user_arg;
     ec_pd_group_t *pd = &pec->pd_groups[group];
 
-//    ec_log(100, __func__, "group %2d: received process data\n", group);
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "group %2d: received process data\n", group);
+#endif
 
     if (pd->p_entry != p) {
         // frame returned too late, someone already sent a new one
@@ -1252,8 +1257,10 @@ static void cb_process_data_group(struct ec *pec, void *user_arg, struct pool_en
 //! datagram callack for receiving mbx_state answer
 static void cb_mbx_state(struct ec *pec, void *user_arg, struct pool_entry *p) {
     int slave = *(osal_uint32_t *)user_arg;
-//    ec_log(100, __func__, "slave %2d: received mbx state\n", slave);
-    ec_slave_ptr(slv, pec, slave);
+
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "slave %2d: received mbx state\n", slave);
+#endif
 
     ec_receive_mbx_state(pec, slave);
 }
@@ -1272,7 +1279,9 @@ int ec_send_process_data_group(ec_t *pec, int group) {
     ec_pd_group_t *pd = &pec->pd_groups[group];
     ec_datagram_t *p_dg;
 
-//    ec_log(100, __func__, "group %2d: sending process data\n", group);
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "group %2d: sending process data\n", group);
+#endif
 
     if ((pd->p_entry != NULL) || (pd->p_idx != NULL)) {
         ec_log(1, __func__, "already sent group frame, will not send until it has returned...\n");
@@ -1340,7 +1349,9 @@ int ec_send_mbx_state(ec_t *pec, int slave) {
     ec_datagram_t *p_dg;
     ec_slave_ptr(slv, pec, slave);
 
-//    ec_log(100, __func__, "slave %2d: sending mbx_state\n", slave);
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "slave %2d: sending mbx_state\n", slave);
+#endif
 
     if ((slv->mbx.p_entry_state != NULL) || (slv->mbx.p_idx_state != NULL)) {
         ec_log(1, __func__, "slave %2d: already sent mbx_state frame, check for timeout...\n", slave);
@@ -1580,7 +1591,9 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     int ret = EC_OK;
     ec_datagram_t *p_dg = NULL;
 
-//    ec_log(100, __func__, "sending distributed clock\n");
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "sending distributed clock\n");
+#endif
 
     if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
         ret = EC_ERROR_UNAVAILABLE;
@@ -1756,7 +1769,10 @@ int ec_receive_distributed_clocks_sync(ec_t *pec) {
 
 //! local callack for syncronous read/write
 static void cb_brd_ec_state(struct ec *pec, void *user_arg, struct pool_entry *p) {
+#ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "received broadcast ec state\n");
+#endif
+
     ec_receive_brd_ec_state(pec);
 }
 
@@ -1771,7 +1787,9 @@ int ec_send_brd_ec_state(ec_t *pec) {
     int ret = EC_OK;
     ec_datagram_t *p_dg = NULL;
     
+#ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "sending broadcast ec state\n");
+#endif
 
     if (ec_index_get(&pec->idx_q, &pec->p_idx_state) != EC_OK) {
         ec_log(1, __func__, "error getting ethercat index\n");

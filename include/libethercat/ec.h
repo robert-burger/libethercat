@@ -114,7 +114,7 @@ typedef struct ec_pd_group {
     int divisor_cnt;                //!< Actual timer cycle count
     
     void (*user_cb)(void *arg, int group);  //!< \brief User callback.
-    void *user_cb_arg;                                         //!< \brief User argument for user_cb.
+    void *user_cb_arg;                      //!< \brief User argument for user_cb.
 } ec_pd_group_t;
 
 //! ethercat master structure

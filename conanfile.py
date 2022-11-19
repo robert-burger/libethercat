@@ -80,6 +80,7 @@ class MainProject(ConanFile):
             print("doing libethercat DEBUG build!\n")
             autotools.flags = ["-O0", "-g"]
             args.append("--enable-assert")
+            args.append("--enable-debug")
         else:
             autotools.flags = ["-O2"]
             args.append("--disable-assert")

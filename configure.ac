@@ -27,6 +27,11 @@ AC_PROG_LIBTOOL
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
+
+AC_ARG_ENABLE([debug],
+              AS_HELP_STRING([--enable-debug], [Enable debug messages.]), 
+              AC_DEFINE_UNQUOTED([DEBUG], [1], [Enable debug meassage.]), [])
+
 AC_ARG_WITH([max-slaves],
               AS_HELP_STRING([--with-max-slaves=MAX_SLAVES], [Set maximum number of slaves supported.]), 
               AC_DEFINE_UNQUOTED([MAX_SLAVES], [${withval}], [Maximum number of slaves supported.]), [])
