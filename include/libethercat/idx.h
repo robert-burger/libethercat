@@ -42,22 +42,18 @@
 
 //! index entry
 typedef struct idx_entry {
-    osal_uint8_t idx;               //!< datagram index
-    osal_binary_semaphore_t waiter; //!< waiter semaphore for synchronous access
+    osal_uint8_t idx;                   //!< \brief Datagram index.
+    osal_binary_semaphore_t waiter;     //!< \brief Waiter semaphore for synchronous access.
 
-    TAILQ_ENTRY(idx_entry) qh;      //!< queue handle
+    TAILQ_ENTRY(idx_entry) qh;          //!< \brief Queue handle
 } idx_entry_t;
 TAILQ_HEAD(idx_entry_queue, idx_entry);
 
 //! index queue
 typedef struct idx_queue {
-    osal_mutex_t lock;       //!< queue lock
-                                /*!<
-                                 * prevent concurrent queue access
-                                 */
-
-    idx_entry_t entries[LEC_MAX_INDEX];
-    struct idx_entry_queue q;   //!< the head of the index queue
+    osal_mutex_t lock;                  //!< \brief Queue lock, prevent concurrent queue access.
+    idx_entry_t entries[LEC_MAX_INDEX]; //!< \brief Static queue entries, do not use directly.
+    struct idx_entry_queue q;           //!< \brief The head of the index queue.
 } idx_queue_t;
 
 #ifdef __cplusplus
