@@ -492,12 +492,11 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
             if (read_buf->eoe_hdr.last_fragment) {
                 if (pec->tun_fd > 0) {
                     write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
-                    pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
                     ec_log(10, __func__, "slave %2d: got EoE frame, but there's no tun/tap device configured!\n", slave);
                 }
                     
-                pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+                pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
 
                 ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 p_eth_entry = NULL;
@@ -513,7 +512,6 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
             eoe_debug_print("recv eth frame", eth_frame->frame_data, frame_offset);
 
             write(pec->tun_fd, eth_frame->frame_data, frame_offset);
-            pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
         } else {
             ec_log(10, __func__, "slave %2d: got EoE frame, but there's no tun/tap device configured!\n", slave);
         }
