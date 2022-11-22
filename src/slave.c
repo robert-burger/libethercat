@@ -521,10 +521,12 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    ec_log(1, __func__, "slave %2d: writing AL control 0x%04X\n", slave, state);
     if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) != EC_OK) { 
         // just return, we got an error from ec_transceive
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else if ((state & EC_STATE_RESET) != 0u) {
+        ec_log(1, __func__, "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
         // just return here, we did an error reset
         osal_sleep(100000000);
     } else {
@@ -599,6 +601,8 @@ int ec_slave_get_state(ec_t *pec, osal_uint16_t slave, ec_state_t *state, osal_u
         *state = slv->act_state;
 
         if (alstatcode && (*state & 0x10)) {
+            value = 0u;
+            wkc = 0u;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, 
                     EC_REG_ALSTATCODE, &value, sizeof(value), &wkc);
 
@@ -787,6 +791,7 @@ void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
 // state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     osal_uint16_t wkc;
+    osal_uint16_t al_status_code = 0u;
     ec_state_t act_state = 0;
     int ret = EC_OK;
     
@@ -804,7 +809,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
     osal_mutex_lock(&slv->transition_mutex);
 
     // check error state
-    ret = ec_slave_get_state(pec, slave, &act_state, NULL);
+    ret = ec_slave_get_state(pec, slave, &act_state, &al_status_code);
     if (ret != EC_OK) {
         ec_log(10, "ERROR", "could not get state of slave %d\n", slave);
         
@@ -815,15 +820,18 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
-        if ((act_state & EC_STATE_ERROR) != 0u) { // reset error state first
+        if (    ((act_state & EC_STATE_ERROR) != 0u) &&
+                ((al_status_code != 0u))) { // reset error state first
             osal_timer_t error_reset_timeout;
             osal_timer_init(&error_reset_timeout, 1000000000);
 
             do {
-                ec_log(10, __func__, "slave %2d is in ERROR, resetting first.\n", slave);
+                ec_log(10, __func__, "slave %2d is in ERROR (AL status 0x%04X, AL status code 0x%04X), resetting first.\n", slave, act_state, al_status_code);
                 (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+                act_state = 0;
+                al_status_code = 0;
     
-                ret = ec_slave_get_state(pec, slave, &act_state, NULL);
+                ret = ec_slave_get_state(pec, slave, &act_state, &al_status_code);
                 if (ret == EC_OK) {
                     if ((act_state & EC_STATE_ERROR) == 0u) {
                         break;
@@ -832,6 +840,16 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             } while (osal_timer_expired(&error_reset_timeout) != OSAL_ERR_TIMEOUT);
 
             if (osal_timer_expired(&error_reset_timeout)) {
+                ec_log(10, __func__, "slave %2d: try to reset PDI\n", slave);
+                osal_uint8_t reset_vals[] = { (osal_uint8_t)'R', (osal_uint8_t)'E', (osal_uint8_t)'S' };
+                for (int i = 0; i < 3; ++i) {
+                    (void)ec_fpwr(pec, slv->fixed_address, 0x41, &reset_vals[i], 1, &wkc);
+                }
+                ec_log(10, __func__, "slave %2d: try to reset ESC\n", slave);
+                for (int i = 0; i < 3; ++i) {
+                    (void)ec_fpwr(pec, slv->fixed_address, 0x40, &reset_vals[i], 1, &wkc);
+                }
+
                 ret = EC_ERROR_SLAVE_NOT_RESPONDING;
             } else {
                 ret = EC_OK;
