@@ -451,7 +451,10 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
     
     // get first received EoE frame, should be start of ethernet frame
     pool_get(slv->mbx.eoe.recv_pool, &p_entry, NULL);
-    if (!p_entry) { return; }
+    if (!p_entry) { 
+        pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
+        return; 
+    }
     
     ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
     if (read_buf->eoe_hdr.fragment_number != 0) {
@@ -491,8 +494,10 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
                     write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
                     pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
-                    pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+                    ec_log(10, __func__, "slave %2d: got EoE frame, but there's no tun/tap device configured!\n", slave);
                 }
+                    
+                pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
 
                 ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 p_eth_entry = NULL;
@@ -510,8 +515,10 @@ void ec_eoe_process_recv(ec_t *pec, uint16_t slave) {
             write(pec->tun_fd, eth_frame->frame_data, frame_offset);
             pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
         } else {
-            pool_put(slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
+            ec_log(10, __func__, "slave %2d: got EoE frame, but there's no tun/tap device configured!\n", slave);
         }
+        
+        pool_put(slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
     }
         
     if (p_entry) {        
