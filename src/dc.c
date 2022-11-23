@@ -78,9 +78,9 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
 
-        dc_active = (active & ~EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION) | EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION;
+        dc_active = active;// & ~EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION; //(active & ~EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION) | EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION;
         // activate distributed clock on slave
-        check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
+        //check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
         // program first trigger time and cycle time
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
@@ -88,11 +88,15 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         // Calculate DC start time as a sum of the actual EtherCAT master time,
         // the generic first sync delay and the cycle shift. the first sync delay 
         // has to be a multiple of cycle time.  
-        tmp_time = ((dc_time - (osal_int64_t)pec->dc.rtc_time) / (osal_int64_t)pec->dc.timer_override) + 1000;
+        tmp_time = ((dc_time - (osal_int64_t)pec->dc.rtc_time) / (osal_int64_t)pec->dc.timer_override) + 100;
         dc_start = (osal_int64_t)pec->dc.rtc_time + (tmp_time * (osal_int64_t)pec->dc.timer_override) + cycle_shift;
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
+        
+	//dc_active = (active & ~EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION) | EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION;
+        // activate distributed clock on slave
+        check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
         if (dc_active != 0u) {
             ec_log(10, "DISTRIBUTED_CLOCK", "slave %2d: dc_systime %" PRIu64 ", dc_start "

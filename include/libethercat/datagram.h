@@ -32,7 +32,11 @@
 #define LIBETHERCAT_DATAGRAM_H
 
 #include <libosal/types.h>
+#include <libosal/mutex.h>
+
 #include "libethercat/common.h"
+#include "libethercat/pool.h"
+#include "libethercat/idx.h"
 
 #define EC_WKC_SIZE     2u
 
@@ -66,12 +70,40 @@ typedef struct __attribute__((__packed__)) ec_datagram {
 #define ec_datagram_length(pdg) \
     (ec_datagram_hdr_length + (pdg)->len + EC_WKC_SIZE)
 
+typedef struct ec_cyclic_datagram {
+    osal_mutex_t lock;                      //!< \brief Lock for cyclic datagram structure.
+    pool_entry_t *p_entry;                  //!< \brief EtherCAT datagram from pool
+    idx_entry_t *p_idx;                     //!< \brief EtherCAT datagram index from pool
+
+    osal_uint64_t recv_timeout_ns;          //!< \brief Datagram receive timeout in [ns]
+    osal_timer_t timeout;                   //!< \brief Timer holding actual timeout.
+    int had_timeout;                        //!<¸\brief Had timeout last time.
+
+    void (*user_cb)(void *arg, int num);    //!< \brief User callback.
+    void *user_cb_arg;                      //!< \brief User argument for user_cb.
+} ec_cyclic_datagram_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+//! Initialize cyclic datagram structure
+/*!
+ * \param[in]   cdg                 Pointer to cyclic datagram structure.
+ * \param[in]   recv_timeout_ns     Receive timeout in [ns].
+ * \return EC_OK on success, otherwise error code.
+ */
+int ec_cyclic_datagram_init(ec_cyclic_datagram_t *cdg, osal_uint64_t recv_timeout);
+
+//! Destroy cyclic datagram structure
+/*!
+ * \param[in]   cdg     Pointer to cyclic datagram structure.
+ * \return EC_OK on success, otherwise error code.
+ */
+int ec_cyclic_datagram_destroy(ec_cyclic_datagram_t *cdg);
+
 //! Initialize empty frame.
-/*/
+/*!
  * \param[in,out]   frame   Pointer to frame.
  *
  * \return EC_OK
@@ -79,7 +111,7 @@ extern "C" {
 int ec_frame_init(ec_frame_t *frame);
 
 //! Add datagram at the end of frame.
-/*/
+/*!
  * \param[in,out]   frame         Pointer to frame.
  * \param[in]       cmd           Ethercat command.
  * \param[in]       idx           Ethercat frame index.

@@ -39,6 +39,7 @@
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
+#include "libethercat/datagram.h"
 
 #define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION              ( 0x01u )
 #define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_SYNC0                   ( 0x02u )
@@ -82,14 +83,7 @@ typedef struct ec_dc_info {
         dc_mode_master_as_ref_clock
     } mode;
 
-    pool_entry_t *p_de_dc;          //!< \brief Pool entry to DC datagram.
-    idx_entry_t *p_idx_dc;          //!< \brief Index of DC datagram.
-    
-    int recv_timeout_ns;            //!< \brief Receive timeout in [ns].
-    osal_timer_t timeout;           //!< \brief Timeout waiting for DC datagram returned.
-   
-    void (*user_cb)(void *arg);     //!< \brief User callback to call when returned DC is processed.
-    void *user_cb_arg;              //!< \brief User argument for call to user_cb.
+    ec_cyclic_datagram_t cdg;       //!< DC cyclic datagram.
 } ec_dc_info_t;
 
 struct ec;

@@ -37,6 +37,34 @@
 #include "libethercat/datagram.h"
 #include "libethercat/error_codes.h"
 
+//! Initialize cyclic datagram structure
+/*!
+ * \param[in]   cdg                 Pointer to cyclic datagram structure.
+ * \param[in]   recv_timeout_ns     Receive timeout in [ns].
+ * \return EC_OK on success, otherwise error code.
+ */
+int ec_cyclic_datagram_init(ec_cyclic_datagram_t *cdg, osal_uint64_t recv_timeout) {
+    osal_mutex_init(&cdg->lock, NULL);
+    cdg->p_entry = NULL;
+    cdg->p_idx = NULL;
+    cdg->recv_timeout_ns = recv_timeout;
+    cdg->had_timeout = 0;
+    cdg->user_cb = NULL;
+    cdg->user_cb_arg = NULL;
+
+    return EC_OK;
+}
+
+//! Destroy cyclic datagram structure
+/*!
+ * \param[in]   cdg     Pointer to cyclic datagram structure.
+ * \return EC_OK on success, otherwise error code.
+ */
+int ec_cyclic_datagram_destroy(ec_cyclic_datagram_t *cdg) {
+    osal_mutex_destroy(&cdg->lock);
+    return EC_OK;
+}
+
 //! Initialize empty frame.
 /*/
  * \param[in,out]   frame   Pointer to frame.

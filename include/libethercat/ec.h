@@ -103,18 +103,10 @@ typedef struct ec_pd_group {
     
     int recv_missed;                //!< missed continues ethercat frames 
 
-    pool_entry_t *p_entry;          //!< EtherCAT datagram from pool
-    idx_entry_t *p_idx;             //!< EtherCAT datagram index from pool
-
-    int recv_timeout_ns;            //!< Group receive timeout in [ns]
-    osal_timer_t timeout;
-    int had_timeout;    
-
+    ec_cyclic_datagram_t cdg;       //!< Group cyclic datagram.
+    
     int divisor;                    //!< Timer Divisor
     int divisor_cnt;                //!< Actual timer cycle count
-    
-    void (*user_cb)(void *arg, int group);  //!< \brief User callback.
-    void *user_cb_arg;                      //!< \brief User argument for user_cb.
 } ec_pd_group_t;
 
 //! ethercat master structure
@@ -188,9 +180,7 @@ typedef struct ec {
     
     int consecutive_max_miss;       //!< max missed counter for receive frames before falling back to init
 
-    pool_entry_t *p_de_state;       //!< EtherCAT datagram from pool for ec_state read
-    idx_entry_t *p_idx_state;       //!< EtherCAT datagram index from pool for ec_state read
-    osal_timer_t state_timeout;
+    ec_cyclic_datagram_t cdg_state; //!< Monitor EtherCAT AL Status from slaves.
 } ec_t;
 
 #ifdef __cplusplus
@@ -300,34 +290,6 @@ int ec_set_state(ec_t *pec, ec_state_t state);
  */
 int ec_send_process_data(ec_t *pec);
 
-//! \brief Receive process data with logical commands.
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \return 0 on success
- */
-int ec_receive_process_data(ec_t *pec);
-
-//! \brief Send process data for specific group with logical commands.
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \param[in] group         Group number.
- * \return 0 on success
- */
-int ec_send_process_data_group(ec_t *pec, int group);
-
-//! \brief Receive process data for specific group with logical commands.
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \param[in] group         Group number.
- * \return 0 on success
- */
-int ec_receive_process_data_group(ec_t *pec, int group);
-
-int ec_receive_mbx_state(ec_t *pec, int slave);
-
 //! \brief Send distributed clocks sync datagram.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -336,14 +298,6 @@ int ec_receive_mbx_state(ec_t *pec, int slave);
  */
 int ec_send_distributed_clocks_sync(ec_t *pec);
 
-//! \brief Receive distributed clocks sync datagram.
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \return 0 on success
- */
-int ec_receive_distributed_clocks_sync(ec_t *pec);
-
 //! \brief Send broadcast read to ec state.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -351,15 +305,6 @@ int ec_receive_distributed_clocks_sync(ec_t *pec);
  * \return 0 on success
  */
 int ec_send_brd_ec_state(ec_t *pec);
-
-//! \brief Receive broadcast read to ec_state.
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \param[in] timeout       Timeout for waiting for packet.
- * \return 0 on success
- */
-int ec_receive_brd_ec_state(ec_t *pec);
 
 //! \brief Return current slave count.
 /*!
