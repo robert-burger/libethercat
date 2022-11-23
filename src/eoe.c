@@ -495,6 +495,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     if (pool_get(&slv->mbx.eoe.recv_pool, &p_entry, NULL) != EC_OK) { // get first received EoE frame, should be start of ethernet frame
         ret = EC_ERROR_UNAVAILABLE; // no error here, but no frame to process
     } else if (pool_get(&slv->mbx.eoe.eth_frames_free_pool, &p_eth_entry, NULL) != EC_OK) {
+        // no usable Ethernet frame buffer available, nobody has cared for last received Ethernet frames so far.
         ret = EC_ERROR_OUT_OF_MEMORY;
     } else {
         // cppcheck-suppress misra-c2012-11.3
@@ -541,6 +542,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
 #endif
                             pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                         } else {
+                            // put in receive pool, nobody cared so far
                             pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                         }
 
@@ -564,6 +566,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
 #endif
                     pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
+                    // put in receive pool, nobody cared so far.
                     pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                 }
 

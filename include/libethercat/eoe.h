@@ -55,12 +55,12 @@ typedef struct ec_eoe_slave_config {
 } ec_eoe_slave_config_t;
 
 typedef struct ec_eoe {
-    pool_t recv_pool;
+    pool_t recv_pool;                               //!< \brief Mailbox message with EoE fragments received.
     pool_t response_pool;
 
-    pool_entry_t free_frames[128];
-    pool_t eth_frames_free_pool;
-    pool_t eth_frames_recv_pool;
+    pool_entry_t free_frames[128];                  //!< \brief Static Ethernet frames for Pool, do not use directly.
+    pool_t eth_frames_free_pool;                    //!< \brief Pool with Ethernet frames currently unused.
+    pool_t eth_frames_recv_pool;                    //!< \brief Pool where to store Ethernet frames nobody cared so far.
 
     osal_mutex_t lock;
     osal_semaphore_t send_sync;
