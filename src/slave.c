@@ -521,7 +521,6 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_log(1, __func__, "slave %2d: writing AL control 0x%04X\n", slave, state);
     if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) != EC_OK) { 
         // just return, we got an error from ec_transceive
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
