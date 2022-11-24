@@ -44,28 +44,28 @@ typedef struct ec_soe {
 
 //! ServoDrive attributes of an IDN
 typedef struct PACKED ec_soe_idn_attribute {
-    osal_uint32_t evafactor   :16;       //!< Evalution factor .
-    osal_uint32_t length      :2;        //!< IDN length.
-    osal_uint32_t list        :1;        //!< IDN is list.
-    osal_uint32_t command     :1;        //!< IDN is command.
-    osal_uint32_t datatype    :3;        //!< Datatype according to ServoDrive Specification.
+    osal_uint32_t evafactor   :16;          //!< \brief Evalution factor .
+    osal_uint32_t length      :2;           //!< \brief IDN length.
+    osal_uint32_t list        :1;           //!< \brief IDN is list.
+    osal_uint32_t command     :1;           //!< \brief IDN is command.
+    osal_uint32_t datatype    :3;           //!< \brief Datatype according to ServoDrive Specification.
     osal_uint32_t reserved1   :1;
-    osal_uint32_t decimals    :4;        //!< If float, number of decimals.
-    osal_uint32_t wp_preop    :1;        //!< Write protect in PREOP.
-    osal_uint32_t wp_safeop   :1;        //!< Write protect in SAFEOP.
-    osal_uint32_t wp_op       :1;        //!< Write protect in OP.
+    osal_uint32_t decimals    :4;           //!< \brief If float, number of decimals.
+    osal_uint32_t wp_preop    :1;           //!< \brief Write protect in PREOP.
+    osal_uint32_t wp_safeop   :1;           //!< \brief Write protect in SAFEOP.
+    osal_uint32_t wp_op       :1;           //!< \brief Write protect in OP.
     osal_uint32_t reserved2   :1;
 } PACKED ec_soe_idn_attribute_t;
 
 //! ServoDrive elements of an IDN
 enum ec_soe_element {
     EC_SOE_DATASTATE   = 0x01,
-    EC_SOE_NAME        = 0x02,      //!< idn name
-    EC_SOE_ATTRIBUTE   = 0x04,      //!< idn attributes
-    EC_SOE_UNIT        = 0x08,      //!< idn unit
-    EC_SOE_MIN         = 0x10,      //!< idn minimum value
-    EC_SOE_MAX         = 0x20,      //!< idn maximum value
-    EC_SOE_VALUE       = 0x40,      //!< idn value
+    EC_SOE_NAME        = 0x02,              //!< \brief idn name
+    EC_SOE_ATTRIBUTE   = 0x04,              //!< \brief idn attributes
+    EC_SOE_UNIT        = 0x08,              //!< \brief idn unit
+    EC_SOE_MIN         = 0x10,              //!< \brief idn minimum value
+    EC_SOE_MAX         = 0x20,              //!< \brief idn maximum value
+    EC_SOE_VALUE       = 0x40,              //!< \brief idn value
     EC_SOE_DEFAULT     = 0x80       
 };
 

@@ -40,50 +40,49 @@ typedef struct ec_foe {
     pool_t recv_pool;
 } ec_foe_t;
 
-#define MAX_FILE_NAME_SIZE  512u //!< file name max size
-#define MAX_ERROR_TEXT_SIZE 512u //!< error text max size
+#define MAX_FILE_NAME_SIZE  512u                    //!< \brief file name max size
+#define MAX_ERROR_TEXT_SIZE 512u                    //!< \brief error text max size
 
 //! firmware update 
 typedef struct ec_fw_update {
-    osal_uint16_t cmd;               //!< firmware update command
-    osal_uint16_t size;              //!< size of data
-    osal_uint16_t address_low;       //!< destination/source address low WORD
-    osal_uint16_t address_high;      //!< destination/source address high WORD
-    osal_uint16_t data[(LEC_MAX_DATA-8u)>>1u];
-                                //!< firmware data bytes
+    osal_uint16_t cmd;                              //!< \brief firmware update command
+    osal_uint16_t size;                             //!< \brief size of data
+    osal_uint16_t address_low;                      //!< \brief destination/source address low WORD
+    osal_uint16_t address_high;                     //!< \brief destination/source address high WORD
+    osal_uint16_t data[(LEC_MAX_DATA-8u)>>1u];      //!< \brief firmware data bytes
 } ec_fw_update_t;
 
-#define EC_FOE_OP_CODE_READ_REQUEST  0x01u    //!< read request
-#define EC_FOE_OP_CODE_WRITE_REQUEST 0x02u    //!< write request
-#define EC_FOE_OP_CODE_DATA_REQUEST  0x03u    //!< data request
-#define EC_FOE_OP_CODE_ACK_REQUEST   0x04u    //!< acknowledge request
-#define EC_FOE_OP_CODE_ERROR_REQUEST 0x05u    //!< error request
-#define EC_FOE_OP_CODE_BUSY_REQUEST  0x06u    //!< busy request
+#define EC_FOE_OP_CODE_READ_REQUEST  0x01u          //!< \brief read request
+#define EC_FOE_OP_CODE_WRITE_REQUEST 0x02u          //!< \brief write request
+#define EC_FOE_OP_CODE_DATA_REQUEST  0x03u          //!< \brief data request
+#define EC_FOE_OP_CODE_ACK_REQUEST   0x04u          //!< \brief acknowledge request
+#define EC_FOE_OP_CODE_ERROR_REQUEST 0x05u          //!< \brief error request
+#define EC_FOE_OP_CODE_BUSY_REQUEST  0x06u          //!< \brief busy request
 
-#define EC_FOE_ERROR_NOT_DEFINED         0x8000u  //!< not defined
-#define EC_FOE_ERROR_NOT_FOUND           0x8001u  //!< not found
-#define EC_FOE_ERROR_ACCESS_DENIED       0x8002u  //!< access denied
-#define EC_FOE_ERROR_DISK_FULL           0x8003u  //!< disk full
-#define EC_FOE_ERROR_ILLEGAL             0x8004u  //!< illegal
-#define EC_FOE_ERROR_PACKET_NUMBER_WRONG 0x8005u  //!< packed number wrong
-#define EC_FOE_ERROR_ALREADY_EXISTS      0x8006u  //!< already exist
-#define EC_FOE_ERROR_NO_USER             0x8007u  //!< no user
-#define EC_FOE_ERROR_BOOTSTRAP_ONLY      0x8008u  //!< bootstrap access only
-#define EC_FOE_ERROR_NOT_BOOTSTRAP       0x8009u  //!< not in bootstrap
-#define EC_FOE_ERROR_NO_RIGHTS           0x800Au  //!< no access rights
-#define EC_FOE_ERROR_PROGRAM_ERROR       0x800Bu  //!< program error
+#define EC_FOE_ERROR_NOT_DEFINED         0x8000u    //!< \brief not defined
+#define EC_FOE_ERROR_NOT_FOUND           0x8001u    //!< \brief not found
+#define EC_FOE_ERROR_ACCESS_DENIED       0x8002u    //!< \brief access denied
+#define EC_FOE_ERROR_DISK_FULL           0x8003u    //!< \brief disk full
+#define EC_FOE_ERROR_ILLEGAL             0x8004u    //!< \brief illegal
+#define EC_FOE_ERROR_PACKET_NUMBER_WRONG 0x8005u    //!< \brief packed number wrong
+#define EC_FOE_ERROR_ALREADY_EXISTS      0x8006u    //!< \brief already exist
+#define EC_FOE_ERROR_NO_USER             0x8007u    //!< \brief no user
+#define EC_FOE_ERROR_BOOTSTRAP_ONLY      0x8008u    //!< \brief bootstrap access only
+#define EC_FOE_ERROR_NOT_BOOTSTRAP       0x8009u    //!< \brief not in bootstrap
+#define EC_FOE_ERROR_NO_RIGHTS           0x800Au    //!< \brief no access rights
+#define EC_FOE_ERROR_PROGRAM_ERROR       0x800Bu    //!< \brief program error
 
-#define EFW_CMD_IGNORE                  0u    //!< command ignore
-#define EFW_CMD_MEMORY_TRANSFER         1u    //!< command memory transfer
-#define EFW_CMD_WRCODE                  2u    //!< command wrcode
-#define EFW_CMD_CHK_DEVID               3u    //!< command check device id
-#define EFW_CMD_CHK_DEVICEID            3u    //!< command check device id
-#define EFW_CMD_CHKSUM                  4u    //!< command checksum
-#define EFW_CMD_WRCODECHKSUM            5u    //!< command wr code checksum
-#define EFW_CMD_SET_DEVID               6u    //!< command set device id
-#define EFW_CMD_CHKSUMCHKSUM            6u    //!< command checksum checksum
-#define EFW_CMD_BOOTCHKSUM              7u    //!< command boot checksum
-#define EFW_CMD_SET_EEPROM              10u   //!< command set eeprom
+#define EFW_CMD_IGNORE                  0u          //!< \brief command ignore
+#define EFW_CMD_MEMORY_TRANSFER         1u          //!< \brief command memory transfer
+#define EFW_CMD_WRCODE                  2u          //!< \brief command wrcode
+#define EFW_CMD_CHK_DEVID               3u          //!< \brief command check device id
+#define EFW_CMD_CHK_DEVICEID            3u          //!< \brief command check device id
+#define EFW_CMD_CHKSUM                  4u          //!< \brief command checksum
+#define EFW_CMD_WRCODECHKSUM            5u          //!< \brief command wr code checksum
+#define EFW_CMD_SET_DEVID               6u          //!< \brief command set device id
+#define EFW_CMD_CHKSUMCHKSUM            6u          //!< \brief command checksum checksum
+#define EFW_CMD_BOOTCHKSUM              7u          //!< \brief command boot checksum
+#define EFW_CMD_SET_EEPROM              10u         //!< \brief command set eeprom
 
 #ifdef __cplusplus
 extern "C" {

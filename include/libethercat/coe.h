@@ -40,9 +40,9 @@
 
 //! Message queue qentry
 typedef struct ec_coe_emergency_message {
-    osal_timer_t timestamp;     //!< timestamp, when emergency was received
-    osal_size_t msg_len;        //!< length
-    osal_uint8_t msg[LEC_MAX_COE_EMERGENCY_MSG_LEN];        //!< message itself
+    osal_timer_t timestamp;     //!< \brief timestamp, when emergency was received
+    osal_size_t msg_len;        //!< \brief length
+    osal_uint8_t msg[LEC_MAX_COE_EMERGENCY_MSG_LEN];        //!< \brief message itself
 } ec_coe_emergency_message_t;
 
 typedef struct ec_coe {
@@ -61,33 +61,33 @@ typedef struct ec_coe {
 
 //! CoE mailbox types
 enum {
-    EC_COE_EMERGENCY  = 0x01,   //!< emergency message
-    EC_COE_SDOREQ,              //!< service data object request
-    EC_COE_SDORES,              //!< service data object response
-    EC_COE_TXPDO,               //!< transmit PDO
-    EC_COE_RXPDO,               //!< receive PDO
-    EC_COE_TXPDO_RR,            //!< transmit PDO RR
-    EC_COE_RXPDO_RR,            //!< receive PDO RR
-    EC_COE_SDOINFO              //!< service data object information
+    EC_COE_EMERGENCY  = 0x01,               //!< \brief emergency message
+    EC_COE_SDOREQ,                          //!< \brief service data object request
+    EC_COE_SDORES,                          //!< \brief service data object response
+    EC_COE_TXPDO,                           //!< \brief transmit PDO
+    EC_COE_RXPDO,                           //!< \brief receive PDO
+    EC_COE_TXPDO_RR,                        //!< \brief transmit PDO RR
+    EC_COE_RXPDO_RR,                        //!< \brief receive PDO RR
+    EC_COE_SDOINFO                          //!< \brief service data object information
 };
 
 //! service data object command
 enum {
-    EC_COE_SDO_DOWNLOAD_SEQ_REQ = 0x00,     //!< sdo download seq request
-    EC_COE_SDO_DOWNLOAD_REQ     = 0x01,     //!< sdo download request
-    EC_COE_SDO_UPLOAD_REQ       = 0x02,     //!< sdo upload request
-    EC_COE_SDO_ABORT_REQ        = 0x04      //!< sdo abort request
+    EC_COE_SDO_DOWNLOAD_SEQ_REQ = 0x00,     //!< \brief sdo download seq request
+    EC_COE_SDO_DOWNLOAD_REQ     = 0x01,     //!< \brief sdo download request
+    EC_COE_SDO_UPLOAD_REQ       = 0x02,     //!< \brief sdo upload request
+    EC_COE_SDO_ABORT_REQ        = 0x04      //!< \brief sdo abort request
 };
 
 //! service data object information type
 enum {
-    EC_COE_SDO_INFO_ODLIST_REQ = 0x01,      //!< object dict list request
-    EC_COE_SDO_INFO_ODLIST_RESP,            //!< object dict list response
-    EC_COE_SDO_INFO_GET_OBJECT_DESC_REQ,    //!< object description request
-    EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP,   //!< object description response
-    EC_COE_SDO_INFO_GET_ENTRY_DESC_REQ,     //!< entry description request
-    EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP,    //!< entry description response
-    EC_COE_SDO_INFO_ERROR_REQUEST,          //!< error request
+    EC_COE_SDO_INFO_ODLIST_REQ = 0x01,      //!< \brief object dict list request
+    EC_COE_SDO_INFO_ODLIST_RESP,            //!< \brief object dict list response
+    EC_COE_SDO_INFO_GET_OBJECT_DESC_REQ,    //!< \brief object description request
+    EC_COE_SDO_INFO_GET_OBJECT_DESC_RESP,   //!< \brief object description response
+    EC_COE_SDO_INFO_GET_ENTRY_DESC_REQ,     //!< \brief entry description request
+    EC_COE_SDO_INFO_GET_ENTRY_DESC_RESP,    //!< \brief entry description response
+    EC_COE_SDO_INFO_ERROR_REQUEST,          //!< \brief error request
 };
 
 #define DEFTYPE_PDOMAPPING          0x0021
@@ -97,20 +97,20 @@ enum {
     
 //! CanOpen over EtherCAT sdo descriptor
 typedef struct PACKED ec_coe_sdo_desc {
-    osal_uint16_t data_type;             //!< \brief element data type
-    osal_uint8_t  obj_code;              //!< \brief object type
-    osal_uint8_t  max_subindices;        //!< \brief maximum number of subindices
-    osal_char_t   name[CANOPEN_MAXNAME]; //!< \brief element name
-    osal_size_t   name_len;              //!< \brief element name len
+    osal_uint16_t data_type;                //!< \brief element data type
+    osal_uint8_t  obj_code;                 //!< \brief object type
+    osal_uint8_t  max_subindices;           //!< \brief maximum number of subindices
+    osal_char_t   name[CANOPEN_MAXNAME];    //!< \brief element name
+    osal_size_t   name_len;                 //!< \brief element name len
 } PACKED ec_coe_sdo_desc_t;
 
 typedef struct PACKED ec_coe_sdo_entry_desc {
-    osal_uint8_t  value_info;            //!< \brief valueinfo, how to interpret data
-    osal_uint16_t data_type;             //!< \brief entry data type
-    osal_uint16_t bit_length;            //!< \brief entry bit length
-    osal_uint16_t obj_access;            //!< \brief object access
-    osal_uint8_t  data[CANOPEN_MAXDATA]; //!< \brief entry name
-    osal_size_t   data_len;              //!< \brief length of name
+    osal_uint8_t  value_info;               //!< \brief valueinfo, how to interpret data
+    osal_uint16_t data_type;                //!< \brief entry data type
+    osal_uint16_t bit_length;               //!< \brief entry bit length
+    osal_uint16_t obj_access;               //!< \brief object access
+    osal_uint8_t  data[CANOPEN_MAXDATA];    //!< \brief entry name
+    osal_size_t   data_len;                 //!< \brief length of name
 } PACKED ec_coe_sdo_entry_desc_t;
 
 #define EC_COE_SDO_VALUE_INFO_ACCESS_RIGHTS      0x01

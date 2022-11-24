@@ -41,13 +41,13 @@
 #define EC_WKC_SIZE     2u
 
 typedef struct __attribute__((__packed__)) ec_frame {
-    osal_uint8_t mac_dest[6];        //!< destination mac address 
-    osal_uint8_t mac_src[6];         //!< source mac addres
-    osal_uint16_t ethertype;         //!< ethertype, should be 0x88A4
+    osal_uint8_t mac_dest[6];        //!< \brief destination mac address 
+    osal_uint8_t mac_src[6];         //!< \brief source mac addres
+    osal_uint16_t ethertype;         //!< \brief ethertype, should be 0x88A4
     
-    osal_uint16_t len        : 11;   //!< frame length
-    osal_uint16_t reserved   : 1;    //!< not used
-    osal_uint16_t type       : 4;    //!< protocol type, 4 - EtherCAT command
+    osal_uint16_t len        : 11;   //!< \brief frame length
+    osal_uint16_t reserved   : 1;    //!< \brief not used
+    osal_uint16_t type       : 4;    //!< \brief protocol type, 4 - EtherCAT command
 } ec_frame_t;
 
 #define ec_frame_hdr_length     (sizeof(ec_frame_t))
@@ -55,15 +55,15 @@ typedef struct __attribute__((__packed__)) ec_frame {
 #define ec_frame_end(pframe)    (&((osal_uint8_t *)(pframe))[(pframe)->len])
 
 typedef struct __attribute__((__packed__)) ec_datagram {
-    osal_uint8_t cmd;                //!< ethercat command
-    osal_uint8_t idx;                //!< datagram index
-    osal_uint32_t adr;               //!< logical address 
-                                     //   auto inc address + phys mem
-                                     //   configured address + phys mem
-    osal_uint16_t len        : 11;   //!< datagram length
-    osal_uint16_t reserved   : 4;    //!< not used
-    osal_uint16_t next       : 1;    //!< 0 - last datagram, 1 - more follow
-    osal_uint16_t irq;               //!< reserved for future use
+    osal_uint8_t cmd;                //!< \brief ethercat command
+    osal_uint8_t idx;                //!< \brief datagram index
+    osal_uint32_t adr;               //!< \brief logical address 
+                                     //   \brief auto inc address + phys mem
+                                     //   \brief configured address + phys mem
+    osal_uint16_t len        : 11;   //!< \brief datagram length
+    osal_uint16_t reserved   : 4;    //!< \brief not used
+    osal_uint16_t next       : 1;    //!< \brief 0 - last datagram, 1 - more follow
+    osal_uint16_t irq;               //!< \brief reserved for future use
 } ec_datagram_t;
 
 #define ec_datagram_hdr_length  (sizeof(ec_datagram_t))

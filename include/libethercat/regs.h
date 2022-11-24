@@ -33,21 +33,21 @@
 /** Ethercat registers */
 
 enum {
-    EC_CMD_NOP          = 0x00,  //!< no op
-    EC_CMD_APRD         = 0x01,  //!< auto increment read
-    EC_CMD_APWR         = 0x02,  //!< auto increment write
-    EC_CMD_APRW         = 0x03,  //!< auto increment read write
-    EC_CMD_FPRD         = 0x04,  //!< configured address read
-    EC_CMD_FPWR         = 0x05,  //!< configured address write
-    EC_CMD_FPRW         = 0x06,  //!< configured address read write
-    EC_CMD_BRD          = 0x07,  //!< broadcast read
-    EC_CMD_BWR          = 0x08,  //!< broaddcast write
-    EC_CMD_BRW          = 0x09,  //!< broadcast read write
-    EC_CMD_LRD          = 0x0A,  //!< logical memory read
-    EC_CMD_LWR          = 0x0B,  //!< logical memory write
-    EC_CMD_LRW          = 0x0C,  //!< logical memory read write
-    EC_CMD_ARMW         = 0x0D,  //!< auto increment read mulitple write
-    EC_CMD_FRMW         = 0x0E   //!< configured read mulitple write
+    EC_CMD_NOP          = 0x00,  //!< \brief no op
+    EC_CMD_APRD         = 0x01,  //!< \brief auto increment read
+    EC_CMD_APWR         = 0x02,  //!< \brief auto increment write
+    EC_CMD_APRW         = 0x03,  //!< \brief auto increment read write
+    EC_CMD_FPRD         = 0x04,  //!< \brief configured address read
+    EC_CMD_FPWR         = 0x05,  //!< \brief configured address write
+    EC_CMD_FPRW         = 0x06,  //!< \brief configured address read write
+    EC_CMD_BRD          = 0x07,  //!< \brief broadcast read
+    EC_CMD_BWR          = 0x08,  //!< \brief broaddcast write
+    EC_CMD_BRW          = 0x09,  //!< \brief broadcast read write
+    EC_CMD_LRD          = 0x0A,  //!< \brief logical memory read
+    EC_CMD_LWR          = 0x0B,  //!< \brief logical memory write
+    EC_CMD_LRW          = 0x0C,  //!< \brief logical memory read write
+    EC_CMD_ARMW         = 0x0D,  //!< \brief auto increment read mulitple write
+    EC_CMD_FRMW         = 0x0E   //!< \brief configured read mulitple write
 };
 
 #define EC_REG_TYPE             (0x0000u)

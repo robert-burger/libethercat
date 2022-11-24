@@ -43,47 +43,47 @@ struct ec;
 
 //! Message ID for asynchronous loop
 typedef enum ec_async_message_id {
-    EC_MSG_CHECK_GROUP,             //!< message type check group
-    EC_MSG_CHECK_SLAVE,             //!< message type check slave
-    EC_MSG_CHECK_ALL                //!< message type check all slaves
+    EC_MSG_CHECK_GROUP,             //!< \brief message type check group
+    EC_MSG_CHECK_SLAVE,             //!< \brief message type check slave
+    EC_MSG_CHECK_ALL                //!< \brief message type check all slaves
 } ec_async_message_id_t;
     
 typedef osal_uint32_t ec_async_message_payload_t;
 
 //! Message for asynchronous loop
 typedef struct ec_message {
-    ec_async_message_id_t id;       //!< index
-    ec_async_message_payload_t payload;    
-                                    //!< payload
+    ec_async_message_id_t id;       //!< \brief index
+    ec_async_message_payload_t payload;
+                                    //!< \brief payload
 } ec_message_t;
 
 //! Message queue qentry
 typedef struct ec_message_entry {
     TAILQ_ENTRY(ec_message_entry) qh;
-                                    //!< handle to message entry queue
+                                    //!< \brief handle to message entry queue
     
-    ec_message_t msg;               //!< message itself
+    ec_message_t msg;               //!< \brief message itself
 } ec_message_entry_t;
 
 TAILQ_HEAD(ec_message_pool_queue, ec_message_entry);
 typedef struct ec_message_pool_queue ec_message_pool_queue_t;
 
 typedef struct ec_message_pool {
-    ec_message_pool_queue_t queue;  //!< message pool queue
-    osal_semaphore_t avail_cnt;     //!< available messages in pool queue
-    osal_mutex_t lock;              //!< pool lock
+    ec_message_pool_queue_t queue;  //!< \brief message pool queue
+    osal_semaphore_t avail_cnt;     //!< \brief available messages in pool queue
+    osal_mutex_t lock;              //!< \brief pool lock
 } ec_message_pool_t;
 
 #define EC_ASYNC_MESSAGE_LOOP_COUNT 100
 typedef struct ec_async_loop {
     ec_message_entry_t entries[EC_ASYNC_MESSAGE_LOOP_COUNT];
 
-    ec_message_pool_t avail;        //!< empty messages
-    ec_message_pool_t exec;         //!< execute messages
+    ec_message_pool_t avail;        //!< \brief empty messages
+    ec_message_pool_t exec;         //!< \brief execute messages
 
-    int loop_running;               //!< loop thread run flag
-    osal_task_t loop_tid;           //!< loop thread id
-    struct ec *pec;                 //!< ethercat master pointer
+    int loop_running;               //!< \brief loop thread run flag
+    osal_task_t loop_tid;           //!< \brief loop thread id
+    struct ec *pec;                 //!< \brief ethercat master pointer
 
     osal_timer_t next_check_group;
 } ec_async_loop_t;

@@ -83,7 +83,7 @@ typedef struct ec_dc_info {
         dc_mode_master_as_ref_clock
     } mode;
 
-    ec_cyclic_datagram_t cdg;       //!< DC cyclic datagram.
+    ec_cyclic_datagram_t cdg;       //!< \brief DC cyclic datagram.
 } ec_dc_info_t;
 
 struct ec;
