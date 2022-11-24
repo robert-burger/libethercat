@@ -77,7 +77,6 @@ typedef struct ec_cyclic_datagram {
 
     osal_uint64_t recv_timeout_ns;          //!< \brief Datagram receive timeout in [ns]
     osal_timer_t timeout;                   //!< \brief Timer holding actual timeout.
-    int had_timeout;                        //!<¸\brief Had timeout last time.
 
     void (*user_cb)(void *arg, int num);    //!< \brief User callback.
     void *user_cb_arg;                      //!< \brief User argument for user_cb.

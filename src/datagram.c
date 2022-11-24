@@ -48,7 +48,6 @@ int ec_cyclic_datagram_init(ec_cyclic_datagram_t *cdg, osal_uint64_t recv_timeou
     cdg->p_entry = NULL;
     cdg->p_idx = NULL;
     cdg->recv_timeout_ns = recv_timeout;
-    cdg->had_timeout = 0;
     cdg->user_cb = NULL;
     cdg->user_cb_arg = NULL;
 
