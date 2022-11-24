@@ -190,7 +190,7 @@ int hw_tx(hw_t *phw) {
 
     osal_mutex_lock(&phw->hw_lock);
 
-    hw_device_get_tx_buffer(phw, &pframe);
+    (void)hw_device_get_tx_buffer(phw, &pframe);
 
     ec_datagram_t *pdg = ec_datagram_first(pframe);
     ec_datagram_t *pdg_prev = NULL;
@@ -214,8 +214,8 @@ int hw_tx(hw_t *phw) {
             if (pframe->len == sizeof(ec_frame_t)) {
                 // nothing to send
             } else {
-                hw_device_send(phw, pframe);
-                hw_device_get_tx_buffer(phw, &pframe);
+                (void)hw_device_send(phw, pframe);
+                (void)hw_device_get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
             }
         }

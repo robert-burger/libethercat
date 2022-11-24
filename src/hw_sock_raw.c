@@ -58,7 +58,7 @@
 // see https://gitlab.com/fastflo/open_ethercat
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
 
-static int try_grant_cap_net_raw_init() {
+static int try_grant_cap_net_raw_init(void) {
     int ret = 0;
 
     if (access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0) {

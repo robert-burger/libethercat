@@ -218,7 +218,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     }
 
     if (ret == EC_OK) {
-        memcpy(txbuf, pframe, pframe->len);
+        (void)memcpy(txbuf, pframe, pframe->len);
         vm_io_sbuf_tx_ready(&phw->sbuf, sbuftx, pframe->len);
     }
 

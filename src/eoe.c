@@ -387,10 +387,11 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
     
 static void ec_eoe_send_sync(struct ec *pec, void *user_arg, struct pool_entry *p) {
     (void)p;
+
     // cppcheck-suppress misra-c2012-11.5
     ec_mbx_t *pmbx = (ec_mbx_t *)user_arg;
     
-    osal_semaphore_post(&pmbx->pec->slaves[pmbx->slave].mbx.eoe.send_sync);
+    osal_semaphore_post(&pec->slaves[pmbx->slave].mbx.eoe.send_sync);
 }
 
 #define ALIGN_32BIT_BLOCKS(a) { (a) = (((a) >> 5) << 5); }

@@ -79,7 +79,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
 
         slv->mbx.map_mbx_state = OSAL_TRUE;
 
-        ec_cyclic_datagram_init(&slv->mbx.cdg, 10000000);
+        (void)ec_cyclic_datagram_init(&slv->mbx.cdg, 10000000);
 
         slv->mbx.sm_state = &slv->mbx.mbx_state; // this may be overwritten by logical mapping
 
@@ -110,7 +110,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         osal_task_attr_t attr;
         attr.priority = 0;
         attr.affinity = 0xFF;
-        snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.mbx%d", slave);
+        (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.mbx%d", slave);
         osal_task_create(&slv->mbx.handler_tid, &attr, ec_mbx_handler_thread, &slv->mbx);
     }
 }
@@ -154,7 +154,7 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
 
         (void)pool_close(&slv->mbx.message_pool_send_queued);
         
-        ec_cyclic_datagram_destroy(&slv->mbx.cdg);
+        (void)ec_cyclic_datagram_destroy(&slv->mbx.cdg);
     }
 }
 
@@ -472,7 +472,6 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry = NULL;
-    int ret;
     
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     uint32_t flags = slv->mbx.handler_flags;
@@ -481,8 +480,6 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
 
     // check event
     if ((flags & MBX_HANDLER_FLAGS_RECV) != 0u) {
-        flags &= ~MBX_HANDLER_FLAGS_RECV;
-
         (void)pool_get(&pec->mbx_message_pool_recv_free, &p_entry, NULL);
         if (!p_entry) {
             ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
@@ -541,13 +538,12 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
     }
 
     if ((flags & MBX_HANDLER_FLAGS_SEND) != 0u) {
-        flags &= ~MBX_HANDLER_FLAGS_SEND;
-
         // need to send a message to write mailbox
         (void)pool_get(&slv->mbx.message_pool_send_queued, &p_entry, NULL);
 
         if (p_entry != NULL) {
             ec_log(100, __func__, "slave %2d: got mailbox buffer to write\n", slave);
+            int ret = EC_OK;
             int retry_cnt = 10;
 
             do {

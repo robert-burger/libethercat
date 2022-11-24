@@ -803,7 +803,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
     (void)ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),         \
             (buf), (buflen), &wkc);                                     \
     if (!wkc) { ec_log(10, __func__,                                    \
-            "reading reg 0x%X : no answer from slave %2d\n", reg, slave); } }
+            "reading reg 0x%X : no answer from slave %2d\n", (reg), slave); } }
     
     osal_mutex_lock(&slv->transition_mutex);
 
@@ -838,7 +838,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 } 
             } while (osal_timer_expired(&error_reset_timeout) != OSAL_ERR_TIMEOUT);
 
-            if (osal_timer_expired(&error_reset_timeout)) {
+            if (osal_timer_expired(&error_reset_timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(10, __func__, "slave %2d: try to reset PDI\n", slave);
                 osal_uint8_t reset_vals[] = { (osal_uint8_t)'R', (osal_uint8_t)'E', (osal_uint8_t)'S' };
                 for (int i = 0; i < 3; ++i) {
@@ -1108,6 +1108,10 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 
                 // write state to slave
                 ret = ec_slave_set_state(pec, slave, state);
+
+                if (ret != EC_OK) {
+                    break;
+                }
             }
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
@@ -1246,7 +1250,7 @@ void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
 #define EOE_SET(field, sz) {                      \
     if ((field) != NULL) {                            \
         (void)memcpy(&slv->eoe.field[0], (field), (sz));    \
-    } else { memset(&slv->eoe.field[0], 0, sz); } }
+    } else { (void)memset(&slv->eoe.field[0], 0, sz); } }
 
     // cppcheck-suppress misra-c2012-21.3
     EOE_SET(mac, LEC_EOE_MAC_LEN);

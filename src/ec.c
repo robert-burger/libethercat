@@ -126,7 +126,7 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
     pec->pd_group_cnt = pd_group_cnt;
     // cppcheck-suppress misra-c2012-21.3
     for (osal_uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
-        ec_cyclic_datagram_init(&pec->pd_groups[i].cdg, 10000000);
+        (void)ec_cyclic_datagram_init(&pec->pd_groups[i].cdg, 10000000);
         pec->pd_groups[i].group     = i;
         pec->pd_groups[i].log       = 0x10000u * ((osal_uint32_t)i+1u);
         pec->pd_groups[i].log_len   = 0u;
@@ -150,7 +150,7 @@ int ec_destroy_pd_groups(ec_t *pec) {
     assert(pec != NULL);
 
     for (osal_uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
-        ec_cyclic_datagram_destroy(&pec->pd_groups[i].cdg);
+        (void)ec_cyclic_datagram_destroy(&pec->pd_groups[i].cdg);
     }
 
     pec->pd_group_cnt = 0;
@@ -988,8 +988,8 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         pec->tun_ip             = 0;
         pec->tun_running        = 0;
 
-        ec_cyclic_datagram_init(&pec->cdg_state, 1000000);
-        ec_cyclic_datagram_init(&pec->dc.cdg, 1000000);
+        (void)ec_cyclic_datagram_init(&pec->cdg_state, 1000000);
+        (void)ec_cyclic_datagram_init(&pec->dc.cdg, 1000000);
 
         // eeprom logging level
         pec->eeprom_log         = eeprom_log;
@@ -1087,8 +1087,8 @@ int ec_close(ec_t *pec) {
     (void)pool_close(&pec->mbx_message_pool_recv_free);
     (void)pool_close(&pec->mbx_message_pool_send_free);
         
-    ec_cyclic_datagram_destroy(&pec->dc.cdg);
-    ec_cyclic_datagram_destroy(&pec->cdg_state);
+    (void)ec_cyclic_datagram_destroy(&pec->dc.cdg);
+    (void)ec_cyclic_datagram_destroy(&pec->cdg_state);
 
     ec_log(10, __func__, "all done!\n");
     return 0;
@@ -1096,6 +1096,7 @@ int ec_close(ec_t *pec) {
 
 //! local callack for syncronous read/write
 static void cb_block(struct ec *pec, void *user_arg, struct pool_entry *p) {
+    (void)pec;
     (void)p;
 
     // cppcheck-suppress misra-c2012-11.5
@@ -1335,7 +1336,7 @@ static void cb_process_data_group(struct ec *pec, void *user_arg, struct pool_en
     if (pd->cdg.p_entry != p) {
         // frame returned too late, someone already sent a new one
     } else {
-        ec_receive_process_data_group(pec, group);
+        (void)ec_receive_process_data_group(pec, group);
     }
     
     osal_mutex_unlock(&pd->cdg.lock);
@@ -1352,7 +1353,7 @@ static void cb_process_data_group(struct ec *pec, void *user_arg, struct pool_en
  * \param group group number
  * \return 0 on success
  */
-int ec_send_process_data_group(ec_t *pec, int group) {
+static int ec_send_process_data_group(ec_t *pec, int group) {
     assert(pec != NULL);
 
     int ret = EC_OK;
@@ -1480,7 +1481,7 @@ static void cb_mbx_state(struct ec *pec, void *user_arg, struct pool_entry *p) {
     if (slv->mbx.cdg.p_entry != p) {
         // timeout, someone else already sent new one...
     } else {
-        ec_receive_mbx_state(pec, slave);
+        (void)ec_receive_mbx_state(pec, slave);
     }
 
     osal_mutex_unlock(&slv->mbx.cdg.lock);
@@ -1534,7 +1535,7 @@ static int ec_send_mbx_state(ec_t *pec, int slave) {
             (void)memset(p_dg, 0, sizeof(ec_datagram_t) + sizeof(osal_uint8_t) + 2u);
             p_dg->cmd = EC_CMD_FPRD;
             p_dg->idx = slv->mbx.cdg.p_idx->idx;
-            p_dg->adr = ((EC_REG_SM1STAT) << 16u) | (osal_uint32_t)((slv->fixed_address) & 0xFFFFu);
+            p_dg->adr = ((osal_uint32_t)(EC_REG_SM1STAT) << 16u) | (osal_uint32_t)((slv->fixed_address) & 0xFFFFu);
             p_dg->len = sizeof(osal_uint8_t);
             p_dg->irq = 0;
 
@@ -1572,7 +1573,7 @@ static int ec_send_mbx_state_group(ec_t *pec, int group) {
                 (slv->eeprom.mbx_supported == 0u) ||
                 (slv->mbx.map_mbx_state == OSAL_TRUE)) { continue; }
 
-        ec_send_mbx_state(pec, slave);
+        (void)ec_send_mbx_state(pec, slave);
     }
 
     return ret;
@@ -1594,7 +1595,7 @@ int ec_send_process_data(ec_t *pec) {
             // reset divisor cnt and queue datagram
             pd->divisor_cnt = 0;
             ret = ec_send_process_data_group(pec, i);
-            ec_send_mbx_state_group(pec, i);
+            (void)ec_send_mbx_state_group(pec, i);
         }
 
         if (ret != EC_OK) {
@@ -1693,6 +1694,8 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
 
 //! local callack for syncronous read/write
 static void cb_distributed_clocks(struct ec *pec, void *user_arg, struct pool_entry *p) {
+    (void)user_arg;
+
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "received distributed clock\n");
 #endif
@@ -1702,7 +1705,7 @@ static void cb_distributed_clocks(struct ec *pec, void *user_arg, struct pool_en
     if (pec->dc.cdg.p_entry != p) {
         // frame returned too late, someone already sent a new one
     } else {
-        ec_receive_distributed_clocks_sync(pec);
+        (void)ec_receive_distributed_clocks_sync(pec);
     }
 
     osal_mutex_unlock(&pec->dc.cdg.lock);
@@ -1802,9 +1805,6 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 static int ec_receive_brd_ec_state(ec_t *pec) {
     assert(pec != NULL);
 
-    static int wkc_mismatch_cnt_ec_state = 0;
-    static int ec_state_mismatch_cnt = 0;
-
     ec_datagram_t *p_dg = NULL;
     int ret = EC_OK;
     osal_uint16_t al_status = 0u;
@@ -1812,6 +1812,8 @@ static int ec_receive_brd_ec_state(ec_t *pec) {
     if (pec->cdg_state.p_idx == NULL) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
+        static int wkc_mismatch_cnt_ec_state = 0;
+
         osal_uint16_t wkc;
         p_dg = ec_datagram_cast(pec->cdg_state.p_entry->data);
 
@@ -1835,6 +1837,8 @@ static int ec_receive_brd_ec_state(ec_t *pec) {
         }
 
         if (!pec->state_transition_pending && (al_status != pec->master_state)) {
+            static int ec_state_mismatch_cnt = 0;
+
             if ((ec_state_mismatch_cnt++%1000) == 0) {
                 ec_log(1, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
                         al_status, pec->master_state);
@@ -1851,6 +1855,8 @@ static int ec_receive_brd_ec_state(ec_t *pec) {
 
 //! local callack for syncronous read/write
 static void cb_brd_ec_state(struct ec *pec, void *user_arg, struct pool_entry *p) {
+    (void)user_arg;
+
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "received broadcast ec state\n");
 #endif
@@ -1860,7 +1866,7 @@ static void cb_brd_ec_state(struct ec *pec, void *user_arg, struct pool_entry *p
     if (pec->cdg_state.p_entry != p) {
         // had timeout, someone else already send a new one...
     } else {
-        ec_receive_brd_ec_state(pec);
+        (void)ec_receive_brd_ec_state(pec);
     }
 
     osal_mutex_unlock(&pec->cdg_state.lock);
