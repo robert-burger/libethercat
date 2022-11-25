@@ -107,7 +107,7 @@ extern "C" {
  * or \link ec_dc_sync01 \endlink.
  *
  *
- * \param pec ethercat master pointer
+ * \param[in]   pec     Pointer to EtherCAT master structure.
  * \return supported dc
  */
 int ec_dc_config(struct ec *pec);
@@ -119,12 +119,12 @@ int ec_dc_config(struct ec *pec);
  * and enables sync0 and sync1 pulse generation on the corresponding device. 
  * It can also be use to disable DC's on the EtherCAT slave.
  * 
- * \param pec ethercat master pointer 
- * \param slave slave number
- * \param dc_active dc active flag
- * \param cycle_time_0 cycle time to program to fire sync0 in [ns]
- * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
- * \param cycle_shift shift of first sync0 start in [ns]
+ * \param[in]   pec             Pointer to EtherCAT master structure.
+ * \param[in]   slave           Slave number.
+ * \param[in]   dc_active       Dc active flag.
+ * \param[in]   cycle_time_0    Cycle time to program to fire sync0 in [ns].
+ * \param[in]   cycle_time_1    Cycle time to program to fire sync1 in [ns].
+ * \param[in]   cycle_shift     Shift of first sync0 start in [ns].
  */
 void ec_dc_sync(struct ec *pec, osal_uint16_t slave, osal_uint8_t dc_active, 
         osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
