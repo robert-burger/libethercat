@@ -583,8 +583,8 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_SM: {
-                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %" PRIu64 "\n", 
-                                slave, cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u));
+                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %u\n", 
+                                slave, (osal_uint32_t)(cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u)));
 
                         // skip cat type and len
                         osal_uint32_t j = 0;

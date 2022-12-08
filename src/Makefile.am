@@ -48,6 +48,6 @@ libethercat_la_SOURCES += hw_pikeos.c
 endif
 
 libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(top_srcdir)/include @LIBOSAL_CFLAGS@
-libethercat_la_LDFLAGS	= -Wall -Werror 
+libethercat_la_LDFLAGS	= -Wall -Werror -no-undefined @LIBOSAL_LIBS@
 libethercat_la_LIBS     = @LIBOSAL_LIBS@
 
