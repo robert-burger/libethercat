@@ -6,3 +6,5 @@ configurations:
   - linux_defaults
 - pikeos5.1-armv8hf-gcc7:
     ecat_device: { pikeos }
+- win64-x86_64-mingw:
+    ecat_device: { file }

@@ -169,7 +169,7 @@ PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
 
 # Checks for header files.
 AC_HEADER_ASSERT
-AC_CHECK_HEADERS([arpa/inet.h net/util/inet.h net/if.h net/bpf.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h winsock.h netinet/in.h net/util/inet.h net/if.h net/bpf.h fcntl.h limits.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT16_T

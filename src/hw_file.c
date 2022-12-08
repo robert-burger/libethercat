@@ -38,12 +38,19 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <inttypes.h>
 
 #if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
 #endif
 
+#if LIBETHERCAT_HAVE_NETINET_IN_H == 1
 #include <netinet/in.h>
+#endif
+
+#if LIBETHERCAT_HAVE_WINSOCK_H == 1
+#include <winsock.h>
+#endif
 
 //! Opens EtherCAT hw device.
 /*!
@@ -137,7 +144,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     osal_ssize_t bytestx = write(phw->sockfd, pframe, pframe->len);
 
     if ((osal_ssize_t)pframe->len != bytestx) {
-        ec_log(1, "TX", "got only %ld bytes out of %d bytes "
+        ec_log(1, "TX", "got only %" PRId64 " bytes out of %d bytes "
                 "through.\n", bytestx, pframe->len);
 
         if (bytestx == -1) {

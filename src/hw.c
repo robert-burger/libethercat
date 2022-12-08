@@ -49,6 +49,10 @@
 #include <arpa/inet.h>
 #endif
 
+#if LIBETHERCAT_HAVE_WINSOCK_H == 1
+#include <winsock.h>
+#endif
+
 #if LIBETHERCAT_HAVE_NET_UTIL_INET_H == 1
 #include <net/util/inet.h>
 #endif
