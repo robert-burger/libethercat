@@ -1709,13 +1709,7 @@ static void cb_distributed_clocks(struct ec *pec, void *user_arg, struct pool_en
 #endif
 
     osal_mutex_lock(&pec->dc.cdg.lock);
-
-    if (pec->dc.cdg.p_entry != p) {
-        // frame returned too late, someone already sent a new one
-    } else {
-        (void)ec_receive_distributed_clocks_sync(pec);
-    }
-
+    (void)ec_receive_distributed_clocks_sync(pec);
     osal_mutex_unlock(&pec->dc.cdg.lock);
 
     if (pec->dc.cdg.user_cb) {
