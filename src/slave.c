@@ -46,25 +46,25 @@
 #endif
 
 static const osal_char_t *get_transition_string(ec_state_transition_t transition) {
-    static const osal_char_t transition_string_boot_to_init[]     = "BOOT_2_INIT";
-    static const osal_char_t transition_string_init_to_boot[]     = "INIT_2_BOOT";
-    static const osal_char_t transition_string_init_to_init[]     = "INIT_2_INIT";
-    static const osal_char_t transition_string_init_to_preop[]    = "INIT_2_PREOP";
-    static const osal_char_t transition_string_init_to_safeop[]   = "INIT_2_SAFEOP";
-    static const osal_char_t transition_string_init_to_op[]       = "INIT_2_OP";
-    static const osal_char_t transition_string_preop_to_init[]    = "PREOP_2_INIT";
-    static const osal_char_t transition_string_preop_to_preop[]   = "PREOP_2_PREOP";
-    static const osal_char_t transition_string_preop_to_safeop[]  = "PREOP_2_SAFEOP";
-    static const osal_char_t transition_string_preop_to_op[]      = "PREOP_2_OP";
-    static const osal_char_t transition_string_safeop_to_init[]   = "SAFEOP_2_INIT";
-    static const osal_char_t transition_string_safeop_to_preop[]  = "SAFEOP_2_PREOP";
-    static const osal_char_t transition_string_safeop_to_safeop[] = "SAFEOP_2_SAFEOP";
-    static const osal_char_t transition_string_safeop_to_op[]     = "SAFEOP_2_OP";
-    static const osal_char_t transition_string_op_to_init[]       = "OP_2_INIT";
-    static const osal_char_t transition_string_op_to_preop[]      = "OP_2_PREOP";
-    static const osal_char_t transition_string_op_to_safeop[]     = "OP_2_SAFEOP";
-    static const osal_char_t transition_string_op_to_op[]         = "OP_2_OP";
-    static const osal_char_t transition_string_unknown[]          = "UNKNOWN";
+    static const osal_char_t transition_string_boot_to_init[]     = (char[]){ "BOOT_2_INIT" };
+    static const osal_char_t transition_string_init_to_boot[]     = (char[]){ "INIT_2_BOOT" };
+    static const osal_char_t transition_string_init_to_init[]     = (char[]){ "INIT_2_INIT" };
+    static const osal_char_t transition_string_init_to_preop[]    = (char[]){ "INIT_2_PREOP" };
+    static const osal_char_t transition_string_init_to_safeop[]   = (char[]){ "INIT_2_SAFEOP" };
+    static const osal_char_t transition_string_init_to_op[]       = (char[]){ "INIT_2_OP" };
+    static const osal_char_t transition_string_preop_to_init[]    = (char[]){ "PREOP_2_INIT" };
+    static const osal_char_t transition_string_preop_to_preop[]   = (char[]){ "PREOP_2_PREOP" };
+    static const osal_char_t transition_string_preop_to_safeop[]  = (char[]){ "PREOP_2_SAFEOP" };
+    static const osal_char_t transition_string_preop_to_op[]      = (char[]){ "PREOP_2_OP" };
+    static const osal_char_t transition_string_safeop_to_init[]   = (char[]){ "SAFEOP_2_INIT" };
+    static const osal_char_t transition_string_safeop_to_preop[]  = (char[]){ "SAFEOP_2_PREOP" };
+    static const osal_char_t transition_string_safeop_to_safeop[] = (char[]){ "SAFEOP_2_SAFEOP" };
+    static const osal_char_t transition_string_safeop_to_op[]     = (char[]){ "SAFEOP_2_OP" };
+    static const osal_char_t transition_string_op_to_init[]       = (char[]){ "OP_2_INIT" };
+    static const osal_char_t transition_string_op_to_preop[]      = (char[]){ "OP_2_PREOP" };
+    static const osal_char_t transition_string_op_to_safeop[]     = (char[]){ "OP_2_SAFEOP" };
+    static const osal_char_t transition_string_op_to_op[]         = (char[]){ "OP_2_OP" };
+    static const osal_char_t transition_string_unknown[]          = (char[]){ "UNKNOWN" };
 
     const osal_char_t *ret = transition_string_unknown;
 

@@ -65,7 +65,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
 
     int n = 0;
     struct ifreq bound_if;
-    const osal_char_t bpf_devname[] = "/dev/bpf";
+    const osal_char_t bpf_devname[] = (char[]){ "/dev/bpf" };
 
     (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
 

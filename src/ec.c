@@ -26,6 +26,8 @@
 #include <libethercat/config.h>
 
 #include <errno.h>
+
+// cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -66,7 +68,9 @@ static void default_log_func(int lvl, void* user, const osal_char_t *format, ...
 static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
     osal_uint64_t tmp_a = a;
     osal_uint64_t tmp_b = b;
-    osal_uint64_t abs_diff = (a > b) ? (a - b) : (b - a);
+    osal_uint64_t abs_diff = (a - b);
+    if (a < b) { abs_diff = (b - a); }
+
     if (abs_diff > (osal_uint64_t)INT64_MAX) {
         if (a > (osal_uint64_t)INT64_MAX) {
             tmp_a = UINT64_MAX - a;
@@ -77,7 +81,8 @@ static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
         } else {
         }
             
-        abs_diff = (tmp_a > tmp_b) ? (tmp_a - tmp_b) : (tmp_b - tmp_a);
+        abs_diff = (tmp_a - tmp_b);
+        if (tmp_a < tmp_b) { abs_diff = (tmp_b - tmp_a); }
     }
     return (tmp_a > tmp_b) ? (int64_t)abs_diff : -(int64_t)abs_diff;
 }
@@ -159,12 +164,12 @@ int ec_destroy_pd_groups(ec_t *pec) {
 }
 
 static const osal_char_t *get_state_string(ec_state_t state) {
-    static const osal_char_t state_string_boot[]    = { "EC_STATE_BOOT" };
-    static const osal_char_t state_string_init[]    = { "EC_STATE_INIT" };
-    static const osal_char_t state_string_preop[]   = { "EC_STATE_PREOP" };
-    static const osal_char_t state_string_safeop[]  = { "EC_STATE_SAFEOP" };
-    static const osal_char_t state_string_op[]      = { "EC_STATE_OP" };
-    static const osal_char_t state_string_unknown[] = { "EC_STATE_UNKNOWN" };
+    static const osal_char_t state_string_boot[]    = (char[]){ "EC_STATE_BOOT" };
+    static const osal_char_t state_string_init[]    = (char[]){ "EC_STATE_INIT" };
+    static const osal_char_t state_string_preop[]   = (char[]){ "EC_STATE_PREOP" };
+    static const osal_char_t state_string_safeop[]  = (char[]){ "EC_STATE_SAFEOP" };
+    static const osal_char_t state_string_op[]      = (char[]){ "EC_STATE_OP" };
+    static const osal_char_t state_string_unknown[] = (char[]){ "EC_STATE_UNKNOWN" };
 
     const osal_char_t *ret;
 
@@ -1356,22 +1361,17 @@ static int ec_receive_process_data_group(ec_t *pec, int group) {
 static void cb_process_data_group(struct ec *pec, void *user_arg, struct pool_entry *p) {
     int group = *(osal_uint32_t *)user_arg;
     ec_pd_group_t *pd = &pec->pd_groups[group];
+    (void)p;
 
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "group %2d: received process data\n", group);
 #endif
 
     osal_mutex_lock(&pd->cdg.lock);
-
-    if (pd->cdg.p_entry != p) {
-        // frame returned too late, someone already sent a new one
-    } else {
-        (void)ec_receive_process_data_group(pec, group);
-    }
-    
+    (void)ec_receive_process_data_group(pec, group);
     osal_mutex_unlock(&pd->cdg.lock);
 
-    if (pd->cdg.user_cb) {
+    if (pd->cdg.user_cb != NULL) {
         (*pd->cdg.user_cb)(pd->cdg.user_cb_arg, pd->group);
     }
 }
@@ -1493,19 +1493,14 @@ static int ec_receive_mbx_state(ec_t *pec, int slave) {
 static void cb_mbx_state(struct ec *pec, void *user_arg, struct pool_entry *p) {
     int slave = *(osal_uint32_t *)user_arg;
     ec_slave_ptr(slv, pec, slave);
+    (void)p;
 
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "slave %2d: received mbx state\n", slave);
 #endif
 
     osal_mutex_lock(&slv->mbx.cdg.lock);
-
-    if (slv->mbx.cdg.p_entry != p) {
-        // timeout, someone else already sent new one...
-    } else {
-        (void)ec_receive_mbx_state(pec, slave);
-    }
-
+    (void)ec_receive_mbx_state(pec, slave);
     osal_mutex_unlock(&slv->mbx.cdg.lock);
 }
 
@@ -1693,7 +1688,7 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
                 // queue frame and trigger tx
                 pool_put(&pec->hw.tx_low, p_entry_dc_sto);
             }
-        }
+        } else {}
     }
 
     return ret;
@@ -1703,6 +1698,7 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
 //! local callack for syncronous read/write
 static void cb_distributed_clocks(struct ec *pec, void *user_arg, struct pool_entry *p) {
     (void)user_arg;
+    (void)p;
 
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "received distributed clock\n");
@@ -1712,7 +1708,7 @@ static void cb_distributed_clocks(struct ec *pec, void *user_arg, struct pool_en
     (void)ec_receive_distributed_clocks_sync(pec);
     osal_mutex_unlock(&pec->dc.cdg.lock);
 
-    if (pec->dc.cdg.user_cb) {
+    if (pec->dc.cdg.user_cb != NULL) {
         (*pec->dc.cdg.user_cb)(pec->dc.cdg.user_cb_arg, 0);
     }
 
@@ -1790,7 +1786,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
         }
 
         p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
-        (void)memset(p_dg + sizeof(ec_datagram_t), 0, 8u + 2u);
+        (void)memset(ec_datagram_payload(p_dg), 0, 8u + 2u);
 
         if (pec->dc.mode == dc_mode_master_as_ref_clock) {
             (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
@@ -1860,6 +1856,7 @@ static int ec_receive_brd_ec_state(ec_t *pec) {
 //! local callack for syncronous read/write
 static void cb_brd_ec_state(struct ec *pec, void *user_arg, struct pool_entry *p) {
     (void)user_arg;
+    (void)p;
 
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "received broadcast ec state\n");
