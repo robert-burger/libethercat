@@ -1,3 +1,5 @@
+[![Build Status](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/release%2F0.4.0/54/badge/icon)](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/release%2F0.4.0/54/)
+
 # libethercat
 EtherCAT master library  
 
