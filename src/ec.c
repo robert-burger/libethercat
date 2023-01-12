@@ -202,6 +202,8 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
     pd->pd_lrw_len = 0;
     pd->wkc_expected = 0;
 
+    osal_mutex_lock(&pd->cdg.lock);
+
     for (i = 0; i < pec->slave_cnt; ++i) {
         ec_slave_t *slv = &pec->slaves[i];
         int start_sm = slv->eeprom.mbx_supported ? 2 : 0;
@@ -365,6 +367,20 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
         log_base = max(log_base_in, log_base_out);
         pd->wkc_expected += wkc_expected;
     }
+
+    /* return datagram buffer and index buffer to ensure a new one 
+     * is initialized when 'ec_send_process_data_group' is called */
+    if (pd->cdg.p_entry != NULL) {
+        pool_put(&pec->pool, pd->cdg.p_entry);
+        pd->cdg.p_entry = NULL;
+    }
+
+    if (pd->cdg.p_idx != NULL) {
+        ec_index_put(&pec->idx_q, pd->cdg.p_idx);
+        pd->cdg.p_idx = NULL;
+    }
+    
+    osal_mutex_unlock(&pd->cdg.lock);
 }
 
 static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
@@ -377,6 +393,8 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
     pd->pdout_len = 0;
     pd->pdin_len = 0;
     pd->wkc_expected = 0u;
+
+    osal_mutex_lock(&pd->cdg.lock);
 
     for (i = 0; i < pec->slave_cnt; ++i) {
         ec_slave_t *slv = &pec->slaves[i];
@@ -519,6 +537,20 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
 
         pd->wkc_expected += wkc_expected;
     }
+
+    /* return datagram buffer and index buffer to ensure a new one 
+     * is initialized when 'ec_send_process_data_group' is called */
+    if (pd->cdg.p_entry != NULL) {
+        pool_put(&pec->pool, pd->cdg.p_entry);
+        pd->cdg.p_entry = NULL;
+    }
+
+    if (pd->cdg.p_idx != NULL) {
+        ec_index_put(&pec->idx_q, pd->cdg.p_idx);
+        pd->cdg.p_idx = NULL;
+    }
+    
+    osal_mutex_unlock(&pd->cdg.lock);
 }
 
 static void *prepare_state_transition_wrapper(void *arg) {
@@ -1307,48 +1339,50 @@ static int ec_receive_process_data_group(ec_t *pec, int group) {
     ec_pd_group_t *pd = &pec->pd_groups[group];
     ec_datagram_t *p_dg;
 
-    p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
+    if (pd->cdg.p_entry != NULL) {
+        p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
 
-    static int wkc_mismatch_cnt = 0;
-    osal_uint16_t wkc = 0;
+        static int wkc_mismatch_cnt = 0;
+        osal_uint16_t wkc = 0;
 
-    // reset consecutive missed counter
-    pd->recv_missed = 0;
+        // reset consecutive missed counter
+        pd->recv_missed = 0;
 
-    wkc = ec_datagram_wkc(p_dg);
-    if (pd->pd != NULL) {
-        if (pd->use_lrw != 0) {
-            (void)memcpy(&pd->pd[pd->pdout_len], ec_datagram_payload(p_dg), pd->pdin_len);
+        wkc = ec_datagram_wkc(p_dg);
+        if (pd->pd != NULL) {
+            if (pd->use_lrw != 0) {
+                (void)memcpy(&pd->pd[pd->pdout_len], ec_datagram_payload(p_dg), pd->pdin_len);
+            } else {
+                (void)memcpy(&pd->pd[pd->pdout_len], &ec_datagram_payload(p_dg)[pd->pdout_len], pd->pdin_len);
+            }
+        }
+
+        if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+                    (pec->master_state == EC_STATE_OP)  ) && 
+                (wkc != pd->wkc_expected)) {
+            if ((wkc_mismatch_cnt++%1000) == 0) {
+                ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+                        "group %2d: working counter mismatch got %u, "
+                        "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
+                        group, wkc, pd->wkc_expected, 
+                        pec->slave_cnt, wkc_mismatch_cnt);
+            }
+
+            ec_async_check_group(&pec->async_loop, group);
+            ret = EC_ERROR_WKC_MISMATCH;
         } else {
-            (void)memcpy(&pd->pd[pd->pdout_len], &ec_datagram_payload(p_dg)[pd->pdout_len], pd->pdin_len);
-        }
-    }
-
-    if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
-                (pec->master_state == EC_STATE_OP)  ) && 
-            (wkc != pd->wkc_expected)) {
-        if ((wkc_mismatch_cnt++%1000) == 0) {
-            ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
-                    "group %2d: working counter mismatch got %u, "
-                    "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
-                    group, wkc, pd->wkc_expected, 
-                    pec->slave_cnt, wkc_mismatch_cnt);
+            wkc_mismatch_cnt = 0;
         }
 
-        ec_async_check_group(&pec->async_loop, group);
-        ret = EC_ERROR_WKC_MISMATCH;
-    } else {
-        wkc_mismatch_cnt = 0;
-    }
+        for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+            ec_slave_ptr(slv, pec, slave);
+            if (slv->assigned_pd_group != group) { continue; }
 
-    for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
-        ec_slave_ptr(slv, pec, slave);
-        if (slv->assigned_pd_group != group) { continue; }
-
-        if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
-            if ((*slv->mbx.sm_state & 0x08u) != 0u) {
-                //                        ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
-                ec_mbx_sched_read(pec, slave);
+            if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
+                if ((*slv->mbx.sm_state & 0x08u) != 0u) {
+                    //                        ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
+                    ec_mbx_sched_read(pec, slave);
+                }
             }
         }
     }
@@ -1405,6 +1439,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
     if ((ret == EC_OK) && (pd->cdg.p_entry == NULL)) {
         if (pool_get(&pec->pool, &pd->cdg.p_entry, NULL) != EC_OK) {
             ec_index_put(&pec->idx_q, pd->cdg.p_idx);
+            pd->cdg.p_idx = NULL;
             ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
         } else {
