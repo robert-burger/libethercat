@@ -107,6 +107,8 @@ typedef struct ec_pd_group {
     
     int divisor;                    //!< Timer Divisor
     int divisor_cnt;                //!< Actual timer cycle count
+
+    osal_bool_t reinit_datagram;    //!< Force initialization of datagram header.
 } ec_pd_group_t;
 
 //! ethercat master structure
