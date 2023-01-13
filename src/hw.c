@@ -235,6 +235,7 @@ int hw_tx(hw_t *phw) {
 
                 // cppcheck-suppress misra-c2012-11.3
                 p_entry_dg = (ec_datagram_t *)p_entry->data;
+                p_entry_dg->next = 0;
                 (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
                 pframe->len += ec_datagram_length(p_entry_dg);
                 pdg_prev = pdg;
