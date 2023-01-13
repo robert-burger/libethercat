@@ -51,3 +51,7 @@ libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(
 libethercat_la_LDFLAGS	= -Wall -Werror -no-undefined @LIBOSAL_LIBS@
 libethercat_la_LIBS     = @LIBOSAL_LIBS@
 
+install-exec-hook: 
+	find $(DESTDIR)$(libdir) -type f -name \*.la -delete
+
+
