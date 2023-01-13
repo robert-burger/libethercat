@@ -141,6 +141,7 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
         pec->pd_groups[i].recv_missed = 0;
         pec->pd_groups[i].divisor   = 1;
         pec->pd_groups[i].divisor_cnt = 0;
+        pec->pd_groups[i].reinit_datagram = OSAL_TRUE;
     }
 
     return 0;
@@ -368,17 +369,9 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
         pd->wkc_expected += wkc_expected;
     }
 
-    /* return datagram buffer and index buffer to ensure a new one 
+    /* force reinit of group datagram to ensure that it 
      * is initialized when 'ec_send_process_data_group' is called */
-    if (pd->cdg.p_entry != NULL) {
-        pool_put(&pec->pool, pd->cdg.p_entry);
-        pd->cdg.p_entry = NULL;
-    }
-
-    if (pd->cdg.p_idx != NULL) {
-        ec_index_put(&pec->idx_q, pd->cdg.p_idx);
-        pd->cdg.p_idx = NULL;
-    }
+    pd->reinit_datagram = OSAL_TRUE;
     
     osal_mutex_unlock(&pd->cdg.lock);
 }
@@ -538,17 +531,9 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
         pd->wkc_expected += wkc_expected;
     }
 
-    /* return datagram buffer and index buffer to ensure a new one 
+    /* force reinit of group datagram to ensure that it 
      * is initialized when 'ec_send_process_data_group' is called */
-    if (pd->cdg.p_entry != NULL) {
-        pool_put(&pec->pool, pd->cdg.p_entry);
-        pd->cdg.p_entry = NULL;
-    }
-
-    if (pd->cdg.p_idx != NULL) {
-        ec_index_put(&pec->idx_q, pd->cdg.p_idx);
-        pd->cdg.p_idx = NULL;
-    }
+    pd->reinit_datagram = OSAL_TRUE;
     
     osal_mutex_unlock(&pd->cdg.lock);
 }
@@ -1380,7 +1365,9 @@ static int ec_receive_process_data_group(ec_t *pec, int group) {
 
             if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
                 if ((*slv->mbx.sm_state & 0x08u) != 0u) {
-                    //                        ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
+#ifdef LIBETHERCAT_DEBUG
+                    ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
+#endif
                     ec_mbx_sched_read(pec, slave);
                 }
             }
@@ -1443,25 +1430,31 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
             ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
         } else {
-            osal_uint32_t pd_len;
-            if (pd->use_lrw != 0) {
-                pd_len = max(pd->pdout_len, pd->pdin_len);
-            } else {
-                pd_len = pd->log_len;
-            }
-
-            p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
-
-            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd_len + 2u);
-            p_dg->cmd = EC_CMD_LRW;
-            p_dg->idx = pd->cdg.p_idx->idx;
-            p_dg->adr = pd->log;
-            p_dg->len = pd_len;
-            p_dg->irq = 0;
-
-            pd->cdg.p_entry->user_cb = cb_process_data_group;
-            pd->cdg.p_entry->user_arg = (void *)&pd->group;
+            pd->reinit_datagram = OSAL_TRUE;
         }
+    }
+    
+    if ((ret == EC_OK) && (pd->reinit_datagram == OSAL_TRUE)) {
+        osal_uint32_t pd_len;
+        if (pd->use_lrw != 0) {
+            pd_len = max(pd->pdout_len, pd->pdin_len);
+        } else {
+            pd_len = pd->log_len;
+        }
+
+        p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
+
+        (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd_len + 2u);
+        p_dg->cmd = EC_CMD_LRW;
+        p_dg->idx = pd->cdg.p_idx->idx;
+        p_dg->adr = pd->log;
+        p_dg->len = pd_len;
+        p_dg->irq = 0;
+
+        pd->cdg.p_entry->user_cb = cb_process_data_group;
+        pd->cdg.p_entry->user_arg = (void *)&pd->group;
+            
+        pd->reinit_datagram = OSAL_FALSE;
     }
 
     if (ret == EC_OK) {
