@@ -866,12 +866,8 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                 ec_log(1, __func__, "configuring distributed clocks failed with %d\n", ret);
             }
 
-            // sending first time dc
-//            if (ec_send_distributed_clocks_sync(pec) == EC_OK) {
-//                //(void)ec_receive_distributed_clocks_sync(pec);
-//            } else {
-//                // don't care, someelse already sent first dc frame
-//            }
+            /* cyclic operation now, do not send any frames out of order */
+            pec->tx_sync            = 0;
 
             ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
 
