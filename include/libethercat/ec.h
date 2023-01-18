@@ -229,6 +229,17 @@ int ec_close(ec_t *pec);
  */
 void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]);
 
+//! \brief Configures distributed clocks settings on EtherCAT master.
+/*!
+ * \param[in] pec           Pointer to EtherCAT master structure.
+ * \param[in] timer         Fixed expected cyclic timer value.
+ * \param[in] mode          Distributed clock operating mode.
+ * \param[in] user_cb       Callback when DC datagram returned, maybe NULL.
+ * \param[in] user_cb_arg   Argument passed to 'user_cb', maybe NULL.
+ */
+void ec_configure_dc(ec_t *pec, osal_uint64_t timer, ec_dc_mode_t mode, 
+    void (*user_cb)(void *arg, int num), void *user_cb_arg);
+
 //! \brief Create process data groups.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 

@@ -63,6 +63,12 @@ typedef struct ec_dc_info_slave {
     osal_uint32_t cycle_time_1;     //!< \brief cycle time of sync 1 [ns]
     osal_uint32_t cycle_shift;      //!< \brief cycle shift time [ns]
 } ec_dc_info_slave_t;
+    
+typedef enum ec_dc_mode {
+    dc_mode_master_clock = 0,
+    dc_mode_ref_clock,
+    dc_mode_master_as_ref_clock
+} ec_dc_mode_t;
 
 typedef struct ec_dc_info {
     osal_uint16_t master_address;
@@ -77,11 +83,7 @@ typedef struct ec_dc_info {
     osal_int64_t act_diff;          //!< \brief Actual difference of DC and RTC clock.
     osal_int64_t timer_override;    //!< \brief Expected timer increment of one EtherCAT in [ns].
 
-    enum {
-        dc_mode_master_clock = 0,
-        dc_mode_ref_clock,
-        dc_mode_master_as_ref_clock
-    } mode;
+    ec_dc_mode_t mode;
 
     ec_cyclic_datagram_t cdg;       //!< \brief DC cyclic datagram.
 } ec_dc_info_t;

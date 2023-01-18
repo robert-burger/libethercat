@@ -1958,6 +1958,25 @@ void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
     }
 }
 
+//! \brief Configures distributed clocks settings on EtherCAT master.
+/*!
+ * \param[in] pec           Pointer to EtherCAT master structure.
+ * \param[in] timer         Fixed expected cyclic timer value.
+ * \param[in] mode          Distributed clock operating mode.
+ * \param[in] user_cb       Callback when DC datagram returned, maybe NULL.
+ * \param[in] user_arg      Argument passed to 'user_cb', maybe NULL.
+ */
+void ec_configure_dc(ec_t *pec, osal_uint64_t timer, ec_dc_mode_t mode, 
+    void (*user_cb)(void *arg, int num), void *user_cb_arg) 
+{
+    assert(pec != NULL);
+
+    pec->dc.timer_override = timer;
+    pec->dc.mode = mode;
+    pec->dc.cdg.user_cb = user_cb;
+    pec->dc.cdg.user_cb_arg = user_cb_arg;
+}
+
 //! \brief Return current slave count.
 /*!
  * \param[in] pec           Pointer to ethercat master structure.
