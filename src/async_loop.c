@@ -230,29 +230,25 @@ void ec_async_check_all(ec_async_loop_t *paml) {
 
 // execute asynchronous check group
 void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
-    osal_timer_t act;
     assert(paml != NULL);
 
-    if (osal_timer_gettime(&act) == 0) {
-        if (osal_timer_cmp(&act, &paml->next_check_group, <)) {
-            // no need to check now
-//            ec_log(5, __func__, "not checking now, timeout not reached\n");
-        } else {
-            osal_timer_t interval = { 1, 0 };
-            osal_timer_add(&act, &interval, &paml->next_check_group);
+    if (osal_timer_expired(&paml->next_check_group) == OSAL_OK) {
+        // no need to check now
+        //            ec_log(5, __func__, "not checking now, timeout not reached\n");
+    } else {
+        paml->next_check_group.sec++;
 
-            osal_timer_t timeout;
-            osal_timer_init(&timeout, 1000);
-            ec_message_entry_t *me = NULL;
-            int ret = ec_async_loop_get(&paml->avail, &me, &timeout);
-            if (ret == -1) {
-                // got no message buffer
-            } else {
-                me->msg.id = EC_MSG_CHECK_GROUP;
-                me->msg.payload = gid;
-                if (ec_async_loop_put(&paml->exec, me) == 0) {
-                    ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);
-                }
+        osal_timer_t timeout;
+        osal_timer_init(&timeout, 1000);
+        ec_message_entry_t *me = NULL;
+        int ret = ec_async_loop_get(&paml->avail, &me, &timeout);
+        if (ret == -1) {
+            // got no message buffer
+        } else {
+            me->msg.id = EC_MSG_CHECK_GROUP;
+            me->msg.payload = gid;
+            if (ec_async_loop_put(&paml->exec, me) == 0) {
+                ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);
             }
         }
     }
