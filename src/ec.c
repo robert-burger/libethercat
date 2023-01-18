@@ -141,7 +141,6 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
         pec->pd_groups[i].recv_missed = 0;
         pec->pd_groups[i].divisor   = 1;
         pec->pd_groups[i].divisor_cnt = 0;
-        pec->pd_groups[i].reinit_datagram = OSAL_TRUE;
     }
 
     return 0;
@@ -390,10 +389,6 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
         log_base = max(log_base_in, log_base_out);
         pd->wkc_expected += wkc_expected;
     }
-
-    /* force reinit of group datagram to ensure that it 
-     * is initialized when 'ec_send_process_data_group' is called */
-    pd->reinit_datagram = OSAL_TRUE;
     
     osal_mutex_unlock(&pd->cdg.lock);
 }
@@ -552,10 +547,6 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
 
         pd->wkc_expected += wkc_expected;
     }
-
-    /* force reinit of group datagram to ensure that it 
-     * is initialized when 'ec_send_process_data_group' is called */
-    pd->reinit_datagram = OSAL_TRUE;
     
     osal_mutex_unlock(&pd->cdg.lock);
 }
@@ -1447,12 +1438,10 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
             pd->cdg.p_idx = NULL;
             ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
-        } else {
-            pd->reinit_datagram = OSAL_TRUE;
         }
     }
-    
-    if ((ret == EC_OK) && (pd->reinit_datagram == OSAL_TRUE)) {
+
+    if (ret == EC_OK) {
         osal_uint32_t pd_len;
         if (pd->use_lrw != 0) {
             pd_len = max(pd->pdout_len, pd->pdin_len);
@@ -1460,33 +1449,29 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
             pd_len = pd->log_len;
         }
 
-        p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
+        if (pd_len > 0u) {
+            p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
 
-        (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd_len + 2u);
-        p_dg->cmd = EC_CMD_LRW;
-        p_dg->idx = pd->cdg.p_idx->idx;
-        p_dg->adr = pd->log;
-        p_dg->len = pd_len;
-        p_dg->irq = 0;
+            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd_len + 2u);
+            p_dg->cmd = EC_CMD_LRW;
+            p_dg->idx = pd->cdg.p_idx->idx;
+            p_dg->adr = pd->log;
+            p_dg->len = pd_len;
+            p_dg->irq = 0;
 
-        pd->cdg.p_entry->user_cb = cb_process_data_group;
-        pd->cdg.p_entry->user_arg = (void *)&pd->group;
-            
-        pd->reinit_datagram = OSAL_FALSE;
-    }
+            pd->cdg.p_entry->user_cb = cb_process_data_group;
+            pd->cdg.p_entry->user_arg = (void *)&pd->group;
 
-    if (ret == EC_OK) {
-        p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
-        (void)memset(ec_datagram_payload(p_dg), 0, p_dg->len + 2u);
-        if (pd->pd != NULL) {
-            (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
+            if (pd->pd != NULL) {
+                (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
+            }
+
+            // queue frame and trigger tx
+            pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
+
+            // set timeout
+            osal_timer_init(&pd->cdg.timeout, pd->cdg.recv_timeout_ns);
         }
-
-        // queue frame and trigger tx
-        pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
-
-        // set timeout
-        osal_timer_init(&pd->cdg.timeout, pd->cdg.recv_timeout_ns);
     }
 
     osal_mutex_unlock(&pd->cdg.lock);
@@ -1786,55 +1771,57 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
                 ec_index_put(&pec->idx_q, pec->dc.cdg.p_idx);
                 ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
                 ret = EC_ERROR_OUT_OF_DATAGRAMS;
-            } else {
-                p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
-                (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 8u + 2u);
-
-                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                    p_dg->cmd = EC_CMD_BWR;
-                    p_dg->idx = pec->dc.cdg.p_idx->idx;
-                    p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u);
-                    p_dg->len = 8;
-                    p_dg->irq = 0;
-                } else {
-                    p_dg->cmd = EC_CMD_FRMW;
-                    p_dg->idx = pec->dc.cdg.p_idx->idx;
-                    p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u) | pec->dc.master_address;
-                    p_dg->len = 8;
-                    p_dg->irq = 0;
-                }
-
-                pec->dc.cdg.p_entry->user_cb = cb_distributed_clocks;
-                pec->dc.cdg.p_entry->user_arg = pec;
             }
         }
 
-        osal_uint64_t act_rtc_time = osal_timer_gettime_nsec();
+        if (ret == EC_OK) {
+            p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
+            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 8u + 2u);
 
-        if (pec->dc.mode == dc_mode_ref_clock) {
-            if (pec->dc.timer_override > 0) {
-                if (pec->dc.rtc_time == 0u) {
-                    //int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
-                    //pec->dc.rtc_time = (osal_uint64_t)tmp;
-                } else {
-                    pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
-                }
-            }   
-        } else {
-            pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                p_dg->cmd = EC_CMD_BWR;
+                p_dg->idx = pec->dc.cdg.p_idx->idx;
+                p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u);
+                p_dg->len = 8;
+                p_dg->irq = 0;
+            } else {
+                p_dg->cmd = EC_CMD_FRMW;
+                p_dg->idx = pec->dc.cdg.p_idx->idx;
+                p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u) | pec->dc.master_address;
+                p_dg->len = 8;
+                p_dg->irq = 0;
+            }
+
+            pec->dc.cdg.p_entry->user_cb = cb_distributed_clocks;
+            pec->dc.cdg.p_entry->user_arg = pec;
+
+            osal_uint64_t act_rtc_time = osal_timer_gettime_nsec();
+
+            if (pec->dc.mode == dc_mode_ref_clock) {
+                if (pec->dc.timer_override > 0) {
+                    if (pec->dc.rtc_time == 0u) {
+                        //int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+                        //pec->dc.rtc_time = (osal_uint64_t)tmp;
+                    } else {
+                        pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
+                    }
+                }   
+            } else {
+                pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+            }
+
+            p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
+            (void)memset(ec_datagram_payload(p_dg), 0, 8u + 2u);
+
+            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
+            }
+
+            // queue frame and trigger tx
+            pool_put(&pec->hw.tx_high, pec->dc.cdg.p_entry);
+
+            osal_timer_init(&pec->dc.cdg.timeout, pec->dc.cdg.recv_timeout_ns);
         }
-
-        p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
-        (void)memset(ec_datagram_payload(p_dg), 0, 8u + 2u);
-
-        if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-            (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
-        }
-
-        // queue frame and trigger tx
-        pool_put(&pec->hw.tx_high, pec->dc.cdg.p_entry);
-
-        osal_timer_init(&pec->dc.cdg.timeout, pec->dc.cdg.recv_timeout_ns);
     }
     
     osal_mutex_unlock(&pec->dc.cdg.lock);
@@ -1938,22 +1925,18 @@ int ec_send_brd_ec_state(ec_t *pec) {
         } else {
             pec->cdg_state.p_entry->user_cb = cb_brd_ec_state;
             pec->cdg_state.p_entry->user_arg = NULL;
-        
-            p_dg = ec_datagram_cast(pec->cdg_state.p_entry->data);
-
-            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 4u + 2u);
-            p_dg->cmd = EC_CMD_BRD;
-            p_dg->idx = pec->cdg_state.p_idx->idx;
-            p_dg->adr = (osal_uint32_t)EC_REG_ALSTAT << 16u;
-            p_dg->len = 2;
-            p_dg->irq = 0;
         }
     } 
 
     if (ret == EC_OK) {
-        // skip zeroing out datagram header
         p_dg = ec_datagram_cast(pec->cdg_state.p_entry->data);
-        (void)memset(ec_datagram_payload(p_dg), 0, 4u + 2u);
+
+        (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 4u + 2u);
+        p_dg->cmd = EC_CMD_BRD;
+        p_dg->idx = pec->cdg_state.p_idx->idx;
+        p_dg->adr = (osal_uint32_t)EC_REG_ALSTAT << 16u;
+        p_dg->len = 2;
+        p_dg->irq = 0;
 
         // queue frame and trigger tx
         pool_put(&pec->hw.tx_high, pec->cdg_state.p_entry);
