@@ -147,6 +147,28 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
     return 0;
 }
 
+//! \brief Configure process data group settings.
+/*!
+ * \param[in] pec           Pointer to EtherCAT master structure.
+ * \param[in] group         Number of group to configure.
+ * \param[in] clock_divisor Send group datagram every 'clock_divisor' ticks.
+ * \param[in] user_cb       Callback when group datagram returned, maybe NULL.
+ * \param[in] user_cb_arg   Argument passed to 'user_cb', maybe NULL.
+ */
+void ec_configure_pd_group(ec_t *pec, osal_uint16_t group, int clock_divisor,
+    void (*user_cb)(void *arg, int num), void *user_cb_arg) 
+{
+    assert(pec != NULL);
+    assert(group < pec->pd_group_cnt);
+
+    if (clock_divisor > 0) {
+        pec->pd_groups[group].divisor = clock_divisor;
+    }
+
+    pec->pd_groups[group].cdg.user_cb = user_cb;
+    pec->pd_groups[group].cdg.user_cb_arg = user_cb_arg;
+}
+
 //! destroy process data groups
 /*!
  * \param pec ethercat master pointer
