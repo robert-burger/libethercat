@@ -91,6 +91,8 @@ static int try_grant_cap_net_raw_init(void) {
  */
 int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
+    struct ifreq ifr;
+    int ifindex;
     
     if (try_grant_cap_net_raw_init() == -1) {
         ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
@@ -152,20 +154,49 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         setsockopt(phw->sockfd, SOL_SOCKET, SO_DONTROUTE, &i, sizeof(i));
 
         // attach to out network interface
-        struct ifreq ifr;
         (void)strcpy(ifr.ifr_name, devname);
         ioctl(phw->sockfd, SIOCGIFINDEX, &ifr);
-        int ifindex = ifr.ifr_ifindex;
+        ifindex = ifr.ifr_ifindex;
         (void)strcpy(ifr.ifr_name, devname);
         ifr.ifr_flags = 0;
         ioctl(phw->sockfd, SIOCGIFFLAGS, &ifr);
+
+        osal_bool_t iff_running = (ifr.ifr_flags & IFF_RUNNING) == 0 ? OSAL_FALSE : OSAL_TRUE;
         ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
         /*int ret =*/ ioctl(phw->sockfd, SIOCSIFFLAGS, &ifr);
         //    if (ret != 0) {
         //        ec_log(1, __func__, "error setting interface %s: %s\n", devname, strerror(errno));
         //        goto error_exit;
         //    }
+        
+        osal_timer_t up_timeout;
+        osal_timer_init(&up_timeout, 10000000000);
+        while (iff_running == OSAL_FALSE) {
+            ioctl(phw->sockfd, SIOCGIFFLAGS, &ifr);
+            iff_running = (ifr.ifr_flags & IFF_RUNNING) == 0 ? OSAL_FALSE : OSAL_TRUE;
+            if (iff_running == OSAL_TRUE) {
+                ec_log(10, __func__, "interface %s is RUNNING now, wait additional 2 sec for link to be established!\n", devname);
+                osal_sleep(1000000000);
+            } else {
+                ec_log(10, __func__, "interface %s is not RUNNING, waiting ...\n", devname);
+            }
+            
+            if (osal_timer_expired(&up_timeout) == OSAL_ERR_TIMEOUT) {
+                break;
+            }
 
+            osal_sleep(1000000000);
+        }
+
+        if (iff_running == OSAL_FALSE) {
+            ec_log(1, __func__, "unable to bring interface %s UP!\n", devname);
+            ret = EC_ERROR_UNAVAILABLE;
+            close(phw->sockfd);
+            phw->sockfd = 0;
+        }
+    }
+
+    if (ret == EC_OK) {
         ec_log(10, __func__, "binding raw socket to %s\n", devname);
 
         (void)memset(&ifr, 0, sizeof(ifr));
