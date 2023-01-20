@@ -879,9 +879,6 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                 ec_log(1, __func__, "configuring distributed clocks failed with %d\n", ret);
             }
 
-            /* cyclic operation now, do not send any frames out of order */
-            pec->tx_sync            = 0;
-
             ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
 
             // ====> create logical mapping for cyclic operation
@@ -928,7 +925,6 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             pec->dc.dc_time         = 0;
             pec->dc.rtc_time        = 0;
             pec->dc.act_diff        = 0;
-            pec->tx_sync            = 1;
 
             pec->master_state = EC_STATE_PREOP;
 
@@ -1045,7 +1041,6 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         // slaves'n groups
         pec->slave_cnt          = 0;
         pec->pd_group_cnt       = 0;
-        pec->tx_sync            = 1;
         pec->threaded_startup   = 0;
         pec->consecutive_max_miss   = 10;
         pec->state_transition_pending = 0;
@@ -1222,7 +1217,8 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         pool_put(&pec->hw.tx_low, p_entry);
 
         // send frame immediately if in sync mode
-        if (pec->tx_sync != 0) {
+        if (    (pec->master_state != EC_STATE_SAFEOP) &&
+                (pec->master_state != EC_STATE_OP)  ) {
             if (hw_tx(&pec->hw) != EC_OK) {
                 ec_log(1, __func__, "hw_tx failed!\n");
             }
@@ -1309,7 +1305,8 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         pool_put(&pec->hw.tx_low, p_entry);
 
         // send frame immediately if in sync mode
-        if (pec->tx_sync != 0) {
+        if (    (pec->master_state != EC_STATE_SAFEOP) &&
+                (pec->master_state != EC_STATE_OP)  ) {
             if (hw_tx(&pec->hw) != EC_OK) {
                 ec_log(1, __func__, "hw_tx failed!\n");
             }
