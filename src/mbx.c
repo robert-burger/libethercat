@@ -590,7 +590,11 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
     while (slv->mbx.handler_running != 0) {
         int ret;
         osal_timer_t to;
-        osal_timer_init(&to, 10000000);
+        if ((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) {
+            osal_timer_init(&to, 1000000);
+        } else {
+            osal_timer_init(&to, 100000000);
+        }
 
         // wait for mailbox event
         ret = osal_binary_semaphore_timedwait(&slv->mbx.sync_sem, &to);
