@@ -1659,6 +1659,8 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
     p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
     wkc = ec_datagram_wkc(p_dg);
 
+    pec->dc.packet_duration = osal_timer_gettime_nsec() - pec->dc.sent_time_nsec;
+
     if (wkc != 0u) {
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
 
@@ -1817,6 +1819,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
             // queue frame and trigger tx
             pool_put(&pec->hw.tx_high, pec->dc.cdg.p_entry);
 
+            pec->dc.sent_time_nsec = osal_timer_gettime_nsec();
             osal_timer_init(&pec->dc.cdg.timeout, pec->dc.cdg.recv_timeout_ns);
         }
     }

@@ -82,6 +82,9 @@ typedef struct ec_dc_info {
     osal_int64_t rtc_sto;           //!< \brief System time offset of realtime clock.
     osal_int64_t act_diff;          //!< \brief Actual difference of DC and RTC clock.
     osal_int64_t timer_override;    //!< \brief Expected timer increment of one EtherCAT in [ns].
+    osal_uint64_t packet_duration;  //!< \brief Packet duration on wire.
+
+    osal_uint64_t sent_time_nsec;
 
     ec_dc_mode_t mode;
 
