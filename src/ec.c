@@ -1805,21 +1805,17 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
                         pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
                     }
                 }   
+            } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+                (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
             } else {
                 pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
-            }
-
-            p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
-            (void)memset(ec_datagram_payload(p_dg), 0, 8u + 2u);
-
-            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
             }
 
             // queue frame and trigger tx
             pool_put(&pec->hw.tx_high, pec->dc.cdg.p_entry);
 
-            pec->dc.sent_time_nsec = osal_timer_gettime_nsec();
+            pec->dc.sent_time_nsec = act_rtc_time;
             osal_timer_init(&pec->dc.cdg.timeout, pec->dc.cdg.recv_timeout_ns);
         }
     }

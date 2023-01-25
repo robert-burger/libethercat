@@ -90,7 +90,86 @@ enum {
     EC_COE_SDO_INFO_ERROR_REQUEST,          //!< \brief error request
 };
 
-#define DEFTYPE_PDOMAPPING          0x0021
+//! datatypes
+enum {
+    DEFTYPE_NULL                = 0x0000, 
+    DEFTYPE_BOOLEAN             = 0x0001, 
+    DEFTYPE_INTEGER8            = 0x0002, 
+    DEFTYPE_INTEGER16           = 0x0003, 
+    DEFTYPE_INTEGER32           = 0x0004, 
+    DEFTYPE_UNSIGNED8           = 0x0005, 
+    DEFTYPE_UNSIGNED16          = 0x0006, 
+    DEFTYPE_UNSIGNED32          = 0x0007, 
+    DEFTYPE_REAL32              = 0x0008, 
+    DEFTYPE_VISIBLESTRING       = 0x0009, 
+    DEFTYPE_OCTETSTRING         = 0x000A, 
+    DEFTYPE_UNICODE_STRING      = 0x000B, 
+    DEFTYPE_TIME_OF_DAY         = 0x000C, 
+    DEFTYPE_TIME_DIFFERENCE     = 0x000D, 
+    DEFTYPE_INTEGER24           = 0x0010, 
+    DEFTYPE_REAL64              = 0x0011, 
+    DEFTYPE_INTEGER40           = 0x0012, 
+    DEFTYPE_INTEGER48           = 0x0013, 
+    DEFTYPE_INTEGER56           = 0x0014, 
+    DEFTYPE_INTEGER64           = 0x0015, 
+    DEFTYPE_UNSIGNED24          = 0x0016, 
+    DEFTYPE_UNSIGNED40          = 0x0018, 
+    DEFTYPE_UNSIGNED48          = 0x0019, 
+    DEFTYPE_UNSIGNED56          = 0x001A, 
+    DEFTYPE_UNSIGNED64          = 0x001B, 
+    DEFTYPE_GUID                = 0x001D, 
+    DEFTYPE_BYTE                = 0x001E, 
+    DEFTYPE_WORD                = 0x001F, 
+    DEFTYPE_DWORD               = 0x0020, 
+    DEFTYPE_PDOMAPPING          = 0x0021, 
+    DEFTYPE_IDENTITY            = 0x0023, 
+    DEFTYPE_COMMAND             = 0x0025, 
+    DEFTYPE_PDOCOMPAR           = 0x0027, 
+    DEFTYPE_ENUM                = 0x0028, 
+    DEFTYPE_SMPAR               = 0x0029, 
+    DEFTYPE_RECORD              = 0x002A, 
+    DEFTYPE_BACKUP              = 0x002B, 
+    DEFTYPE_MDP                 = 0x002C, 
+    DEFTYPE_BITARR8             = 0x002D, 
+    DEFTYPE_BITARR16            = 0x002E, 
+    DEFTYPE_BITARR32            = 0x002F, 
+    DEFTYPE_BIT1                = 0x0030, 
+    DEFTYPE_BIT2                = 0x0031, 
+    DEFTYPE_BIT3                = 0x0032, 
+    DEFTYPE_BIT4                = 0x0033, 
+    DEFTYPE_BIT5                = 0x0034, 
+    DEFTYPE_BIT6                = 0x0035, 
+    DEFTYPE_BIT7                = 0x0036, 
+    DEFTYPE_BIT8                = 0x0037, 
+    DEFTYPE_ARRAY_OF_INT        = 0x0260, 
+    DEFTYPE_ARRAY_OF_SINT       = 0x0261, 
+    DEFTYPE_ARRAY_OF_DINT       = 0x0262, 
+    DEFTYPE_ARRAY_OF_UDINT      = 0x0263, 
+    DEFTYPE_ERRORHANDLING       = 0x0281, 
+    DEFTYPE_DIAGHISTORY         = 0x0282, 
+    DEFTYPE_SYNCSTATUS          = 0x0283, 
+    DEFTYPE_SYNCSETTINGS        = 0x0284, 
+    DEFTYPE_FSOEFRAME           = 0x0285, 
+    DEFTYPE_FSOECOMMPAR         = 0x0286,
+};
+
+enum {
+    OBJCODE_VAR                 = 0x07,    //!< Object code VARIABLE
+    OBJCODE_ARR                 = 0x08,    //!< Object code ARRAY
+    OBJCODE_REC                 = 0x09,    //!< Object code RECORD
+};
+
+enum {
+    ACCESS_READWRITE            = 0x003F,  //!< Read/write in all states
+    ACCESS_READ                 = 0x0007,  //!< Read only in all states
+    ACCESS_READ_PREOP           = 0x0001,  //!< Read only in PreOP
+    ACCESS_READ_SAFEOP          = 0x0002,  //!< Read only in SafeOP
+    ACCESS_READ_OP              = 0x0004,  //!< Read only in OP
+    ACCESS_WRITE                = 0x0038,  //!< Write only in all states
+    ACCESS_WRITE_PREOP          = 0x0008,  //!< Write only in PreOP
+    ACCESS_WRITE_SAFEOP         = 0x0010,  //!< Write only in SafeOP
+    ACCESS_WRITE_OP             = 0x0020,  //!< Write only in OP
+};
 
 #define CANOPEN_MAXNAME             40u
 #define CANOPEN_MAXDATA             128u
@@ -172,6 +251,26 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
         osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t *len, 
         osal_uint32_t *abort_code);
 
+//! Read CoE service data object (SDO) of master
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] index         CoE SDO index number.
+ * \param[in] sub_index     CoE SDO sub index number.
+ * \param[in] complete      SDO Complete access (only if \p sub_index == 0)
+ * \param[out] buf          Buffer where to store the answer. User supplied
+ *                          pointer to a buffer. If buffer is too small an
+ *                          error code is returned and the needed length
+ *                          is stored in 'len'.
+ * \param[in,out] len       Length of buffer, outputs read length.
+ * \param[out] abort_code   Returns the abort code if we got abort request
+ *
+ * \return 0 on success, otherwise error code.
+ */
+int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t *len, 
+        osal_uint32_t *abort_code);
+
 //! Write CoE service data object (SDO)
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -208,6 +307,19 @@ int ec_coe_sdo_write(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
 int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
         ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code);
 
+//! Read CoE SDO description of master
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] index         CoE SDO index number.
+ * \param[out] desc         Returns CoE SDO description.
+ * \param[out] error_code   Returns the error code if we got one.
+ *
+ * \return 0 on success, otherwise error code.
+ */
+int ec_coe_master_sdo_desc_read(ec_t *pec, osal_uint16_t index, 
+        ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code);
+
 //! Read CoE SDO entry description
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -227,6 +339,22 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
         osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
         osal_uint32_t *error_code);
 
+//! Read CoE SDO entry description of master
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] index         CoE SDO index number.
+ * \param[in] sub_index     CoE SDO sub index number.
+ * \param[in] value_info    Bitset which description values you want to get
+ * \param[in] desc          Return CoE entry description.
+ * \param[out] error_code   Returns the error code if we got one.
+ *
+ * \return 0 on success, otherwise error code.
+ */
+int ec_coe_master_sdo_entry_desc_read(ec_t *pec, osal_uint16_t index,
+        osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
+        osal_uint32_t *error_code);
+
 //! Read CoE object dictionary list
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -240,6 +368,17 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
  * \return 0 on success, otherwise error code.
  */
 int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t *len);
+
+//! Read CoE object dictionary list of master
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[out] buf          Pointer to a preallocated buffer.
+ * \param[in,out] len       Length of buffer, outputs read length.
+ *
+ * \return 0 on success, otherwise error code.
+ */
+int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len);
 
 //! generate sync manager process data mapping via coe
 /*!
