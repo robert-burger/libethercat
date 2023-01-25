@@ -24,7 +24,7 @@ include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
 				  $(top_srcdir)/include/libethercat/mii.h
 
-libethercat_la_SOURCES	= coe.c slave.c datagram.c pool.c async_loop.c ec.c \
+libethercat_la_SOURCES	= coe.c coe_master.c slave.c datagram.c pool.c async_loop.c ec.c \
 						  hw.c soe.c foe.c mbx.c eeprom.c dc.c idx.c mii.c eoe.c
 
 if BUILD_DEVICE_SOCK_RAW_LEGACY
