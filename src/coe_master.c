@@ -1,4 +1,4 @@
-//! ethercat canopen over ethercat mailbox handling
+//! ethercat canopen over ethercat for master mailbox handling
 /*!
  * author: Robert Burger
  *
@@ -39,14 +39,14 @@
 ec_coe_sdo_desc_t obj_desc_master_0x8nnn = { DEFTYPE_RECORD, OBJCODE_REC, 35, "Configuration Data Slave", 24 }; 
 ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0"           , 10 }, // 0
-    { 0, DEFTYPE_UNSIGNED16,    8, ACCESS_READ, "Fixed Station Address", 21 }, // 1
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Fixed Station Address", 21 }, // 1
     { 0, DEFTYPE_VISIBLESTRING, 8, ACCESS_READ, "Type",                   4 }, // 2
     { 0, DEFTYPE_VISIBLESTRING, 8, ACCESS_READ, "Name",                   4 }, // 3
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Device Type",           11 }, // 4
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Vendor Id",              9 }, // 5
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Product Code",          12 }, // 6
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Revision Number",       15 }, // 7
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Serial Number",         13 }, // 8 
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Vendor Id",              9 }, // 5
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Product Code",          12 }, // 6
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Revision Number",       15 }, // 7
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Serial Number",         13 }, // 8 
     { 0,                  0,    0,           0, "",                       0 }, // 9
     { 0,                  0,    0,           0, "",                       0 }, // 10
     { 0,                  0,    0,           0, "",                       0 }, // 11
@@ -79,14 +79,14 @@ ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
 ec_coe_sdo_desc_t obj_desc_master_0x9nnn = { DEFTYPE_RECORD, OBJCODE_REC, 32, "Information Data Slave", 22 }; 
 ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0"           , 10 }, // 0
-    { 0, DEFTYPE_UNSIGNED16,    8, ACCESS_READ, "Fixed Station Address", 21 }, // 1
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Fixed Station Address", 21 }, // 1
     { 0,                  0,    0,           0, "",                       0 }, // 2
     { 0,                  0,    0,           0, "",                       0 }, // 3
     { 0,                  0,    0,           0, "",                       0 }, // 4
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Vendor Id",              9 }, // 5
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Product Code",          12 }, // 6
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Revision Number",       15 }, // 7
-    { 0, DEFTYPE_UNSIGNED32,    8, ACCESS_READ, "Serial Number",         13 }, // 8 
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Vendor Id",              9 }, // 5
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Product Code",          12 }, // 6
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Revision Number",       15 }, // 7
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Serial Number",         13 }, // 8 
     { 0,                  0,    0,           0, "",                       0 }, // 9
     { 0,                  0,    0,           0, "",                       0 }, // 10
     { 0,                  0,    0,           0, "",                       0 }, // 11
@@ -110,7 +110,7 @@ ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
     { 0,                  0,    0,           0, "",                       0 }, // 29
     { 0,                  0,    0,           0, "",                       0 }, // 30
     { 0,                  0,    0,           0, "",                       0 }, // 31
-    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "DL Status Register",    18 }, // 32
+    { 0, DEFTYPE_WORD,         16, ACCESS_READ, "DL Status Register",    18 }, // 32
 };
 
 ec_coe_sdo_desc_t obj_desc_master_0xAnnn = { DEFTYPE_RECORD, OBJCODE_REC, 2, "Diagnosis Data Slave", 20 }; 
@@ -142,8 +142,15 @@ ec_coe_sdo_entry_desc_t entry_desc_master_0xF002[] = {
     { 0, DEFTYPE_OCTETSTRING, 48, ACCESS_READ,      "Scan Command Response", 21 }
 };
 
-ec_coe_sdo_desc_t obj_desc_master_0xF02n = { DEFTYPE_RECORD, OBJCODE_REC, 255, "Configured Address List Slaves", 30 }; 
-ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_RECORD, OBJCODE_REC, 255, "Detected Address List Slaves", 28 }; 
+ec_coe_sdo_desc_t obj_desc_master_0xF02n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Configured Address List Slaves", 30 }; 
+ec_coe_sdo_entry_desc_t entry_desc_master_0xF02n[] = {
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
+};
+
+ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Detected Address List Slaves", 28 }; 
+ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
+};
 
 // Read CoE service data object (SDO) of master
 int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index, 
@@ -276,6 +283,19 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
                 (*len) = sizeof(element_master_0xF000_04);
             }
         } 
+    } else if (((index & 0xFFF0) == 0xF020) || ((index & 0xFFF0) == 0xF040)) {
+        osal_uint16_t slave_range = index & 0x000Fu;
+        osal_uint16_t slave = (slave_range * 255) + (sub_index - 1);
+
+        if ((*len) >= 2) {
+            if (slave < pec->slave_cnt) {
+                (*(osal_uint16_t *)buf) = pec->slaves[slave].fixed_address;
+            } else {
+                (*(osal_uint16_t *)buf) = 0;
+            }
+            
+            (*len) = sizeof(osal_uint16_t);
+        }
     } else {
         ret = EC_ERROR_MAILBOX_ABORT;
     }
@@ -291,17 +311,51 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
     int ret = EC_OK;
 
     // return just an uint16_t array of indices
-    uint16_t test_indices[] = { 0x8000, 0x9000, 0xA000, 0xF000, 0xF002, 0xF020, 0xF040 };
-    osal_size_t od_len = sizeof(uint16_t) * 7;//sizeof(test_indices);
+    //uint16_t test_indices[] = { 0x8000, 0x9000, 0xA000, 0xF000, 0xF002, 0xF020, 0xF040 };
+    //osal_size_t od_len = sizeof(uint16_t) * 7;//sizeof(test_indices);
 
-    if ((*len) < od_len) {
-        ret = EC_ERROR_MAILBOX_BUFFER_TOO_SMALL;
+    osal_uint8_t *tmp = buf;
+    osal_uint8_t *end = buf + *len;
+
+    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
+        *(osal_uint16_t *)tmp = 0x8000 | i;
+        tmp += sizeof(osal_uint16_t);
+    }
+    
+    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
+        *(osal_uint16_t *)tmp = 0x9000 | i;
+        tmp += sizeof(osal_uint16_t);
     }
 
-    (*len) = od_len;
+    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
+        *(osal_uint16_t *)tmp = 0xA000 | i;
+        tmp += sizeof(osal_uint16_t);
+    }
 
-    if (ret == EC_OK) {
-        memcpy(buf, &test_indices[0], od_len);
+    if (tmp < end) {
+        *(osal_uint16_t *)tmp = 0xF000;
+        tmp += sizeof(osal_uint16_t);
+    }
+
+    if (tmp < end) {
+        *(osal_uint16_t *)tmp = 0xF002;
+        tmp += sizeof(osal_uint16_t);
+    }
+    
+    for (int i = 0; (i < (pec->slave_cnt/255 + 1)) && (tmp < end); ++i) {
+        *(osal_uint16_t *)tmp = 0xF020 | i;
+        tmp += sizeof(osal_uint16_t);
+    }
+
+    for (int i = 0; (i < (pec->slave_cnt/255 + 1)) && (tmp < end); ++i) {
+        *(osal_uint16_t *)tmp = 0xF040 | i;
+        tmp += sizeof(osal_uint16_t);
+    }
+
+    if (tmp >= end) {
+        ret = EC_ERROR_MAILBOX_BUFFER_TOO_SMALL;
+    } else {
+        (*len) = tmp - buf;
     }
 
     return ret;
@@ -386,7 +440,15 @@ int ec_coe_master_sdo_entry_desc_read(ec_t *pec, osal_uint16_t index,
         if (sub_index < 4) {
             memcpy(desc, &entry_desc_master_0xF002[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
+    } else if (((index & 0xFFF0) == 0xF020) || ((index & 0xFFF0) == 0xF040)) {
+        osal_uint16_t slave_range = index & 0x000Fu;
+        osal_uint16_t slave = (slave_range * 255) + (sub_index - 1);
+
+        memcpy(desc, &entry_desc_master_0xF02n[0], sizeof(ec_coe_sdo_entry_desc_t));
+        snprintf((char *)&desc->data[0], CANOPEN_MAXNAME, "Subindex Slave %hu", slave);
+        desc->data_len = strlen((char *)&desc->data[0]);
     }
+
     return ret;
 }
 
