@@ -198,6 +198,25 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
                     (*len) = sizeof(osal_uint16_t);
                 }
             }
+        } else if (sub_index == 35) {
+            if ((*len) >= 1) {
+                ec_reg_dl_status_t dl_stat;
+                osal_uint16_t wkc = 0;
+                ec_fprd(pec, pec->slaves[slave].fixed_address, 0x110, (osal_uint16_t *)&dl_stat, sizeof(osal_uint16_t), &wkc);
+
+                if (wkc != 0) {
+                    (*(osal_uint8_t *)buf) = 
+                        dl_stat.link_status_port_0 << 0 |
+                        dl_stat.loop_status_port_0 << 1 |
+                        dl_stat.link_status_port_1 << 2 |
+                        dl_stat.loop_status_port_1 << 3 |
+                        dl_stat.link_status_port_2 << 4 |
+                        dl_stat.loop_status_port_2 << 5 |
+                        dl_stat.link_status_port_3 << 6 |
+                        dl_stat.loop_status_port_3 << 7;
+                    (*len) = sizeof(osal_uint8_t);
+                }
+            }
         } else {
             ret = EC_ERROR_MAILBOX_ABORT;
         }

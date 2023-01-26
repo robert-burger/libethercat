@@ -30,6 +30,8 @@
 #ifndef LIBETHERCAT_REGS_H
 #define LIBETHERCAT_REGS_H
 
+#include <libosal/types.h>
+
 /** Ethercat registers */
 
 enum {
@@ -114,6 +116,26 @@ enum {
 #define EC_REG_DCSTART0         (0x0990u)
 #define EC_REG_DCCYCLE0         (0x09A0u)
 #define EC_REG_DCCYCLE1         (0x09A4u)
+
+typedef struct ec_reg_dl_status
+{
+    osal_uint16_t pdi_operational          : 1;
+    osal_uint16_t dls_user_watchdog_tatus  : 1;
+    osal_uint16_t extended_link_detection  : 1;
+    osal_uint16_t reserved_1               : 1;
+    osal_uint16_t link_status_port_0       : 1;
+    osal_uint16_t link_status_port_1       : 1;
+    osal_uint16_t link_status_port_2       : 1;
+    osal_uint16_t link_status_port_3       : 1;
+    osal_uint16_t loop_status_port_0       : 1;
+    osal_uint16_t signal_detection_port_0  : 1;
+    osal_uint16_t loop_status_port_1       : 1;
+    osal_uint16_t signal_detection_port_1  : 1;
+    osal_uint16_t loop_status_port_2       : 1;
+    osal_uint16_t signal_detection_port_2  : 1;
+    osal_uint16_t loop_status_port_3       : 1;
+    osal_uint16_t signal_detection_port_3  : 1;
+} ec_reg_dl_status_t;
 
 #endif // LIBETHERCAT_REGS_H
 
