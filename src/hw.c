@@ -218,7 +218,7 @@ int hw_tx(hw_t *phw) {
             if (pframe->len == sizeof(ec_frame_t)) {
                 // nothing to send
             } else {
-                (void)hw_device_send(phw, pframe);
+                ret = hw_device_send(phw, pframe);
                 (void)hw_device_get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
             }
@@ -243,12 +243,15 @@ int hw_tx(hw_t *phw) {
 
                 // store as sent
                 phw->tx_send[p_entry_dg->idx] = p_entry;
+            } else {
+                ret = EC_OK;
+                break;
             }
         }
     }
 
     osal_mutex_unlock(&phw->hw_lock);
 
-    return 0;
+    return ret;
 }
 

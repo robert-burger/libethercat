@@ -1003,18 +1003,6 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
     return pec->master_state;
 }
 
-//static pthread_t ec_tx;
-//static void *ec_tx_thread(void *arg) {
-//    ec_t *pec = (ec_t *)arg;
-//
-//    while (1) {
-//        hw_tx(pec->phw);
-//        ec_sleep(1000000);
-//    }
-//
-//    return 0;
-//}
-
 //! open ethercat master
 /*!
  * \param ppec return value for ethercat master pointer
@@ -1672,40 +1660,16 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
 
         // get clock difference
-        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time); 
+        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time) % pec->dc.timer_override; 
+        if (pec->dc.act_diff > (pec->dc.timer_override/2)) { pec->dc.act_diff -= pec->dc.timer_override; }
+        else if (pec->dc.act_diff < -1.*(pec->dc.timer_override/2)) { pec->dc.act_diff += pec->dc.timer_override; }
 
         if (pec->dc.mode == dc_mode_ref_clock) {
-            // only compensate within one cycle, add rest to system time offset
-            int ticks_off = pec->dc.act_diff / (pec->dc.timer_override);
-            if (ticks_off != 0) {
-                ec_log(10, __func__, "compensating %d cycles, rtc_time %" PRIu64 ", dc_time %" PRIu64 ", act_diff %" PRId64 "\n", 
-                        ticks_off, pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
-                pec->dc.rtc_time -= ticks_off * (pec->dc.timer_override);
-                pec->dc.act_diff  = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time);
-            }
-
-
-            static int64_t delta_act = 0;
-            static int64_t diff_old  = 0;
-
-            delta_act = pec->dc.act_diff - diff_old;
-            diff_old = pec->dc.act_diff;
-
-            // sum it up for integral part
-            pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff; 
-
-            // limit diffsum
-            if (pec->dc.control.diffsum > pec->dc.control.diffsum_limit) { 
-                pec->dc.control.diffsum = pec->dc.control.diffsum_limit; 
-            } else if (pec->dc.control.diffsum < (-1 * pec->dc.control.diffsum_limit)) { 
-                pec->dc.control.diffsum = -1 * pec->dc.control.diffsum_limit; 
-            }
+            // calc proportional part
+            double p_part = pec->dc.control.kp * pec->dc.act_diff;
             
-            pec->dc.timer_correction = pec->dc.control.kp * delta_act + pec->dc.control.kp * pec->dc.act_diff + pec->dc.control.diffsum;
-            
-#if 0
             // sum it up for integral part
-            pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff; 
+            pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff;
 
             // limit diffsum
             if (pec->dc.control.diffsum > pec->dc.control.diffsum_limit) { 
@@ -1714,46 +1678,7 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
                 pec->dc.control.diffsum = -1 * pec->dc.control.diffsum_limit; 
             }
 
-            // calculate new rate in [s]
-            double v_part = (pec->dc.control.kp * pec->dc.act_diff) + pec->dc.control.diffsum;
-            pec->dc.timer_correction = v_part; //(v_part - pec->dc.control.v_part_old);
-            pec->dc.control.v_part_old = v_part;
-
-            static osal_int64_t old_diff = 0;
-            osal_int64_t act_delta = pec->dc.act_diff - old_diff;
-            old_diff = pec->dc.act_diff;
-
-            pec->dc.act_diff = ((pec->dc.act_diff + (pec->dc.timer_override / 2)) % pec->dc.timer_override) - (pec->dc.timer_override / 2);
-
-            static int64_t correction = 0;
-
-#define FILTER_CNT  10
-            static int64_t total_diff = 0;
-            total_diff += pec->dc.act_diff;
-            static int64_t total_delta = 0;
-            total_delta += act_delta;
-            static int filter_idx = 0;
-
-            if (++filter_idx >= FILTER_CNT) {
-                correction += (total_delta + (FILTER_CNT / 2)) / FILTER_CNT;
-                correction += sign(total_diff / FILTER_CNT);
-
-                if (correction < -1000) { correction = -1000; }
-                else if (correction > 1000) { correction = 1000; }
-
-                total_diff = 0;
-                total_delta = 0;
-                filter_idx = 0;
-            }
-
-            pec->dc.timer_correction = correction + sign(pec->dc.act_diff);
-#endif
-            //static int tmp_cnt = 0;
-            //if ((++tmp_cnt % 100) == 0) {
-            //    ec_log(10, __func__, "timer_correction %+7.3f act_diff %+10ld\n", pec->dc.timer_correction, pec->dc.act_diff);
-            //}
-
-            //             ec_log(100, __func__, "rtc %" PRIu64 ", dc %" PRIu64 ", act_diff %" PRId64 "\n", pec->dc.rtc_time, pec->dc.dc_time, pec->dc.act_diff);
+            pec->dc.timer_correction = p_part + pec->dc.control.diffsum;
         } else if (pec->dc.mode == dc_mode_master_clock) {
             // sending offset compensation value to dc master clock
             pool_entry_t *p_entry_dc_sto;
