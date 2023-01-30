@@ -862,7 +862,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
     assert(slave < pec->slave_cnt);
 
     pool_entry_t *p_entry = NULL;
-    int ret = 0;
+    int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
@@ -1024,7 +1024,11 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                     } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
                         ec_sdo_info_error_resp_t *read_buf_error = (void *)(p_entry->data);
 
-                        osal_uint32_t ecode = read_buf_error->sdo_info_data[0];
+                        osal_uint32_t ecode = (
+                            (osal_uint32_t)read_buf_error->sdo_info_data[0]        | 
+                            (osal_uint32_t)read_buf_error->sdo_info_data[1] << 8u  | 
+                            (osal_uint32_t)read_buf_error->sdo_info_data[2] << 16u | 
+                            (osal_uint32_t)read_buf_error->sdo_info_data[3] << 24u );
 
                         ec_log(5, __func__, "slave %2d: got sdo info error request on idx %#X, "
                                 "error_code %X, message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));

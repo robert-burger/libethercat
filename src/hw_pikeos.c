@@ -131,9 +131,9 @@ int hw_device_recv(hw_t *phw) {
     ec_frame_t *pframe = NULL;
 
     // get a full rxbuffer from RX ring (dontwait=0 -> WAITING)
-    vm_io_buf_id_t rxbuf = vm_io_sbuf_rx_get(&phw->sbuf, 1);
+    vm_io_buf_id_t rxbuf = vm_io_sbuf_rx_get(&phw->sbuf, 0);
     if (rxbuf == VM_IO_BUF_ID_INVALID) {
-        p4_sleep(P4_NSEC(1000));
+        p4_sleep(P4_NSEC(1000000));
         ret = EC_ERROR_UNAVAILABLE;
     }
 

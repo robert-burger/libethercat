@@ -107,28 +107,11 @@ typedef struct ec_pd_group {
     
     int divisor;                    //!< Timer Divisor
     int divisor_cnt;                //!< Actual timer cycle count
-
-    osal_bool_t reinit_datagram;    //!< Force initialization of datagram header.
 } ec_pd_group_t;
 
 //! ethercat master structure
 typedef struct ec {
     hw_t hw;                        //!< pointer to hardware interface
-    int tx_sync;                    //!< Synchronous call to send frames.
-                                    /*!<
-                                     * This defines if the actual call to 
-                                     * hardware interface to send a frame (
-                                     * \link hw_tx() \endlink should be done 
-                                     * synchronously by the ec_transceive 
-                                     * function.
-                                     * If not set, the hw_tx() has to be 
-                                     * called by the user (e.g. cyclical timer
-                                     * loop).<br>
-                                     * Usually this is needed in states BOOT,
-                                     * INIT and PREOP. When entering SAFEOP (and
-                                     * OP) state the realtime/deterministic mode
-                                     * is started.
-                                     */
 
     pool_entry_t dg_entries[LEC_MAX_DATAGRAMS];
     pool_t pool;                    //!< datagram pool
@@ -229,6 +212,17 @@ int ec_close(ec_t *pec);
  */
 void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]);
 
+//! \brief Configures distributed clocks settings on EtherCAT master.
+/*!
+ * \param[in] pec           Pointer to EtherCAT master structure.
+ * \param[in] timer         Fixed expected cyclic timer value.
+ * \param[in] mode          Distributed clock operating mode.
+ * \param[in] user_cb       Callback when DC datagram returned, maybe NULL.
+ * \param[in] user_cb_arg   Argument passed to 'user_cb', maybe NULL.
+ */
+void ec_configure_dc(ec_t *pec, osal_uint64_t timer, ec_dc_mode_t mode, 
+    void (*user_cb)(void *arg, int num), void *user_cb_arg);
+
 //! \brief Create process data groups.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -237,6 +231,17 @@ void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]);
  * \return 0 on success
  */
 int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt);
+
+//! \brief Configure process data group settings.
+/*!
+ * \param[in] pec           Pointer to EtherCAT master structure.
+ * \param[in] group         Number of group to configure.
+ * \param[in] clock_divisor Send group datagram every 'clock_divisor' ticks.
+ * \param[in] user_cb       Callback when group datagram returned, maybe NULL.
+ * \param[in] user_cb_arg   Argument passed to 'user_cb', maybe NULL.
+ */
+void ec_configure_pd_group(ec_t *pec, osal_uint16_t group, int clock_divisor,
+    void (*user_cb)(void *arg, int num), void *user_cb_arg);
 
 //! \brief Destroy process data groups.
 /*!
