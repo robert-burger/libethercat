@@ -1039,7 +1039,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         pec->dc.rtc_time        = 0;
         pec->dc.act_diff        = 0;
         pec->dc.control.diffsum = 0;
-        pec->dc.control.diffsum_limit = 1000000;
+        pec->dc.control.diffsum_limit = 10.;
         pec->dc.control.kp      = 1;
         pec->dc.control.ki      = 0.1;
         pec->dc.control.v_part_old = 0.0;
@@ -1667,6 +1667,7 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
             double p_part = pec->dc.control.kp * pec->dc.act_diff;
+	    pec->dc.control.v_part_old = p_part;
             
             // sum it up for integral part
             pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff;
