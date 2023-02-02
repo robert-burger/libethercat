@@ -753,7 +753,7 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
     assert(slave < pec->slave_cnt);
 
     pool_entry_t *p_entry = NULL;
-    int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int ret = EC_OK; 
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
@@ -791,7 +791,7 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
                 while (p_entry != NULL) {
                     ec_sdo_odlist_resp_t *read_buf = (void *)(p_entry->data); 
 
-                    if (val == 0u) {
+                    if ((ret == EC_OK) && (val == 0u)) {
                         // first fragment, allocate buffer if not passed
                         osal_size_t od_len = (read_buf->mbx_hdr.length - 8u) +                             // first fragment
                             (read_buf->sdo_info_hdr.fragments_left * (read_buf->mbx_hdr.length - 6u)); // following fragments
@@ -805,18 +805,20 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
                         (*len) = od_len;
                     }
 
-                    osal_uint8_t *from = (val == 0u) ? &read_buf->sdo_info_data[2] : &read_buf->sdo_info_data[0];
-                    osal_size_t act_len = (val == 0u) ? (read_buf->mbx_hdr.length - 8u) : (read_buf->mbx_hdr.length - 6u);
+                    if (ret == EC_OK) {
+                        osal_uint8_t *from = (val == 0u) ? &read_buf->sdo_info_data[2] : &read_buf->sdo_info_data[0];
+                        osal_ssize_t act_len = (val == 0u) ? (read_buf->mbx_hdr.length - 8u) : (read_buf->mbx_hdr.length - 6u);
 
-                    if ((val + act_len) > (*len)) {
-                        act_len = (*len) - val;
+                        if ((val + act_len) > (*len)) {
+                            act_len = (osal_ssize_t)(*len) - val;
+                        }
+
+                        if (act_len > 0u) {
+                            (void)memcpy(&buf[val], from, act_len);
+                            val += act_len;
+                        }
                     }
-
-                    if ((ret == EC_OK) && (act_len != 0u)) {
-                        (void)memcpy(&buf[val], from, act_len);
-                        val += act_len;
-                    }
-
+                    
                     frag_left = read_buf->sdo_info_hdr.fragments_left;
 
                     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
@@ -824,7 +826,9 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
                 }
             } while (frag_left != 0);
 
-            *len = val;
+            if (ret == EC_OK) {
+                *len = val;
+            }
         }
 
         (void)osal_mutex_unlock(&slv->mbx.coe.lock);
