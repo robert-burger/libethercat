@@ -214,7 +214,7 @@ int hw_tx(hw_t *phw) {
             len = ec_datagram_length(p_entry_dg);
         }
 
-        if (((len == 0u) && (pool_idx == 1)) || ((pframe->len + len) > phw->mtu_size)) {
+        if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len == sizeof(ec_frame_t)) {
                 // nothing to send
             } else {
@@ -222,11 +222,11 @@ int hw_tx(hw_t *phw) {
                 (void)hw_device_get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
             }
+            
+	    pool_idx++;
         }
 
-        if (len == 0u) {
-            pool_idx++;
-        } else {
+        if (len != 0u) {
             ret = pool_get(pools[pool_idx], &p_entry, NULL);
             if (ret == EC_OK) {
                 if (pdg_prev != NULL) {
