@@ -36,6 +36,26 @@
 #include <errno.h>
 #include <assert.h>
 
+ec_coe_sdo_desc_t obj_desc_master_0x1000 = { DEFTYPE_UNSIGNED32, OBJCODE_VAR, 0, "Device Type", 11 }; 
+ec_coe_sdo_entry_desc_t entry_desc_master_0x1000 =
+    { 0, DEFTYPE_UNSIGNED32,    32, ACCESS_READ, "Device Type",       11 };
+ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Device Name", 11 }; 
+ec_coe_sdo_entry_desc_t entry_desc_master_0x1008 =
+    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Device Name",       11 };
+ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Hardware Version", 29 }; 
+ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
+    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Manufacturer Hardware Version",       29 };
+ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Software Version", 29 }; 
+ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
+    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Manufacturer Software Version",       29 };
+ec_coe_sdo_desc_t obj_desc_master_0x1018 = { DEFTYPE_RECORD, OBJCODE_REC, 4, "Identity", 8 }; 
+ec_coe_sdo_entry_desc_t entry_desc_master_0x1018[] = {
+    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0",       10 }, // 0
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Vendor ID",         9 }, // 1
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Product Code",     12 }, // 1
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Revision Number",  15 }, // 1
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Serial Number",    13 } };
+
 ec_coe_sdo_desc_t obj_desc_master_0x8nnn = { DEFTYPE_RECORD, OBJCODE_REC, 35, "Configuration Data Slave", 24 }; 
 ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0"           , 10 }, // 0
@@ -336,6 +356,31 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
     osal_uint8_t *tmp = buf;
     osal_uint8_t *end = buf + *len;
 
+    if (tmp < end) {
+        *(osal_uint16_t *)tmp = 0x1000;
+        tmp += sizeof(osal_uint16_t);
+    }
+    
+    if (tmp < end) {
+        *(osal_uint16_t *)tmp = 0x1008;
+        tmp += sizeof(osal_uint16_t);
+    }
+    
+    if (tmp < end) {
+        *(osal_uint16_t *)tmp = 0x1009;
+        tmp += sizeof(osal_uint16_t);
+    }
+
+    if (tmp < end) {
+        *(osal_uint16_t *)tmp = 0x100A;
+        tmp += sizeof(osal_uint16_t);
+    }
+    
+    if (tmp < end) {
+        *(osal_uint16_t *)tmp = 0x1018;
+        tmp += sizeof(osal_uint16_t);
+    }
+
     for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
         *(osal_uint16_t *)tmp = 0x8000 | i;
         tmp += sizeof(osal_uint16_t);
@@ -388,7 +433,22 @@ int ec_coe_master_sdo_desc_read(ec_t *pec, osal_uint16_t index,
 
     int ret = EC_OK;
 
-    if ((index & 0xF000) == 0x8000) {
+    if (index == 0x1000) {
+        memcpy(desc, &obj_desc_master_0x1000, sizeof(obj_desc_master_0x1000));
+        desc->name_len = strlen(desc->name);
+    } else if (index == 0x1008) {
+        memcpy(desc, &obj_desc_master_0x1008, sizeof(obj_desc_master_0x1008));
+        desc->name_len = strlen(desc->name);
+    } else if (index == 0x1009) {
+        memcpy(desc, &obj_desc_master_0x1009, sizeof(obj_desc_master_0x1009));
+        desc->name_len = strlen(desc->name);
+    } else if (index == 0x100A) {
+        memcpy(desc, &obj_desc_master_0x100A, sizeof(obj_desc_master_0x100A));
+        desc->name_len = strlen(desc->name);
+    } else if (index == 0x1018) {
+        memcpy(desc, &obj_desc_master_0x1018, sizeof(obj_desc_master_0x1018));
+        desc->name_len = strlen(desc->name);
+    } else if ((index & 0xF000) == 0x8000) {
         osal_uint16_t slave = index & 0x0FFF;
         memcpy(desc, &obj_desc_master_0x8nnn, sizeof(obj_desc_master_0x8nnn));
         snprintf(&desc->name[0], CANOPEN_MAXNAME, "Configuration Data Slave %hu", slave);
@@ -439,7 +499,20 @@ int ec_coe_master_sdo_entry_desc_read(ec_t *pec, osal_uint16_t index,
 
     int ret = EC_OK; 
 
-    if ((index & 0xF000) == 0x8000) {
+#define if_index(x) \
+    if (index == (x)) { \
+        memcpy(desc, &entry_desc_master_##x, sizeof(ec_coe_sdo_entry_desc_t)); \
+    }
+
+    if_index(0x1000)
+    else if_index(0x1008)
+    else if_index(0x1009)
+    else if_index(0x100A)
+    else if (index == 0x1018) {
+        if (sub_index <= 4) {
+            memcpy(desc, &entry_desc_master_0x1018[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
+        }
+    } else if ((index & 0xF000) == 0x8000) {
         if (sub_index <= 35) {
             memcpy(desc, &entry_desc_master_0x8nnn[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
