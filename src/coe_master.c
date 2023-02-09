@@ -182,7 +182,65 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
 
     int ret = EC_OK;
 
-    if ((index & 0xF000) == 0x8000) {
+    if (index == 0x1000) {
+        if (sub_index == 0) {
+            if ((*len) >= 4) {
+                (*(osal_uint32_t *)buf) = 0;
+                (*len) = sizeof(osal_uint32_t);
+            }
+        } 
+    } else if (index == 0x1008) {
+        if (sub_index == 0) {
+            if ((*len) >= strlen(LIBETHERCAT_PACKAGE_NAME)) {
+                strncpy((char *)buf, LIBETHERCAT_PACKAGE_NAME, *(len));
+            }          
+                
+            (*len) = strlen(LIBETHERCAT_PACKAGE_NAME);
+        }
+    } else if (index == 0x1009) {
+        if (sub_index == 0) {
+            if ((*len) >= strlen("0.0.0")) {
+                strncpy((char *)buf, "0.0.0", *(len));
+            }          
+                
+            (*len) = strlen("0.0.0");
+        }
+    } else if (index == 0x100A) {
+        if (sub_index == 0) {
+            if ((*len) >= strlen(LIBETHERCAT_PACKAGE_VERSION)) {
+                strncpy((char *)buf, LIBETHERCAT_PACKAGE_VERSION, *(len));
+            }          
+                
+            (*len) = strlen(LIBETHERCAT_PACKAGE_VERSION);
+        }
+    } else if (index == 0x1018) {
+        if (sub_index == 0) {
+            if ((*len) >= 1) {
+                (*buf) = 4;
+                (*len) = sizeof(osal_uint8_t);
+            }
+        } else if (sub_index == 1) {
+            if ((*len) >= 4) {
+                (*(osal_uint32_t *)buf) = 0x1616;
+                (*len) = sizeof(osal_uint32_t);
+            }
+        } else if (sub_index == 2) {
+            if ((*len) >= 4) {
+                (*(osal_uint32_t *)buf) = 0x11BECA7;
+                (*len) = sizeof(osal_uint32_t);
+            }
+        } else if (sub_index == 3) {
+            if ((*len) >= 4) {
+                (*(osal_uint32_t *)buf) = 0x0;
+                (*len) = sizeof(osal_uint32_t);
+            }
+        } else if (sub_index == 4) {
+            if ((*len) >= 4) {
+                (*(osal_uint32_t *)buf) = 0x0;
+                (*len) = sizeof(osal_uint32_t);
+            }
+        }
+    } else if ((index & 0xF000) == 0x8000) {
         osal_uint16_t slave = index & 0x0FFF;
         if (sub_index == 0) {
             if ((*len) >= 1) {
