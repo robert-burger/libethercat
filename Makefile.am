@@ -7,6 +7,7 @@ SUBDIRS=src
 if BUILD_POSIX
 SUBDIRS+=tools/ethercatdiag 
 SUBDIRS+=tools/eepromtool
+SUBDIRS+=tools/example_with_dc
 endif
 
 pkgconfig_DATA = libethercat.pc

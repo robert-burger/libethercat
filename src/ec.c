@@ -1667,8 +1667,8 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec) {
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
             double p_part = pec->dc.control.kp * pec->dc.act_diff;
-	    pec->dc.control.v_part_old = p_part;
-            
+            pec->dc.control.v_part_old = p_part;
+
             // sum it up for integral part
             pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff;
 
