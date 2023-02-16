@@ -385,13 +385,10 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
     return ret;
 }
     
-static void ec_eoe_send_sync(struct ec *pec, void *user_arg, struct pool_entry *p) {
-    (void)p;
+static void ec_eoe_send_sync(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
+    (void)p_dg;
 
-    // cppcheck-suppress misra-c2012-11.5
-    ec_mbx_t *pmbx = (ec_mbx_t *)user_arg;
-    
-    osal_semaphore_post(&pec->slaves[pmbx->slave].mbx.eoe.send_sync);
+    osal_semaphore_post(&pec->slaves[p_entry->user_arg].mbx.eoe.send_sync);
 }
 
 #define ALIGN_32BIT_BLOCKS(a) { (a) = (((a) >> 5) << 5); }
@@ -440,7 +437,7 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
 
             // send sync callback
             p_entry->user_cb = ec_eoe_send_sync;
-            p_entry->user_arg = &slv->mbx;
+            p_entry->user_arg = slv->mbx.slave;
 
             // cppcheck-suppress misra-c2012-11.3
             ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);

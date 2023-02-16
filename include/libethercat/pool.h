@@ -39,16 +39,19 @@
 #include <libosal/semaphore.h>
 
 #include "libethercat/common.h"
+#include "libethercat/idx.h"
 
 #define LEC_MAX_POOL_DATA_SIZE  1600
 
 // forward declaration
 struct ec; 
+struct ec_datagram;
 
 //! \brief Pool queue entry. 
 typedef struct pool_entry {
-    void (*user_cb)(struct ec *pec, void *user_arg, struct pool_entry *p);  //!< \brief User callback.
-    void *user_arg;                                         //!< \brief User argument for user_cb.
+    void (*user_cb)(struct ec *pec, struct pool_entry *p_entry, struct ec_datagram *p_dg);  //!< \brief User callback.
+    int user_arg;                                           //!< \brief User argument for user_cb.
+    idx_entry_t *p_idx;                                                                                        
 
     TAILQ_ENTRY(pool_entry) qh;                             //!< \brief Queue handle of pool objects.
     

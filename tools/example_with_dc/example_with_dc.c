@@ -181,6 +181,7 @@ int main(int argc, char **argv) {
     ec_set_state(&ec, EC_STATE_SAFEOP);
     ec_set_state(&ec, EC_STATE_OP);
 
+    osal_binary_semaphore_wait(&duration_tx_sync);
 
     // wait here
     osal_uint64_t timer_tx_sum = 0;

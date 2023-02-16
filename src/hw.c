@@ -146,10 +146,8 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
                             d->idx, size, LEC_MAX_POOL_DATA_SIZE);
                 }
 
-                (void)memcpy(entry->data, (osal_uint8_t *)d, min(size, LEC_MAX_POOL_DATA_SIZE));
-
                 if ((entry->user_cb) != NULL) {
-                    (*entry->user_cb)(phw->pec, entry->user_arg, entry);
+                    (*entry->user_cb)(phw->pec, entry, d);
                 }
             }
                 

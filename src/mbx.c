@@ -559,10 +559,10 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
             } else {                    
                 // all done
                 if (p_entry->user_cb != NULL) {
-                    (*p_entry->user_cb)(pec, p_entry->user_arg, p_entry);
+                    (*p_entry->user_cb)(pec, p_entry, NULL);
 
                     p_entry->user_cb = NULL;
-                    p_entry->user_arg = NULL;
+                    p_entry->user_arg = 0;
                 }
 
                 ec_mbx_return_free_send_buffer(pec, slave, p_entry);
@@ -640,8 +640,9 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
 
     int ret = pool_get(&pec->mbx_message_pool_send_free, pp_entry, timeout);
     if (ret == EC_OK) {
+        (*pp_entry)->p_idx = NULL;
         (*pp_entry)->user_cb = NULL;
-        (*pp_entry)->user_arg = NULL;
+        (*pp_entry)->user_arg = 0;
         (void)memset((*pp_entry)->data, 0, LEC_MAX_POOL_DATA_SIZE);
     }
 
