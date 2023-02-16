@@ -27,7 +27,10 @@ void no_log(int lvl, void *user, const char *format, ...)
 
 
 int usage(int argc, char **argv) {
-    printf("%s -i|--interface <intf> [-p|--propagation-delay]\n", argv[0]);
+    printf("%s -i|--interface <intf> [-v|--verbose] [-p|--prio] [-a|--affinity]\n", argv[0]);
+    printf("  -v|--verbose      Set libethercat to print verbose output.\n");
+    printf("  -p|--prio         Set base priority for cyclic and rx thread.\n");
+    printf("  -a|--affinity     Set CPU affinity for cyclic and rx thread.\n");
     return 0;
 }
 
@@ -97,6 +100,8 @@ int main(int argc, char **argv) {
     int ret, slave, i, phy = 0;
     char *intf = NULL, *fn = NULL;
     long reg = 0, val = 0;
+    int base_prio = 60;
+    int base_affinity = 0x8;
 
     for (i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "-i") == 0) ||
@@ -106,6 +111,18 @@ int main(int argc, char **argv) {
         } else if ((strcmp(argv[i], "-v") == 0) || 
                 (strcmp(argv[i], "--verbose") == 0)) {
             max_print_level = 100;
+        } else if ((strcmp(argv[i], "-p") == 0) || 
+                (strcmp(argv[i], "--prio") == 0)) {
+            if (++i < argc)
+                base_prio = strtoul(argv[i], NULL, 10);
+        } else if ((strcmp(argv[i], "-a") == 0) || 
+                (strcmp(argv[i], "--affinty") == 0)) {
+            if (++i < argc) {
+                if (argv[i][0] == '0' && (argv[i][1] == 'x' || argv[i][1] == 'X'))
+                    base_affinity = strtoul(argv[i], NULL, 16);
+                else
+                    base_affinity = strtoul(argv[i], NULL, 10);
+            }
         } else {
             // interpret as reg:value
             char *tmp = strstr(argv[i], ":");
@@ -127,7 +144,7 @@ int main(int argc, char **argv) {
     ec_log_func_user = NULL;
     ec_log_func = &no_verbose_log;
             
-    ret = ec_open(&ec, intf, 90, 8, 1);
+    ret = ec_open(&ec, intf, base_prio - 1, base_affinity, 1);
     
     ec_set_state(&ec, EC_STATE_INIT);
     ec_set_state(&ec, EC_STATE_PREOP);
@@ -157,7 +174,7 @@ int main(int argc, char **argv) {
 
     osal_binary_semaphore_init(&duration_tx_sync, NULL);
     cyclic_task_running = OSAL_TRUE;
-    osal_task_attr_t cyclic_task_attr = { "cyclic_task", 0, 96, 8 };
+    osal_task_attr_t cyclic_task_attr = { "cyclic_task", 0, base_prio, base_affinity };
     osal_task_t cyclic_task_hdl;
     osal_task_create(&cyclic_task_hdl, &cyclic_task_attr, cyclic_task, &ec);
 
