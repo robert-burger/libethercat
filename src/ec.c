@@ -262,11 +262,11 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
     }
 
     ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes, lrw windows %3" PRIu64 " bytes\n", 
+            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes, lrw window %3" PRIu64 " bytes\n", 
             group, pd->log, pd->pdout_len, pd->log + pd->pdout_len, 
             pd->pdin_len, pd->pd_lrw_len);
 
-    pd->log_len = pd->pdout_len + pd->pdin_len;
+    pd->log_len = max(pd->pdout_len, pd->pdin_len);
 
     osal_uint8_t *pdout = &pd->pd[0];
     osal_uint8_t *pdin = &pd->pd[pd->pdout_len];
@@ -1309,22 +1309,22 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
     return ret;
 }
 
-//! receive process data for specific group with logical commands
-/*!
- * \param pec ethercat master pointer
- * \param group group number
- * \return 0 on success
- */
-static int ec_receive_process_data_group(ec_t *pec, int group, ec_datagram_t *p_dg) {
+//! datagram callack for receiving process data group answer
+static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
     assert(pec != NULL);
-
-    int ret = EC_OK;
-
-    ec_pd_group_t *pd = &pec->pd_groups[group];
+    assert(p_entry != NULL);
+    assert(p_dg != NULL);
 
     static int wkc_mismatch_cnt = 0;
     osal_uint16_t wkc = 0;
+    ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
 
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "group %2d: received process data\n", p_entry->user_arg);
+#endif
+
+    osal_mutex_lock(&pd->cdg.lock);
+    
     // reset consecutive missed counter
     pd->recv_missed = 0;
 
@@ -1336,6 +1336,12 @@ static int ec_receive_process_data_group(ec_t *pec, int group, ec_datagram_t *p_
             (void)memcpy(&pd->pd[pd->pdout_len], &ec_datagram_payload(p_dg)[pd->pdout_len], pd->pdin_len);
         }
     }
+    
+    osal_mutex_unlock(&pd->cdg.lock);
+
+    if (pd->cdg.user_cb != NULL) {
+        (*pd->cdg.user_cb)(pd->cdg.user_cb_arg, pd->group);
+    }
 
     if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                 (pec->master_state == EC_STATE_OP)  ) && 
@@ -1344,19 +1350,18 @@ static int ec_receive_process_data_group(ec_t *pec, int group, ec_datagram_t *p_
             ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
                     "group %2d: working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
-                    group, wkc, pd->wkc_expected, 
+                    pd->group, wkc, pd->wkc_expected, 
                     pec->slave_cnt, wkc_mismatch_cnt);
         }
 
-        ec_async_check_group(&pec->async_loop, group);
-        ret = EC_ERROR_WKC_MISMATCH;
+        ec_async_check_group(&pec->async_loop, pd->group);
     } else {
         wkc_mismatch_cnt = 0;
     }
 
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
         ec_slave_ptr(slv, pec, slave);
-        if (slv->assigned_pd_group != group) { continue; }
+        if (slv->assigned_pd_group != pd->group) { continue; }
 
         if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
             if ((*slv->mbx.sm_state & 0x08u) != 0u) {
@@ -1366,26 +1371,6 @@ static int ec_receive_process_data_group(ec_t *pec, int group, ec_datagram_t *p_
                 ec_mbx_sched_read(pec, slave);
             }
         }
-    }
-
-    return ret;
-}
-
-
-//! datagram callack for receiving process data group answer
-static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
-    ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
-
-#ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "group %2d: received process data\n", p_entry->user_arg);
-#endif
-
-    osal_mutex_lock(&pd->cdg.lock);
-    (void)ec_receive_process_data_group(pec, p_entry->user_arg, p_dg);
-    osal_mutex_unlock(&pd->cdg.lock);
-
-    if (pd->cdg.user_cb != NULL) {
-        (*pd->cdg.user_cb)(pd->cdg.user_cb_arg, pd->group);
     }
 }
 
@@ -1397,6 +1382,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
  */
 static int ec_send_process_data_group(ec_t *pec, int group) {
     assert(pec != NULL);
+    assert(group < pec->group_cnt);
 
     int ret = EC_OK;
     ec_pd_group_t *pd = &pec->pd_groups[group];
@@ -1425,36 +1411,30 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
     }
 
     if (ret == EC_OK) {
-        osal_uint32_t pd_len;
-        if (pd->use_lrw != 0) {
-            pd_len = max(pd->pdout_len, pd->pdin_len);
-        } else {
-            pd_len = pd->log_len;
-        }
+        if (pd->use_lrw == OSAL_TRUE) {
+            if (pd->log_len > 0u) {
+                p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
 
-        if (pd_len > 0u) {
-            p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
+                (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd->log_len + 2u);
+                p_dg->cmd = EC_CMD_LRW;
+                p_dg->idx = pd->cdg.p_idx->idx;
+                p_dg->adr = pd->log;
+                p_dg->len = pd->log_len;
+                p_dg->irq = 0;
 
-            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd_len + 2u);
-            p_dg->cmd = EC_CMD_LRW;
-            p_dg->idx = pd->cdg.p_idx->idx;
-            p_dg->adr = pd->log;
-            p_dg->len = pd_len;
-            p_dg->irq = 0;
+                pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
+                pd->cdg.p_entry->user_cb = cb_process_data_group;
+                pd->cdg.p_entry->user_arg = pd->group;
 
-            pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
-            pd->cdg.p_entry->user_cb = cb_process_data_group;
-            pd->cdg.p_entry->user_arg = pd->group;
+                if (pd->pd != NULL) {
+                    (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
+                }
 
-            if (pd->pd != NULL) {
-                (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
+                // queue frame and trigger tx
+                pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
             }
-
-            // queue frame and trigger tx
-            pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
-
-            // set timeout
-            osal_timer_init(&pd->cdg.timeout, pd->cdg.recv_timeout_ns);
+        } else { // use_lrw == OSAL_FALSE
+            ec_log(1, __func__, "LRD/LWR not implemented!\n");
         }
     }
 
@@ -1463,41 +1443,13 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
     return ret;
 }
 
-//! Receive answer of reading mailbox state from slaves without lrw mapped state.
-/*!
- * \param[in]   pec     Pointer to EtherCAT master structure.
- * \param[in]   slave   Number of EtherCAT slave.
- * \return EC_OK on success or error code.
- */
-static int ec_receive_mbx_state(ec_t *pec, int slave, ec_datagram_t *p_dg) {
-    assert(pec != NULL);
-
-    int ret = EC_OK;
-
-    ec_slave_ptr(slv, pec, slave);
-
-    osal_uint16_t wkc = 0u;
-    wkc = ec_datagram_wkc(p_dg);
-    if (wkc != 0u) {
-        (void)memcpy(&slv->mbx.mbx_state, ec_datagram_payload(p_dg), sizeof(osal_uint8_t));
-    }
-
-    if ((slv->mbx.mbx_state & 0x08u) != 0u) {
-        ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, slv->mbx.mbx_state);
-        ec_mbx_sched_read(pec, slave);
-    }
-
-    pool_put(&pec->pool, slv->mbx.cdg.p_entry);
-    ec_index_put(&pec->idx_q, slv->mbx.cdg.p_idx);
-
-    slv->mbx.cdg.p_entry = NULL;
-    slv->mbx.cdg.p_idx = NULL;
-
-    return ret;
-}
-
 //! datagram callack for receiving mbx_state answer
 static void cb_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
+    assert(pec != NULL);
+    assert(p_entry != NULL);
+    assert(p_dg != NULL);
+
+    osal_uint16_t wkc = 0u;
     ec_slave_ptr(slv, pec, p_entry->user_arg);
 
 #ifdef LIBETHERCAT_DEBUG
@@ -1505,7 +1457,23 @@ static void cb_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p
 #endif
 
     osal_mutex_lock(&slv->mbx.cdg.lock);
-    (void)ec_receive_mbx_state(pec, p_entry->user_arg, p_dg);
+
+    wkc = ec_datagram_wkc(p_dg);
+    if (wkc != 0u) {
+        (void)memcpy(&slv->mbx.mbx_state, ec_datagram_payload(p_dg), sizeof(osal_uint8_t));
+    }
+
+    if ((slv->mbx.mbx_state & 0x08u) != 0u) {
+        ec_log(100, __func__, "slave %2d: sm_state %X\n", p_entry->user_arg, slv->mbx.mbx_state);
+        ec_mbx_sched_read(pec, p_entry->user_arg);
+    }
+
+    pool_put(&pec->pool, slv->mbx.cdg.p_entry);
+    ec_index_put(&pec->idx_q, slv->mbx.cdg.p_idx);
+
+    slv->mbx.cdg.p_entry = NULL;
+    slv->mbx.cdg.p_idx = NULL;
+    
     osal_mutex_unlock(&slv->mbx.cdg.lock);
 }
 
@@ -1629,18 +1597,18 @@ int ec_send_process_data(ec_t *pec) {
     return ret;
 }
 
-#define sign(x)     (((x) < 0 ? -1 : (x) > 0 ? 1 : 0))
-
-//! receive distributed clocks sync datagram
-/*!
- * \param pec ethercat master pointer
- * \return 0 on success
- */
-static int ec_receive_distributed_clocks_sync(ec_t *pec, ec_datagram_t *p_dg) {
+//! local callack for syncronous read/write
+static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
     assert(pec != NULL);
+    assert(p_dg != NULL);
+    (void)p_entry;
 
-    int ret = EC_OK;
-    osal_uint16_t wkc; 
+    osal_uint16_t wkc = 0; 
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "received distributed clock\n");
+#endif
+
+    osal_mutex_lock(&pec->dc.cdg.lock);
 
     wkc = ec_datagram_wkc(p_dg);
 
@@ -1679,11 +1647,9 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec, ec_datagram_t *p_dg) {
             // dc system time offset frame
             if (ec_index_get(&pec->idx_q, &p_idx_sto) != EC_OK) {
                 ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
-                ret = EC_ERROR_OUT_OF_INDICES;
             } else if (pool_get(&pec->pool, &p_entry_dc_sto, NULL) != EC_OK) {
                 ec_index_put(&pec->idx_q, p_idx_sto);
                 ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
-                ret = EC_ERROR_OUT_OF_DATAGRAMS;
             } else {
                 // correct system time offset, sync ref_clock to master_clock
                 // only correct half diff to avoid overshoot in slave.
@@ -1707,20 +1673,6 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec, ec_datagram_t *p_dg) {
         } else {}
     }
 
-    return ret;
-}
-
-
-//! local callack for syncronous read/write
-static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
-    (void)p_entry;
-
-#ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "received distributed clock\n");
-#endif
-
-    osal_mutex_lock(&pec->dc.cdg.lock);
-    (void)ec_receive_distributed_clocks_sync(pec, p_dg);
     osal_mutex_unlock(&pec->dc.cdg.lock);
 
     if (pec->dc.cdg.user_cb != NULL) {
@@ -1817,21 +1769,21 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     return ret;
 }
 
-//! receive broadcast read to ec_state
-/*!
- * \param pec ethercat master pointer
- * \param timeout for waiting for packet
- * \return 0 on success
- */
-static int ec_receive_brd_ec_state(ec_t *pec, ec_datagram_t *p_dg) {
+//! local callack for syncronous read/write
+static void cb_brd_ec_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
     assert(pec != NULL);
+    assert(p_dg != NULL);
+    (void)p_entry;
 
-    int ret = EC_OK;
     osal_uint16_t al_status = 0u;
-
     static int wkc_mismatch_cnt_ec_state = 0;
-
     osal_uint16_t wkc;
+
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, __func__, "received broadcast ec state\n");
+#endif
+
+    osal_mutex_lock(&pec->cdg_state.lock);
 
     wkc = ec_datagram_wkc(p_dg);
     (void)memcpy((osal_uint8_t *)&al_status, ec_datagram_payload(p_dg), 2u);
@@ -1845,9 +1797,6 @@ static int ec_receive_brd_ec_state(ec_t *pec, ec_datagram_t *p_dg) {
                     "slave_cnt %d, mismatch_cnt %d\n", 
                     wkc, pec->slave_cnt, wkc_mismatch_cnt_ec_state);
         }
-
-        //        ec_async_check_group(pec->async_loop, group);
-        ret = EC_ERROR_WKC_MISMATCH;
     } else {
         wkc_mismatch_cnt_ec_state = 0u;
     }
@@ -1862,19 +1811,6 @@ static int ec_receive_brd_ec_state(ec_t *pec, ec_datagram_t *p_dg) {
         }
     }
 
-    return ret;
-}
-
-//! local callack for syncronous read/write
-static void cb_brd_ec_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
-    (void)p_entry;
-
-#ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "received broadcast ec state\n");
-#endif
-
-    osal_mutex_lock(&pec->cdg_state.lock);
-    (void)ec_receive_brd_ec_state(pec, p_dg);
     osal_mutex_unlock(&pec->cdg_state.lock);
 }
 

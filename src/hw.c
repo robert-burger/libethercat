@@ -140,12 +140,6 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
             if (!entry) {
                 ec_log(1, "RX_THREAD", "received idx %d, but we did not send one?\n", d->idx);
             } else {
-                osal_size_t size = ec_datagram_length(d);
-                if (LEC_MAX_POOL_DATA_SIZE < size) {
-                    ec_log(1, "RX_THREAD", "received idx %d, size %" PRIu64 " is to big for pool entry size %d!\n", 
-                            d->idx, size, LEC_MAX_POOL_DATA_SIZE);
-                }
-
                 if ((entry->user_cb) != NULL) {
                     (*entry->user_cb)(phw->pec, entry, d);
                 }
