@@ -1217,9 +1217,9 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
         ec_log(1, __func__, "locking CoE mailbox failed!\n");
     } else {
         ec_coe_emergency_message_t *msg = &slv->mbx.coe.emergencies[slv->mbx.coe.emergency_next_write];
-        slv->mbx.coe.emergency_next_write = (slv->mbx.coe.emergency_next_write + 1u) % LEC_MAX_COE_EMERGENCIES;
+        slv->mbx.coe.emergency_next_write = (slv->mbx.coe.emergency_next_write + 1u) % (osal_uint32_t)LEC_MAX_COE_EMERGENCIES;
         if (slv->mbx.coe.emergency_next_write == slv->mbx.coe.emergency_next_read) {
-            slv->mbx.coe.emergency_next_read = (slv->mbx.coe.emergency_next_read + 1u) % LEC_MAX_COE_EMERGENCIES;
+            slv->mbx.coe.emergency_next_read = (slv->mbx.coe.emergency_next_read + 1u) % (osal_uint32_t)LEC_MAX_COE_EMERGENCIES;
         }
 
         // skip mbx header and coe header

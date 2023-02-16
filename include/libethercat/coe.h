@@ -317,7 +317,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_master_sdo_desc_read(ec_t *pec, osal_uint16_t index, 
+int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index, 
         ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code);
 
 //! Read CoE SDO entry description
@@ -351,7 +351,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
  *
  * \return 0 on success, otherwise error code.
  */
-int ec_coe_master_sdo_entry_desc_read(ec_t *pec, osal_uint16_t index,
+int ec_coe_master_sdo_entry_desc_read(const ec_t *pec, osal_uint16_t index,
         osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
         osal_uint32_t *error_code);
 

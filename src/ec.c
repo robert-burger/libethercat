@@ -1054,7 +1054,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         // eeprom logging level
         pec->eeprom_log         = eeprom_log;
 
-        (void)memset(&pec->dg_entries[0], 0, sizeof(pool_entry_t) * LEC_MAX_DATAGRAMS);
+        (void)memset(&pec->dg_entries[0], 0, sizeof(pool_entry_t) * (osal_size_t)LEC_MAX_DATAGRAMS);
         ret = pool_open(&pec->pool, 100, &pec->dg_entries[0]);
     }
 
@@ -1070,24 +1070,24 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     }
 
     ec_log(10, __func__, "libethercat version          : %s\n", LIBETHERCAT_VERSION);
-    ec_log(10, __func__, "  MAX_SLAVES                 : %d\n", LEC_MAX_SLAVES);
-    ec_log(10, __func__, "  MAX_GROUPS                 : %d\n", LEC_MAX_GROUPS);
-    ec_log(10, __func__, "  MAX_PDLEN                  : %d\n", LEC_MAX_PDLEN);
-    ec_log(10, __func__, "  MAX_MBX_ENTRIES            : %d\n", LEC_MAX_MBX_ENTRIES);
-    ec_log(10, __func__, "  MAX_INIT_CMD_DATA          : %d\n", LEC_MAX_INIT_CMD_DATA);
-    ec_log(10, __func__, "  MAX_SLAVE_FMMU             : %d\n", LEC_MAX_SLAVE_FMMU);
-    ec_log(10, __func__, "  MAX_SLAVE_SM               : %d\n", LEC_MAX_SLAVE_SM);
-    ec_log(10, __func__, "  MAX_DATAGRAMS              : %d\n", LEC_MAX_DATAGRAMS);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_SM          : %d\n", LEC_MAX_EEPROM_CAT_SM); 
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_FMMU        : %d\n", LEC_MAX_EEPROM_CAT_FMMU);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO         : %d\n", LEC_MAX_EEPROM_CAT_PDO);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO_ENTRIES : %d\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_STRINGS     : %d\n", LEC_MAX_EEPROM_CAT_STRINGS);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_DC          : %d\n", LEC_MAX_EEPROM_CAT_DC);
-    ec_log(10, __func__, "  MAX_STRING_LEN             : %d\n", LEC_MAX_STRING_LEN);
-    ec_log(10, __func__, "  MAX_DATA                   : %d\n", LEC_MAX_DATA);
-    ec_log(10, __func__, "  MAX_DS402_SUBDEVS          : %d\n", LEC_MAX_DS402_SUBDEVS);
-    ec_log(10, __func__, "  MAX_COE_EMERGENCIES        : %d\n", LEC_MAX_COE_EMERGENCIES);
+    ec_log(10, __func__, "  MAX_SLAVES                 : %ld\n", LEC_MAX_SLAVES);
+    ec_log(10, __func__, "  MAX_GROUPS                 : %ld\n", LEC_MAX_GROUPS);
+    ec_log(10, __func__, "  MAX_PDLEN                  : %ld\n", LEC_MAX_PDLEN);
+    ec_log(10, __func__, "  MAX_MBX_ENTRIES            : %ld\n", LEC_MAX_MBX_ENTRIES);
+    ec_log(10, __func__, "  MAX_INIT_CMD_DATA          : %ld\n", LEC_MAX_INIT_CMD_DATA);
+    ec_log(10, __func__, "  MAX_SLAVE_FMMU             : %ld\n", LEC_MAX_SLAVE_FMMU);
+    ec_log(10, __func__, "  MAX_SLAVE_SM               : %ld\n", LEC_MAX_SLAVE_SM);
+    ec_log(10, __func__, "  MAX_DATAGRAMS              : %ld\n", LEC_MAX_DATAGRAMS);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_SM          : %ld\n", LEC_MAX_EEPROM_CAT_SM); 
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_FMMU        : %ld\n", LEC_MAX_EEPROM_CAT_FMMU);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO         : %ld\n", LEC_MAX_EEPROM_CAT_PDO);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO_ENTRIES : %ld\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_STRINGS     : %ld\n", LEC_MAX_EEPROM_CAT_STRINGS);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_DC          : %ld\n", LEC_MAX_EEPROM_CAT_DC);
+    ec_log(10, __func__, "  MAX_STRING_LEN             : %ld\n", LEC_MAX_STRING_LEN);
+    ec_log(10, __func__, "  MAX_DATA                   : %ld\n", LEC_MAX_DATA);
+    ec_log(10, __func__, "  MAX_DS402_SUBDEVS          : %ld\n", LEC_MAX_DS402_SUBDEVS);
+    ec_log(10, __func__, "  MAX_COE_EMERGENCIES        : %ld\n", LEC_MAX_COE_EMERGENCIES);
     ec_log(10, __func__, "  MAX_COE_EMERGENCY_MSG_LEN  : %d\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
 
     if (ret != EC_OK) {
@@ -1246,7 +1246,9 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
 }
 
 //! local callack for syncronous read/write
-static void cb_no_reply(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *dg) {
+static void cb_no_reply(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
+    (void)p_dg;
+
     pool_put(&pec->pool, p_entry);
     ec_index_put(&pec->idx_q, p_entry->p_idx);
 }
@@ -1650,7 +1652,8 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec, ec_datagram_t *p_dg) {
         // get clock difference
         pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time) % pec->dc.timer_override; 
         if (pec->dc.act_diff > (pec->dc.timer_override/2)) { pec->dc.act_diff -= pec->dc.timer_override; }
-        else if (pec->dc.act_diff < -1.*(pec->dc.timer_override/2)) { pec->dc.act_diff += pec->dc.timer_override; }
+        else if (pec->dc.act_diff < (-1. * (pec->dc.timer_override / 2))) { pec->dc.act_diff += pec->dc.timer_override; }
+        else {}
 
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
@@ -1665,7 +1668,7 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec, ec_datagram_t *p_dg) {
                 pec->dc.control.diffsum = pec->dc.control.diffsum_limit; 
             } else if (pec->dc.control.diffsum < (-1 * pec->dc.control.diffsum_limit)) { 
                 pec->dc.control.diffsum = -1 * pec->dc.control.diffsum_limit; 
-            }
+            } else {}
 
             pec->dc.timer_correction = p_part + pec->dc.control.diffsum;
         } else if (pec->dc.mode == dc_mode_master_clock) {
@@ -1685,14 +1688,14 @@ static int ec_receive_distributed_clocks_sync(ec_t *pec, ec_datagram_t *p_dg) {
                 // correct system time offset, sync ref_clock to master_clock
                 // only correct half diff to avoid overshoot in slave.
                 pec->dc.dc_sto += pec->dc.act_diff / 2.;
-                p_dg = ec_datagram_cast(p_entry_dc_sto->data);
-                (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 10u);
-                p_dg->cmd = EC_CMD_FPWR;
-                p_dg->idx = p_idx_sto->idx;
-                p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSOFFSET << 16u) | pec->dc.master_address;
-                p_dg->len = sizeof(pec->dc.dc_sto);
-                p_dg->irq = 0;
-                (void)memcpy(ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
+                ec_datagram_t *p_dg2 = ec_datagram_cast(p_entry_dc_sto->data);
+                (void)memset(p_dg2, 0, sizeof(ec_datagram_t) + 10u);
+                p_dg2->cmd = EC_CMD_FPWR;
+                p_dg2->idx = p_idx_sto->idx;
+                p_dg2->adr = ((osal_uint32_t)EC_REG_DCSYSOFFSET << 16u) | pec->dc.master_address;
+                p_dg2->len = sizeof(pec->dc.dc_sto);
+                p_dg2->irq = 0;
+                (void)memcpy(ec_datagram_payload(p_dg2), (osal_uint8_t *)&pec->dc.dc_sto, sizeof(pec->dc.dc_sto));
                 // we don't care about the answer, cb_no_reply frees datagram 
                 // and index
                 p_entry_dc_sto->p_idx = p_idx_sto;
@@ -1864,6 +1867,8 @@ static int ec_receive_brd_ec_state(ec_t *pec, ec_datagram_t *p_dg) {
 
 //! local callack for syncronous read/write
 static void cb_brd_ec_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
+    (void)p_entry;
+
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, __func__, "received broadcast ec state\n");
 #endif

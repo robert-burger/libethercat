@@ -36,28 +36,28 @@
 #include <errno.h>
 #include <assert.h>
 
-ec_coe_sdo_desc_t obj_desc_master_0x1000 = { DEFTYPE_UNSIGNED32, OBJCODE_VAR, 0, "Device Type", 11 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0x1000 =
+static ec_coe_sdo_desc_t obj_desc_master_0x1000 = { DEFTYPE_UNSIGNED32, OBJCODE_VAR, 0, "Device Type", 11 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x1000 =
     { 0, DEFTYPE_UNSIGNED32,    32, ACCESS_READ, "Device Type",       11 };
-ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Device Name", 11 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0x1008 =
+static ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Device Name", 11 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x1008 =
     { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Device Name",       11 };
-ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Hardware Version", 29 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
+static ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Hardware Version", 29 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
     { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Manufacturer Hardware Version",       29 };
-ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Software Version", 29 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
+static ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Software Version", 29 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
     { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Manufacturer Software Version",       29 };
-ec_coe_sdo_desc_t obj_desc_master_0x1018 = { DEFTYPE_RECORD, OBJCODE_REC, 4, "Identity", 8 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0x1018[] = {
+static ec_coe_sdo_desc_t obj_desc_master_0x1018 = { DEFTYPE_RECORD, OBJCODE_REC, 4, "Identity", 8 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x1018[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0",       10 }, // 0
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Vendor ID",         9 }, // 1
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Product Code",     12 }, // 1
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Revision Number",  15 }, // 1
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Serial Number",    13 } };
 
-ec_coe_sdo_desc_t obj_desc_master_0x8nnn = { DEFTYPE_RECORD, OBJCODE_REC, 35, "Configuration Data Slave", 24 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
+static ec_coe_sdo_desc_t obj_desc_master_0x8nnn = { DEFTYPE_RECORD, OBJCODE_REC, 35, "Configuration Data Slave", 24 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0"           , 10 }, // 0
     { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Fixed Station Address", 21 }, // 1
     { 0, DEFTYPE_VISIBLESTRING, 8, ACCESS_READ, "Type",                   4 }, // 2
@@ -96,8 +96,8 @@ ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
     { 0, DEFTYPE_BYTE,          8, ACCESS_READ, "Link Status",           11 }, // 35
 };
 
-ec_coe_sdo_desc_t obj_desc_master_0x9nnn = { DEFTYPE_RECORD, OBJCODE_REC, 32, "Information Data Slave", 22 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
+static ec_coe_sdo_desc_t obj_desc_master_0x9nnn = { DEFTYPE_RECORD, OBJCODE_REC, 32, "Information Data Slave", 22 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0"           , 10 }, // 0
     { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Fixed Station Address", 21 }, // 1
     { 0,                  0,    0,           0, "",                       0 }, // 2
@@ -133,44 +133,44 @@ ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
     { 0, DEFTYPE_WORD,         16, ACCESS_READ, "DL Status Register",    18 }, // 32
 };
 
-ec_coe_sdo_desc_t obj_desc_master_0xAnnn = { DEFTYPE_RECORD, OBJCODE_REC, 2, "Diagnosis Data Slave", 20 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0xAnnn[] = {
+static ec_coe_sdo_desc_t obj_desc_master_0xAnnn = { DEFTYPE_RECORD, OBJCODE_REC, 2, "Diagnosis Data Slave", 20 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0xAnnn[] = {
     { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Subindex 0",            10 },
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "AL Status",              9 },
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "AL Control",            10 },
 };
 
-ec_coe_sdo_desc_t obj_desc_master_0xF000 = { DEFTYPE_RECORD, OBJCODE_REC, 4, "Modular Device Profile", 22 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0xF000[] = {
+static ec_coe_sdo_desc_t obj_desc_master_0xF000 = { DEFTYPE_RECORD, OBJCODE_REC, 4, "Modular Device Profile", 22 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0xF000[] = {
     { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Subindex 0",            10 },
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Module Index Distance", 21 },
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Maximum Number of Modules", 25 },
     { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      "General Configuration", 21 },
     { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      "General Information",   19 },
 };
-osal_uint8_t  element_master_0xF000_00 = 4;
-osal_uint16_t element_master_0xF000_01 = 0x0001;
-osal_uint16_t element_master_0xF000_02 = 4080;
-osal_uint32_t element_master_0xF000_03 = 0x000000FF;
-osal_uint32_t element_master_0xF000_04 = 0x000000F1;
+static osal_uint8_t  element_master_0xF000_00 = 4;
+static osal_uint16_t element_master_0xF000_01 = 0x0001;
+static osal_uint16_t element_master_0xF000_02 = 4080;
+static osal_uint32_t element_master_0xF000_03 = 0x000000FF;
+static osal_uint32_t element_master_0xF000_04 = 0x000000F1;
 
-ec_coe_sdo_desc_t obj_desc_master_0xF002 = { DEFTYPE_RECORD, OBJCODE_REC, 3, "Detect Modules Command", 22 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0xF002[] = {
+static ec_coe_sdo_desc_t obj_desc_master_0xF002 = { DEFTYPE_RECORD, OBJCODE_REC, 3, "Detect Modules Command", 22 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0xF002[] = {
     { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Subindex 0",            10 },
     { 0, DEFTYPE_OCTETSTRING, 16, ACCESS_READWRITE, "Scan Command Request",  20 },
     { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Scan Command Status",   19 },
     { 0, DEFTYPE_OCTETSTRING, 48, ACCESS_READ,      "Scan Command Response", 21 }
 };
 
-ec_coe_sdo_desc_t obj_desc_master_0xF02n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Configured Address List Slaves", 30 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0xF02n[] = {
+static ec_coe_sdo_desc_t obj_desc_master_0xF02n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Configured Address List Slaves", 30 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0xF02n[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
 };
 
-ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Detected Address List Slaves", 28 }; 
-ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
-};
+static ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Detected Address List Slaves", 28 }; 
+//static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
+//    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
+//};
 
 // Read CoE service data object (SDO) of master
 int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index, 
@@ -192,7 +192,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
     } else if (index == 0x1008) {
         if (sub_index == 0) {
             if ((*len) >= strlen(LIBETHERCAT_PACKAGE_NAME)) {
-                strncpy((char *)buf, LIBETHERCAT_PACKAGE_NAME, *(len));
+                (void)strncpy((char *)buf, LIBETHERCAT_PACKAGE_NAME, *(len));
             }          
                 
             (*len) = strlen(LIBETHERCAT_PACKAGE_NAME);
@@ -200,7 +200,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
     } else if (index == 0x1009) {
         if (sub_index == 0) {
             if ((*len) >= strlen("0.0.0")) {
-                strncpy((char *)buf, "0.0.0", *(len));
+                (void)strncpy((char *)buf, "0.0.0", *(len));
             }          
                 
             (*len) = strlen("0.0.0");
@@ -208,7 +208,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
     } else if (index == 0x100A) {
         if (sub_index == 0) {
             if ((*len) >= strlen(LIBETHERCAT_PACKAGE_VERSION)) {
-                strncpy((char *)buf, LIBETHERCAT_PACKAGE_VERSION, *(len));
+                (void)strncpy((char *)buf, LIBETHERCAT_PACKAGE_VERSION, *(len));
             }          
                 
             (*len) = strlen(LIBETHERCAT_PACKAGE_VERSION);
@@ -280,18 +280,18 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
             if ((*len) >= 1) {
                 ec_reg_dl_status_t dl_stat;
                 osal_uint16_t wkc = 0;
-                ec_fprd(pec, pec->slaves[slave].fixed_address, 0x110, (osal_uint16_t *)&dl_stat, sizeof(osal_uint16_t), &wkc);
+                (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 0x110, (osal_uint16_t *)&dl_stat, sizeof(osal_uint16_t), &wkc);
 
                 if (wkc != 0) {
                     (*(osal_uint8_t *)buf) = 
-                        dl_stat.link_status_port_0 << 0 |
-                        dl_stat.loop_status_port_0 << 1 |
-                        dl_stat.link_status_port_1 << 2 |
-                        dl_stat.loop_status_port_1 << 3 |
-                        dl_stat.link_status_port_2 << 4 |
-                        dl_stat.loop_status_port_2 << 5 |
-                        dl_stat.link_status_port_3 << 6 |
-                        dl_stat.loop_status_port_3 << 7;
+                        (dl_stat.link_status_port_0 << 0u) |
+                        (dl_stat.loop_status_port_0 << 1u) |
+                        (dl_stat.link_status_port_1 << 2u) |
+                        (dl_stat.loop_status_port_1 << 3u) |
+                        (dl_stat.link_status_port_2 << 4u) |
+                        (dl_stat.loop_status_port_2 << 5u) |
+                        (dl_stat.link_status_port_3 << 6u) |
+                        (dl_stat.loop_status_port_3 << 7u);
                     (*len) = sizeof(osal_uint8_t);
                 }
             }
@@ -315,7 +315,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
         } else if (sub_index == 32) {
             if ((*len) >= 2) {
                 osal_uint16_t wkc = 0;
-                ec_fprd(pec, pec->slaves[slave].fixed_address, 0x110, buf, sizeof(osal_uint16_t), &wkc);
+                (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 0x110, buf, sizeof(osal_uint16_t), &wkc);
 
                 if (wkc != 0) {
                     (*len) = sizeof(osal_uint16_t);
@@ -334,7 +334,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
         } else if (sub_index == 1) {
             if ((*len) >= 2) {
                 osal_uint16_t wkc = 0;
-                ec_fprd(pec, pec->slaves[slave].fixed_address, 0x130, buf, sizeof(osal_uint16_t), &wkc);
+                (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 0x130, buf, sizeof(osal_uint16_t), &wkc);
 
                 if (wkc != 0) {
                     (*len) = sizeof(osal_uint16_t);
@@ -343,7 +343,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
         } else if (sub_index == 2) {
             if ((*len) >= 2) {
                 osal_uint16_t wkc = 0;
-                ec_fprd(pec, pec->slaves[slave].fixed_address, 0x120, buf, sizeof(osal_uint16_t), &wkc);
+                (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 0x120, buf, sizeof(osal_uint16_t), &wkc);
 
                 if (wkc != 0) {
                     (*len) = sizeof(osal_uint16_t);
@@ -356,27 +356,27 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
     } else if (index == 0xF000) {
         if (sub_index == 0) {
             if ((*len) >= 1) {
-                memcpy(buf, &element_master_0xF000_00, sizeof(element_master_0xF000_00));
+                (void)memcpy(buf, &element_master_0xF000_00, sizeof(element_master_0xF000_00));
                 (*len) = sizeof(element_master_0xF000_00);
             }
         } else if (sub_index == 1) {
             if ((*len) >= 2) {
-                memcpy(buf, &element_master_0xF000_01, sizeof(element_master_0xF000_01));
+                (void)memcpy(buf, &element_master_0xF000_01, sizeof(element_master_0xF000_01));
                 (*len) = sizeof(element_master_0xF000_01);
             }
         } else if (sub_index == 2) {
             if ((*len) >= 2) {
-                memcpy(buf, &element_master_0xF000_02, sizeof(element_master_0xF000_02));
+                (void)memcpy(buf, &element_master_0xF000_02, sizeof(element_master_0xF000_02));
                 (*len) = sizeof(element_master_0xF000_02);
             }
         } else if (sub_index == 3) {
             if ((*len) >= 4) {
-                memcpy(buf, &element_master_0xF000_03, sizeof(element_master_0xF000_03));
+                (void)memcpy(buf, &element_master_0xF000_03, sizeof(element_master_0xF000_03));
                 (*len) = sizeof(element_master_0xF000_03);
             }
         } else if (sub_index == 4) {
             if ((*len) >= 4) {
-                memcpy(buf, &element_master_0xF000_04, sizeof(element_master_0xF000_04));
+                (void)memcpy(buf, &element_master_0xF000_04, sizeof(element_master_0xF000_04));
                 (*len) = sizeof(element_master_0xF000_04);
             }
         } 
@@ -464,12 +464,12 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
         tmp += sizeof(osal_uint16_t);
     }
     
-    for (int i = 0; (i < (pec->slave_cnt/255 + 1)) && (tmp < end); ++i) {
+    for (int i = 0; (i < ((pec->slave_cnt/255) + 1)) && (tmp < end); ++i) {
         *(osal_uint16_t *)tmp = 0xF020 | i;
         tmp += sizeof(osal_uint16_t);
     }
 
-    for (int i = 0; (i < (pec->slave_cnt/255 + 1)) && (tmp < end); ++i) {
+    for (int i = 0; (i < ((pec->slave_cnt/255) + 1)) && (tmp < end); ++i) {
         *(osal_uint16_t *)tmp = 0xF040 | i;
         tmp += sizeof(osal_uint16_t);
     }
@@ -484,49 +484,51 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
 }
 
 // Read CoE SDO description of master
-int ec_coe_master_sdo_desc_read(ec_t *pec, osal_uint16_t index, 
-        ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code) {
+int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index, 
+        ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code) 
+{
     assert(pec != NULL);
     assert(desc != NULL);
+    (void)error_code;
 
     int ret = EC_OK;
 
     if (index == 0x1000) {
-        memcpy(desc, &obj_desc_master_0x1000, sizeof(obj_desc_master_0x1000));
+        (void)memcpy(desc, &obj_desc_master_0x1000, sizeof(obj_desc_master_0x1000));
         desc->name_len = strlen(desc->name);
     } else if (index == 0x1008) {
-        memcpy(desc, &obj_desc_master_0x1008, sizeof(obj_desc_master_0x1008));
+        (void)memcpy(desc, &obj_desc_master_0x1008, sizeof(obj_desc_master_0x1008));
         desc->name_len = strlen(desc->name);
     } else if (index == 0x1009) {
-        memcpy(desc, &obj_desc_master_0x1009, sizeof(obj_desc_master_0x1009));
+        (void)memcpy(desc, &obj_desc_master_0x1009, sizeof(obj_desc_master_0x1009));
         desc->name_len = strlen(desc->name);
     } else if (index == 0x100A) {
-        memcpy(desc, &obj_desc_master_0x100A, sizeof(obj_desc_master_0x100A));
+        (void)memcpy(desc, &obj_desc_master_0x100A, sizeof(obj_desc_master_0x100A));
         desc->name_len = strlen(desc->name);
     } else if (index == 0x1018) {
-        memcpy(desc, &obj_desc_master_0x1018, sizeof(obj_desc_master_0x1018));
+        (void)memcpy(desc, &obj_desc_master_0x1018, sizeof(obj_desc_master_0x1018));
         desc->name_len = strlen(desc->name);
     } else if ((index & 0xF000) == 0x8000) {
         osal_uint16_t slave = index & 0x0FFF;
-        memcpy(desc, &obj_desc_master_0x8nnn, sizeof(obj_desc_master_0x8nnn));
-        snprintf(&desc->name[0], CANOPEN_MAXNAME, "Configuration Data Slave %hu", slave);
+        (void)memcpy(desc, &obj_desc_master_0x8nnn, sizeof(obj_desc_master_0x8nnn));
+        (void)snprintf(&desc->name[0], CANOPEN_MAXNAME, "Configuration Data Slave %hu", slave);
         desc->name_len = strlen(desc->name);
     } else if ((index & 0xF000) == 0x9000) {
         osal_uint16_t slave = index & 0x0FFF;
-        memcpy(desc, &obj_desc_master_0x9nnn, sizeof(obj_desc_master_0x9nnn));
-        snprintf(&desc->name[0], CANOPEN_MAXNAME, "Information Data Slave %hu", slave);
+        (void)memcpy(desc, &obj_desc_master_0x9nnn, sizeof(obj_desc_master_0x9nnn));
+        (void)snprintf(&desc->name[0], CANOPEN_MAXNAME, "Information Data Slave %hu", slave);
         desc->name_len = strlen(desc->name);
     } else if ((index & 0xF000) == 0xA000) {
         osal_uint16_t slave = index & 0x0FFF;
-        memcpy(desc, &obj_desc_master_0xAnnn, sizeof(obj_desc_master_0xAnnn));
-        snprintf(&desc->name[0], CANOPEN_MAXNAME, "Diagnosis Data Slave %hu", slave);
+        (void)memcpy(desc, &obj_desc_master_0xAnnn, sizeof(obj_desc_master_0xAnnn));
+        (void)snprintf(&desc->name[0], CANOPEN_MAXNAME, "Diagnosis Data Slave %hu", slave);
         desc->name_len = strlen(desc->name);
     } else if ((index & 0xF000) == 0xF000) {
         if (index == 0xF000) {
-            memcpy(desc, &obj_desc_master_0xF000, sizeof(obj_desc_master_0xF000));
+            (void)memcpy(desc, &obj_desc_master_0xF000, sizeof(obj_desc_master_0xF000));
             desc->name_len = strlen(desc->name);
         } else if (index == 0xF002) {
-            memcpy(desc, &obj_desc_master_0xF002, sizeof(obj_desc_master_0xF002));
+            (void)memcpy(desc, &obj_desc_master_0xF002, sizeof(obj_desc_master_0xF002));
             desc->name_len = strlen(desc->name);
         } else {
             osal_uint16_t slave_range = index & 0x000F;
@@ -534,12 +536,12 @@ int ec_coe_master_sdo_desc_read(ec_t *pec, osal_uint16_t index,
             osal_uint16_t slave_end = slave_begin + 255;
         
             if ((index & 0xF020) == 0xF020) {
-                memcpy(desc, &obj_desc_master_0xF02n, sizeof(obj_desc_master_0xF02n));
-                snprintf(&desc->name[0], CANOPEN_MAXNAME, "Configured Address List %hu-%hu", slave_begin, slave_end);
+                (void)memcpy(desc, &obj_desc_master_0xF02n, sizeof(obj_desc_master_0xF02n));
+                (void)snprintf(&desc->name[0], CANOPEN_MAXNAME, "Configured Address List %hu-%hu", slave_begin, slave_end);
                 desc->name_len = strlen(desc->name);
             } else if ((index & 0xF040) == 0xF040) {
-                memcpy(desc, &obj_desc_master_0xF04n, sizeof(obj_desc_master_0xF04n));
-                snprintf(&desc->name[0], CANOPEN_MAXNAME, "Detected Address List %hu-%hu", slave_begin, slave_end);
+                (void)memcpy(desc, &obj_desc_master_0xF04n, sizeof(obj_desc_master_0xF04n));
+                (void)snprintf(&desc->name[0], CANOPEN_MAXNAME, "Detected Address List %hu-%hu", slave_begin, slave_end);
                 desc->name_len = strlen(desc->name);
             }
         }
@@ -549,11 +551,14 @@ int ec_coe_master_sdo_desc_read(ec_t *pec, osal_uint16_t index,
 }
 
 // Read CoE SDO entry description of master
-int ec_coe_master_sdo_entry_desc_read(ec_t *pec, osal_uint16_t index,
+int ec_coe_master_sdo_entry_desc_read(const ec_t *pec, osal_uint16_t index,
         osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
-        osal_uint32_t *error_code) {
+        osal_uint32_t *error_code) 
+{
     assert(pec != NULL);
     assert(desc != NULL);
+    (void)value_info;
+    (void)error_code;
 
     int ret = EC_OK; 
 
@@ -568,34 +573,34 @@ int ec_coe_master_sdo_entry_desc_read(ec_t *pec, osal_uint16_t index,
     else if_index(0x100A)
     else if (index == 0x1018) {
         if (sub_index <= 4) {
-            memcpy(desc, &entry_desc_master_0x1018[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
+            (void)memcpy(desc, &entry_desc_master_0x1018[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
     } else if ((index & 0xF000) == 0x8000) {
         if (sub_index <= 35) {
-            memcpy(desc, &entry_desc_master_0x8nnn[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
+            (void)memcpy(desc, &entry_desc_master_0x8nnn[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
     } else if ((index & 0xF000) == 0x9000) {
         if (sub_index <= 32) {
-            memcpy(desc, &entry_desc_master_0x9nnn[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
+            (void)memcpy(desc, &entry_desc_master_0x9nnn[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
     } else if ((index & 0xF000) == 0xA000) {
         if (sub_index <= 2) {
-            memcpy(desc, &entry_desc_master_0xAnnn[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
+            (void)memcpy(desc, &entry_desc_master_0xAnnn[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
     } else if (index == 0xF000) {
         if (sub_index < 5) {
-            memcpy(desc, &entry_desc_master_0xF000[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
+            (void)memcpy(desc, &entry_desc_master_0xF000[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
     } else if (index == 0xF002) {
         if (sub_index < 4) {
-            memcpy(desc, &entry_desc_master_0xF002[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
+            (void)memcpy(desc, &entry_desc_master_0xF002[sub_index], sizeof(ec_coe_sdo_entry_desc_t));
         }
     } else if (((index & 0xFFF0) == 0xF020) || ((index & 0xFFF0) == 0xF040)) {
         osal_uint16_t slave_range = index & 0x000Fu;
         osal_uint16_t slave = (slave_range * 255) + (sub_index - 1);
 
-        memcpy(desc, &entry_desc_master_0xF02n[0], sizeof(ec_coe_sdo_entry_desc_t));
-        snprintf((char *)&desc->data[0], CANOPEN_MAXNAME, "Subindex Slave %hu", slave);
+        (void)memcpy(desc, &entry_desc_master_0xF02n[0], sizeof(ec_coe_sdo_entry_desc_t));
+        (void)snprintf((char *)&desc->data[0], CANOPEN_MAXNAME, "Subindex Slave %hu", slave);
         desc->data_len = strlen((char *)&desc->data[0]);
     }
 
