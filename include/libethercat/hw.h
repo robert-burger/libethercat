@@ -59,8 +59,6 @@ typedef struct hw {
     // receiver thread settings
     osal_task_t rxthread;           //!< receiver thread handle
     int rxthreadrunning;            //!< receiver thread running flag
-    int rxthreadprio;               //!< receiver thread priority
-    osal_uint32_t rxthreadcpumask;       //!< recevied thread cpu mask
 
     osal_mutex_t hw_lock;           //!< transmit lock
 

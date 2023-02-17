@@ -78,16 +78,13 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
 
-    osal_mutex_init(&phw->hw_lock, NULL);
+    osal_mutex_attr_t attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&phw->hw_lock, &attr);
 
     ret = hw_device_open(phw, devname);
 
     if (ret == EC_OK) {
-        // thread settings
-        phw->rxthreadprio = prio;
-        phw->rxthreadcpumask = cpumask;
         phw->rxthreadrunning = 1;
-
         osal_task_attr_t attr;
         attr.priority = prio;
         attr.affinity = cpumask;
@@ -214,8 +211,8 @@ int hw_tx(hw_t *phw) {
                 (void)hw_device_get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
             }
-            
-	    pool_idx++;
+
+            pool_idx++;
         }
 
         if (len != 0u) {
