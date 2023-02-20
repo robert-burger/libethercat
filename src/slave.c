@@ -1187,7 +1187,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 if (slv->subdev_cnt != 0u) {
                     if (slv->subdev_cnt > LEC_MAX_DS402_SUBDEVS) {
                         ec_log(5, get_transition_string(transition), "slave %2d: got %" PRIu64 " ds402 sub devices but can "
-                                "only handle %ld!\n", slave, slv->subdev_cnt, LEC_MAX_DS402_SUBDEVS);
+                                "only handle %" PRIu64 "!\n", slave, slv->subdev_cnt, LEC_MAX_DS402_SUBDEVS);
                         slv->subdev_cnt = LEC_MAX_DS402_SUBDEVS;
                     }
 
