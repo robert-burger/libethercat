@@ -1407,6 +1407,10 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
             pd->cdg.p_idx = NULL;
             ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
+        } else {
+            pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
+            pd->cdg.p_entry->user_cb = cb_process_data_group;
+            pd->cdg.p_entry->user_arg = pd->group;
         }
     }
 
@@ -1420,11 +1424,6 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 p_dg->idx = pd->cdg.p_idx->idx;
                 p_dg->adr = pd->log;
                 p_dg->len = pd->log_len;
-                p_dg->irq = 0;
-
-                pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
-                pd->cdg.p_entry->user_cb = cb_process_data_group;
-                pd->cdg.p_entry->user_arg = pd->group;
 
                 if (pd->pd != NULL) {
                     (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
@@ -1714,6 +1713,9 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
                 ec_index_put(&pec->idx_q, pec->dc.cdg.p_idx);
                 ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
                 ret = EC_ERROR_OUT_OF_DATAGRAMS;
+            } else {
+                pec->dc.cdg.p_entry->p_idx = pec->dc.cdg.p_idx;
+                pec->dc.cdg.p_entry->user_cb = cb_distributed_clocks;
             }
         }
 
@@ -1721,22 +1723,16 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
             p_dg = ec_datagram_cast(pec->dc.cdg.p_entry->data);
             (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 8u + 2u);
 
+            p_dg->idx = pec->dc.cdg.p_idx->idx;
+            p_dg->len = 8;
+
             if (pec->dc.mode == dc_mode_master_as_ref_clock) {
                 p_dg->cmd = EC_CMD_BWR;
-                p_dg->idx = pec->dc.cdg.p_idx->idx;
                 p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u);
-                p_dg->len = 8;
-                p_dg->irq = 0;
             } else {
                 p_dg->cmd = EC_CMD_FRMW;
-                p_dg->idx = pec->dc.cdg.p_idx->idx;
                 p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u) | pec->dc.master_address;
-                p_dg->len = 8;
-                p_dg->irq = 0;
             }
-
-            pec->dc.cdg.p_entry->p_idx = pec->dc.cdg.p_idx;
-            pec->dc.cdg.p_entry->user_cb = cb_distributed_clocks;
 
             osal_uint64_t act_rtc_time = osal_timer_gettime_nsec();
 
@@ -1744,18 +1740,18 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
                 if (pec->dc.timer_override > 0) {
                     pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
                 }   
-            } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
-                (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
             } else {
                 pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+            
+                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                    (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
+                }
             }
 
             // queue frame and trigger tx
             pool_put(&pec->hw.tx_high, pec->dc.cdg.p_entry);
 
             pec->dc.sent_time_nsec = act_rtc_time;
-            osal_timer_init(&pec->dc.cdg.timeout, pec->dc.cdg.recv_timeout_ns);
         }
     }
     
@@ -1852,7 +1848,6 @@ int ec_send_brd_ec_state(ec_t *pec) {
         p_dg->idx = pec->cdg_state.p_idx->idx;
         p_dg->adr = (osal_uint32_t)EC_REG_ALSTAT << 16u;
         p_dg->len = 2;
-        p_dg->irq = 0;
 
         // queue frame and trigger tx
         pool_put(&pec->hw.tx_high, pec->cdg_state.p_entry);
