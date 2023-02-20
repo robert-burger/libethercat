@@ -78,8 +78,8 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
 
-    osal_mutex_attr_t attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
-    osal_mutex_init(&phw->hw_lock, &attr);
+    osal_mutex_attr_t mtx_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&phw->hw_lock, &mtx_attr);
 
     ret = hw_device_open(phw, devname);
 
