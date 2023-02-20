@@ -1742,12 +1742,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
 
             if (pec->dc.mode == dc_mode_ref_clock) {
                 if (pec->dc.timer_override > 0) {
-                    if (pec->dc.rtc_time == 0u) {
-                        //int64_t tmp = (int64_t)act_rtc_time - pec->dc.rtc_sto;
-                        //pec->dc.rtc_time = (osal_uint64_t)tmp;
-                    } else {
-                        pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
-                    }
+                    pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
                 }   
             } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
                 pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
