@@ -1070,24 +1070,24 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     }
 
     ec_log(10, __func__, "libethercat version          : %s\n", LIBETHERCAT_VERSION);
-    ec_log(10, __func__, "  MAX_SLAVES                 : %ld\n", LEC_MAX_SLAVES);
-    ec_log(10, __func__, "  MAX_GROUPS                 : %ld\n", LEC_MAX_GROUPS);
-    ec_log(10, __func__, "  MAX_PDLEN                  : %ld\n", LEC_MAX_PDLEN);
-    ec_log(10, __func__, "  MAX_MBX_ENTRIES            : %ld\n", LEC_MAX_MBX_ENTRIES);
-    ec_log(10, __func__, "  MAX_INIT_CMD_DATA          : %ld\n", LEC_MAX_INIT_CMD_DATA);
-    ec_log(10, __func__, "  MAX_SLAVE_FMMU             : %ld\n", LEC_MAX_SLAVE_FMMU);
-    ec_log(10, __func__, "  MAX_SLAVE_SM               : %ld\n", LEC_MAX_SLAVE_SM);
-    ec_log(10, __func__, "  MAX_DATAGRAMS              : %ld\n", LEC_MAX_DATAGRAMS);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_SM          : %ld\n", LEC_MAX_EEPROM_CAT_SM); 
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_FMMU        : %ld\n", LEC_MAX_EEPROM_CAT_FMMU);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO         : %ld\n", LEC_MAX_EEPROM_CAT_PDO);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO_ENTRIES : %ld\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_STRINGS     : %ld\n", LEC_MAX_EEPROM_CAT_STRINGS);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_DC          : %ld\n", LEC_MAX_EEPROM_CAT_DC);
-    ec_log(10, __func__, "  MAX_STRING_LEN             : %ld\n", LEC_MAX_STRING_LEN);
-    ec_log(10, __func__, "  MAX_DATA                   : %ld\n", LEC_MAX_DATA);
-    ec_log(10, __func__, "  MAX_DS402_SUBDEVS          : %ld\n", LEC_MAX_DS402_SUBDEVS);
-    ec_log(10, __func__, "  MAX_COE_EMERGENCIES        : %ld\n", LEC_MAX_COE_EMERGENCIES);
+    ec_log(10, __func__, "  MAX_SLAVES                 : %" PRIi64 "\n", LEC_MAX_SLAVES);
+    ec_log(10, __func__, "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
+    ec_log(10, __func__, "  MAX_PDLEN                  : %" PRIi64 "\n", LEC_MAX_PDLEN);
+    ec_log(10, __func__, "  MAX_MBX_ENTRIES            : %" PRIi64 "\n", LEC_MAX_MBX_ENTRIES);
+    ec_log(10, __func__, "  MAX_INIT_CMD_DATA          : %" PRIi64 "\n", LEC_MAX_INIT_CMD_DATA);
+    ec_log(10, __func__, "  MAX_SLAVE_FMMU             : %" PRIi64 "\n", LEC_MAX_SLAVE_FMMU);
+    ec_log(10, __func__, "  MAX_SLAVE_SM               : %" PRIi64 "\n", LEC_MAX_SLAVE_SM);
+    ec_log(10, __func__, "  MAX_DATAGRAMS              : %" PRIi64 "\n", LEC_MAX_DATAGRAMS);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_SM          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_SM); 
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_FMMU        : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_FMMU);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO         : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO_ENTRIES : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_STRINGS     : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_STRINGS);
+    ec_log(10, __func__, "  MAX_EEPROM_CAT_DC          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_DC);
+    ec_log(10, __func__, "  MAX_STRING_LEN             : %" PRIi64 "\n", LEC_MAX_STRING_LEN);
+    ec_log(10, __func__, "  MAX_DATA                   : %" PRIi64 "\n", LEC_MAX_DATA);
+    ec_log(10, __func__, "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
+    ec_log(10, __func__, "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
     ec_log(10, __func__, "  MAX_COE_EMERGENCY_MSG_LEN  : %d\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
 
     if (ret != EC_OK) {
