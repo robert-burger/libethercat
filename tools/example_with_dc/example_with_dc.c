@@ -1,4 +1,6 @@
 #include <libethercat/config.h>
+#include <libethercat/ec.h>
+#include <libethercat/error_codes.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -20,7 +22,6 @@
 
 #include <stdarg.h>
 
-#include "libethercat/ec.h"
 
 void no_log(int lvl, void *user, const char *format, ...) 
 {};
@@ -80,7 +81,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         // execute one EtherCAT cycle
         ec_send_process_data(pec);
         ec_send_distributed_clocks_sync(pec);
-        //ec_send_brd_ec_state(pec);
+        ec_send_brd_ec_state(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
         hw_tx(&pec->hw);
@@ -147,6 +148,25 @@ int main(int argc, char **argv) {
     ret = ec_open(&ec, intf, base_prio - 1, base_affinity, 1);
     
     ec_set_state(&ec, EC_STATE_INIT);
+
+    osal_uint8_t ip[4] = { 1, 100, 168, 192 };
+    ec_configure_tun(&ec, ip);
+    
+    osal_uint8_t mac[6] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+    osal_uint8_t ip_address[4] = { 2, 100, 168, 192 };
+    osal_uint8_t subnet[4] = { 0, 255, 255, 255 };
+    osal_uint8_t gateway[4] = { 1, 100, 168, 192 };
+    osal_uint8_t dns[4] = { 1, 100, 168, 192 };
+    
+    // configure slave settings.
+    for (int i = 0; i < ec.slave_cnt; ++i) {
+        if (ec_mbx_check(&ec, slave, EC_EEPROM_MBX_EOE) == EC_OK) {
+            ec_slave_set_eoe_settings(&ec, i, mac, ip_address, subnet, gateway, dns, NULL);
+            mac[0]++;
+            ip_address[0]++;
+        }
+    }
+
     ec_set_state(&ec, EC_STATE_PREOP);
 
     ec_configure_dc(&ec, cycle_rate, dc_mode_master_as_ref_clock, ({
