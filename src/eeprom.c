@@ -506,7 +506,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                             local_offset++;
 
                             if (string_len > (LEC_MAX_STRING_LEN - 1u)) {
-                                do_eeprom_log(10, "EEPROM_STRINGS", "        : warning string is %d bytes long, can only read %lu bytes.\n", 
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        : warning string is %d bytes long, can only read %" PRIu64 " bytes.\n", 
                                         string_len, LEC_MAX_STRING_LEN - 1u);
                                 read_string_len = LEC_MAX_STRING_LEN - 1u;
                             } else {
@@ -742,7 +742,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         // allocating new dcs
                         slv->eeprom.dcs_cnt = cat_len / (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
                         if (slv->eeprom.dcs_cnt > LEC_MAX_EEPROM_CAT_DC) {
-                            ec_log(5, "EEPROM_DC", "slave %2d: can only store %lu dc settings but got %d!\n", 
+                            ec_log(5, "EEPROM_DC", "slave %2d: can only store %" PRIu64 " dc settings but got %d!\n", 
                                     slave, LEC_MAX_EEPROM_CAT_DC, slv->eeprom.dcs_cnt);
                             slv->eeprom.dcs_cnt = LEC_MAX_EEPROM_CAT_DC;
                         }
