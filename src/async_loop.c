@@ -100,13 +100,13 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
     int ret = ec_slave_get_state(paml->pec, slave, &state, &alstatcode);
 
     if ((ret != EC_OK) || (state == EC_STATE_UNKNOWN)) {
-        ec_log(10, "ec_async_thread", "slave %2d: error on "
-                "getting slave state, possible slave lost, try to reconfigure\n", slave);
-        
         ec_state_t expected_state = paml->pec->slaves[slave].expected_state;
 
+        ec_log(10, "ec_async_thread", "slave %2d: error on "
+                "getting slave state, possible slave lost, try to reconfigure\n", slave);
+
         // force it to INIT and then back to expected state
-        ret =ec_slave_state_transition(paml->pec, slave, EC_STATE_INIT);
+        ret = ec_slave_state_transition(paml->pec, slave, EC_STATE_INIT);
 
         if ((ret == EC_OK) && (EC_STATE_PREOP <= expected_state)) {
             ret = ec_slave_state_transition(paml->pec, slave, EC_STATE_PREOP);
@@ -234,9 +234,9 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
 
     if (osal_timer_expired(&paml->next_check_group) == OSAL_OK) {
         // no need to check now
-        //            ec_log(5, __func__, "not checking now, timeout not reached\n");
+        ec_log(100, __func__, "not checking now, timeout not reached\n");
     } else {
-        paml->next_check_group.sec++;
+        osal_timer_init(&paml->next_check_group, 1000000000);
 
         osal_timer_t timeout;
         osal_timer_init(&timeout, 1000);
