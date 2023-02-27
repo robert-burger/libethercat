@@ -41,7 +41,7 @@ struct ethercat_device {
 
 /* ioctls */
 #define ETHERCAT_DEVICE_MAGIC             'e'
-#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1)
+#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
 
 int ethercat_device_init(void);
 int ethercat_device_exit(void);
