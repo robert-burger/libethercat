@@ -525,6 +525,15 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
                 netif_carrier_on(ecat_dev->monitor_dev);
 
                 ecat_dev->monitor_enabled = true;
+            } else {
+                ecat_dev->monitor_enabled = false;
+
+                if (ecat_dev->monitor_dev != NULL) {
+                    unregister_netdev(ecat_dev->monitor_dev);
+                    free_netdev(ecat_dev->monitor_dev);
+
+                    ecat_dev->monitor_dev = NULL;
+                }
             }
 
             break;
