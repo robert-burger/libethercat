@@ -497,7 +497,7 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
     ecat_dev = user->ecat_dev;
 
     switch (num) {
-        case 12345678: {
+        case ETHERCAT_DEVICE_MONITOR_ENABLE: {
             int monitor_enable = 0;
             if (__copy_from_user(&monitor_enable, (void *)arg, sizeof(monitor_enable))) {
                 return -EFAULT;

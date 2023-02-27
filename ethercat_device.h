@@ -7,6 +7,7 @@
 #include <linux/swait.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
+#include <linux/ioctl.h>
 
 /* spacewire io device structure */
 struct ethercat_device {
@@ -37,6 +38,10 @@ struct ethercat_device {
     struct net_device *monitor_dev;
     struct net_device_stats monitor_stats;
 };
+
+/* ioctls */
+#define ETHERCAT_DEVICE_MAGIC             'e'
+#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1)
 
 int ethercat_device_init(void);
 int ethercat_device_exit(void);
