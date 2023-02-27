@@ -498,12 +498,10 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
 
     switch (num) {
         case 12345678: {
-                           pr_info("in my ioctl\n");
             int monitor_enable = 0;
             if (__copy_from_user(&monitor_enable, (void *)arg, sizeof(monitor_enable))) {
                 return -EFAULT;
             }
-            pr_info("got monitor_enable %d\n", monitor_enable);
 
             if (monitor_enable != 0) {
                 char monitor_name[64];
