@@ -76,7 +76,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->mbx.handler_running == 0) {
-        ec_log(10, __func__, "slave %2d: initializing mailbox\n", slave);
+        ec_log(10, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
 
         slv->mbx.map_mbx_state = OSAL_TRUE;
 
@@ -131,7 +131,7 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->mbx.handler_running != 0) {
-        ec_log(10, __func__, "slave %2d: deinitilizing mailbox\n", slave);
+        ec_log(10, "MAILBOX_DEINIT", "slave %2d: deinitilizing mailbox\n", slave);
 
         slv->mbx.handler_running = 0;
         osal_task_join(&slv->mbx.handler_tid, NULL);
@@ -204,7 +204,7 @@ int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag) {
     int ret = EC_OK;
 
     if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {
-        ec_log(100, __func__, "no %s support on slave %d\n", 
+        ec_log(200, "MAILBOX_CHECK", "no %s support on slave %d\n", 
                 ec_mbx_get_protocol_string(mbx_flag), slave); 
         ret = EC_ERROR_MAILBOX_MASK | (int32_t)mbx_flag;
     }
@@ -325,13 +325,13 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
     // wait for send mailbox available 
     ret = ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec);
     if (ret != EC_OK) {
-        ec_log(1, __func__, "slave %d: waiting for empty send mailbox failed!\n", slave);
+        ec_log(1, "MAILBOX_SEND", "slave %d: waiting for empty send mailbox failed!\n", slave);
     } else {
         ret = EC_ERROR_MAILBOX_TIMEOUT;
 
         // send request
         do {
-            ec_log(100, __func__, "slave %d: writing mailbox\n", slave);
+            ec_log(200, "MAILBOX_SEND", "slave %d: writing mailbox\n", slave);
             (void)ec_fpwr(pec, slv->fixed_address, slv->sm[MAILBOX_WRITE].adr, buf, buf_len, &wkc);
 
             if (wkc != 0u) {
@@ -343,7 +343,7 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
         } while (osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT);
 
         if (ret != EC_OK) {
-            ec_log(1, __func__, "slave %d: did not respond on writing to write mailbox\n", slave);
+            ec_log(1, "MAILBOX_SEND", "slave %d: did not respond on writing to write mailbox\n", slave);
         }
     }
 
@@ -483,7 +483,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
     if ((flags & MBX_HANDLER_FLAGS_RECV) != 0u) {
         (void)pool_get(&pec->mbx_message_pool_recv_free, &p_entry, NULL);
         if (!p_entry) {
-            ec_log(1, __func__, "slave %2d: out of mailbox buffers\n", slave);
+            ec_log(1, "MAILBOX_HANDLE", "slave %2d: out of mailbox buffers\n", slave);
         } else {
             (void)memset(p_entry->data, 0, LEC_MAX_POOL_DATA_SIZE);
 
@@ -491,7 +491,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                         min(LEC_MAX_POOL_DATA_SIZE, (osal_size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
                 // cppcheck-suppress misra-c2012-11.3
                 ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
-                ec_log(100, __func__, "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
+                ec_log(200, "MAILBOX_HANDLE", "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
 
                 switch (hdr->mbxtype) {
                     case EC_MBX_COE:
@@ -499,7 +499,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_coe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, __func__, "slave %2d: got CoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got CoE frame, but slave has no support!\n", slave);
                         }
                         break;
                     case EC_MBX_SOE:
@@ -507,7 +507,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_soe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, __func__, "slave %2d: got SoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got SoE frame, but slave has no support!\n", slave);
                         }
                         break;
                     case EC_MBX_FOE:
@@ -515,7 +515,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_foe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, __func__, "slave %2d: got FoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got FoE frame, but slave has no support!\n", slave);
                         }
                         break;
                     case EC_MBX_EOE:
@@ -523,7 +523,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_eoe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, __func__, "slave %2d: got EoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got EoE frame, but slave has no support!\n", slave);
                         }
                         break;
                     default:
@@ -543,7 +543,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
         (void)pool_get(&slv->mbx.message_pool_send_queued, &p_entry, NULL);
 
         if (p_entry != NULL) {
-            ec_log(100, __func__, "slave %2d: got mailbox buffer to write\n", slave);
+            ec_log(200, "MAILBOX_HANDLE", "slave %2d: got mailbox buffer to write\n", slave);
             int ret = EC_OK;
             int retry_cnt = 10;
 
@@ -554,7 +554,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
             } while ((ret != EC_OK) && (retry_cnt > 0));
 
             if (ret != EC_OK) {
-                ec_log(1, __func__, "slave %2d: error on writing send mailbox -> requeue\n", slave);
+                ec_log(1, "MAILBOX_HANDLE", "slave %2d: error on writing send mailbox -> requeue\n", slave);
                 ec_mbx_enqueue_head(pec, slave, p_entry);
             } else {                    
                 // all done
@@ -585,7 +585,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_log(10, __func__, "slave %2d: started mailbox handler\n", slave);
+    ec_log(10, "MAILBOX_HANDLE", "slave %2d: started mailbox handler\n", slave);
 
     while (slv->mbx.handler_running != 0) {
         int ret;
@@ -617,7 +617,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
         ec_mbx_do_handle(pec, slave);
     }
 
-    ec_log(10, __func__, "slave %2d: stopped mailbox handler\n", slave);
+    ec_log(10, "MAILBOX_HANDLE", "slave %2d: stopped mailbox handler\n", slave);
 }
 
 //! \brief Get free mailbox send buffer from slaves send message pool.

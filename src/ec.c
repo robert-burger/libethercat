@@ -617,13 +617,13 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 ec_log(100, get_state_string(state), "prepare state transition for slave %d\n", slave);
                 int ret = ec_slave_prepare_state_transition(pec, slave, state);
                 if (ret != EC_OK) {
-                    ec_log(1, __func__, "ec_slave_prepare_state_transition failed with %d\n", ret);
+                    ec_log(1, get_state_string(state), "ec_slave_prepare_state_transition failed with %d\n", ret);
                 }
 
                 ec_log(100, get_state_string(state), "generate mapping for slave %d\n", slave);
                 ret = ec_slave_generate_mapping(pec, slave);
                 if (ret != EC_OK) {
-                    ec_log(1, __func__, "ec_slave_generate_mapping failed with %d\n", ret);
+                    ec_log(1, get_state_string(state), "ec_slave_generate_mapping failed with %d\n", ret);
                 }
             }
         }
@@ -669,7 +669,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
             if ((with_group == 0u) || (pec->slaves[slave].assigned_pd_group != -1)) {
                 ec_log(100, get_state_string(state), "setting state for slave %d\n", slave);
                 if (ec_slave_state_transition(pec, slave, state) != EC_OK) {
-                    ec_log(1, __func__, "ec_slave_state_transition failed!\n");
+                    ec_log(1, get_state_string(state), "ec_slave_state_transition failed!\n");
                 }
             }
         }
@@ -705,7 +705,7 @@ static void ec_scan(ec_t *pec) {
     // allocating slave structures
     int ret = ec_brd(pec, EC_REG_TYPE, (osal_uint8_t *)&val, sizeof(val), &wkc); 
     if (ret != EC_OK) {
-        ec_log(1, __func__, "broadcast read of slave types failed with %d\n", ret);
+        ec_log(1, "MASTER_SCAN", "broadcast read of slave types failed with %d\n", ret);
     } else {
         assert(wkc < LEC_MAX_SLAVES);
 
@@ -721,7 +721,7 @@ static void ec_scan(ec_t *pec) {
                     break;  // break here, cause there seems to be no more slave
                 }
 
-                ec_log(100, __func__, "slave %2d: auto inc %3d, fixed %d\n", 
+                ec_log(100, "MASTER_SCAN", "slave %2d: auto inc %3d, fixed %d\n", 
                         i, auto_inc, fixed);
 
                 pec->slaves[i].slave = i;
@@ -738,7 +738,7 @@ static void ec_scan(ec_t *pec) {
 
                 local_ret = ec_apwr(pec, auto_inc, EC_REG_STADR, (osal_uint8_t *)&fixed, sizeof(fixed), &wkc); 
                 if ((local_ret != EC_OK) || (wkc == 0u)) {
-                    ec_log(1, __func__, "slave %2d: error writing fixed address %d\n", i, fixed);
+                    ec_log(1, "MASTER_SCAN", "slave %2d: error writing fixed address %d\n", i, fixed);
                 }
 
                 // set eeprom to pdi, some slaves need this
@@ -746,16 +746,16 @@ static void ec_scan(ec_t *pec) {
                 init_state = EC_STATE_INIT | EC_STATE_RESET;
                 local_ret = ec_fpwr(pec, fixed, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
                 if (local_ret != EC_OK) {
-                    ec_log(1, __func__, "salve %2d: reading al control failed with %d\n", i, local_ret);
+                    ec_log(1, "MASTER_SCAN", "salve %2d: reading al control failed with %d\n", i, local_ret);
                 }
 
                 fixed++;
             } else {
-                ec_log(1, __func__, "ec_aprd %d returned %d\n", auto_inc, local_ret);
+                ec_log(1, "MASTER_SCAN", "ec_aprd %d returned %d\n", auto_inc, local_ret);
             }
         }
 
-        ec_log(10, __func__, "found %d ethercat slaves\n", i);
+        ec_log(10, "MASTER_SCAN", "found %d ethercat slaves\n", i);
 
         for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
             ec_slave_ptr(slv, pec, slave); 
@@ -811,7 +811,7 @@ static void ec_scan(ec_t *pec) {
                     while (tmp_slave >= 0);
                 }
 
-                ec_log(100, __func__, "slave %2d has parent %d\n", slave, slv->parent);
+                ec_log(100, "MASTER_SCAN", "slave %2d has parent %d\n", slave, slv->parent);
             }
         }
     }
@@ -827,7 +827,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
     assert(pec != NULL);
     int ret = EC_OK;
 
-    ec_log(10, __func__, "switching from %s to %s\n", 
+    ec_log(10, "MASTER_SET_STATE", "switching from %s to %s\n", 
             get_state_string(pec->master_state), get_state_string(state));
 
     pec->state_transition_pending = 1;
@@ -876,7 +876,8 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             // ====> switch to SAFEOP stuff
             ret = ec_dc_config(pec);
             if (ret != EC_OK) {
-                ec_log(1, __func__, "configuring distributed clocks failed with %d\n", ret);
+                ec_log(1, get_state_string(pec->master_state),
+                        "configuring distributed clocks failed with %d\n", ret);
             }
 
             ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
@@ -906,7 +907,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case OP_2_INIT:
         case OP_2_PREOP:
         case OP_2_SAFEOP:
-            ec_log(10, __func__, "switching to SAFEOP\n");
+            ec_log(10, get_state_string(pec->master_state), "switching to SAFEOP\n");
             ec_state_transition_loop(pec, EC_STATE_SAFEOP, 0);
     
             pec->master_state = EC_STATE_SAFEOP;
@@ -918,7 +919,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case SAFEOP_2_BOOT:
         case SAFEOP_2_INIT:
         case SAFEOP_2_PREOP:
-            ec_log(10, __func__, "switching to PREOP\n");
+            ec_log(10, get_state_string(pec->master_state), "switching to PREOP\n");
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
 
             // reset dc
@@ -975,10 +976,10 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             // cppcheck-suppress misra-c2012-16.3
         case PREOP_2_BOOT:
         case PREOP_2_INIT:
-            ec_log(10, __func__, "switching to INIT\n");
+            ec_log(10, get_state_string(pec->master_state), "switching to INIT\n");
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             pec->master_state = EC_STATE_INIT;
-            ec_log(10, __func__, "doing rescan\n");
+            ec_log(10, get_state_string(pec->master_state), "doing rescan\n");
             ec_scan(pec);
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
 
@@ -1069,37 +1070,37 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         ret = ec_async_loop_create(&pec->async_loop, pec);
     }
 
-    ec_log(10, __func__, "libethercat version          : %s\n", LIBETHERCAT_VERSION);
-    ec_log(10, __func__, "  MAX_SLAVES                 : %" PRIi64 "\n", LEC_MAX_SLAVES);
-    ec_log(10, __func__, "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
-    ec_log(10, __func__, "  MAX_PDLEN                  : %" PRIi64 "\n", LEC_MAX_PDLEN);
-    ec_log(10, __func__, "  MAX_MBX_ENTRIES            : %" PRIi64 "\n", LEC_MAX_MBX_ENTRIES);
-    ec_log(10, __func__, "  MAX_INIT_CMD_DATA          : %" PRIi64 "\n", LEC_MAX_INIT_CMD_DATA);
-    ec_log(10, __func__, "  MAX_SLAVE_FMMU             : %" PRIi64 "\n", LEC_MAX_SLAVE_FMMU);
-    ec_log(10, __func__, "  MAX_SLAVE_SM               : %" PRIi64 "\n", LEC_MAX_SLAVE_SM);
-    ec_log(10, __func__, "  MAX_DATAGRAMS              : %" PRIi64 "\n", LEC_MAX_DATAGRAMS);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_SM          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_SM); 
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_FMMU        : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_FMMU);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO         : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_PDO_ENTRIES : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_STRINGS     : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_STRINGS);
-    ec_log(10, __func__, "  MAX_EEPROM_CAT_DC          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_DC);
-    ec_log(10, __func__, "  MAX_STRING_LEN             : %" PRIi64 "\n", LEC_MAX_STRING_LEN);
-    ec_log(10, __func__, "  MAX_DATA                   : %" PRIi64 "\n", LEC_MAX_DATA);
-    ec_log(10, __func__, "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
-    ec_log(10, __func__, "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
-    ec_log(10, __func__, "  MAX_COE_EMERGENCY_MSG_LEN  : %d\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
+    ec_log(10, "MASTER_OPEN", "libethercat version          : %s\n", LIBETHERCAT_VERSION);
+    ec_log(10, "MASTER_OPEN", "  MAX_SLAVES                 : %" PRIi64 "\n", LEC_MAX_SLAVES);
+    ec_log(10, "MASTER_OPEN", "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
+    ec_log(10, "MASTER_OPEN", "  MAX_PDLEN                  : %" PRIi64 "\n", LEC_MAX_PDLEN);
+    ec_log(10, "MASTER_OPEN", "  MAX_MBX_ENTRIES            : %" PRIi64 "\n", LEC_MAX_MBX_ENTRIES);
+    ec_log(10, "MASTER_OPEN", "  MAX_INIT_CMD_DATA          : %" PRIi64 "\n", LEC_MAX_INIT_CMD_DATA);
+    ec_log(10, "MASTER_OPEN", "  MAX_SLAVE_FMMU             : %" PRIi64 "\n", LEC_MAX_SLAVE_FMMU);
+    ec_log(10, "MASTER_OPEN", "  MAX_SLAVE_SM               : %" PRIi64 "\n", LEC_MAX_SLAVE_SM);
+    ec_log(10, "MASTER_OPEN", "  MAX_DATAGRAMS              : %" PRIi64 "\n", LEC_MAX_DATAGRAMS);
+    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_SM          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_SM); 
+    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_FMMU        : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_FMMU);
+    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO         : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO);
+    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO_ENTRIES : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
+    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_STRINGS     : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_STRINGS);
+    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_DC          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_DC);
+    ec_log(10, "MASTER_OPEN", "  MAX_STRING_LEN             : %" PRIi64 "\n", LEC_MAX_STRING_LEN);
+    ec_log(10, "MASTER_OPEN", "  MAX_DATA                   : %" PRIi64 "\n", LEC_MAX_DATA);
+    ec_log(10, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
+    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
+    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %d\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
 
     if (ret != EC_OK) {
         if (pec != NULL) {
             int local_ret = hw_close(&pec->hw);
             if (local_ret != EC_OK) {
-                ec_log(1, __func__, "hw_close failed with %d\n", local_ret);
+                ec_log(1, "MASTER_OPEN", "hw_close failed with %d\n", local_ret);
             }
             
             local_ret = pool_close(&pec->pool);
             if (local_ret != EC_OK) {
-                ec_log(1, __func__, "pool_close failed with %d\n", local_ret);
+                ec_log(1, "MASTER_OPEN", "pool_close failed with %d\n", local_ret);
             }
 
             ec_index_deinit(&pec->idx_q);
@@ -1117,22 +1118,22 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
 int ec_close(ec_t *pec) {
     assert(pec != NULL);
 
-    ec_log(10, __func__, "detroying tun device...\n");
+    ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
 
     ec_eoe_destroy_tun(pec);
 
-    ec_log(10, __func__, "destroying async loop\n");
+    ec_log(10, "MASTER_CLOSE", "destroying async loop\n");
     (void)ec_async_loop_destroy(&pec->async_loop);
-    ec_log(10, __func__, "closing hardware handle\n");
+    ec_log(10, "MASTER_CLOSE", "closing hardware handle\n");
     (void)hw_close(&pec->hw);
-    ec_log(10, __func__, "freeing frame pool\n");
+    ec_log(10, "MASTER_CLOSE", "freeing frame pool\n");
     (void)pool_close(&pec->pool);
 
-    ec_log(10, __func__, "destroying pd_groups\n");
+    ec_log(10, "MASTER_CLOSE", "destroying pd_groups\n");
     ec_index_deinit(&pec->idx_q);
     (void)ec_destroy_pd_groups(pec);
 
-    ec_log(10, __func__, "destroying slaves\n");
+    ec_log(10, "MASTER_CLOSE", "destroying slaves\n");
     if (pec->slaves != NULL) {
         int slave;
         int cnt = pec->slave_cnt;
@@ -1150,7 +1151,7 @@ int ec_close(ec_t *pec) {
     (void)ec_cyclic_datagram_destroy(&pec->dc.cdg);
     (void)ec_cyclic_datagram_destroy(&pec->cdg_state);
 
-    ec_log(10, __func__, "all done!\n");
+    ec_log(10, "MASTER_CLOSE", "all done!\n");
     return 0;
 }
 
@@ -1186,11 +1187,11 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
     idx_entry_t *p_idx;
 
     if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
-        ec_log(1, "EC_TRANSCEIVE", "error getting ethercat index\n");
+        ec_log(1, "MASTER_TRANSCEIVE", "error getting ethercat index\n");
         ret = EC_ERROR_OUT_OF_INDICES;
     } else if (pool_get(&pec->pool, &p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, p_idx);
-        ec_log(1, "EC_TRANSCEIVE", "error getting datagram from pool\n");
+        ec_log(1, "MASTER_TRANSCEIVE", "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
     } else {
         p_dg = ec_datagram_cast(p_entry->data);
@@ -1213,7 +1214,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
                 (pec->master_state != EC_STATE_OP)  ) {
             if (hw_tx(&pec->hw) != EC_OK) {
-                ec_log(1, __func__, "hw_tx failed!\n");
+                ec_log(1, "MASTER_TRANSCEIVE", "hw_tx failed!\n");
             }
         }
 
@@ -1223,9 +1224,9 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
         if (local_ret != OSAL_OK) {
             if (local_ret == OSAL_ERR_TIMEOUT) {
-                ec_log(1, "ec_transceive", "timeout on cmd 0x%X, adr 0x%X\n", cmd, adr);
+                ec_log(1, "MASTER_TRANSCEIVE", "timeout on cmd 0x%X, adr 0x%X\n", cmd, adr);
             } else {
-                ec_log(1, "ec_transceive", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
+                ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
                         local_ret, cmd, adr);
             }
 
@@ -1273,11 +1274,11 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
     idx_entry_t *p_idx;
 
     if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
-        ec_log(1, "EC_TRANSMIT_NO_REPLY", "error getting ethercat index\n");
+        ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "error getting ethercat index\n");
         ret = EC_ERROR_OUT_OF_INDICES;
     } else if (pool_get(&pec->pool, &p_entry, NULL) != EC_OK) {
         ec_index_put(&pec->idx_q, p_idx);
-        ec_log(1, "EC_TRANSMIT_NO_REPLY", "error getting datagram from pool\n");
+        ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "error getting datagram from pool\n");
         ret = EC_ERROR_OUT_OF_DATAGRAMS;
     } else {
         p_dg = ec_datagram_cast(p_entry->data);
@@ -1301,7 +1302,7 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
                 (pec->master_state != EC_STATE_OP)  ) {
             if (hw_tx(&pec->hw) != EC_OK) {
-                ec_log(1, __func__, "hw_tx failed!\n");
+                ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "hw_tx failed!\n");
             }
         }
     }
@@ -1320,7 +1321,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
 
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "group %2d: received process data\n", p_entry->user_arg);
+    ec_log(100, "MASTER_RECV_PD_GROUP", "group %2d: received process data\n", p_entry->user_arg);
 #endif
 
     osal_mutex_lock(&pd->cdg.lock);
@@ -1347,7 +1348,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
                 (pec->master_state == EC_STATE_OP)  ) && 
             (wkc != pd->wkc_expected)) {
         if ((wkc_mismatch_cnt++%1000) == 0) {
-            ec_log(1, "EC_RECEIVE_PROCESS_DATA_GROUP", 
+            ec_log(1, "MASTER_RECV_PD_GROUP", 
                     "group %2d: working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
                     pd->group, wkc, pd->wkc_expected, 
@@ -1366,7 +1367,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
         if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
             if ((*slv->mbx.sm_state & 0x08u) != 0u) {
 #ifdef LIBETHERCAT_DEBUG
-                ec_log(100, __func__, "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
+                ec_log(100, "MASTER_RECV_PD_GROUP", "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
 #endif
                 ec_mbx_sched_read(pec, slave);
             }
@@ -1389,14 +1390,14 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
     ec_datagram_t *p_dg;
 
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "group %2d: sending process data\n", group);
+    ec_log(100, "MASTER_SEND_PD_GROUP", "group %2d: sending process data\n", group);
 #endif
 
     osal_mutex_lock(&pd->cdg.lock);
 
     if (pd->cdg.p_idx == NULL) {
         if (ec_index_get(&pec->idx_q, &pd->cdg.p_idx) != EC_OK) {
-            ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting ethercat index\n");
+            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
             ret = EC_ERROR_OUT_OF_INDICES;
         }
     }
@@ -1405,7 +1406,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
         if (pool_get(&pec->pool, &pd->cdg.p_entry, NULL) != EC_OK) {
             ec_index_put(&pec->idx_q, pd->cdg.p_idx);
             pd->cdg.p_idx = NULL;
-            ec_log(1, "EC_SEND_PROCESS_DATA_GROUP", "error getting datagram from pool\n");
+            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
         } else {
             pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
@@ -1433,7 +1434,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
             }
         } else { // use_lrw == OSAL_FALSE
-            ec_log(1, __func__, "LRD/LWR not implemented!\n");
+            ec_log(1, "MASTER_SEND_PD_GROUP", "LRD/LWR not implemented!\n");
         }
     }
 
@@ -1452,7 +1453,7 @@ static void cb_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p
     ec_slave_ptr(slv, pec, p_entry->user_arg);
 
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "slave %2d: received mbx state\n", p_entry->user_arg);
+    ec_log(100, "MASTER_RECV_MBX_STATE", "slave %2d: received mbx state\n", p_entry->user_arg);
 #endif
 
     osal_mutex_lock(&slv->mbx.cdg.lock);
@@ -1463,7 +1464,7 @@ static void cb_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p
     }
 
     if ((slv->mbx.mbx_state & 0x08u) != 0u) {
-        ec_log(100, __func__, "slave %2d: sm_state %X\n", p_entry->user_arg, slv->mbx.mbx_state);
+        ec_log(100, "MASTER_RECV_MBX_STATE", "slave %2d: sm_state %X\n", p_entry->user_arg, slv->mbx.mbx_state);
         ec_mbx_sched_read(pec, p_entry->user_arg);
     }
 
@@ -1491,16 +1492,16 @@ static int ec_send_mbx_state(ec_t *pec, int slave) {
     ec_slave_ptr(slv, pec, slave);
 
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "slave %2d: sending mbx_state\n", slave);
+    ec_log(100, "MASTER_SEND_MBX_STATE", "slave %2d: sending mbx_state\n", slave);
 #endif
 
     osal_mutex_lock(&slv->mbx.cdg.lock);
 
     if ((slv->mbx.cdg.p_entry != NULL) || (slv->mbx.cdg.p_idx != NULL)) {
-        ec_log(1, __func__, "slave %2d: already sent mbx_state frame, check for timeout...\n", slave);
+        ec_log(1, "MASTER_SEND_MBX_STATE", "slave %2d: already sent mbx_state frame, check for timeout...\n", slave);
 
         if (osal_timer_expired(&slv->mbx.cdg.timeout) == OSAL_ERR_TIMEOUT) {
-            ec_log(1, __func__, "got timeout on last frame... sending new one!\n");
+            ec_log(1, "MASTER_SEND_MBX_STATE", "got timeout on last frame... sending new one!\n");
             pool_put(&pec->pool, slv->mbx.cdg.p_entry);
             ec_index_put(&pec->idx_q, slv->mbx.cdg.p_idx);
 
@@ -1513,11 +1514,11 @@ static int ec_send_mbx_state(ec_t *pec, int slave) {
 
     if (ret == EC_OK) {
         if (ec_index_get(&pec->idx_q, &slv->mbx.cdg.p_idx) != EC_OK) {
-            ec_log(1, __func__, "error getting ethercat index\n");
+            ec_log(1, "MASTER_SEND_MBX_STATE", "error getting ethercat index\n");
             ret = EC_ERROR_OUT_OF_INDICES;
         } else if (pool_get(&pec->pool, &slv->mbx.cdg.p_entry, NULL) != EC_OK) {
             ec_index_put(&pec->idx_q, slv->mbx.cdg.p_idx);
-            ec_log(1, __func__, "error getting datagram from pool\n");
+            ec_log(1, "MASTER_SEND_MBX_STATE", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
         } else {
             p_dg = ec_datagram_cast(slv->mbx.cdg.p_entry->data);
@@ -1604,7 +1605,7 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
     osal_uint16_t wkc = 0; 
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "received distributed clock\n");
+    ec_log(100, "MASTER_RECV_DC", "received distributed clock\n");
 #endif
 
     osal_mutex_lock(&pec->dc.cdg.lock);
@@ -1645,10 +1646,10 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
             // dc system time offset frame
             if (ec_index_get(&pec->idx_q, &p_idx_sto) != EC_OK) {
-                ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
+                ec_log(1, "MASTER_RECV_DC", "error getting ethercat index\n");
             } else if (pool_get(&pec->pool, &p_entry_dc_sto, NULL) != EC_OK) {
                 ec_index_put(&pec->idx_q, p_idx_sto);
-                ec_log(1, "EC_RECEIVE_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
+                ec_log(1, "MASTER_RECV_DC", "error getting datagram from pool\n");
             } else {
                 // correct system time offset, sync ref_clock to master_clock
                 // only correct half diff to avoid overshoot in slave.
@@ -1693,7 +1694,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     ec_datagram_t *p_dg = NULL;
 
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "sending distributed clock\n");
+    ec_log(100, "MASTER_SEND_DC", "sending distributed clock\n");
 #endif
 
     osal_mutex_lock(&pec->dc.cdg.lock);
@@ -1703,7 +1704,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     } else {
         if (pec->dc.cdg.p_idx == NULL) {
             if (ec_index_get(&pec->idx_q, &pec->dc.cdg.p_idx) != EC_OK) {
-                ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting ethercat index\n");
+                ec_log(1, "MASTER_SEND_DC", "error getting ethercat index\n");
                 ret = EC_ERROR_OUT_OF_INDICES;
             } 
         }
@@ -1711,7 +1712,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
         if ((ret == EC_OK) && (pec->dc.cdg.p_entry == NULL)) {
             if (pool_get(&pec->pool, &pec->dc.cdg.p_entry, NULL) != EC_OK) {
                 ec_index_put(&pec->idx_q, pec->dc.cdg.p_idx);
-                ec_log(1, "EC_SEND_DISTRIBUTED_CLOCKS_SYNC", "error getting datagram from pool\n");
+                ec_log(1, "MASTER_SEND_DC", "error getting datagram from pool\n");
                 ret = EC_ERROR_OUT_OF_DATAGRAMS;
             } else {
                 pec->dc.cdg.p_entry->p_idx = pec->dc.cdg.p_idx;
@@ -1771,7 +1772,7 @@ static void cb_brd_ec_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t
     osal_uint16_t wkc;
 
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "received broadcast ec state\n");
+    ec_log(100, "MASTER_RECV_BRD_STATE", "received broadcast ec state\n");
 #endif
 
     osal_mutex_lock(&pec->cdg_state.lock);
@@ -1783,7 +1784,7 @@ static void cb_brd_ec_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t
                 (pec->master_state == EC_STATE_OP)  ) && 
             (wkc != pec->slave_cnt)) {
         if ((wkc_mismatch_cnt_ec_state++%1000) == 0) {
-            ec_log(1, __func__, 
+            ec_log(1, "MASTER_RECV_BRD_STATE", 
                     "brd ec_state: working counter mismatch got %u, "
                     "slave_cnt %d, mismatch_cnt %d\n", 
                     wkc, pec->slave_cnt, wkc_mismatch_cnt_ec_state);
@@ -1796,7 +1797,7 @@ static void cb_brd_ec_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t
         static int ec_state_mismatch_cnt = 0;
 
         if ((ec_state_mismatch_cnt++%1000) == 0) {
-            ec_log(1, __func__, "al status mismatch, got 0x%X, master state is 0x%X\n", 
+            ec_log(1, "MASTER_RECV_BRD_STATE", "al status mismatch, got 0x%X, master state is 0x%X\n", 
                     al_status, pec->master_state);
             ec_async_check_all(&pec->async_loop);
         }
@@ -1817,14 +1818,14 @@ int ec_send_brd_ec_state(ec_t *pec) {
     ec_datagram_t *p_dg = NULL;
     
 #ifdef LIBETHERCAT_DEBUG
-    ec_log(100, __func__, "sending broadcast ec state\n");
+    ec_log(100, "MASTER_SEND_BRD_STATE", "sending broadcast ec state\n");
 #endif
 
     osal_mutex_lock(&pec->cdg_state.lock);
 
     if (pec->cdg_state.p_idx == NULL) {
         if (ec_index_get(&pec->idx_q, &pec->cdg_state.p_idx) != EC_OK) {
-            ec_log(1, __func__, "error getting ethercat index\n");
+            ec_log(1, "MASTER_SEND_BRD_STATE", "error getting ethercat index\n");
             ret = EC_ERROR_OUT_OF_INDICES;
         } 
     }
@@ -1832,7 +1833,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
     if ((ret == EC_OK) && (pec->cdg_state.p_entry == NULL)) {
         if (pool_get(&pec->pool, &pec->cdg_state.p_entry, NULL) != EC_OK) {
             ec_index_put(&pec->idx_q, pec->cdg_state.p_idx);
-            ec_log(1, __func__, "error getting datagram from pool\n");
+            ec_log(1, "MASTER_SEND_BRD_STATE", "error getting datagram from pool\n");
             ret = EC_ERROR_OUT_OF_DATAGRAMS;
         } else {
             pec->cdg_state.p_entry->p_idx = pec->cdg_state.p_idx;
@@ -1870,7 +1871,7 @@ void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
 
     (void)memcpy((osal_uint8_t *)&pec->tun_ip, (osal_uint8_t *)&ip_address[0], 4);
     if (ec_eoe_setup_tun(pec) != EC_OK) {
-        ec_log(1, __func__, "ec_eoe_setup_tun failed!\n");
+        ec_log(1, "MASTER_CONFIGURE_TUN", "ec_eoe_setup_tun failed!\n");
     }
 }
 

@@ -88,7 +88,7 @@ void ec_soe_init(ec_t *pec, osal_uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     if (pool_open(&slv->mbx.soe.recv_pool, 0, NULL) != EC_OK) {
-        ec_log(1, __func__, "pool_open failed!\n");
+        ec_log(1, "SOE_INIT", "pool_open failed!\n");
     }
 }
 
@@ -106,7 +106,7 @@ void ec_soe_deinit(ec_t *pec, osal_uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     if (pool_close(&slv->mbx.soe.recv_pool) != EC_OK) {
-        ec_log(1, __func__, "pool_close failed!\n");
+        ec_log(1, "SOE_DEINIT", "pool_close failed!\n");
     }
 }
 
@@ -189,10 +189,10 @@ void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
         } 
 
         if (local_ret < 0) {
-            ec_log(1, __func__, "snprintf failed with %d\n", local_ret);
+            ec_log(1, "SOE_ENQUEUE", "snprintf failed with %d\n", local_ret);
         }
         
-        ec_log(10, __func__, "%s\n", soe_log_buf);
+        ec_log(10, "SOE_ENQUEUE", "%s\n", soe_log_buf);
 
         ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
     } else {
@@ -268,7 +268,7 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
 
             // check for correct op_code
             if (read_buf->soe_hdr.op_code != EC_SOE_READ_RES) {
-                ec_log(5, __func__, "got unexpected response: opcode %d, incomplete %d, error %d, "
+                ec_log(5, "SOE_READ", "got unexpected response: opcode %d, incomplete %d, error %d, "
                         "atn %d, elements %d, idn %d\n", read_buf->soe_hdr.op_code, read_buf->soe_hdr.incomplete, read_buf->soe_hdr.error, 
                         read_buf->soe_hdr.atn, read_buf->soe_hdr.elements, read_buf->soe_hdr.idn_fragments_left);
                 ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
@@ -334,7 +334,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
         osal_size_t mbx_len = slv->sm[MAILBOX_WRITE].len 
             - sizeof(ec_mbx_header_t) - sizeof(ec_soe_header_t);
 
-        ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d, buf %p, "
+        ec_log(100, "SOE_WRITE", "slave %d, atn %d, idn %d, elements %d, buf %p, "
                 "len %" PRIu64 ", left %" PRIu64 ", mbx_len %" PRIu64 "\n", 
                 slave, atn, idn, elements, buf, len, left_len, mbx_len);
 
@@ -345,11 +345,11 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
             if (local_ret >= 0) {
                 soe_log_pos += (osal_uint32_t)local_ret;
             } else {
-                ec_log(1, __func__, "snprintf failed with %d!\n", local_ret);
+                ec_log(1, "SOE_WRITE", "snprintf failed with %d!\n", local_ret);
             }
         }
 
-        ec_log(100, __func__, "%s\n", soe_log_buf);
+        ec_log(100, "SOE_WRITE", "%s\n", soe_log_buf);
 
         while ((left_len != 0u) && (ret != EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS)) {
             if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != EC_OK) {
@@ -373,7 +373,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                 from = &from[send_len];
                 left_len -= send_len;
 
-                ec_log(100, __func__, "slave %d, atn %d, idn %d, elements %d: sending fragment len %" PRIu64 " (left %" PRIu64 ")\n",
+                ec_log(100, "SOE_WRITE", "slave %d, atn %d, idn %d, elements %d: sending fragment len %" PRIu64 " (left %" PRIu64 ")\n",
                         slave, atn, idn, elements, send_len, left_len);
 
                 if (left_len != 0u) {
@@ -393,7 +393,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                     // cppcheck-suppress misra-c2012-11.3
                     ec_soe_request_t *read_buf  = (ec_soe_request_t *)(p_entry->data);                 
 
-                    ec_log(100, __func__, "got response: opcode %d, incomplete %d, error %d, "
+                    ec_log(100, "SOE_WRITE", "got response: opcode %d, incomplete %d, error %d, "
                             "atn %d, elements %d, idn %d\n", read_buf->soe_hdr.op_code, read_buf->soe_hdr.incomplete, read_buf->soe_hdr.error, 
                             read_buf->soe_hdr.atn, read_buf->soe_hdr.elements, read_buf->soe_hdr.idn_fragments_left);
 
@@ -402,7 +402,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
 
                     // check for correct op_code
                     if (op_code != EC_SOE_WRITE_RES) {
-                        ec_log(5, __func__, "got unexpected response %d\n", op_code);
+                        ec_log(5, "SOE_WRITE", "got unexpected response %d\n", op_code);
                     } else {
                         break;
                     }
@@ -457,7 +457,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_ui
             osal_size_t sub_idn_attr_size = sizeof(sub_idn_attr);
             elements = EC_SOE_ATTRIBUTE;
 
-            ec_log(100, __func__, "atn %d, read mapped idn %d\n", atn, sub_idn);
+            ec_log(100, "SOE_MAPPING", "atn %d, read mapped idn %d\n", atn, sub_idn);
 
             if (ec_soe_read(pec, slave, atn, sub_idn, &elements, 
                         buf, &sub_idn_attr_size) != EC_OK) {
@@ -468,7 +468,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_ui
             *bitsize += 8u << sub_idn_attr.length;
         }
 
-        ec_log(10, __func__, "soe mapping for idn %d, bitsize %u\n", idn, *bitsize);
+        ec_log(10, "SOE_MAPPING", "soe mapping for idn %d, bitsize %u\n", idn, *bitsize);
     }
 
     return ret;
@@ -492,7 +492,7 @@ int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
         // at mapping is stored at idn 16 and should be written in preop
         // state by user
         for (atn = 0u; atn < slv->eeprom.general.soe_channels; ++atn) {
-            ec_log(100, __func__, "slave %2d: getting at pd len channel %d\n", 
+            ec_log(100, "SOE_MAPPING", "slave %2d: getting at pd len channel %d\n", 
                     slave, atn);
 
             osal_uint32_t bits = 0u;
@@ -510,7 +510,7 @@ int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
         if (at_bits != 0u) {
             const osal_uint32_t at_sm = 3u;
 
-            ec_log(10, __func__, "slave %2d: sm%d length bits %d, bytes %d\n", 
+            ec_log(10, "SOE_MAPPING", "slave %2d: sm%d length bits %d, bytes %d\n", 
                     slave, at_sm, at_bits, (at_bits + 7u) / 8u);
 
             if ((slv->sm != NULL) && (slv->sm_ch > at_sm)) {
@@ -525,7 +525,7 @@ int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
         // mdt mapping is stored at idn 24 and should be written in preop
         // state by user
         for (atn = 0u; atn < slv->eeprom.general.soe_channels; ++atn) {
-            ec_log(100, __func__, "slave %2d: getting mdt pd len channel %d\n", 
+            ec_log(100, "SOE_MAPPING", "slave %2d: getting mdt pd len channel %d\n", 
                     slave, atn);
 
             osal_uint32_t bits = 0u;
@@ -542,7 +542,7 @@ int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
 
         if (mdt_bits != 0u) {
             const osal_uint32_t mdt_sm = 2u;
-            ec_log(10, __func__, "slave %2d: sm%d length bits %d, bytes %d\n", 
+            ec_log(10, "SOE_MAPPING", "slave %2d: sm%d length bits %d, bytes %d\n", 
                     slave, mdt_sm, mdt_bits, (mdt_bits + 7u) / 8u);
 
             if ((slv->sm != NULL) && (slv->sm_ch > mdt_sm)) {

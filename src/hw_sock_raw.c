@@ -66,7 +66,7 @@ static int try_grant_cap_net_raw_init(void) {
     } else {
         int fd = open(GRANT_CAP_NET_RAW_PROCFS, O_RDONLY);
         if (fd == -1) {
-            ec_log(1, __func__, "error opening %s: %s\n", 
+            ec_log(1, "HW_OPEN", "error opening %s: %s\n", 
                     GRANT_CAP_NET_RAW_PROCFS, strerror(errno));
             ret = -1;
         } else {
@@ -102,7 +102,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     // create raw socket connection
     phw->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
     if (phw->sockfd <= 0) {
-        ec_log(1, __func__, "socket error on opening SOCK_RAW: %s\n", strerror(errno));
+        ec_log(1, "HW_OPEN", "socket error on opening SOCK_RAW: %s\n", strerror(errno));
         ret = EC_ERROR_UNAVAILABLE;
     }
 
@@ -111,7 +111,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
 
     if (ret == EC_OK) {
         int pagesize = getpagesize();
-        ec_log(10, __func__, "got page size %d bytes\n", pagesize);
+        ec_log(10, "HW_OPEN", "got page size %d bytes\n", pagesize);
 
         struct tpacket_req tp;
 
@@ -121,10 +121,10 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         tp.tp_frame_size = pagesize;
         tp.tp_frame_nr   = phw->mmap_packets;
         if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_RX_RING, (void*)&tp, sizeof(tp)) != 0) {
-            ec_log(1, __func__, "setsockopt() rx ring: %s\n", strerror(errno));
+            ec_log(1, "HW_OPEN", "setsockopt() rx ring: %s\n", strerror(errno));
             ret = EC_ERROR_UNAVAILABLE;
         } else if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_TX_RING, (void*)&tp, sizeof(tp)) != 0) {
-            ec_log(1, __func__, "setsockopt() tx ring: %s\n", strerror(errno));
+            ec_log(1, "HW_OPEN", "setsockopt() tx ring: %s\n", strerror(errno));
             ret = EC_ERROR_UNAVAILABLE;
         } else {}
 
@@ -165,7 +165,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
         /*int ret =*/ ioctl(phw->sockfd, SIOCSIFFLAGS, &ifr);
         //    if (ret != 0) {
-        //        ec_log(1, __func__, "error setting interface %s: %s\n", devname, strerror(errno));
+        //        ec_log(1, "HW_OPEN", "error setting interface %s: %s\n", devname, strerror(errno));
         //        goto error_exit;
         //    }
         
@@ -175,10 +175,10 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
             ioctl(phw->sockfd, SIOCGIFFLAGS, &ifr);
             iff_running = (ifr.ifr_flags & IFF_RUNNING) == 0 ? OSAL_FALSE : OSAL_TRUE;
             if (iff_running == OSAL_TRUE) {
-                ec_log(10, __func__, "interface %s is RUNNING now, wait additional 2 sec for link to be established!\n", devname);
+                ec_log(10, "HW_OPEN", "interface %s is RUNNING now, wait additional 2 sec for link to be established!\n", devname);
                 osal_sleep(1000000000);
             } else {
-                ec_log(10, __func__, "interface %s is not RUNNING, waiting ...\n", devname);
+                ec_log(10, "HW_OPEN", "interface %s is not RUNNING, waiting ...\n", devname);
             }
             
             if (osal_timer_expired(&up_timeout) == OSAL_ERR_TIMEOUT) {
@@ -189,7 +189,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         }
 
         if (iff_running == OSAL_FALSE) {
-            ec_log(1, __func__, "unable to bring interface %s UP!\n", devname);
+            ec_log(1, "HW_OPEN", "unable to bring interface %s UP!\n", devname);
             ret = EC_ERROR_UNAVAILABLE;
             close(phw->sockfd);
             phw->sockfd = 0;
@@ -197,7 +197,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     }
 
     if (ret == EC_OK) {
-        ec_log(10, __func__, "binding raw socket to %s\n", devname);
+        ec_log(10, "HW_OPEN", "binding raw socket to %s\n", devname);
 
         (void)memset(&ifr, 0, sizeof(ifr));
         (void)strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
@@ -280,7 +280,7 @@ static struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
     while (header->tp_status != TP_STATUS_AVAILABLE) {
         // notify kernel
         if (send(phw->sockfd, NULL, 0, 0) < 0) {
-            ec_log(1, __func__, "error on send: %s\n", strerror(errno));
+            ec_log(1, "HW_TX", "error on send: %s\n", strerror(errno));
         }
 
         // buffer not available, wait here...
@@ -289,7 +289,7 @@ static struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
         pollset.revents = 0;
         int ret = poll(&pollset, 1, 1000);
         if (ret < 0) {
-            ec_log(1, __func__, "error on poll: %s\n", strerror(errno));
+            ec_log(1, "HW_TX", "error on poll: %s\n", strerror(errno));
             continue;
         }
     }
@@ -359,7 +359,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
 
     // notify kernel
     if (send(phw->sockfd, NULL, 0, 0) < 0) {
-        ec_log(1, __func__, "error on sendto: %s\n", strerror(errno));
+        ec_log(1, "HW_TX", "error on sendto: %s\n", strerror(errno));
         ret = EC_ERROR_HW_SEND;
     }
 
@@ -370,11 +370,11 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     osal_ssize_t bytestx = send(phw->sockfd, pframe, pframe->len, 0);
 
     if ((osal_ssize_t)pframe->len != bytestx) {
-        ec_log(1, "TX", "got only %ld bytes out of %d bytes "
+        ec_log(1, "HW_TX", "got only %ld bytes out of %d bytes "
                 "through.\n", bytestx, pframe->len);
 
         if (bytestx == -1) {
-            ec_log(1, "TX", "error: %s\n", strerror(errno));
+            ec_log(1, "HW_TX", "error: %s\n", strerror(errno));
         }
 
         ret = EC_ERROR_HW_SEND;

@@ -128,14 +128,14 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
 
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
-        ec_log(1, "RX_THREAD", "received non-ethercat frame! (type 0x%X)\n", pframe->type);
+        ec_log(1, "HW_RX", "received non-ethercat frame! (type 0x%X)\n", pframe->type);
     } else {
         ec_datagram_t *d = ec_datagram_first(pframe); 
         while ((osal_uint8_t *) d < (osal_uint8_t *) ec_frame_end(pframe)) {
             pool_entry_t *entry = phw->tx_send[d->idx];
 
             if (!entry) {
-                ec_log(1, "RX_THREAD", "received idx %d, but we did not send one?\n", d->idx);
+                ec_log(1, "HW_RX", "received idx %d, but we did not send one?\n", d->idx);
             } else {
                 if ((entry->user_cb) != NULL) {
                     (*entry->user_cb)(phw->pec, entry, d);
@@ -159,13 +159,13 @@ void *hw_rx_thread(void *arg) {
         rx_prio = 0;
     }
 
-    ec_log(10, __func__, "receive thread running (prio %d)\n", rx_prio);
+    ec_log(10, "HW_RX", "receive thread running (prio %d)\n", rx_prio);
 
     while (phw->rxthreadrunning != 0) {
         (void)hw_device_recv(phw);
     }
     
-    ec_log(10, __func__, "receive thread stopped\n");
+    ec_log(10, "HW_RX", "receive thread stopped\n");
     
     return NULL;
 }

@@ -72,7 +72,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     // open bpf device
     phw->sockfd = open(bpf_devname, O_RDWR, 0);
     if (phw->sockfd <= 0) {
-        ec_log(1, __func__, "error opening bpf device %s: %s\n", bpf_devname, strerror(errno));
+        ec_log(1, "HW_OPEN", "error opening bpf device %s: %s\n", bpf_devname, strerror(errno));
         ret = -1;
     } else {
         (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
@@ -81,28 +81,28 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         // connect bpf to specified network device
         (void)snprintf(bound_if.ifr_name, IFNAMSIZ, devname);
         if (ioctl(phw->sockfd, BIOCSETIF, &bound_if) == -1 ) {
-            ec_log(1, __func__, "error on BIOCSETIF: %s\n", 
+            ec_log(1, "HW_OPEN", "error on BIOCSETIF: %s\n", 
                     strerror(errno));
             ret = -1;
         } else {
             (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
             // make sure we are dealing with an ethernet device.
             if (ioctl(phw->sockfd, BIOCGDLT, (caddr_t)&n) == -1) {
-                ec_log(1, __func__, "error on BIOCGDLT: %s\n", 
+                ec_log(1, "HW_OPEN", "error on BIOCGDLT: %s\n", 
                         strerror(errno));
                 ret = -1;
             } else {
                 (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
                 // activate immediate mode (therefore, buf_len is initially set to "1")
                 if (ioctl(phw->sockfd, BIOCIMMEDIATE, &btrue) == -1) {
-                    ec_log(1, __func__, "error on BIOCIMMEDIATE: %s\n", 
+                    ec_log(1, "HW_OPEN", "error on BIOCIMMEDIATE: %s\n", 
                             strerror(errno));
                     ret = -1;
                 } else {
                     (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
                     // request buffer length 
                     if (ioctl(phw->sockfd, BIOCGBLEN, &ETH_FRAME_LEN) == -1) {
-                        ec_log(1, __func__, "error on BIOCGBLEN: %s\n", 
+                        ec_log(1, "HW_OPEN", "error on BIOCGBLEN: %s\n", 
                                 strerror(errno));
                         ret = -1;
                     } else {
@@ -113,14 +113,14 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
 
                         // setting filter to bpf
                         if (ioctl(phw->sockfd, BIOCSETF, &my_bpf_program) == -1) {
-                            ec_log(1, __func__, "error on BIOCSETF: %s\n", 
+                            ec_log(1, "HW_OPEN", "error on BIOCSETF: %s\n", 
                                     strerror(errno));
                             ret = -1;
                         } else {
                             (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
                             // we do not want to see the sent frames
                             if (ioctl(phw->sockfd, BIOCSSEESENT, &bfalse) == -1) {
-                                ec_log(1, __func__, "error on BIOCSSEESENT: %s\n", 
+                                ec_log(1, "HW_OPEN", "error on BIOCSSEESENT: %s\n", 
                                         strerror(errno));
                                 ret = -1;
                             } else {
@@ -128,13 +128,13 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
                                 /* set receive call timeout */
                                 static struct timeval timeout = { 0, 1000};
                                 if (ioctl(phw->sockfd, BIOCSRTIMEOUT, &timeout) == -1) {
-                                    ec_log(1, __func__, "error on BIOCSRTIMEOUT: %s\n", 
+                                    ec_log(1, "HW_OPEN", "error on BIOCSRTIMEOUT: %s\n", 
                                             strerror(errno));
                                     ret = -1;
                                 } else {
                                     (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
                                     if (ioctl(phw->sockfd, BIOCFLUSH) == -1) {
-                                        ec_log(1, __func__, "error on BIOCFLUSH: %s\n", 
+                                        ec_log(1, "HW_OPEN", "error on BIOCFLUSH: %s\n", 
                                                 strerror(errno));
                                         ret = -1;
                                     } else {

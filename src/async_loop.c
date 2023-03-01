@@ -102,7 +102,7 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
     if ((ret != EC_OK) || (state == EC_STATE_UNKNOWN)) {
         ec_state_t expected_state = paml->pec->slaves[slave].expected_state;
 
-        ec_log(10, "ec_async_thread", "slave %2d: error on "
+        ec_log(10, "ASYNC_CHECK_SLAVE", "slave %2d: error on "
                 "getting slave state, possible slave lost, try to reconfigure\n", slave);
 
         // force it to INIT and then back to expected state
@@ -129,12 +129,12 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
         }
 
         if (ret != EC_OK) {
-            ec_log(1, __func__, "slave %2d: ec_slave_state_transition failed!\n", slave);
+            ec_log(1, "ASYNC_CHECK_SLAVE", "slave %2d: ec_slave_state_transition failed!\n", slave);
         }
     } else {
         // if state != expected_state -> repair
         if (state != paml->pec->slaves[slave].expected_state) {
-            ec_log(10, "ec_async_thread", "slave %2d: state 0x%02X, al statuscode "
+            ec_log(10, "ASYNC_CHECK_SLAVE", "slave %2d: state 0x%02X, al statuscode "
                     "0x%04X : %s\n", slave, state, alstatcode, al_status_code_2_string(alstatcode));
             
             osal_uint16_t wkc;
@@ -152,7 +152,7 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
                         pos += snprintf(&buf[pos], 128 - pos, "%02X ", rx_error_counters[i]);
                     }
 
-                    ec_log(10, "ec_async_thread", "slave %2d: error counters %s\n", 
+                    ec_log(10, "ASYNC_CHECK_SLAVE", "slave %2d: error counters %s\n", 
                             slave, msg);
                 }
 
@@ -160,7 +160,7 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
                         paml->pec->slaves[slave].expected_state);
 
                 if (ret != EC_OK) {
-                    ec_log(1, __func__, "slave %2d: ec_slave_state_transition failed!\n", slave);
+                    ec_log(1, "ASYNC_CHECK_SLAVE", "slave %2d: ec_slave_state_transition failed!\n", slave);
                 }
             }
         }
@@ -175,7 +175,7 @@ static void *ec_async_loop_thread(void *arg) {
     assert(paml != NULL);
     assert(paml->pec != NULL);
 
-    ec_log(10, __func__, "async loop thread running\n");
+    ec_log(10, "ASYNC_LOOP", "async loop thread running\n");
 
     while (paml->loop_running == 1) {
         osal_timer_t timeout;
@@ -211,7 +211,7 @@ static void *ec_async_loop_thread(void *arg) {
         if (ec_async_loop_put(&paml->avail, me) == 0) {};
     }
     
-    ec_log(10, __func__, "async loop thread exited\n");
+    ec_log(10, "ASYNC_LOOP", "async loop thread exited\n");
 
     return NULL;
 }
@@ -234,7 +234,7 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
 
     if (osal_timer_expired(&paml->next_check_group) == OSAL_OK) {
         // no need to check now
-        ec_log(100, __func__, "not checking now, timeout not reached\n");
+        ec_log(100, "ASYNC_CHECK_GROUP", "group %d: not checking now, timeout not reached\n", gid);
     } else {
         osal_timer_init(&paml->next_check_group, 1000000000);
 
@@ -248,7 +248,7 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
             me->msg.id = EC_MSG_CHECK_GROUP;
             me->msg.payload = gid;
             if (ec_async_loop_put(&paml->exec, me) == 0) {
-                ec_log(5, "ec_async_check_group", "scheduled for group %d\n", gid);
+                ec_log(5, "ASYNC_CHECK_GROUP", "group %d: scheduled\n", gid);
             }
         }
     }
@@ -295,7 +295,7 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
         (void)strcpy(&attr.task_name[0], "ecat.async");
         if (osal_task_create(&paml->loop_tid, &attr, 
                 ec_async_loop_thread, paml) != OSAL_OK) {
-            ec_log(1, __func__, "error creating async loop task!\n");
+            ec_log(1, "ASYNC_INIT", "error creating async loop task!\n");
         }
     }
 

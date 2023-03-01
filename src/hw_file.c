@@ -61,15 +61,20 @@
  */
 int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
+    static const osal_uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
     /* we use file link layer device driver */
     // cppcheck-suppress misra-c2012-7.1
     phw->sockfd = open(devname, O_RDWR, 0644);
     if (phw->sockfd <= 0) {
-        ec_log(1, __func__, "error opening %s: %s\n", devname, strerror(errno));
+        ec_log(1, "HW_OPEN", "error opening %s: %s\n", devname, strerror(errno));
     } else {
         phw->mtu_size = 1480;
     }
+    
+    (void)memcpy(((ec_frame_t *)phw->send_frame)->mac_dest, mac_dest, 6);
+    (void)memcpy(((ec_frame_t *)phw->send_frame)->mac_src, mac_src, 6);
 
     return ret;
 }
@@ -109,15 +114,10 @@ int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     int ret = EC_OK;
     ec_frame_t *pframe = NULL;
     
-    static const osal_uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
-
     // cppcheck-suppress misra-c2012-11.3
     pframe = (ec_frame_t *)phw->send_frame;
 
     // reset length to send new frame
-    (void)memcpy(pframe->mac_dest, mac_dest, 6);
-    (void)memcpy(pframe->mac_src, mac_src, 6);
     pframe->ethertype = htons(ETH_P_ECAT);
     pframe->type = 0x01;
     pframe->len = sizeof(ec_frame_t);
@@ -144,11 +144,11 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     osal_ssize_t bytestx = write(phw->sockfd, pframe, pframe->len);
 
     if ((osal_ssize_t)pframe->len != bytestx) {
-        ec_log(1, "TX", "got only %" PRId64 " bytes out of %d bytes "
+        ec_log(1, "HW_TX", "got only %" PRId64 " bytes out of %d bytes "
                 "through.\n", bytestx, pframe->len);
 
         if (bytestx == -1) {
-            ec_log(1, "TX", "error: %s\n", strerror(errno));
+            ec_log(1, "HW_TX", "error: %s\n", strerror(errno));
         }
 
         ret = EC_ERROR_HW_SEND;

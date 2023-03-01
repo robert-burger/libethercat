@@ -110,7 +110,7 @@ void ec_foe_init(ec_t *pec, osal_uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     if (pool_open(&slv->mbx.foe.recv_pool, 0, NULL) != EC_OK) {
-        ec_log(1, __func__, "opening FoE receive pool failed!\n");
+        ec_log(1, "FOE_INIT", "slave %2d: opening FoE receive pool failed!\n", slave);
     }
 }
 
@@ -128,7 +128,7 @@ void ec_foe_deinit(ec_t *pec, osal_uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     if (pool_close(&slv->mbx.foe.recv_pool) != EC_OK) {
-        ec_log(1, __func__, "closing FoE receive pool failed!\n");
+        ec_log(1, "FOE_DEINIT", "slave %2d: closing FoE receive pool failed!\n", slave);
     }
 }
 
@@ -196,22 +196,22 @@ static void ec_foe_print_msg(int level, const osal_char_t *ctx, int slave, const
     ec_log(level, ctx, "slave %d: %s - %s\n", slave, msg, msg_buf);
 }
 
-static const osal_char_t *dump_foe_error_request(int slave, ec_foe_error_request_t *read_buf_error) {
+static const osal_char_t *dump_foe_error_request(const osal_char_t *ctx, int slave, ec_foe_error_request_t *read_buf_error) {
     static const osal_char_t *EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND = "File not found!";
 
     const osal_char_t *ret = NULL;
-    ec_log(10, __func__, "got foe error code 0x%X\n", read_buf_error->error_code);
+    ec_log(10, ctx, "got foe error code 0x%X\n", read_buf_error->error_code);
 
     osal_size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
     if (text_len > 0u) {
-        ec_log(10, __func__, "error_text: %.*s\n", (int)text_len, read_buf_error->error_text);
+        ec_log(10, ctx, "error_text: %.*s\n", (int)text_len, read_buf_error->error_text);
     } else {
         if (read_buf_error->error_code == 0x800Du) {
             ret = EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND;
         }
     }
 
-    ec_foe_print_msg(1, __func__, slave, "got message: ", (void *)read_buf_error, read_buf_error->mbx_hdr.length + 6u);
+    ec_foe_print_msg(1, ctx, slave, "got message: ", (void *)read_buf_error, read_buf_error->mbx_hdr.length + 6u);
 
     return ret;
 }
@@ -253,7 +253,7 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         write_buf->password          = password;
         (void)memcpy(write_buf->file_name, file_name, file_name_len);
 
-        ec_log(10, __func__, "start reading file \"%s\"\n", file_name);
+        ec_log(10, "FOE_READ", "start reading file \"%s\"\n", file_name);
 
         // send request
         ec_mbx_enqueue_head(pec, slave, p_entry_send);
@@ -276,10 +276,10 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 if (read_buf_data->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
                     // cppcheck-suppress misra-c2012-11.3
                     ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry_recv->data);
-                    *error_message = dump_foe_error_request(slave, read_buf_error);
+                    *error_message = dump_foe_error_request("FOE_READ", slave, read_buf_error);
                     ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                 } else if (read_buf_data->foe_hdr.op_code != EC_FOE_OP_CODE_DATA_REQUEST) {
-                    ec_log(10, __func__, "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
+                    ec_log(10, "FOE_READ", "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
                 } else {
                     osal_size_t len = read_buf_data->mbx_hdr.length - 6u;
                     // cppcheck-suppress misra-c2012-21.3
@@ -319,7 +319,7 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
             }
         } while (ret == EC_ERROR_MAILBOX_FOE_AGAIN);
 
-        ec_log(10, __func__, "reading file \"%s\" finished\n", file_name);
+        ec_log(10, "FOE_READ", "reading file \"%s\" finished\n", file_name);
     }
 
     osal_mutex_unlock(&slv->mbx.lock);
@@ -377,10 +377,10 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 if (read_buf_ack->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
                     // cppcheck-suppress misra-c2012-11.3
                     ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry->data);
-                    *error_message = dump_foe_error_request(slave, read_buf_error);
+                    *error_message = dump_foe_error_request("FOE_WRITE", slave, read_buf_error);
                     ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                 } else {
-                    ec_log(10, __func__, "got no ack on foe write request, got 0x%X\n", 
+                    ec_log(10, "FOE_WRITE", "got no ack on foe write request, got 0x%X\n", 
                             read_buf_ack->foe_hdr.op_code);
 
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
@@ -416,7 +416,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     last_pkt = 1;
                 }
 
-                ec_log(10, __func__, "slave %2d: sending file offset %" PRIu64 ", bytes %" PRIu64 "\n", 
+                ec_log(10, "FOE_WRITE", "slave %2d: sending file offset %" PRIu64 ", bytes %" PRIu64 "\n", 
                         slave, file_offset, bytes_read);
 
                 file_offset += bytes_read;
@@ -442,10 +442,10 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                         if (read_buf_ack->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
                             // cppcheck-suppress misra-c2012-11.3
                             ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry->data);
-                            *error_message = dump_foe_error_request(slave, read_buf_error);
+                            *error_message = dump_foe_error_request("FOE_WRITE", slave, read_buf_error);
                             ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                         } else {
-                            ec_log(10, __func__,
+                            ec_log(10, "FOE_WRITE",
                                     "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %" PRIu64 ", data_len %" PRIu64 ", packet_nr %d\n", 
                                     read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
 
@@ -457,7 +457,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 
                     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 } else {
-                    ec_log(10, __func__,
+                    ec_log(10, "FOE_WRITE",
                             "got no ack on foe write request, last_pkt %d, bytes_read %" PRIu64 ", data_len %" PRIu64 "\n", 
                             last_pkt, bytes_read, data_len);
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
@@ -466,9 +466,9 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         } while ((last_pkt != 0) && (ret == EC_OK));
 
         if (ret == EC_OK) {
-            ec_log(10, __func__, "file download finished\n");
+            ec_log(10, "FOE_WRITE", "file download finished\n");
         } else {
-            ec_log(1, __func__, "file download FAILED: error %d\n", ret);
+            ec_log(1, "FOE_WRITE", "file download FAILED: error %d\n", ret);
         }
     }
 

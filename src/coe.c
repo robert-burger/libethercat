@@ -241,7 +241,7 @@ void ec_coe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_log(10, __func__, "slave %2d: initializing CoE mailbox.\n", slave);
+    ec_log(10, "COE_INIT", "slave %2d: initializing CoE mailbox.\n", slave);
 
     ec_slave_ptr(slv, pec, slave);
     (void)pool_open(&slv->mbx.coe.recv_pool, 0, NULL);
@@ -341,7 +341,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
 
     // getting index
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_SDO_READ", "locking CoE mailbox failed!\n");
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
@@ -380,7 +380,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(10, __func__, "slave %2d: got sdo abort request on idx %#X, subidx %d, "
+                    ec_log(10, "COE_SDO_READ", "slave %2d: got sdo abort request on idx %#X, subidx %d, "
                             "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
@@ -415,7 +415,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                         }
                     }
                 } else {
-                    ec_coe_print_msg(1, __func__, slave, "got unexpected mailbox message", 
+                    ec_coe_print_msg(1, "COE_SDO_READ", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
@@ -454,7 +454,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
     (*abort_code) = 0;
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_SDO_WRITE", "locking CoE mailbox failed!\n");
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
@@ -499,7 +499,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(10, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                    ec_log(10, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
                             "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
@@ -508,7 +508,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
                     // everthing is fine
                     ret = EC_OK;
                 } else {
-                    ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
+                    ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
@@ -546,7 +546,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
     (*abort_code) = 0;
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_SDO_WRITE", "locking CoE mailbox failed!\n");
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
@@ -598,7 +598,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(10, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                    ec_log(10, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
                             "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
@@ -608,9 +608,9 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                     seg_len += (EC_SDO_NORMAL_HDR_LEN - EC_SDO_SEG_HDR_LEN);
                     ret = EC_OK;
                 } else {
-                    ec_log(5, __func__, "slave %2d: got unexpected mailbox message (service 0x%X, command 0x%X)\n", 
+                    ec_log(5, "COE_SDO_WRITE", "slave %2d: got unexpected mailbox message (service 0x%X, command 0x%X)\n", 
                             slave, read_buf->coe_hdr.service, read_buf->sdo_hdr.command);
-                    ec_coe_print_msg(5, __func__, slave, "message was: ", (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                    ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "message was: ", (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
@@ -675,7 +675,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                                 // cppcheck-suppress misra-c2012-11.3
                                 ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                                ec_log(10, __func__, "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                                ec_log(10, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
                                         "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                                 *abort_code = abort_buf->abort_code;
@@ -684,7 +684,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                                 // everthing is fine
                                 ret = EC_OK;
                             } else {
-                                ec_coe_print_msg(5, __func__, slave, "got unexpected mailbox message", 
+                                ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
                                         (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                                 ret = EC_ERROR_MAILBOX_READ;
                             }
@@ -757,7 +757,7 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_ODLIST", "locking CoE mailbox failed!\n");
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
@@ -870,7 +870,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_SDO_DESC_READ", "locking CoE mailbox failed!\n");
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
@@ -912,7 +912,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
                         osal_uint32_t ecode = read_buf->sdo_info_data[0];
 
-                        ec_log(5, __func__, "slave %2d: got sdo info error request on idx %#X, "
+                        ec_log(5, "COE_SDO_DESC_READ", "slave %2d: got sdo info error request on idx %#X, "
                                 "error_code %X, message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
 
                         if (error_code != NULL) {
@@ -923,7 +923,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     } else {}
                 } else {
                     // not our answer, print out this message
-                    ec_coe_print_msg(5, __func__, slave, "unexpected coe answer", 
+                    ec_coe_print_msg(5, "COE_SDO_DESC_READ", slave, "unexpected coe answer", 
                             (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                     (void)memset(desc, 0, sizeof(ec_coe_sdo_desc_t));
                     ret = EC_ERROR_MAILBOX_READ;
@@ -982,7 +982,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_SDO_ENTRY_DESC_READ", "locking CoE mailbox failed!\n");
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) != EC_OK) {
@@ -1034,7 +1034,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                             (osal_uint32_t)read_buf_error->sdo_info_data[2] << 16u | 
                             (osal_uint32_t)read_buf_error->sdo_info_data[3] << 24u );
 
-                        ec_log(5, __func__, "slave %2d: got sdo info error request on idx %#X, "
+                        ec_log(5, "COE_SDO_ENTRY_DESC_READ", "slave %2d: got sdo info error request on idx %#X, "
                                 "error_code %X, message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
 
                         if (error_code != NULL) {
@@ -1045,7 +1045,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                     } else {}
                 } else {
                     // not our answer, print out this message
-                    ec_coe_print_msg(5, __func__, slave, "unexpected coe answer", 
+                    ec_coe_print_msg(5, "COE_SDO_ENTRY_DESC_READ", slave, "unexpected coe answer", 
                             (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                     (void)memset(desc, 0, sizeof(ec_coe_sdo_entry_desc_t));
                     ret = EC_ERROR_MAILBOX_READ;
@@ -1101,12 +1101,12 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
             buf = (osal_uint8_t *)&entry_cnt;
             ret = ec_coe_sdo_read(pec, slave, idx, 0, 0, buf, &entry_cnt_size, &abort_code);
             if (ret != 0) {
-                ec_log(5, "GENERATE_MAPPING COE", "slave %2d: sm%u reading "
+                ec_log(5, "COE_MAPPING", "slave %2d: sm%u reading "
                         "0x%04X/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
                 continue;
             }
 
-            ec_log(100, "GENERATE_MAPPING COE", "slave %2d: sm%u 0x%04X "
+            ec_log(100, "COE_MAPPING", "slave %2d: sm%u 0x%04X "
                     "count %d\n", slave, sm_idx, idx, entry_cnt); 
 
             // now read all mapped pdo's to retreave the mapped object lengths
@@ -1118,7 +1118,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 buf = (osal_uint8_t *)&entry_idx;
                 ret = ec_coe_sdo_read(pec, slave, idx, i, 0, buf, &entry_size, &abort_code);
                 if (ret != 0) {
-                    ec_log(5, "GENERATE_MAPPING COE", "            "
+                    ec_log(5, "COE_MAPPING", "            "
                             "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
                             idx, i, ret);
                     continue;
@@ -1126,7 +1126,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
 
                 // read entry subindex with mapped value
                 if (entry_idx == 0u) {
-                    ec_log(100, "GENERATE_MAPPING COE", "            "
+                    ec_log(100, "COE_MAPPING", "            "
                             "pdo: entry_idx is 0\n");
                     continue;
                 }
@@ -1137,13 +1137,13 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 buf = (osal_uint8_t *)&entry_cnt_2;
                 ret = ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, buf, &entry_cnt_size, &abort_code);
                 if (ret != 0) {
-                    ec_log(5, "GENERATE_MAPPING COE", "             "
+                    ec_log(5, "COE_MAPPING", "             "
                             "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
                             entry_idx, 0, ret);
                     continue;
                 }
 
-                ec_log(100, "GENERATE_MAPPING COE", "             "
+                ec_log(100, "COE_MAPPING", "             "
                         "pdo: 0x%04X count %d\n", entry_idx, entry_cnt_2); 
 
                 for (osal_uint8_t j = 1u; j <= entry_cnt_2; ++j) {
@@ -1152,7 +1152,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     buf = (osal_uint8_t *)&entry;
                     ret = ec_coe_sdo_read(pec, slave, entry_idx, j, 0, buf, &entry_size, &abort_code);
                     if (ret != 0) {
-                        ec_log(5, "GENERATE_MAPPING COE", "                "
+                        ec_log(5, "COE_MAPPING", "                "
                                 "reading 0x%04X/%d failed, error code 0x%X\n", 
                                 entry_idx, j, ret);
                         continue;
@@ -1160,7 +1160,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
 
                     bit_len += entry & 0x000000FFu;
 
-                    ec_log(100, "GENERATE_MAPPING COE", "                "
+                    ec_log(100, "COE_MAPPING", "                "
                             "mapped entry 0x%04X / %d -> %d bits\n",
                             (entry & 0xFFFF0000u) >> 16u, 
                             (entry & 0x0000FF00u) >> 8u, 
@@ -1170,7 +1170,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
 
             // store sync manager settings if we have at least 1 bit mapped
             if (bit_len != 0u) {
-                ec_log(100, "GENERATE_MAPPING COE", 
+                ec_log(100, "COE_MAPPING", 
                         "slave %2d: sm%u length bits %d, bytes %d\n", 
                         slave, sm_idx, bit_len, (bit_len + 7u) / 8u);
 
@@ -1214,7 +1214,7 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
     osal_size_t msg_len = min(LEC_MAX_COE_EMERGENCY_MSG_LEN, (hdr->length - 2u));
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_EMERGENCY", "locking CoE mailbox failed!\n");
     } else {
         ec_coe_emergency_message_t *msg = &slv->mbx.coe.emergencies[slv->mbx.coe.emergency_next_write];
         slv->mbx.coe.emergency_next_write = (slv->mbx.coe.emergency_next_write + 1u) % (osal_uint32_t)LEC_MAX_COE_EMERGENCIES;
@@ -1250,7 +1250,7 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
     int ret = EC_ERROR_UNAVAILABLE;
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
-        ec_log(1, __func__, "locking CoE mailbox failed!\n");
+        ec_log(1, "COE_EMERGENCY", "locking CoE mailbox failed!\n");
     } else {
         if (slv->mbx.coe.emergency_next_write != slv->mbx.coe.emergency_next_read) {
             ec_coe_emergency_message_t *msg_tmp = &slv->mbx.coe.emergencies[slv->mbx.coe.emergency_next_read];

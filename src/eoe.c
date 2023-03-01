@@ -159,7 +159,7 @@ typedef struct eth_frame {
     osal_uint8_t frame_data[1518];
 } eth_frame_t;
 
-static void eoe_debug_print(const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
+static void eoe_debug_print(const osal_char_t *ctx, const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
 #define EOE_DEBUG_BUFFER_SIZE   1024
     static osal_char_t eoe_debug_buffer[EOE_DEBUG_BUFFER_SIZE];
     
@@ -168,7 +168,7 @@ static void eoe_debug_print(const osal_char_t *msg, osal_uint8_t *frame, osal_si
         pos += snprintf(&eoe_debug_buffer[pos], EOE_DEBUG_BUFFER_SIZE-pos, "%02X", frame[i]);
     }
 
-    ec_log(100, __func__, "%s\n", eoe_debug_buffer);
+    ec_log(100, ctx, "%s\n", eoe_debug_buffer);
 }
 
 //! initialize EoE structure 
@@ -290,7 +290,7 @@ void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     
     // cppcheck-suppress misra-c2012-11.3
     ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
-    ec_log(100, __func__, "slave %2d: got eoe frame type 0x%X\n", slave, 
+    ec_log(100, "EOE_ENQUEUE_FRAGMENT", "slave %2d: got eoe frame type 0x%X\n", slave, 
             write_buf->eoe_hdr.frame_type);
     
     if ((write_buf->eoe_hdr.frame_type == EOE_FRAME_TYPE_SET_IP_ADDRESS_RESPONSE) != 0u) {
@@ -299,7 +299,7 @@ void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
         pool_put(&slv->mbx.eoe.recv_pool, p_entry);
 
         if (write_buf->eoe_hdr.last_fragment != 0u) {
-            ec_log(100, __func__, "slave %2d: was last fragment\n", slave);
+            ec_log(100, "EOE_ENQUEUE_FRAGMENT", "slave %2d: was last fragment\n", slave);
             
             int ret;
 
@@ -329,7 +329,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
     } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else {
-        ec_log(10, __func__, "slave %2d: set ip parameter\n", slave);
+        ec_log(10, "EOE_SET_IP_PARAMETER", "slave %2d: set ip parameter\n", slave);
 
         // cppcheck-suppress misra-c2012-11.3
         ec_eoe_set_ip_parameter_request_t *write_buf = (ec_eoe_set_ip_parameter_request_t *)(p_entry->data);
@@ -442,7 +442,7 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
             // cppcheck-suppress misra-c2012-11.3
             ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
 
-            ec_log(100, __func__, "slave %2d: sending eoe fragment %d\n", slave, frag_number);
+            ec_log(100, "EOE_SEND_FRAME", "slave %2d: sending eoe fragment %d\n", slave, frag_number);
             // mailbox header
             // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
             write_buf->mbx_hdr.length           = 4u + frag_len;
@@ -502,7 +502,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
         ec_eoe_request_t *read_buf = (ec_eoe_request_t *)(p_entry->data);
 
         if (read_buf->eoe_hdr.fragment_number != 0u) {
-            ec_log(1, __func__, "slave %2d: first EoE fragment is not first fragment (got %d)\n",
+            ec_log(1, "EOE_RECV", "slave %2d: first EoE fragment is not first fragment (got %d)\n",
                     slave, read_buf->eoe_hdr.fragment_number);
 
             ret = EC_OK; // signal that we might have further frames to process
@@ -525,7 +525,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     read_buf = (ec_eoe_request_t *)(p_entry->data);
 
                     if (frame_offset != (read_buf->eoe_hdr.complete_size << 5u)) {
-                        ec_log(1, __func__, "slave %d: frame offset mismatch %" PRIu64 " != %d\n", 
+                        ec_log(1, "EOE_RECV", "slave %d: frame offset mismatch %" PRIu64 " != %d\n", 
                                 slave, frame_offset, read_buf->eoe_hdr.complete_size << 5u);
                     }
 
@@ -557,7 +557,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                 }
             } else {
                 if (pec->tun_fd > 0) {
-                    eoe_debug_print("recv eth frame", eth_frame->frame_data, frame_offset);
+                    eoe_debug_print("EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
 
 #if LIBETHERCAT_BUILD_POSIX == 1
                     write(pec->tun_fd, eth_frame->frame_data, frame_offset);
@@ -620,7 +620,7 @@ static void ec_eoe_tun_handler(ec_t *pec) {
                 int rd = read(pec->tun_fd, &tmp_frame.frame_data[0], sizeof(tmp_frame.frame_data));
                 if (rd > 0) {
                     // simple switch here 
-                    eoe_debug_print("got eth frame", tmp_frame.frame_data, rd);
+                    eoe_debug_print("EOE_TUN_HANDLER", "got eth frame", tmp_frame.frame_data, rd);
 
                     static const osal_uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
                     osal_uint8_t *dst_mac = &tmp_frame.frame_data[0];
@@ -640,7 +640,7 @@ static void ec_eoe_tun_handler(ec_t *pec) {
                         if (
                                 is_broadcast || 
                                 (slv->eoe.mac && (memcmp(slv->eoe.mac, dst_mac, 6) == 0))   ) {
-                            ec_log(100, __func__, "slave %2d: sending eoe frame\n", slave);
+                            ec_log(100, "EOE_TUN_HANDLER", "slave %2d: sending eoe frame\n", slave);
                             (void)ec_eoe_send_frame(pec, slave, tmp_frame.frame_data, rd);
 
                             if (!is_broadcast) {
@@ -681,7 +681,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
     // open tun device
     pec->tun_fd = open("/dev/net/tun", O_RDWR);
     if (pec->tun_fd == -1) {
-        ec_log(1, __func__, "could not open /dev/net/tun\n");
+        ec_log(1, "EOE_SETUP_TUN", "could not open /dev/net/tun\n");
         ret = EC_ERROR_UNAVAILABLE;
     } 
 
@@ -689,7 +689,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
         ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
 
         if (ioctl(pec->tun_fd, TUNSETIFF, (void *)&ifr) != 0) {
-            ec_log(1, __func__, "could not request tun/tap device\n");
+            ec_log(1, "EOE_SETUP_TUN", "could not request tun/tap device\n");
             close(pec->tun_fd);
             pec->tun_fd = 0;
             ret = EC_ERROR_UNAVAILABLE;
@@ -697,7 +697,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
     }
 
     if (ret == EC_OK) {
-        ec_log(10, __func__, "using interface %s\n", ifr.ifr_name);
+        ec_log(10, "EOE_SETUP_TUN", "using interface %s\n", ifr.ifr_name);
 
         // Create a socket
         s = socket(AF_INET, SOCK_DGRAM, 0);

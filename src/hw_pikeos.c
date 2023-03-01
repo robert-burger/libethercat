@@ -67,13 +67,13 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
 
     local_retval = vm_part_pstat(VM_RESPART_MYSELF, &pinfo);
     if (local_retval != P4_E_OK) {
-        ec_log(1, __func__, "vm_part_pstat failed!\n");
+        ec_log(1, "HW_OPEN", "vm_part_pstat failed!\n");
         ret = EC_ERROR_UNAVAILABLE;
     }
 
     if (ret == EC_OK) {
         if ((pinfo.abilities & VM_AB_ULOCK_SHARED) == 0) {
-            ec_log(1, __func__, "sbuf mode needs VM_AB_ULOCK_SHARED!\n");
+            ec_log(1, "HW_OPEN", "sbuf mode needs VM_AB_ULOCK_SHARED!\n");
             ret = EC_ERROR_UNAVAILABLE;
         }
     }
@@ -81,17 +81,17 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     if (ret == EC_OK) {
         local_retval = vm_open(devname, VM_O_RD_WR | VM_O_MAP, &phw->fd);
         if (local_retval != P4_E_OK) {
-            ec_log(1, __func__, "vm_open on %s failed\n", devname);
+            ec_log(1, "HW_OPEN", "vm_open on %s failed\n", devname);
             ret = EC_ERROR_UNAVAILABLE;
         } else {
-            ec_log(10, __func__, "opened %s\n", devname);
+            ec_log(10, "HW_OPEN", "opened %s\n", devname);
         }
     }
 
     if (ret == EC_OK) {
         local_retval = vm_io_sbuf_init(&phw->fd, &vsize);
         if (local_retval != P4_E_OK) {
-            ec_log(1, __func__, "vm_io_sbuf_init failed\n");
+            ec_log(1, "HW_OPEN", "vm_io_sbuf_init failed\n");
             ret = EC_ERROR_UNAVAILABLE;
         }
     }
@@ -99,7 +99,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     if (ret == EC_OK) {
         vaddr = p4ext_vmem_alloc(vsize);
         if (vaddr == 0) {
-            ec_log(1, __func__, "p4ext_vmem_alloc failed\n");
+            ec_log(1, "HW_OPEN", "p4ext_vmem_alloc failed\n");
             ret = EC_ERROR_UNAVAILABLE;
         }
     }
@@ -107,7 +107,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     if (ret == EC_OK) {
         local_retval = vm_io_sbuf_map(&phw->fd, vaddr, &phw->sbuf);
         if (local_retval != P4_E_OK) {
-            ec_log(1, __func__, "vm_io_sbuf_map failed\n");
+            ec_log(1, "HW_OPEN", "vm_io_sbuf_map failed\n");
             ret = EC_ERROR_UNAVAILABLE;
         }
     }

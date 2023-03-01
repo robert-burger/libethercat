@@ -35,7 +35,7 @@ int usage(int argc, char **argv) {
     return 0;
 }
 
-int max_print_level = 10;
+int max_print_level = 100;
 
 // only log level <= 10 
 void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));

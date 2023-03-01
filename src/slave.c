@@ -520,16 +520,19 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
+        
+    // generate transition
+    ec_state_transition_t transition = ((pec->slaves[slave].act_state & EC_STATE_MASK) << 8u) | (state & EC_STATE_MASK); 
 
     if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) != EC_OK) { 
         // just return, we got an error from ec_transceive
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else if ((state & EC_STATE_RESET) != 0u) {
-        ec_log(1, __func__, "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
+        ec_log(1, get_transition_string(transition), "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
         // just return here, we did an error reset
         osal_sleep(100000000);
     } else {
-        ec_log(10, "EC_STATE_SET", "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
+        ec_log(10, get_transition_string(transition), "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
 
         pec->slaves[slave].expected_state = state;
 
@@ -543,7 +546,7 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
 
                 if ((act_state & EC_STATE_ERROR) != 0u) {
                     if (ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
-                        ec_log(10, "EC_STATE_SET", "slave %2d: state switch to %d failed, "
+                        ec_log(10, get_transition_string(transition), "slave %2d: state switch to %d failed, "
                                 "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
 
                         (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
@@ -556,18 +559,18 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
         } while ((act_state != state) && (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT));
  
         if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
-            ec_log(1, "EC_STATE_SET", "slave %2d: did not respond on state switch to %d\n", slave, state);
+            ec_log(1, get_transition_string(transition), "slave %2d: did not respond on state switch to %d\n", slave, state);
             ret = EC_ERROR_SLAVE_NOT_RESPONDING;
         }
 
         if (ret == EC_OK) {
-            ec_log(100, "EC_STATE_SET", "slave %2d: state %X, act_state %X, wkc %d\n", slave, state, act_state, wkc);
+            ec_log(100, get_transition_string(transition), "slave %2d: state %X, act_state %X, wkc %d\n", slave, state, act_state, wkc);
 
             if (act_state == state) {    
-                ec_log(10, "EC_STATE_SET", "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
+                ec_log(10, get_transition_string(transition), "slave %2d: %s state reached\n", slave, ecat_state_2_string(act_state));
                 ret = EC_OK;
             } else {
-                ec_log(1, "EC_STATE_SET", "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
+                ec_log(1, get_transition_string(transition), "slave %2d: %s state switch FAILED!\n", slave, ecat_state_2_string(act_state));
                 ret = EC_ERROR_SLAVE_STATE_SWITCH;
             }
 
@@ -642,7 +645,7 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 TAILQ_FOREACH(pdo, &slv->eeprom.txpdos, qh) {
                     if (sm_idx == pdo->sm_nr) { // cppcheck-suppress uninitvar
                         for (osal_uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
-                            ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
+                            ec_log(100, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2d: got "
                                     "txpdo bit_len %d, sm %d\n", slave, 
                                     pdo->entries[entry_idx].bit_len, pdo->sm_nr);
                             bit_len += pdo->entries[entry_idx].bit_len;
@@ -656,7 +659,7 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 TAILQ_FOREACH(pdo, &slv->eeprom.rxpdos, qh) {
                     if (sm_idx == pdo->sm_nr) {
                         for (osal_uint32_t entry_idx = 0; entry_idx < pdo->n_entry; ++entry_idx) { 
-                            ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: got "
+                            ec_log(100, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2d: got "
                                     "rxpdo bit_len %d, sm %d\n", slave, 
                                     pdo->entries[entry_idx].bit_len, pdo->sm_nr);
                             bit_len += pdo->entries[entry_idx].bit_len;
@@ -666,11 +669,11 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     }
                 }
 
-                ec_log(100, "GENERATE_MAPPING EEP", "slave %2d: txpdos %d, rxpdos %d, bitlen%d %" PRIu64 "\n", 
+                ec_log(100, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2d: txpdos %d, rxpdos %d, bitlen%d %" PRIu64 "\n", 
                         slave, txpdos_cnt, rxpdos_cnt, sm_idx, bit_len);
 
                 if (bit_len > 0u) {
-                    ec_log(10, "GENERATE_MAPPING EEP", "slave %2d: sm%d length bits %" PRIu64 ", bytes %" PRIu64 "\n", 
+                    ec_log(10, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2d: sm%d length bits %" PRIu64 ", bytes %" PRIu64 "\n", 
                             slave, sm_idx, bit_len, (bit_len + 7u) / 8u);
 
                     slv->sm[sm_idx].len = (bit_len + 7u) / 8u;
@@ -696,7 +699,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
 
     // check error state
     if (ec_slave_get_state(pec, slave, &act_state, NULL) != EC_OK) {
-        ec_log(10, __func__, "slave %2d: error getting state\n", slave);
+        ec_log(10, "SLAVE_PREPARE_TRANSITION", "slave %2d: error getting state\n", slave);
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else {
         // generate transition
@@ -802,7 +805,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 #define ec_reg_read(reg, buf, buflen) {                                 \
     (void)ec_fprd(pec, pec->slaves[slave].fixed_address, (reg),         \
             (buf), (buflen), &wkc);                                     \
-    if (!wkc) { ec_log(10, __func__,                                    \
+    if (!wkc) { ec_log(10, "SLAVE_REG_READ",                            \
             "reading reg 0x%X : no answer from slave %2d\n", (reg), slave); } }
     
     osal_mutex_lock(&slv->transition_mutex);
@@ -825,7 +828,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             osal_timer_init(&error_reset_timeout, 1000000000);
 
             do {
-                ec_log(10, __func__, "slave %2d is in ERROR (AL status 0x%04X, AL status code 0x%04X), resetting first.\n", slave, act_state, al_status_code);
+                ec_log(10, "SLAVE_TRANSITION", "slave %2d is in ERROR (AL status 0x%04X, AL status code 0x%04X), resetting first.\n", slave, act_state, al_status_code);
                 (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
                 act_state = 0;
                 al_status_code = 0;
@@ -839,12 +842,12 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             } while (osal_timer_expired(&error_reset_timeout) != OSAL_ERR_TIMEOUT);
 
             if (osal_timer_expired(&error_reset_timeout) == OSAL_ERR_TIMEOUT) {
-                ec_log(10, __func__, "slave %2d: try to reset PDI\n", slave);
+                ec_log(10, "SLAVE_TRANSITION", "slave %2d: try to reset PDI\n", slave);
                 osal_uint8_t reset_vals[] = { (osal_uint8_t)'R', (osal_uint8_t)'E', (osal_uint8_t)'S' };
                 for (int i = 0; i < 3; ++i) {
                     (void)ec_fpwr(pec, slv->fixed_address, 0x41, &reset_vals[i], 1, &wkc);
                 }
-                ec_log(10, __func__, "slave %2d: try to reset ESC\n", slave);
+                ec_log(10, "SLAVE_TRANSITION", "slave %2d: try to reset ESC\n", slave);
                 for (int i = 0; i < 3; ++i) {
                     (void)ec_fpwr(pec, slv->fixed_address, 0x40, &reset_vals[i], 1, &wkc);
                 }
@@ -861,7 +864,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
         ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | 
             (state & EC_STATE_MASK); 
 
-        ec_log(10, __func__, "slave %2d executing transition %X\n", slave, transition);
+        ec_log(10, get_transition_string(transition), "slave %2d executing transition %X\n", slave, transition);
 
         switch (transition) {
             case BOOT_2_PREOP:
@@ -1116,14 +1119,14 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
             case INIT_2_INIT: {
-                ec_log(10, __func__, "slave %2d rewriting fixed address\n", slave);
+                ec_log(10, get_transition_string(transition), "slave %2d rewriting fixed address\n", slave);
 
                 // rewrite fixed address
                 (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                         (osal_uint8_t *)&slv->fixed_address, 
                         sizeof(slv->fixed_address), &wkc); 
 
-                ec_log(10, __func__, "slave %2d disable dcs\n", slave);
+                ec_log(10, get_transition_string(transition), "slave %2d disable dcs\n", slave);
 
                 // disable ditributed clocks
                 osal_uint8_t dc_active = 0;
@@ -1133,7 +1136,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // free resources
                 ec_slave_free(pec, slave);
 
-                ec_log(10, __func__, "slave %2d get number of sm\n", slave);
+                ec_log(10, get_transition_string(transition), "slave %2d get number of sm\n", slave);
 
                 // get number of sync managers
                 ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
@@ -1145,7 +1148,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     }
                 }
                 
-                ec_log(10, __func__, "slave %2d get number of fmmu\n", slave);
+                ec_log(10, get_transition_string(transition), "slave %2d get number of fmmu\n", slave);
 
                 // get number of fmmus
                 ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
