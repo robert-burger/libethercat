@@ -61,6 +61,7 @@
  */
 int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
+    ec_frame_t *pframe = NULL;
     static const osal_uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
@@ -73,8 +74,10 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         phw->mtu_size = 1480;
     }
     
-    (void)memcpy(((ec_frame_t *)phw->send_frame)->mac_dest, mac_dest, 6);
-    (void)memcpy(((ec_frame_t *)phw->send_frame)->mac_src, mac_src, 6);
+    // cppcheck-suppress misra-c2012-11.3
+    pframe = (ec_frame_t *)phw->send_frame;
+    (void)memcpy(pframe->mac_dest, mac_dest, 6);
+    (void)memcpy(pframe->mac_src, mac_src, 6);
 
     return ret;
 }
