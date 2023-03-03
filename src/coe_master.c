@@ -36,117 +36,117 @@
 #include <errno.h>
 #include <assert.h>
 
-static ec_coe_sdo_desc_t obj_desc_master_0x1000 = { DEFTYPE_UNSIGNED32, OBJCODE_VAR, 0, "Device Type", 11 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0x1000 = { DEFTYPE_UNSIGNED32, OBJCODE_VAR, 0, { "Device Type" }, 11 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1000 =
-    { 0, DEFTYPE_UNSIGNED32,    32, ACCESS_READ, "Device Type",       11 };
-static ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Device Name", 11 }; 
+    { 0, DEFTYPE_UNSIGNED32,    32, ACCESS_READ, { "Device Type" },       11 };
+static ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Device Name" }, 11 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1008 =
-    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Device Name",       11 };
-static ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Hardware Version", 29 }; 
+    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, { "Device Name" },       11 };
+static ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Hardware Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
-    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Manufacturer Hardware Version",       29 };
-static ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, "Manufacturer Software Version", 29 }; 
+    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, { "Manufacturer Hardware Version" },       29 };
+static ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Software Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
-    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, "Manufacturer Software Version",       29 };
-static ec_coe_sdo_desc_t obj_desc_master_0x1018 = { DEFTYPE_RECORD, OBJCODE_REC, 4, "Identity", 8 }; 
+    { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, { "Manufacturer Software Version" },       29 };
+static ec_coe_sdo_desc_t obj_desc_master_0x1018 = { DEFTYPE_RECORD, OBJCODE_REC, 4, { "Identity" }, 8 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1018[] = {
-    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0",       10 }, // 0
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Vendor ID",         9 }, // 1
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Product Code",     12 }, // 1
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Revision Number",  15 }, // 1
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Serial Number",    13 } };
+    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" },       10 }, // 0
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Vendor ID" },         9 }, // 1
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Product Code" },     12 }, // 1
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Revision Number" },  15 }, // 1
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Serial Number" },    13 } };
 
-static ec_coe_sdo_desc_t obj_desc_master_0x8nnn = { DEFTYPE_RECORD, OBJCODE_REC, 35, "Configuration Data Slave", 24 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0x8nnn = { DEFTYPE_RECORD, OBJCODE_REC, 35, { "Configuration Data Slave" }, 24 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
-    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0"           , 10 }, // 0
-    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Fixed Station Address", 21 }, // 1
-    { 0, DEFTYPE_VISIBLESTRING, 8, ACCESS_READ, "Type",                   4 }, // 2
-    { 0, DEFTYPE_VISIBLESTRING, 8, ACCESS_READ, "Name",                   4 }, // 3
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Device Type",           11 }, // 4
-    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Vendor Id",              9 }, // 5
-    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Product Code",          12 }, // 6
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Revision Number",       15 }, // 7
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Serial Number",         13 }, // 8 
-    { 0,                  0,    0,           0, "",                       0 }, // 9
-    { 0,                  0,    0,           0, "",                       0 }, // 10
-    { 0,                  0,    0,           0, "",                       0 }, // 11
-    { 0,                  0,    0,           0, "",                       0 }, // 12
-    { 0,                  0,    0,           0, "",                       0 }, // 13
-    { 0,                  0,    0,           0, "",                       0 }, // 14
-    { 0,                  0,    0,           0, "",                       0 }, // 15
-    { 0,                  0,    0,           0, "",                       0 }, // 16
-    { 0,                  0,    0,           0, "",                       0 }, // 17
-    { 0,                  0,    0,           0, "",                       0 }, // 18
-    { 0,                  0,    0,           0, "",                       0 }, // 19
-    { 0,                  0,    0,           0, "",                       0 }, // 20
-    { 0,                  0,    0,           0, "",                       0 }, // 21
-    { 0,                  0,    0,           0, "",                       0 }, // 22
-    { 0,                  0,    0,           0, "",                       0 }, // 23
-    { 0,                  0,    0,           0, "",                       0 }, // 24
-    { 0,                  0,    0,           0, "",                       0 }, // 25
-    { 0,                  0,    0,           0, "",                       0 }, // 26
-    { 0,                  0,    0,           0, "",                       0 }, // 27
-    { 0,                  0,    0,           0, "",                       0 }, // 28
-    { 0,                  0,    0,           0, "",                       0 }, // 29
-    { 0,                  0,    0,           0, "",                       0 }, // 30
-    { 0,                  0,    0,           0, "",                       0 }, // 31
-    { 0,                  0,    0,           0, "",                       0 }, // 32
-    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Mailbox Out Size",      16 }, // 33
-    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Mailbox In Size",       15 }, // 34
-    { 0, DEFTYPE_BYTE,          8, ACCESS_READ, "Link Status",           11 }, // 35
+    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }           , 10 }, // 0
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Fixed Station Address" }, 21 }, // 1
+    { 0, DEFTYPE_VISIBLESTRING, 8, ACCESS_READ, { "Type" },                   4 }, // 2
+    { 0, DEFTYPE_VISIBLESTRING, 8, ACCESS_READ, { "Name" },                   4 }, // 3
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Device Type" },           11 }, // 4
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Vendor Id" },              9 }, // 5
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Product Code" },          12 }, // 6
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Revision Number" },       15 }, // 7
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Serial Number" },         13 }, // 8 
+    { 0,                  0,    0,           0, { "" },                       0 }, // 9
+    { 0,                  0,    0,           0, { "" },                       0 }, // 10
+    { 0,                  0,    0,           0, { "" },                       0 }, // 11
+    { 0,                  0,    0,           0, { "" },                       0 }, // 12
+    { 0,                  0,    0,           0, { "" },                       0 }, // 13
+    { 0,                  0,    0,           0, { "" },                       0 }, // 14
+    { 0,                  0,    0,           0, { "" },                       0 }, // 15
+    { 0,                  0,    0,           0, { "" },                       0 }, // 16
+    { 0,                  0,    0,           0, { "" },                       0 }, // 17
+    { 0,                  0,    0,           0, { "" },                       0 }, // 18
+    { 0,                  0,    0,           0, { "" },                       0 }, // 19
+    { 0,                  0,    0,           0, { "" },                       0 }, // 20
+    { 0,                  0,    0,           0, { "" },                       0 }, // 21
+    { 0,                  0,    0,           0, { "" },                       0 }, // 22
+    { 0,                  0,    0,           0, { "" },                       0 }, // 23
+    { 0,                  0,    0,           0, { "" },                       0 }, // 24
+    { 0,                  0,    0,           0, { "" },                       0 }, // 25
+    { 0,                  0,    0,           0, { "" },                       0 }, // 26
+    { 0,                  0,    0,           0, { "" },                       0 }, // 27
+    { 0,                  0,    0,           0, { "" },                       0 }, // 28
+    { 0,                  0,    0,           0, { "" },                       0 }, // 29
+    { 0,                  0,    0,           0, { "" },                       0 }, // 30
+    { 0,                  0,    0,           0, { "" },                       0 }, // 31
+    { 0,                  0,    0,           0, { "" },                       0 }, // 32
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Mailbox Out Size" },      16 }, // 33
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Mailbox In Size" },       15 }, // 34
+    { 0, DEFTYPE_BYTE,          8, ACCESS_READ, { "Link Status" },           11 }, // 35
 };
 
-static ec_coe_sdo_desc_t obj_desc_master_0x9nnn = { DEFTYPE_RECORD, OBJCODE_REC, 32, "Information Data Slave", 22 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0x9nnn = { DEFTYPE_RECORD, OBJCODE_REC, 32, { "Information Data Slave" }, 22 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
-    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, "Subindex 0"           , 10 }, // 0
-    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, "Fixed Station Address", 21 }, // 1
-    { 0,                  0,    0,           0, "",                       0 }, // 2
-    { 0,                  0,    0,           0, "",                       0 }, // 3
-    { 0,                  0,    0,           0, "",                       0 }, // 4
-    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Vendor Id",              9 }, // 5
-    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, "Product Code",          12 }, // 6
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Revision Number",       15 }, // 7
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, "Serial Number",         13 }, // 8 
-    { 0,                  0,    0,           0, "",                       0 }, // 9
-    { 0,                  0,    0,           0, "",                       0 }, // 10
-    { 0,                  0,    0,           0, "",                       0 }, // 11
-    { 0,                  0,    0,           0, "",                       0 }, // 12
-    { 0,                  0,    0,           0, "",                       0 }, // 13
-    { 0,                  0,    0,           0, "",                       0 }, // 14
-    { 0,                  0,    0,           0, "",                       0 }, // 15
-    { 0,                  0,    0,           0, "",                       0 }, // 16
-    { 0,                  0,    0,           0, "",                       0 }, // 17
-    { 0,                  0,    0,           0, "",                       0 }, // 18
-    { 0,                  0,    0,           0, "",                       0 }, // 19
-    { 0,                  0,    0,           0, "",                       0 }, // 20
-    { 0,                  0,    0,           0, "",                       0 }, // 21
-    { 0,                  0,    0,           0, "",                       0 }, // 22
-    { 0,                  0,    0,           0, "",                       0 }, // 23
-    { 0,                  0,    0,           0, "",                       0 }, // 24
-    { 0,                  0,    0,           0, "",                       0 }, // 25
-    { 0,                  0,    0,           0, "",                       0 }, // 26
-    { 0,                  0,    0,           0, "",                       0 }, // 27
-    { 0,                  0,    0,           0, "",                       0 }, // 28
-    { 0,                  0,    0,           0, "",                       0 }, // 29
-    { 0,                  0,    0,           0, "",                       0 }, // 30
-    { 0,                  0,    0,           0, "",                       0 }, // 31
-    { 0, DEFTYPE_WORD,         16, ACCESS_READ, "DL Status Register",    18 }, // 32
+    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }           , 10 }, // 0
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Fixed Station Address" }, 21 }, // 1
+    { 0,                  0,    0,           0, { "" },                       0 }, // 2
+    { 0,                  0,    0,           0, { "" },                       0 }, // 3
+    { 0,                  0,    0,           0, { "" },                       0 }, // 4
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Vendor Id" },              9 }, // 5
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Product Code" },          12 }, // 6
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Revision Number" },       15 }, // 7
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Serial Number" },         13 }, // 8 
+    { 0,                  0,    0,           0, { "" },                       0 }, // 9
+    { 0,                  0,    0,           0, { "" },                       0 }, // 10
+    { 0,                  0,    0,           0, { "" },                       0 }, // 11
+    { 0,                  0,    0,           0, { "" },                       0 }, // 12
+    { 0,                  0,    0,           0, { "" },                       0 }, // 13
+    { 0,                  0,    0,           0, { "" },                       0 }, // 14
+    { 0,                  0,    0,           0, { "" },                       0 }, // 15
+    { 0,                  0,    0,           0, { "" },                       0 }, // 16
+    { 0,                  0,    0,           0, { "" },                       0 }, // 17
+    { 0,                  0,    0,           0, { "" },                       0 }, // 18
+    { 0,                  0,    0,           0, { "" },                       0 }, // 19
+    { 0,                  0,    0,           0, { "" },                       0 }, // 20
+    { 0,                  0,    0,           0, { "" },                       0 }, // 21
+    { 0,                  0,    0,           0, { "" },                       0 }, // 22
+    { 0,                  0,    0,           0, { "" },                       0 }, // 23
+    { 0,                  0,    0,           0, { "" },                       0 }, // 24
+    { 0,                  0,    0,           0, { "" },                       0 }, // 25
+    { 0,                  0,    0,           0, { "" },                       0 }, // 26
+    { 0,                  0,    0,           0, { "" },                       0 }, // 27
+    { 0,                  0,    0,           0, { "" },                       0 }, // 28
+    { 0,                  0,    0,           0, { "" },                       0 }, // 29
+    { 0,                  0,    0,           0, { "" },                       0 }, // 30
+    { 0,                  0,    0,           0, { "" },                       0 }, // 31
+    { 0, DEFTYPE_WORD,         16, ACCESS_READ, { "DL Status Register" },    18 }, // 32
 };
 
-static ec_coe_sdo_desc_t obj_desc_master_0xAnnn = { DEFTYPE_RECORD, OBJCODE_REC, 2, "Diagnosis Data Slave", 20 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0xAnnn = { DEFTYPE_RECORD, OBJCODE_REC, 2, { "Diagnosis Data Slave" }, 20 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0xAnnn[] = {
-    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Subindex 0",            10 },
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "AL Status",              9 },
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "AL Control",            10 },
+    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Subindex 0" },            10 },
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "AL Status" },              9 },
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "AL Control" },            10 },
 };
 
-static ec_coe_sdo_desc_t obj_desc_master_0xF000 = { DEFTYPE_RECORD, OBJCODE_REC, 4, "Modular Device Profile", 22 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0xF000 = { DEFTYPE_RECORD, OBJCODE_REC, 4, { "Modular Device Profile" }, 22 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0xF000[] = {
-    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Subindex 0",            10 },
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Module Index Distance", 21 },
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Maximum Number of Modules", 25 },
-    { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      "General Configuration", 21 },
-    { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      "General Information",   19 },
+    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Subindex 0" },            10 },
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Module Index Distance" }, 21 },
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Maximum Number of Modules" }, 25 },
+    { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      { "General Configuration" }, 21 },
+    { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      { "General Information" },   19 },
 };
 static osal_uint8_t  element_master_0xF000_00 = 4;
 static osal_uint16_t element_master_0xF000_01 = 0x0001;
@@ -154,20 +154,20 @@ static osal_uint16_t element_master_0xF000_02 = 4080;
 static osal_uint32_t element_master_0xF000_03 = 0x000000FF;
 static osal_uint32_t element_master_0xF000_04 = 0x000000F1;
 
-static ec_coe_sdo_desc_t obj_desc_master_0xF002 = { DEFTYPE_RECORD, OBJCODE_REC, 3, "Detect Modules Command", 22 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0xF002 = { DEFTYPE_RECORD, OBJCODE_REC, 3, { "Detect Modules Command" }, 22 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0xF002[] = {
-    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Subindex 0",            10 },
-    { 0, DEFTYPE_OCTETSTRING, 16, ACCESS_READWRITE, "Scan Command Request",  20 },
-    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      "Scan Command Status",   19 },
-    { 0, DEFTYPE_OCTETSTRING, 48, ACCESS_READ,      "Scan Command Response", 21 }
+    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Subindex 0" },            10 },
+    { 0, DEFTYPE_OCTETSTRING, 16, ACCESS_READWRITE, { "Scan Command Request" },  20 },
+    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Scan Command Status" },   19 },
+    { 0, DEFTYPE_OCTETSTRING, 48, ACCESS_READ,      { "Scan Command Response" }, 21 }
 };
 
-static ec_coe_sdo_desc_t obj_desc_master_0xF02n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Configured Address List Slaves", 30 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0xF02n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, { "Configured Address List Slaves" }, 30 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0xF02n[] = {
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Subindex Slave" },        14 },
 };
 
-static ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, "Detected Address List Slaves", 28 }; 
+static ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, { "Detected Address List Slaves" }, 28 }; 
 //static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
 //    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
 //};
