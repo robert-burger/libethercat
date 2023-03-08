@@ -111,6 +111,80 @@ static struct PACKED {
 } data_master_0x1018 = { 4, 0x1616, 0x11BECA7, 0x0, 0x0 };
 
 /****************************************************************************
+ * 0x20nn   Cyclic Group Configuration
+ */
+static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 8, { "Cyclic Group Configuration" }, 26 };
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
+    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }              , 10 }, // 0
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Logical Address" }         , 15 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Logical Length" }          , 14 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Output Length" }           , 13 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Input Length" }            , 12 },
+    { 0, DEFTYPE_UNSIGNED8,     8, ACCESS_READ, { "Overlapping" }             , 11 },
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter" }, 24 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed" }          , 14 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Timer Divisor" }           , 13 } };
+
+static int callback_master_0x20nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
+        osal_size_t *len, osal_uint32_t *abort_code) 
+{
+    assert(pec != NULL);
+    assert(coe_obj != NULL);
+    
+    int ret = EC_OK;
+
+    osal_uint16_t group = coe_obj->index & 0x00FF;
+    if (sub_index == 0) {
+        if ((*len) >= 1) {
+            (*buf) = 8;
+            (*len) = 1;
+        }
+    } else if (sub_index == 1) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->pd_groups[group].log;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    } else if (sub_index == 2) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->pd_groups[group].log_len;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    } else if (sub_index == 3) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->pd_groups[group].pdout_len;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    } else if (sub_index == 4) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->pd_groups[group].pdin_len;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    } else if (sub_index == 5) {
+        if ((*len) >= 1) {
+            (*(osal_uint8_t *)buf) = pec->pd_groups[group].use_lrw;
+            (*len) = sizeof(osal_uint8_t);
+        }
+    } else if (sub_index == 6) {
+        if ((*len) >= 2) {
+            (*(osal_uint16_t *)buf) = pec->pd_groups[group].wkc_expected;
+            (*len) = sizeof(osal_uint16_t);
+        }
+    } else if (sub_index == 7) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->pd_groups[group].recv_missed;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    } else if (sub_index == 8) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->pd_groups[group].divisor;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    }
+
+    return ret;
+}
+
+/****************************************************************************
  * 0x8nnn   Configuration Data Slave
  */
 
@@ -419,6 +493,7 @@ ec_coe_object_t ec_coe_master_dict[] = {
     { 0x1009, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1009, &entry_desc_master_0x1009   , (osal_uint8_t *) data_master_0x1009, NULL, NULL },
     { 0x100A, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x100A, &entry_desc_master_0x100A   , (osal_uint8_t *) data_master_0x100A, NULL, NULL },
     { 0x1018, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1018, &entry_desc_master_0x1018[0], (osal_uint8_t *)&data_master_0x1018, NULL, NULL },
+    { 0x2000, 0xFF00u,                      &obj_desc_master_0x20nn, &entry_desc_master_0x20nn[0], NULL,                                callback_master_0x20nn, NULL },
     { 0x8000, 0xF000u,                      &obj_desc_master_0x8nnn, &entry_desc_master_0x8nnn[0], NULL,                                callback_master_0x8nnn, NULL },
     { 0x9000, 0xF000u,                      &obj_desc_master_0x9nnn, &entry_desc_master_0x9nnn[0], NULL,                                callback_master_0x9nnn, NULL },
     { 0xA000, 0xF000u,                      &obj_desc_master_0xAnnn, &entry_desc_master_0xAnnn[0], NULL,                                callback_master_0xAnnn, NULL },
@@ -583,6 +658,11 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
     
     if (tmp < end) {
         *(osal_uint16_t *)tmp = 0x1018;
+        tmp += sizeof(osal_uint16_t);
+    }
+    
+    for (int i = 0; (i < pec->pd_group_cnt) && (tmp < end); ++i) {
+        *(osal_uint16_t *)tmp = 0x2000 | i;
         tmp += sizeof(osal_uint16_t);
     }
 
