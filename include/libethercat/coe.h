@@ -291,6 +291,23 @@ int ec_coe_sdo_write(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
         osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
         osal_uint32_t *abort_code);
 
+//! Write CoE service data object (SDO) of master
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] index         CoE SDO index number.
+ * \param[in] sub_index     CoE SDO sub index number.
+ * \param[in] complete      SDO Complete access (only if \p sub_index == 0)
+ * \param[in] buf           Buffer with data which will be written.
+ * \param[in] len           Length of buffer.
+ * \param[out] abort_code   Returns the abort code if we got abort request
+ *
+ * \return 0 on success, otherwise error code.
+ */
+int ec_coe_master_sdo_write(ec_t *pec, osal_uint16_t index, 
+        osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
+        osal_uint32_t *abort_code);
+
 //! Read CoE SDO description
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
