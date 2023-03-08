@@ -48,6 +48,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
 static ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Software Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
     { 0, DEFTYPE_VISIBLESTRING ,    8, ACCESS_READ, { "Manufacturer Software Version" },       29 };
+
 static ec_coe_sdo_desc_t obj_desc_master_0x1018 = { DEFTYPE_RECORD, OBJCODE_REC, 4, { "Identity" }, 8 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1018[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" },       10 }, // 0
@@ -168,14 +169,59 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF02n[] = {
 };
 
 static ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, { "Detected Address List Slaves" }, 28 }; 
-//static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
-//    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      "Subindex Slave",        14 },
-//};
+static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Subindex Slave" },        14 },
+};
+
+typedef osal_void_t (*ec_coe_cb_t)(osal_void_t);
+typedef struct ec_coe_object {
+    osal_uint16_t index;
+    osal_uint16_t index_mask;
+    ec_coe_sdo_desc_t *obj_desc;
+    ec_coe_sdo_entry_desc_t *entry_desc;
+    osal_uint8_t *data;
+    ec_coe_cb_t read;
+    ec_coe_cb_t write;
+} ec_coe_object_t;
+
+#define     EC_COE_OBJECT_INDEX_MASK_ALL        ((osal_uint16_t)0xFFFFu)
+
+ec_coe_object_t ec_coe_master_dict[] = {
+    { 0x1000, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1000, &entry_desc_master_0x1000   , NULL, NULL, NULL },
+    { 0x1008, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1008, &entry_desc_master_0x1008   , NULL, NULL, NULL },
+    { 0x1009, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1009, &entry_desc_master_0x1009   , NULL, NULL, NULL },
+    { 0x100A, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x100A, &entry_desc_master_0x100A   , NULL, NULL, NULL },
+    { 0x1018, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1018, &entry_desc_master_0x1018[0], NULL, NULL, NULL },
+    { 0x8000, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x8nnn, &entry_desc_master_0x8nnn[0], NULL, NULL, NULL },
+    { 0x9000, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x9nnn, &entry_desc_master_0x9nnn[0], NULL, NULL, NULL },
+    { 0xA000, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0xAnnn, &entry_desc_master_0xAnnn[0], NULL, NULL, NULL },
+    { 0xF000, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0xF000, &entry_desc_master_0xF000[0], NULL, NULL, NULL },
+    { 0xF002, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0xF002, &entry_desc_master_0xF002[0], NULL, NULL, NULL },
+    { 0xF020, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0xF02n, &entry_desc_master_0xF02n[0], NULL, NULL, NULL },
+    { 0xF040, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0xF04n, &entry_desc_master_0xF04n[0], NULL, NULL, NULL },
+    { 0xFFFF, EC_COE_OBJECT_INDEX_MASK_ALL, NULL, NULL, NULL, NULL, NULL } };
+
+static int ec_coe_master_get_object(osal_uint16_t index, ec_coe_object_t **coe_obj) {
+    assert(coe_obj != NULL);
+
+    int ret = EC_ERROR_MAILBOX_COE_INDEX_NOT_FOUND;
+    ec_coe_object_t *tmp_coe_obj = &ec_coe_master_dict[0];
+
+    while (tmp_coe_obj->index != 0xFFFFu) {
+        if (tmp_coe_obj->index == (index & tmp_coe_obj->index_mask)) {
+            *coe_obj = tmp_coe_obj;
+            ret = EC_OK;
+        }
+    }
+
+    return ret;
+}
 
 // Read CoE service data object (SDO) of master
 int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index, 
         osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t *len, 
-        osal_uint32_t *abort_code) {
+        osal_uint32_t *abort_code) 
+{
     assert(pec != NULL);
     assert(buf != NULL);
     assert(len != NULL);
@@ -492,6 +538,13 @@ int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index,
     (void)error_code;
 
     int ret = EC_OK;
+
+    ec_coe_object_t *coe_obj = NULL;
+    ec_coe_master_get_object(index, &coe_obj);
+
+    if (coe_obj) {
+        (void)memcpy(desc, coe_obj->obj_desc, sizeof(ec_coe_sdo_desc_t));
+    }
 
     if (index == 0x1000) {
         (void)memcpy(desc, &obj_desc_master_0x1000, sizeof(obj_desc_master_0x1000));
