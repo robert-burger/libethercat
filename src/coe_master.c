@@ -44,15 +44,14 @@ typedef int (*ec_coe_cb_write_t)(ec_t *pec, struct ec_coe_object *coe_obj, osal_
         osal_size_t len, osal_uint32_t *abort_code);
 
 typedef struct ec_coe_object {
-    osal_uint16_t index;
-    osal_uint16_t index_mask;
-    ec_coe_sdo_desc_t *obj_desc;
-    ec_coe_sdo_entry_desc_t *entry_desc;
-    osal_uint8_t *data;
-    ec_coe_cb_read_t read;
-    ec_coe_cb_write_t write;
+    osal_uint16_t               index;
+    osal_uint16_t               index_mask;
+    ec_coe_sdo_desc_t *         obj_desc;
+    ec_coe_sdo_entry_desc_t *   entry_desc;
+    osal_uint8_t *              data;
+    ec_coe_cb_read_t            read;
+    ec_coe_cb_write_t           write;
 } ec_coe_object_t;
-
 
 #define HW_VERSION      "0.0.0"
 
@@ -63,7 +62,7 @@ typedef struct ec_coe_object {
 static ec_coe_sdo_desc_t obj_desc_master_0x1000 = { DEFTYPE_UNSIGNED32, OBJCODE_VAR, 0, { "Device Type" }, 11 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1000 =
     { 0, DEFTYPE_UNSIGNED32,    32, ACCESS_READ, { "Device Type" },       11 };
-osal_uint32_t data_master_0x1000 = 0;
+static osal_uint32_t data_master_0x1000 = 0;
 
 /****************************************************************************
  * 0x1008   Device Name
@@ -72,7 +71,7 @@ osal_uint32_t data_master_0x1000 = 0;
 static ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Device Name" }, 11 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1008 =
     { 0, DEFTYPE_VISIBLESTRING, strlen(LIBETHERCAT_PACKAGE_NAME) << 3, ACCESS_READ, { "Device Name" },       11 };
-osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
+static osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
 
 /****************************************************************************
  * 0x1009   Manufacturer Hardware Version
@@ -81,7 +80,7 @@ osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
 static ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Hardware Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
     { 0, DEFTYPE_VISIBLESTRING , strlen(HW_VERSION) << 3, ACCESS_READ, { "Manufacturer Hardware Version" },       29 };
-osal_char_t data_master_0x1009[] = HW_VERSION;
+static osal_char_t data_master_0x1009[] = HW_VERSION;
 
 /****************************************************************************
  * 0x100A   Manufacturer Software Version
@@ -90,7 +89,7 @@ osal_char_t data_master_0x1009[] = HW_VERSION;
 static ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Software Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
     { 0, DEFTYPE_VISIBLESTRING , strlen(LIBETHERCAT_PACKAGE_VERSION) << 3, ACCESS_READ, { "Manufacturer Software Version" },       29 };
-osal_char_t data_master_0x100A[] = LIBETHERCAT_PACKAGE_VERSION;
+static osal_char_t data_master_0x100A[] = LIBETHERCAT_PACKAGE_VERSION;
 
 /****************************************************************************
  * 0x1018   Identity
@@ -103,7 +102,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x1018[] = {
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Product Code" },     12 }, // 1
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Revision Number" },  15 }, // 1
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Serial Number" },    13 } };
-struct PACKED {
+static struct PACKED {
     osal_uint8_t subindex_0;
     osal_uint32_t vendor_id;
     osal_uint32_t product_code;
@@ -291,7 +290,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xAnnn[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "AL Control" },            10 },
 };
 
-int callback_master_0xAnnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
+static int callback_master_0xAnnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
         osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
@@ -342,7 +341,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF000[] = {
     { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      { "General Configuration" }, 21 },
     { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      { "General Information" },   19 },
 };
-struct PACKED {
+static struct PACKED {
     osal_uint8_t  subindex_0; 
     osal_uint16_t module_index_distance;
     osal_uint16_t maximum_number_of_modules;
@@ -361,7 +360,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF002[] = {
     { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Scan Command Status" },   19 },
     { 0, DEFTYPE_OCTETSTRING, 48, ACCESS_READ,      { "Scan Command Response" }, 21 }
 };
-struct PACKED {
+static struct PACKED {
     osal_uint8_t  subindex_0;
     osal_uint8_t  scan_command_request[2];
     osal_uint8_t  scan_command_status;
@@ -388,7 +387,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
 };
 
-int callback_master_0xF0nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
+static int callback_master_0xF0nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
         osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
