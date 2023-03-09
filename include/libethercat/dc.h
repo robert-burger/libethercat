@@ -61,7 +61,7 @@ typedef struct ec_dc_info_slave {
     int type;                       //!< \brief dc type, 0 = sync0, 1 = sync01
     osal_uint32_t cycle_time_0;     //!< \brief cycle time of sync 0 [ns]
     osal_uint32_t cycle_time_1;     //!< \brief cycle time of sync 1 [ns]
-    osal_uint32_t cycle_shift;      //!< \brief cycle shift time [ns]
+    osal_int32_t cycle_shift;       //!< \brief cycle shift time [ns]
 } ec_dc_info_slave_t;
     
 typedef enum ec_dc_mode {
