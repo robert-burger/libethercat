@@ -238,6 +238,11 @@ int ec_dc_config(struct ec *pec) {
         slv->dc.available_ports = slv->active_ports;
 
         if ((slv->dc.use_dc == 0) || ((slv->features & 0x04u) == 0u)) {
+            ec_log(100, "DC_CONFIG", "slave %2d: not using DC (use %d, features 0x%X)\n", 
+                    slave, slv->dc.use_dc, slv->features);
+
+            slv->dc.use_dc = 0;
+
             // dc not available or not activated
             for (i = 0u; i < 4u; ++i) {
                 slv->dc.receive_times[i] = 0;
