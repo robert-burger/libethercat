@@ -241,11 +241,11 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x3nnn[] = {
     { 0, DEFTYPE_BOOLEAN,       8, ACCESS_READ, { "Enabled" }                 ,  7 },
     { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Next Slave" }              , 10 },
     { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Previous Slave" }          , 14 },
-    { 0, DEFTYPE_UNSIGNED8,     8, ACCESS_READ, { "Available Ports" }         , 15 },
-    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 0" }     , 19 },
-    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 1" }     , 19 },
-    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 2" }     , 19 },
-    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 3" }     , 19 },
+    { 0, DEFTYPE_UNSIGNED8,     8, ACCESS_READ, { "Active Ports" }            , 12 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Time Port 0" }     , 19 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Time Port 1" }     , 19 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Time Port 2" }     , 19 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Time Port 3" }     , 19 },
     { 0, DEFTYPE_UNSIGNED8,     8, ACCESS_READ, { "Sync Type" }               ,  9 }, 
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Cycle Time 0" }            , 12 }, 
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Cycle Time 1" }            , 12 }, 
@@ -283,28 +283,28 @@ static int callback_master_0x3nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint
         }
     } else if (sub_index == 4) {
         if ((*len) >= 1) {
-            (*(osal_uint8_t *)buf) = pec->slaves[slave].dc.available_ports;
+            (*(osal_uint8_t *)buf) = pec->slaves[slave].active_ports;
             (*len) = sizeof(osal_uint8_t);
         }
     } else if (sub_index == 5) {
         if ((*len) >= 4) {
-            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[0];
-            (*len) = sizeof(osal_int32_t);
+            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[0];
+            (*len) = sizeof(osal_uint32_t);
         }
     } else if (sub_index == 6) {
         if ((*len) >= 4) {
-            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[1];
-            (*len) = sizeof(osal_int32_t);
+            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[1];
+            (*len) = sizeof(osal_uint32_t);
         }
     } else if (sub_index == 7) {
         if ((*len) >= 4) {
-            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[2];
-            (*len) = sizeof(osal_int32_t);
+            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[2];
+            (*len) = sizeof(osal_uint32_t);
         }
     } else if (sub_index == 8) {
         if ((*len) >= 4) {
-            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[3];
-            (*len) = sizeof(osal_int32_t);
+            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[3];
+            (*len) = sizeof(osal_uint32_t);
         }
     } else if (sub_index == 9) {
         if ((*len) >= 1) {
