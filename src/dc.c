@@ -37,6 +37,7 @@
 /* system includes */
 #include <assert.h>
 #include <inttypes.h>
+#include <stdio.h>
 
 /* libethercat header includes */
 #include "libethercat/dc.h"
@@ -105,20 +106,6 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
             ec_log(100, "DC_SYNC", "slave %2hu: disabled distributed clocks\n", slave);
         }
     }
-}
-
-// get port time or 0
-static inline osal_int32_t ec_dc_porttime(ec_t *pec, osal_uint16_t slave, osal_uint8_t port) {
-    assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
-
-    osal_int32_t ret_time = 0;
-
-    if (port < 4u) {
-        ret_time = pec->slaves[slave].dc.receive_times[port];
-    }
-
-    return ret_time;
 }
 
 static osal_uint8_t eval_port(ec_t *pec, osal_uint16_t slave, osal_uint8_t a, osal_uint8_t b, osal_uint8_t c, osal_uint8_t def) {
@@ -230,7 +217,6 @@ int ec_dc_config(struct ec *pec) {
     // latch DC receive time on slaves
     osal_int32_t dc_time0 = 0;
     check_ec_bwr(pec, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
-
     int prev = -1;
 
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
@@ -282,12 +268,9 @@ int ec_dc_config(struct ec *pec) {
         prev = slave;
 
         // read receive time of all ports and try to find entry port
+        check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0, &slv->dc.receive_times[0], 4 * sizeof(slv->dc.receive_times[0]), &wkc);
         slv->entry_port = 0;
         for (i = 0u; i < 4u; ++i) {
-            slv->dc.receive_times[i] = 0;
-            check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0 + (i * sizeof(osal_int32_t)), 
-                    &slv->dc.receive_times[i], sizeof(slv->dc.receive_times[i]), &wkc);
-
             if ((slv->active_ports & (1u << i)) != 0u) {
                 if (slv->dc.receive_times[i] < slv->dc.receive_times[slv->entry_port]) {
                     // port with smallest value is entry port
@@ -348,8 +331,8 @@ int ec_dc_config(struct ec *pec) {
             delay_previous_slaves = 0;
 
             int port_on_parent_previous = ec_dc_previous_port(pec, parent, slv->port_on_parent);
-            osal_int64_t port_time_parent = ec_dc_porttime(pec, parent, slv->port_on_parent);
-            osal_int64_t port_time_parent_previous = ec_dc_porttime(pec, parent, port_on_parent_previous);
+            osal_int64_t port_time_parent = pec->slaves[parent].dc.receive_times[slv->port_on_parent];
+            osal_int64_t port_time_parent_previous = pec->slaves[parent].dc.receive_times[port_on_parent_previous];
 
             ec_log(100, "DC_CONFIG", "slave %2d: ports %d, %d, times "
                     "%" PRId64 ", %" PRId64 "\n", slave, slv->port_on_parent, port_on_parent_previous, 
@@ -361,8 +344,8 @@ int ec_dc_config(struct ec *pec) {
 
             // if we have childrens, get the delay of all childs
             if (slv->link_cnt > 1u) {
-                delay_childs = ec_dc_porttime(pec, slave, ec_dc_previous_port(pec, slave, slv->entry_port)) -
-                    ec_dc_porttime(pec, slave, slv->entry_port);
+                int prev_port = ec_dc_previous_port(pec, slave, slv->entry_port);
+                delay_childs = pec->slaves[slave].dc.receive_times[prev_port] - pec->slaves[slave].dc.receive_times[slv->entry_port];
             }
 
             if (delay_childs > delay_slave_with_childs) {
@@ -371,8 +354,7 @@ int ec_dc_config(struct ec *pec) {
 
             // get delay of previous slaves on parent, if any
             if ((child - parent) > 0) {
-                delay_previous_slaves = port_time_parent_previous -
-                    ec_dc_porttime(pec, parent, pec->slaves[parent].entry_port);
+                delay_previous_slaves = port_time_parent_previous - pec->slaves[parent].dc.receive_times[pec->slaves[parent].entry_port];
 
                 if (delay_previous_slaves < 0) {
                     delay_previous_slaves = -delay_previous_slaves;
