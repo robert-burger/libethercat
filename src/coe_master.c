@@ -38,10 +38,10 @@
 
 struct ec_coe_object;
 
-typedef int (*ec_coe_cb_read_t)(ec_t *pec, struct ec_coe_object *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t *len, osal_uint32_t *abort_code);
-typedef int (*ec_coe_cb_write_t)(ec_t *pec, struct ec_coe_object *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t len, osal_uint32_t *abort_code);
+typedef int (*ec_coe_cb_read_t)(ec_t *pec, struct ec_coe_object *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code);
+typedef int (*ec_coe_cb_write_t)(ec_t *pec, struct ec_coe_object *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t len, osal_uint32_t *abort_code);
 
 typedef struct ec_coe_object {
     osal_uint16_t               index;
@@ -113,6 +113,7 @@ static struct PACKED {
 /****************************************************************************
  * 0x20nn   Configuration Cyclic Group
  */
+
 static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 8, { "Configuration Cyclic Group" }, 26 };
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }              , 10 }, // 0
@@ -125,15 +126,15 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed" }          , 14 }, 
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Timer Divisor" }           , 13 } };
 
-static int callback_master_0x20nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t *len, osal_uint32_t *abort_code) 
+static int callback_master_0x20nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
     int ret = EC_OK;
 
-    osal_uint16_t group = (coe_obj->index & 0x00FE) >> 1u;
+    osal_uint16_t group = (index & 0x00FE) >> 1u;
     if (sub_index == 0) {
         if ((*len) >= 1) {
             (*buf) = 8;
@@ -194,15 +195,15 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nm[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
 };
 
-static int callback_master_0x20nm(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t *len, osal_uint32_t *abort_code) 
+static int callback_master_0x20nm(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
     int ret = EC_OK;
 
-    osal_uint16_t group = (coe_obj->index & 0x00FE) >> 1u;
+    osal_uint16_t group = (index & 0x00FE) >> 1u;
     int value = -1;
 
     for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
@@ -224,6 +225,111 @@ static int callback_master_0x20nm(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint
         if ((*len) >= 1) {
             (*(osal_uint8_t *)buf) = value + 1;
             (*len) = sizeof(osal_uint8_t);
+        }
+    }
+
+    return ret;
+}
+
+/****************************************************************************
+ * 0x30nn   Configuration Distributied Clock Slave
+ */
+
+static ec_coe_sdo_desc_t obj_desc_master_0x3nnn = { DEFTYPE_RECORD, OBJCODE_REC, 13, { "Configuration Distributed Clock Slave" }, 37 };
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x3nnn[] = {
+    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }              , 10 }, // 0
+    { 0, DEFTYPE_BOOLEAN,       8, ACCESS_READ, { "Enabled" }                 ,  7 },
+    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Next Slave" }              , 10 },
+    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Previous Slave" }          , 14 },
+    { 0, DEFTYPE_UNSIGNED8,     8, ACCESS_READ, { "Available Ports" }         , 15 },
+    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 0" }     , 19 },
+    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 1" }     , 19 },
+    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 2" }     , 19 },
+    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Receive Time Port 3" }     , 19 },
+    { 0, DEFTYPE_UNSIGNED8,     8, ACCESS_READ, { "Sync Type" }               ,  9 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Cycle Time 0" }            , 12 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Cycle Time 1" }            , 12 }, 
+    { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Cycle Shift" }             , 11 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "System Delay" }            , 12 } };
+
+static int callback_master_0x3nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
+        osal_size_t *len, osal_uint32_t *abort_code) 
+{
+    assert(pec != NULL);
+    assert(coe_obj != NULL);
+    
+    int ret = EC_OK;
+
+    osal_uint16_t slave = (index & 0x0FFF);
+    if (sub_index == 0) {
+        if ((*len) >= 1) {
+            (*buf) = 13;
+            (*len) = 1;
+        }
+    } else if (sub_index == 1) {
+        if ((*len) >= 1) {
+            (*(osal_uint8_t *)buf) = pec->slaves[slave].dc.use_dc;
+            (*len) = sizeof(osal_uint8_t);
+        }
+    } else if (sub_index == 2) {
+        if ((*len) >= 4) {
+            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.next;
+            (*len) = sizeof(osal_int32_t);
+        }
+    } else if (sub_index == 3) {
+        if ((*len) >= 4) {
+            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.prev;
+            (*len) = sizeof(osal_int32_t);
+        }
+    } else if (sub_index == 4) {
+        if ((*len) >= 1) {
+            (*(osal_uint8_t *)buf) = pec->slaves[slave].dc.available_ports;
+            (*len) = sizeof(osal_uint8_t);
+        }
+    } else if (sub_index == 5) {
+        if ((*len) >= 4) {
+            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[0];
+            (*len) = sizeof(osal_int32_t);
+        }
+    } else if (sub_index == 6) {
+        if ((*len) >= 4) {
+            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[1];
+            (*len) = sizeof(osal_int32_t);
+        }
+    } else if (sub_index == 7) {
+        if ((*len) >= 4) {
+            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[2];
+            (*len) = sizeof(osal_int32_t);
+        }
+    } else if (sub_index == 8) {
+        if ((*len) >= 4) {
+            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.receive_times[3];
+            (*len) = sizeof(osal_int32_t);
+        }
+    } else if (sub_index == 9) {
+        if ((*len) >= 1) {
+            (*(osal_uint8_t *)buf) = pec->slaves[slave].dc.type;
+            (*len) = sizeof(osal_uint8_t);
+        }
+    } else if (sub_index == 10) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.cycle_time_0;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    } else if (sub_index == 11) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.cycle_time_1;
+            (*len) = sizeof(osal_uint32_t);
+        }
+    } else if (sub_index == 12) {
+        if ((*len) >= 4) {
+            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.cycle_shift;
+            (*len) = sizeof(osal_int32_t);
+        }
+    } else if (sub_index == 13) {
+        if ((*len) >= 4) {
+            (*(osal_uint32_t *)buf) = pec->slaves[slave].pdelay;
+            (*len) = sizeof(osal_uint32_t);
         }
     }
 
@@ -274,15 +380,15 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
     { 0, DEFTYPE_BYTE,          8, ACCESS_READ, { "Link Status" },           11 }, // 35
 };
 
-static int callback_master_0x8nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t *len, osal_uint32_t *abort_code) 
+static int callback_master_0x8nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
     int ret = EC_OK;
 
-    osal_uint16_t slave = coe_obj->index & 0x0FFF;
+    osal_uint16_t slave = index & 0x0FFF;
     if (sub_index == 0) {
         if ((*len) >= 1) {
             (*buf) = 35;
@@ -363,15 +469,15 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
     { 0, DEFTYPE_WORD,         16, ACCESS_READ, { "DL Status Register" },    18 }, // 32
 };
 
-static int callback_master_0x9nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t *len, osal_uint32_t *abort_code) 
+static int callback_master_0x9nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
     int ret = EC_OK;
 
-    osal_uint16_t slave = coe_obj->index & 0x0FFF;
+    osal_uint16_t slave = index & 0x0FFF;
     if (sub_index == 0) {
         if ((*len) >= 1) {
             (*buf) = 32;
@@ -410,15 +516,15 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xAnnn[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "AL Control" },            10 },
 };
 
-static int callback_master_0xAnnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t *len, osal_uint32_t *abort_code) 
+static int callback_master_0xAnnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
     int ret = EC_OK;
 
-    osal_uint16_t slave = coe_obj->index & 0x0FFF;
+    osal_uint16_t slave = index & 0x0FFF;
     if (sub_index == 0) {
         if ((*len) >= 1) {
             (*buf) = 2;
@@ -507,15 +613,15 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
 };
 
-static int callback_master_0xF0nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
-        osal_size_t *len, osal_uint32_t *abort_code) 
+static int callback_master_0xF0nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+        int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
     int ret = EC_OK;
 
-    osal_uint16_t slave_range = coe_obj->index & 0x000Fu;
+    osal_uint16_t slave_range = index & 0x000Fu;
     osal_uint16_t slave = (slave_range * 255) + (sub_index - 1);
 
     if ((*len) >= 2) {
@@ -541,6 +647,7 @@ ec_coe_object_t ec_coe_master_dict[] = {
     { 0x1018, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1018, &entry_desc_master_0x1018[0], (osal_uint8_t *)&data_master_0x1018, NULL, NULL },
     { 0x2000, 0xFF01u,                      &obj_desc_master_0x20nn, &entry_desc_master_0x20nn[0], NULL,                                callback_master_0x20nn, NULL },
     { 0x2001, 0xFF01u,                      &obj_desc_master_0x20nm, &entry_desc_master_0x20nm[0], NULL,                                callback_master_0x20nm, NULL },
+    { 0x3000, 0xF000u,                      &obj_desc_master_0x3nnn, &entry_desc_master_0x3nnn[0], NULL,                                callback_master_0x3nnn, NULL },
     { 0x8000, 0xF000u,                      &obj_desc_master_0x8nnn, &entry_desc_master_0x8nnn[0], NULL,                                callback_master_0x8nnn, NULL },
     { 0x9000, 0xF000u,                      &obj_desc_master_0x9nnn, &entry_desc_master_0x9nnn[0], NULL,                                callback_master_0x9nnn, NULL },
     { 0xA000, 0xF000u,                      &obj_desc_master_0xAnnn, &entry_desc_master_0xAnnn[0], NULL,                                callback_master_0xAnnn, NULL },
@@ -613,7 +720,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
     ret = ec_coe_master_get_object(index, &coe_obj);
 
     if ((coe_obj != NULL) && (coe_obj->read != NULL)) {
-        ret = (*coe_obj->read)(pec, coe_obj, sub_index, complete, buf, len, abort_code);
+        ret = (*coe_obj->read)(pec, coe_obj, index, sub_index, complete, buf, len, abort_code);
     } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
         osal_uint8_t *data = NULL;
         osal_size_t data_len = 0;
@@ -647,7 +754,7 @@ int ec_coe_master_sdo_write(ec_t *pec, osal_uint16_t index,
     ret = ec_coe_master_get_object(index, &coe_obj);
 
     if ((coe_obj != NULL) && (coe_obj->write != NULL)) {
-        ret = (*coe_obj->write)(pec, coe_obj, sub_index, complete, buf, len, abort_code);
+        ret = (*coe_obj->write)(pec, coe_obj, index, sub_index, complete, buf, len, abort_code);
     } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
         osal_uint8_t *data = NULL;
         osal_size_t data_len = 0;
@@ -712,6 +819,11 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
         *(osal_uint16_t *)tmp = 0x2000 | (i << 1u);
         tmp += sizeof(osal_uint16_t);
         *(osal_uint16_t *)tmp = 0x2001 | (i << 1u);
+        tmp += sizeof(osal_uint16_t);
+    }
+    
+    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
+        *(osal_uint16_t *)tmp = 0x3000 | i;
         tmp += sizeof(osal_uint16_t);
     }
 
@@ -796,12 +908,12 @@ int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index,
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", slave);
             desc->name_len = strlen(desc->name);
-        } else if ((index & 0x2F01) == 0x2000) {
+        } else if ((index & 0xFF01) == 0x2000) {
             osal_uint16_t group = (index & 0x0FE) >> 1;
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", group);
             desc->name_len = strlen(desc->name);
-        } else if ((index & 0x2F01) == 0x2001) {
+        } else if ((index & 0xFF01) == 0x2001) {
             osal_uint16_t group = (index & 0x0FE) >> 1;
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", group);
