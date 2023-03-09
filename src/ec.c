@@ -763,17 +763,16 @@ static void ec_scan(ec_t *pec) {
             slv->active_ports = 0;
             slv->mbx.handler_running = 0;
 
-            osal_uint16_t topology = 0;
-            int local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &topology, sizeof(topology), &wkc);
+            osal_uint16_t dlstat = 0;
+            int local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_DLSTAT, &dlstat, sizeof(dlstat), &wkc);
 
             if (local_ret == EC_OK) {
-                // check if port is open and communication established
-#define active_port(port) \
-                if ( (topology & ((osal_uint16_t)3u << (8u + (2u * (port)))) ) == ((osal_uint16_t)2u << (8u + (2u * (port)))) ) { \
-                    slv->link_cnt++; slv->active_ports |= (osal_uint8_t)1u<<(port); }
-
+                // check if loop is not closed and communication established
                 for (osal_uint16_t port = 0u; port < 4u; ++port) {
-                    active_port(port);
+                    if (((dlstat >> (8u + (2u * port))) & 0x03) == 0x02) {
+                        slv->link_cnt++; 
+                        slv->active_ports |= (osal_uint8_t)1u << port; 
+                    }
                 }
 
                 // read out physical type
@@ -782,33 +781,30 @@ static void ec_scan(ec_t *pec) {
             }
 
             if (local_ret == EC_OK) {
-                // 0 = no links, not possible 
-                // 1 =  1 link , end of line 
-                // 2 =  2 links, one before and one after 
-                // 3 =  3 links, split point 
-                // 4 =  4 links, cross point 
-
                 // search for parent
                 slv->parent = -1; // parent is master at beginning
                 if (slave >= 1u) {
-                    int16_t topoc = 0u;
-                    int tmp_slave = (int)slave - 1;
-
-                    do {
-                        topology = pec->slaves[tmp_slave].link_cnt;
-                        if (topology == 1u) {
-                            topoc--;    // endpoint found
-                        } else if (topology == 3u) {
-                            topoc++;    // split found
-                        } else if (topology == 4u) {
-                            topoc += 2; // cross found
-                        } else if (((topoc >= 0) && (topology > 1u)) || (tmp_slave == 0)) { 
+                    int16_t topology = 0u;
+                    for (int tmp_slave = (int)slave - 1; tmp_slave >= 0; --tmp_slave) {
+                        switch (pec->slaves[tmp_slave].link_cnt) {
+                            case 1u:    // endpoint, skip this chain (presumable behind a bus coupler)
+                                topology--;
+                                break;
+                            case 3u:    // split, add this, found a bus splitter (presumable a bus coupler)
+                                topology++;
+                                break;
+                            case 4u:    // cross, 
+                                topology += 2;
+                                break;
+                            default:
+                                break;
+                        }
+                        
+                        if (((topology >= 0) && (pec->slaves[tmp_slave].link_cnt > 1u)) || (tmp_slave == 0)) { 
                             slv->parent = tmp_slave; // parent found
-                            tmp_slave = 0;
-                        } else {}
-                        tmp_slave--;
-                    }
-                    while (tmp_slave >= 0);
+                            break;
+                        }
+                    } 
                 }
 
                 ec_log(100, "MASTER_SCAN", "slave %2d has parent %d\n", slave, slv->parent);
