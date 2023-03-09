@@ -111,9 +111,9 @@ static struct PACKED {
 } data_master_0x1018 = { 4, 0x1616, 0x11BECA7, 0x0, 0x0 };
 
 /****************************************************************************
- * 0x20nn   Cyclic Group Configuration
+ * 0x20nn   Configuration Cyclic Group
  */
-static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 8, { "Cyclic Group Configuration" }, 26 };
+static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 8, { "Configuration Cyclic Group" }, 26 };
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }              , 10 }, // 0
     { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Logical Address" }         , 15 },
@@ -133,7 +133,7 @@ static int callback_master_0x20nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint
     
     int ret = EC_OK;
 
-    osal_uint16_t group = coe_obj->index & 0x00FF;
+    osal_uint16_t group = (coe_obj->index & 0x00FE) >> 1u;
     if (sub_index == 0) {
         if ((*len) >= 1) {
             (*buf) = 8;
@@ -178,6 +178,52 @@ static int callback_master_0x20nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint
         if ((*len) >= 4) {
             (*(osal_uint32_t *)buf) = pec->pd_groups[group].divisor;
             (*len) = sizeof(osal_uint32_t);
+        }
+    }
+
+    return ret;
+}
+
+/****************************************************************************
+ * 0x20nm   Assigned Slaves Cyclic Group
+ */
+
+static ec_coe_sdo_desc_t obj_desc_master_0x20nm = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, { "Assigned Slaves Cyclic Group" }, 28 }; 
+static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nm[] = {
+    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Subindex 0" },            10 },
+    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
+};
+
+static int callback_master_0x20nm(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
+        osal_size_t *len, osal_uint32_t *abort_code) 
+{
+    assert(pec != NULL);
+    assert(coe_obj != NULL);
+    
+    int ret = EC_OK;
+
+    osal_uint16_t group = (coe_obj->index & 0x00FE) >> 1u;
+    int value = -1;
+
+    for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+        if (pec->slaves[slave].assigned_pd_group == group) {
+            value++;
+
+            if (sub_index > 0) {
+                if (value == (sub_index - 1)) {
+                    if ((*len) >= 2) {
+                        (*(osal_uint32_t *)buf) = slave;
+                        (*len) = sizeof(osal_uint16_t);
+                    }
+                }
+            }
+        }
+    }
+
+    if (sub_index == 0) {
+        if ((*len) >= 1) {
+            (*(osal_uint8_t *)buf) = value + 1;
+            (*len) = sizeof(osal_uint8_t);
         }
     }
 
@@ -493,7 +539,8 @@ ec_coe_object_t ec_coe_master_dict[] = {
     { 0x1009, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1009, &entry_desc_master_0x1009   , (osal_uint8_t *) data_master_0x1009, NULL, NULL },
     { 0x100A, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x100A, &entry_desc_master_0x100A   , (osal_uint8_t *) data_master_0x100A, NULL, NULL },
     { 0x1018, EC_COE_OBJECT_INDEX_MASK_ALL, &obj_desc_master_0x1018, &entry_desc_master_0x1018[0], (osal_uint8_t *)&data_master_0x1018, NULL, NULL },
-    { 0x2000, 0xFF00u,                      &obj_desc_master_0x20nn, &entry_desc_master_0x20nn[0], NULL,                                callback_master_0x20nn, NULL },
+    { 0x2000, 0xFF01u,                      &obj_desc_master_0x20nn, &entry_desc_master_0x20nn[0], NULL,                                callback_master_0x20nn, NULL },
+    { 0x2001, 0xFF01u,                      &obj_desc_master_0x20nm, &entry_desc_master_0x20nm[0], NULL,                                callback_master_0x20nm, NULL },
     { 0x8000, 0xF000u,                      &obj_desc_master_0x8nnn, &entry_desc_master_0x8nnn[0], NULL,                                callback_master_0x8nnn, NULL },
     { 0x9000, 0xF000u,                      &obj_desc_master_0x9nnn, &entry_desc_master_0x9nnn[0], NULL,                                callback_master_0x9nnn, NULL },
     { 0xA000, 0xF000u,                      &obj_desc_master_0xAnnn, &entry_desc_master_0xAnnn[0], NULL,                                callback_master_0xAnnn, NULL },
@@ -662,7 +709,9 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
     }
     
     for (int i = 0; (i < pec->pd_group_cnt) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0x2000 | i;
+        *(osal_uint16_t *)tmp = 0x2000 | (i << 1u);
+        tmp += sizeof(osal_uint16_t);
+        *(osal_uint16_t *)tmp = 0x2001 | (i << 1u);
         tmp += sizeof(osal_uint16_t);
     }
 
@@ -747,6 +796,23 @@ int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index,
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", slave);
             desc->name_len = strlen(desc->name);
+        } else if ((index & 0x2F01) == 0x2000) {
+            osal_uint16_t group = (index & 0x0FE) >> 1;
+            (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
+                    CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", group);
+            desc->name_len = strlen(desc->name);
+        } else if ((index & 0x2F01) == 0x2001) {
+            osal_uint16_t group = (index & 0x0FE) >> 1;
+            (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
+                    CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", group);
+            desc->name_len = strlen(desc->name);
+            desc->max_subindices = 0;
+
+            for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+                if (pec->slaves[slave].assigned_pd_group == group) {
+                    desc->max_subindices++;
+                }
+            }
         }
     }
 
