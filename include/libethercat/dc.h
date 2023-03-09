@@ -56,7 +56,7 @@ typedef struct ec_dc_info_slave {
     int prev;                       //!< \brief marker for previous dc slave
 
     osal_uint8_t available_ports;   //!< \brief available ports for dc config
-    osal_int32_t receive_times[4];  //!< \brief latched port receive times
+    osal_uint32_t receive_times[4]; //!< \brief latched port receive times
             
     int type;                       //!< \brief dc type, 0 = sync0, 1 = sync01
     osal_uint32_t cycle_time_0;     //!< \brief cycle time of sync 0 [ns]
