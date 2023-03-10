@@ -657,6 +657,13 @@ ec_coe_object_t ec_coe_master_dict[] = {
     { 0xF040, 0xFFF0u,                      &obj_desc_master_0xF04n, &entry_desc_master_0xF04n[0], NULL,                                callback_master_0xF0nn, NULL },
     { 0xFFFF, EC_COE_OBJECT_INDEX_MASK_ALL, NULL, NULL, NULL, NULL, NULL } };
 
+//! Calculate complete object length either with or without subindex 0.
+/*!
+ * \param[in]   coe_obj             Pointer to object to calculate length from
+ * \param[in]   with_sub_index_0    Include subindex 0 in calculated length.
+ * \param[out]  obj_len             Return calculated object length.
+ * \return EC_OK on success.
+ */
 static int ec_coe_master_get_object_length(ec_coe_object_t *coe_obj, osal_bool_t with_sub_index_0, osal_size_t *obj_len) {
     assert(coe_obj != NULL);
     assert(obj_len != NULL);
