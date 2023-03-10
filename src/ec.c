@@ -774,17 +774,11 @@ static void ec_scan(ec_t *pec) {
                         slv->active_ports |= (osal_uint8_t)1u << port; 
                     }
                 }
-
-                // read out physical type
-                slv->ptype = 0;
-                local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, sizeof(slv->ptype), &wkc);
-            }
-
-            if (local_ret == EC_OK) {
+                
                 // search for parent
                 slv->parent = -1; // parent is master at beginning
                 if (slave >= 1u) {
-                    int16_t topology = 0u;
+                    osal_int16_t topology = 0u;
                     for (int tmp_slave = (int)slave - 1; tmp_slave >= 0; --tmp_slave) {
                         switch (pec->slaves[tmp_slave].link_cnt) {
                             case 1u:    // endpoint, skip this chain (presumable behind a bus coupler)
@@ -807,7 +801,32 @@ static void ec_scan(ec_t *pec) {
                     } 
                 }
 
-                ec_log(100, "MASTER_SCAN", "slave %2d has parent %d\n", slave, slv->parent);
+                ec_log(100, "MASTER_SCAN", "slave %2d is directly connected to slave %d\n", slave, slv->parent);
+
+                // read out physical type
+                slv->ptype = 0;
+                local_ret = ec_fprd(pec, slv->fixed_address, EC_REG_PORTDES, &slv->ptype, sizeof(slv->ptype), &wkc);
+            }
+
+            if (local_ret == EC_OK) {
+                for (int port = 0; port < 4; ++port) {
+                    osal_uint8_t val = (slv->ptype >> (port * 2u)) & 0x03;
+                    switch (val) {
+                        default:
+                            break;
+                        case 1:
+                            ec_log(100, "MASTER_SCAN", "slave %2d: port %d is not configured (SII EEPROM)\n", slave, port);
+                            break;
+                        case 2:
+                            ec_log(100, "MASTER_SCAN", "slave %2d: port %d is EBUS\n", slave, port);
+                            break;
+                        case 3:
+                            ec_log(100, "MASTER_SCAN", "slave %2d: port %d is MII/RMII/RGMII\n", slave, port);
+                            break;
+                    }
+                }
+            } else {
+                ec_log(1, "MASTER_SCAN", "slave %2d: reading port descriptor failed!\n", slave);
             }
         }
     }
