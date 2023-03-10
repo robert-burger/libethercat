@@ -696,6 +696,10 @@ static int ec_coe_master_get_object(osal_uint16_t index, ec_coe_object_t **coe_o
         tmp_coe_obj++;
     }
 
+    if (ret != EC_OK) {
+        (*coe_obj) = NULL;
+    }
+
     return ret;
 }
 
