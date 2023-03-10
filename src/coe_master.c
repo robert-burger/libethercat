@@ -657,6 +657,29 @@ ec_coe_object_t ec_coe_master_dict[] = {
     { 0xF040, 0xFFF0u,                      &obj_desc_master_0xF04n, &entry_desc_master_0xF04n[0], NULL,                                callback_master_0xF0nn, NULL },
     { 0xFFFF, EC_COE_OBJECT_INDEX_MASK_ALL, NULL, NULL, NULL, NULL, NULL } };
 
+static int ec_coe_master_get_object_length(ec_coe_object_t *coe_obj, osal_bool_t with_sub_index_0, osal_size_t *obj_len) {
+    assert(coe_obj != NULL);
+    assert(obj_len != NULL);
+
+    int ret = EC_OK;
+    osal_size_t tmp = 0u;
+
+    osal_uint16_t i = 0u;
+    if (with_sub_index_0 == OSAL_FALSE) {
+        i = 1u;
+    }
+
+    while (i <= coe_obj->obj_desc->max_subindices) {
+        tmp += coe_obj->entry_desc[i].bit_length >> 3;
+
+        i++;
+    }
+
+    (*obj_len) = tmp;
+
+    return ret;
+}
+
 static int ec_coe_master_get_object(osal_uint16_t index, ec_coe_object_t **coe_obj) {
     assert(coe_obj != NULL);
 
@@ -677,7 +700,7 @@ static int ec_coe_master_get_object(osal_uint16_t index, ec_coe_object_t **coe_o
 }
 
 static int ec_coe_master_get_object_data(ec_coe_object_t *coe_obj, osal_uint8_t sub_index, 
-        osal_uint8_t **data, osal_size_t *data_len) 
+        int complete, osal_uint8_t **data, osal_size_t *data_len) 
 {
     assert(coe_obj != NULL);
     assert(data != NULL);
@@ -685,20 +708,37 @@ static int ec_coe_master_get_object_data(ec_coe_object_t *coe_obj, osal_uint8_t 
 
     int ret = EC_ERROR_MAILBOX_ABORT;
 
-    if (sub_index <= coe_obj->obj_desc->max_subindices) {
-        if (coe_obj->data != NULL) {
+    if (complete == 0) {
+        if (sub_index <= coe_obj->obj_desc->max_subindices) {
+            if (coe_obj->data != NULL) {
+                osal_uint8_t *tmp = coe_obj->data;
+
+                for (osal_uint16_t i = 0; i <= sub_index; ++i) {
+                    if (i == sub_index) {
+                        (*data) = tmp;
+                        (*data_len) = coe_obj->entry_desc[i].bit_length >> 3;
+                        ret = EC_OK;
+                        break;
+                    }
+
+                    tmp += coe_obj->entry_desc[i].bit_length >> 3;
+                }
+            }
+        }
+    } else { // complete != 0
+        osal_size_t complete_len = 0u;
+        osal_bool_t with_sub_index_0 = (sub_index == 0) ? OSAL_TRUE : OSAL_FALSE;
+        ret = ec_coe_master_get_object_length(coe_obj, with_sub_index_0, &complete_len);
+
+        if (ret == EC_OK) {
             osal_uint8_t *tmp = coe_obj->data;
 
-            for (osal_uint16_t i = 0; i <= sub_index; ++i) {
-                if (i == sub_index) {
-                    (*data) = tmp;
-                    (*data_len) = coe_obj->entry_desc[i].bit_length >> 3;
-                    ret = EC_OK;
-                    break;
-                }
-
-                tmp += coe_obj->entry_desc[i].bit_length >> 3;
+            if (sub_index != 0u) {
+                tmp += 1; // skip subindex 0
             }
+
+            (*data) = tmp;
+            (*data_len) = complete_len;
         }
     }
 
@@ -724,7 +764,7 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
     } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
         osal_uint8_t *data = NULL;
         osal_size_t data_len = 0;
-        ret = ec_coe_master_get_object_data(coe_obj, sub_index, &data, &data_len);
+        ret = ec_coe_master_get_object_data(coe_obj, sub_index, complete, &data, &data_len);
 
         if ((ret == EC_OK) && (data != NULL)) {
             if ((*len) >= data_len) {
@@ -758,7 +798,7 @@ int ec_coe_master_sdo_write(ec_t *pec, osal_uint16_t index,
     } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
         osal_uint8_t *data = NULL;
         osal_size_t data_len = 0;
-        ret = ec_coe_master_get_object_data(coe_obj, sub_index, &data, &data_len);
+        ret = ec_coe_master_get_object_data(coe_obj, sub_index, complete, &data, &data_len);
 
         if ((ret == EC_OK) && (data != NULL) && (sub_index <= coe_obj->obj_desc->max_subindices)) {
             ec_coe_sdo_entry_desc_t *entry_desc = &coe_obj->entry_desc[sub_index];
