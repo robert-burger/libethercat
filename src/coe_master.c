@@ -954,8 +954,8 @@ int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index,
                     desc->max_subindices = 0;
                 }
             }
-        } else if (index >= 0x8000) {
-            osal_uint16_t slave = index & 0x0FFF;
+        } else if ((index >= 0x8000) || ((index & coe_obj->index_mask) == 0x3000)) {
+            osal_uint16_t slave = index & ~coe_obj->index_mask;
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", slave);
             desc->name_len = strlen(desc->name);
