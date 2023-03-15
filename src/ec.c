@@ -1398,7 +1398,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
  */
 static int ec_send_process_data_group(ec_t *pec, int group) {
     assert(pec != NULL);
-    assert(group < pec->group_cnt);
+    assert(group < pec->pd_group_cnt);
 
     int ret = EC_OK;
     ec_pd_group_t *pd = &pec->pd_groups[group];
