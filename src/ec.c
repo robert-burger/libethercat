@@ -810,8 +810,8 @@ static void ec_scan(ec_t *pec) {
 
             if (local_ret == EC_OK) {
                 for (int port = 0; port < 4; ++port) {
-                    osal_uint8_t val = (slv->ptype >> (port * 2u)) & 0x03;
-                    switch (val) {
+                    osal_uint8_t port_val = (slv->ptype >> (port * 2u)) & 0x03;
+                    switch (port_val) {
                         default:
                             break;
                         case 1:
