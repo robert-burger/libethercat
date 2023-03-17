@@ -38,7 +38,7 @@
 
 struct ec_coe_object;
 
-typedef int (*ec_coe_cb_read_t)(ec_t *pec, struct ec_coe_object *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+typedef int (*ec_coe_cb_read_t)(ec_t *pec, const struct ec_coe_object *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code);
 typedef int (*ec_coe_cb_write_t)(ec_t *pec, struct ec_coe_object *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t len, osal_uint32_t *abort_code);
@@ -54,6 +54,12 @@ typedef struct ec_coe_object {
 } ec_coe_object_t;
 
 #define HW_VERSION      "0.0.0"
+
+#define BUF_PUT(type, datap)                                \
+    if ((*len) >= sizeof(type)) {                           \
+        (void)memcpy(buf, (void *)(datap), sizeof(type));   \
+        (*len) = sizeof(type);                              \
+    }
 
 /****************************************************************************
  * 0x1000   Device Type
@@ -71,7 +77,7 @@ static osal_uint32_t data_master_0x1000 = 0;
 static ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Device Name" }, 11 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1008 =
     { 0, DEFTYPE_VISIBLESTRING, strlen(LIBETHERCAT_PACKAGE_NAME) << 3, ACCESS_READ, { "Device Name" },       11 };
-static osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
+static const osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
 
 /****************************************************************************
  * 0x1009   Manufacturer Hardware Version
@@ -80,7 +86,7 @@ static osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
 static ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Hardware Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
     { 0, DEFTYPE_VISIBLESTRING , strlen(HW_VERSION) << 3, ACCESS_READ, { "Manufacturer Hardware Version" },       29 };
-static osal_char_t data_master_0x1009[] = HW_VERSION;
+static const osal_char_t data_master_0x1009[] = HW_VERSION;
 
 /****************************************************************************
  * 0x100A   Manufacturer Software Version
@@ -89,7 +95,7 @@ static osal_char_t data_master_0x1009[] = HW_VERSION;
 static ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Software Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
     { 0, DEFTYPE_VISIBLESTRING , strlen(LIBETHERCAT_PACKAGE_VERSION) << 3, ACCESS_READ, { "Manufacturer Software Version" },       29 };
-static osal_char_t data_master_0x100A[] = LIBETHERCAT_PACKAGE_VERSION;
+static const osal_char_t data_master_0x100A[] = LIBETHERCAT_PACKAGE_VERSION;
 
 /****************************************************************************
  * 0x1018   Identity
@@ -103,7 +109,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x1018[] = {
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Revision Number" },  15 }, // 1
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Serial Number" },    13 } };
 static struct PACKED {
-    osal_uint8_t subindex_0;
+    osal_uint16_t subindex_0;
     osal_uint32_t vendor_id;
     osal_uint32_t product_code;
     osal_uint32_t revision_number;
@@ -126,60 +132,43 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed" }          , 14 }, 
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Timer Divisor" }           , 13 } };
 
-static int callback_master_0x20nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+static int callback_master_0x20nn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
+
+    // unused
+    (void)abort_code;
     
+    //osal_uint8_t *tmp_buf = buf;
+    //osal_size_t tmp_len = (*len);
+    //(*len) = 0u; // returns read length
     int ret = EC_OK;
 
-    osal_uint16_t group = (index & 0x00FE) >> 1u;
-    if (sub_index == 0) {
-        if ((*len) >= 1) {
-            (*buf) = 8;
-            (*len) = 1;
-        }
-    } else if (sub_index == 1) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->pd_groups[group].log;
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 2) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->pd_groups[group].log_len;
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 3) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->pd_groups[group].pdout_len;
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 4) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->pd_groups[group].pdin_len;
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 5) {
-        if ((*len) >= 1) {
-            (*(osal_uint8_t *)buf) = pec->pd_groups[group].use_lrw;
-            (*len) = sizeof(osal_uint8_t);
-        }
-    } else if (sub_index == 6) {
-        if ((*len) >= 2) {
-            (*(osal_uint16_t *)buf) = pec->pd_groups[group].wkc_expected;
-            (*len) = sizeof(osal_uint16_t);
-        }
-    } else if (sub_index == 7) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->pd_groups[group].recv_missed;
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 8) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->pd_groups[group].divisor;
-            (*len) = sizeof(osal_uint32_t);
-        }
+    osal_uint16_t group = (index & 0x00FEu) >> 1u;
+
+    if (sub_index == 0u) {
+        osal_uint8_t tmp_val = 8u;
+        BUF_PUT(osal_uint8_t, &tmp_val);
+    } else if (sub_index == 1u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].log);
+    } else if (sub_index == 2u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].log_len);
+    } else if (sub_index == 3u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].pdout_len);
+    } else if (sub_index == 4u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].pdin_len);
+    } else if (sub_index == 5u) {
+        BUF_PUT(osal_uint8_t, &pec->pd_groups[group].use_lrw);
+    } else if (sub_index == 6u) {
+        BUF_PUT(osal_uint16_t, &pec->pd_groups[group].wkc_expected);
+    } else if (sub_index == 7u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].recv_missed);
+    } else if (sub_index == 8u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].divisor);
+    } else {
+        ret = EC_ERROR_MAILBOX_COE_SUBINDEX_NOT_FOUND;
     }
 
     return ret;
@@ -195,33 +184,35 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nm[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
 };
 
-static int callback_master_0x20nm(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+static int callback_master_0x20nm(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
+    // unused
+    (void)abort_code;
+    (void)complete;
+    
     int ret = EC_OK;
 
-    osal_uint16_t group = (index & 0x00FE) >> 1u;
+    osal_uint16_t group = (index & 0x00FEu) >> 1u;
     int value = -1;
+    int need_value = sub_index - 1u;
 
     for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
-        if (pec->slaves[slave].assigned_pd_group == group) {
+        if (pec->slaves[slave].assigned_pd_group == (int)group) {
             value++;
 
-            if (sub_index > 0) {
-                if (value == (sub_index - 1)) {
-                    if ((*len) >= 2) {
-                        (*(osal_uint32_t *)buf) = slave;
-                        (*len) = sizeof(osal_uint16_t);
-                    }
+            if (sub_index > 0u) {
+                if (value == need_value) {
+                    BUF_PUT(osal_uint16_t, &slave);
                 }
             }
         }
     }
 
-    if (sub_index == 0) {
+    if (sub_index == 0u) {
         if ((*len) >= 1) {
             (*(osal_uint8_t *)buf) = value + 1;
             (*len) = sizeof(osal_uint8_t);
@@ -252,85 +243,54 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x3nnn[] = {
     { 0, DEFTYPE_INTEGER32,    32, ACCESS_READ, { "Cycle Shift" }             , 11 },
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "System Delay" }            , 12 } };
 
-static int callback_master_0x3nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
+static int callback_master_0x3nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, int complete, osal_uint8_t *buf,
         osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
+    // unused
+    (void)abort_code;
+    (void)complete;
+
+    //osal_uint8_t *tmp_buf = buf;
+
     int ret = EC_OK;
 
-    osal_uint16_t slave = (index & 0x0FFF);
-    if (sub_index == 0) {
+    osal_uint16_t slave = (index & 0x0FFFu);
+    if (sub_index == 0u) {
         if ((*len) >= 1) {
             (*buf) = 13;
             (*len) = 1;
         }
-    } else if (sub_index == 1) {
-        if ((*len) >= 1) {
-            (*(osal_uint8_t *)buf) = pec->slaves[slave].dc.use_dc;
-            (*len) = sizeof(osal_uint8_t);
-        }
-    } else if (sub_index == 2) {
-        if ((*len) >= 4) {
-            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.next;
-            (*len) = sizeof(osal_int32_t);
-        }
-    } else if (sub_index == 3) {
-        if ((*len) >= 4) {
-            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.prev;
-            (*len) = sizeof(osal_int32_t);
-        }
-    } else if (sub_index == 4) {
-        if ((*len) >= 1) {
-            (*(osal_uint8_t *)buf) = pec->slaves[slave].active_ports;
-            (*len) = sizeof(osal_uint8_t);
-        }
-    } else if (sub_index == 5) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[0];
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 6) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[1];
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 7) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[2];
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 8) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.receive_times[3];
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 9) {
-        if ((*len) >= 1) {
-            (*(osal_uint8_t *)buf) = pec->slaves[slave].dc.type;
-            (*len) = sizeof(osal_uint8_t);
-        }
-    } else if (sub_index == 10) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.cycle_time_0;
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 11) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->slaves[slave].dc.cycle_time_1;
-            (*len) = sizeof(osal_uint32_t);
-        }
-    } else if (sub_index == 12) {
-        if ((*len) >= 4) {
-            (*(osal_int32_t *)buf) = pec->slaves[slave].dc.cycle_shift;
-            (*len) = sizeof(osal_int32_t);
-        }
-    } else if (sub_index == 13) {
-        if ((*len) >= 4) {
-            (*(osal_uint32_t *)buf) = pec->slaves[slave].pdelay;
-            (*len) = sizeof(osal_uint32_t);
-        }
+    } else if (sub_index == 1u) {
+    BUF_PUT(osal_uint8_t, &pec->slaves[slave].dc.use_dc);
+    } else if (sub_index == 2u) {
+        BUF_PUT(osal_int32_t, &pec->slaves[slave].dc.next);
+    } else if (sub_index == 3u) {
+        BUF_PUT(osal_int32_t, &pec->slaves[slave].dc.prev);
+    } else if (sub_index == 4u) {
+        BUF_PUT(osal_uint8_t, &pec->slaves[slave].active_ports);
+    } else if (sub_index == 5u) {
+        BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.receive_times[0]);
+    } else if (sub_index == 6u) {
+        BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.receive_times[1]);
+    } else if (sub_index == 7u) {
+        BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.receive_times[2]);
+    } else if (sub_index == 8u) {
+        BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.receive_times[3]);
+    } else if (sub_index == 9u) {
+        BUF_PUT(osal_uint8_t, &pec->slaves[slave].dc.type);
+    } else if (sub_index == 10u) {
+        BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.cycle_time_0);
+    } else if (sub_index == 11u) {
+        BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.cycle_time_1);
+    } else if (sub_index == 12u) {
+        BUF_PUT(osal_int32_t, &pec->slaves[slave].dc.cycle_shift);
+    } else if (sub_index == 13u) {
+        BUF_PUT(osal_uint32_t, &pec->slaves[slave].pdelay);
+    } else {
+        ret = EC_ERROR_MAILBOX_COE_SUBINDEX_NOT_FOUND;
     }
 
     return ret;
@@ -380,7 +340,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x8nnn[] = {
     { 0, DEFTYPE_BYTE,          8, ACCESS_READ, { "Link Status" },           11 }, // 35
 };
 
-static int callback_master_0x8nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+static int callback_master_0x8nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
@@ -388,41 +348,44 @@ static int callback_master_0x8nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint
     
     int ret = EC_OK;
 
-    osal_uint16_t slave = index & 0x0FFF;
-    if (sub_index == 0) {
+    osal_uint16_t slave = index & 0x0FFFu;
+    if (sub_index == 0u) {
         if ((*len) >= 1) {
             (*buf) = 35;
             (*len) = 1;
         }
-    } else if (sub_index == 1) {
+    } else if (sub_index == 1u) {
         if ((*len) >= 2) {
             (*(osal_uint16_t *)buf) = pec->slaves[slave].fixed_address;
             (*len) = sizeof(osal_uint16_t);
         }
-    } else if (sub_index == 2) {
-        if (pec->slaves[slave].eeprom.mbx_supported != 0) {
+    } else if (sub_index == 2u) {
+        if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
             ret = ec_coe_sdo_read(pec, slave, 0x100A, 0, complete, buf, len, abort_code);
         }
-    } else if (sub_index == 3) {
-        if (pec->slaves[slave].eeprom.mbx_supported != 0) {
+    } else if (sub_index == 3u) {
+        if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
             ret = ec_coe_sdo_read(pec, slave, 0x1008, 0, complete, buf, len, abort_code);
         }
-    } else if (sub_index == 4) {
-        if (pec->slaves[slave].eeprom.mbx_supported != 0) {
+    } else if (sub_index == 4u) {
+        if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
             ret = ec_coe_sdo_read(pec, slave, 0x1000, 0, complete, buf, len, abort_code);
         }
-    } else if ((sub_index == 5) || (sub_index == 6) || (sub_index == 7) || (sub_index == 8)) {
-        ret = ec_coe_sdo_read(pec, slave, 0x1018, sub_index - 4, complete, buf, len, abort_code);
-    } else if ((sub_index == 33) || (sub_index == 34)) {
+    } else if ((sub_index == 5u) || (sub_index == 6u) || (sub_index == 7u) || (sub_index == 8u)) {
+        ret = ec_coe_sdo_read(pec, slave, 0x1018, sub_index - 4u, complete, buf, len, abort_code);
+    } else if ((sub_index == 33u) || (sub_index == 34u)) {
         if ((*len) >= 2) {
-            if (pec->slaves[slave].eeprom.mbx_supported != 0) {
-                (*(osal_uint16_t *)buf) = pec->slaves[slave].sm[sub_index-33].len;
+            if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
+                (void)memcpy(buf, &pec->slaves[slave].sm[sub_index-33u].len, sizeof(osal_uint16_t));
                 (*len) = sizeof(osal_uint16_t);
             } else {
-                (*(osal_uint16_t *)buf) = 0;
+                osal_uint16_t tmp_value = 0u;
+                (void)memcpy(buf, (void *)&tmp_value, sizeof(osal_uint16_t));
                 (*len) = sizeof(osal_uint16_t);
             }
         }
+    } else {
+        ret = EC_ERROR_MAILBOX_COE_SUBINDEX_NOT_FOUND;
     }
 
     return ret;
@@ -469,7 +432,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x9nnn[] = {
     { 0, DEFTYPE_WORD,         16, ACCESS_READ, { "DL Status Register" },    18 }, // 32
 };
 
-static int callback_master_0x9nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+static int callback_master_0x9nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
@@ -477,25 +440,22 @@ static int callback_master_0x9nnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint
     
     int ret = EC_OK;
 
-    osal_uint16_t slave = index & 0x0FFF;
-    if (sub_index == 0) {
+    osal_uint16_t slave = index & 0x0FFFu;
+    if (sub_index == 0u) {
         if ((*len) >= 1) {
             (*buf) = 32;
             (*len) = 1;
         }
-    } else if (sub_index == 1) {
-        if ((*len) >= 2) {
-            (*(osal_uint16_t *)buf) = pec->slaves[slave].fixed_address;
-            (*len) = sizeof(osal_uint16_t);
-        }
-    } else if ((sub_index == 5) || (sub_index == 6) || (sub_index == 7) || (sub_index == 8)) {
-        ret = ec_coe_sdo_read(pec, slave, 0x1018, sub_index - 4, complete, buf, len, abort_code);
-    } else if (sub_index == 32) {
+    } else if (sub_index == 1u) {
+        BUF_PUT(osal_uint16_t, &pec->slaves[slave].fixed_address);
+    } else if ((sub_index == 5u) || (sub_index == 6u) || (sub_index == 7u) || (sub_index == 8u)) {
+        ret = ec_coe_sdo_read(pec, slave, 0x1018, sub_index - 4u, complete, buf, len, abort_code);
+    } else if (sub_index == 32u) {
         if ((*len) >= 2) {
             osal_uint16_t wkc = 0;
             (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 0x110, buf, sizeof(osal_uint16_t), &wkc);
 
-            if (wkc != 0) {
+            if (wkc != 0u) {
                 (*len) = sizeof(osal_uint16_t);
             }
         }
@@ -516,35 +476,39 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xAnnn[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "AL Control" },            10 },
 };
 
-static int callback_master_0xAnnn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+static int callback_master_0xAnnn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
+    // unused
+    (void)abort_code;
+    (void)complete;
+
     int ret = EC_OK;
 
-    osal_uint16_t slave = index & 0x0FFF;
-    if (sub_index == 0) {
+    osal_uint16_t slave = index & 0x0FFFu;
+    if (sub_index == 0u) {
         if ((*len) >= 1) {
             (*buf) = 2;
             (*len) = 1;
         }
-    } else if (sub_index == 1) {
+    } else if (sub_index == 1u) {
         if ((*len) >= 2) {
-            osal_uint16_t wkc = 0;
+            osal_uint16_t wkc = 0u;
             (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 0x130, buf, sizeof(osal_uint16_t), &wkc);
 
-            if (wkc != 0) {
+            if (wkc != 0u) {
                 (*len) = sizeof(osal_uint16_t);
             }
         }
-    } else if (sub_index == 2) {
+    } else if (sub_index == 2u) {
         if ((*len) >= 2) {
-            osal_uint16_t wkc = 0;
+            osal_uint16_t wkc = 0u;
             (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 0x120, buf, sizeof(osal_uint16_t), &wkc);
 
-            if (wkc != 0) {
+            if (wkc != 0u) {
                 (*len) = sizeof(osal_uint16_t);
             }
         }
@@ -568,7 +532,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF000[] = {
     { 0, DEFTYPE_UNSIGNED32,  32, ACCESS_READ,      { "General Information" },   19 },
 };
 static struct PACKED {
-    osal_uint8_t  subindex_0; 
+    osal_uint16_t  subindex_0; 
     osal_uint16_t module_index_distance;
     osal_uint16_t maximum_number_of_modules;
     osal_uint32_t general_configuration;
@@ -587,7 +551,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF002[] = {
     { 0, DEFTYPE_OCTETSTRING, 48, ACCESS_READ,      { "Scan Command Response" }, 21 }
 };
 static struct PACKED {
-    osal_uint8_t  subindex_0;
+    osal_uint16_t  subindex_0;
     osal_uint8_t  scan_command_request[2];
     osal_uint8_t  scan_command_status;
     osal_uint8_t  scan_command_response[6];
@@ -613,22 +577,27 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
 };
 
-static int callback_master_0xF0nn(ec_t *pec, ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
+static int callback_master_0xF0nn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
 {
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
+    // unused
+    (void)abort_code;
+    (void)complete;
+
     int ret = EC_OK;
 
     osal_uint16_t slave_range = index & 0x000Fu;
-    osal_uint16_t slave = (slave_range * 255) + (sub_index - 1);
+    osal_uint16_t slave = (slave_range * 255u) + (sub_index - 1u);
 
     if ((*len) >= 2) {
         if (slave < pec->slave_cnt) {
-            (*(osal_uint16_t *)buf) = pec->slaves[slave].fixed_address;
+            (void)memcpy(buf, &pec->slaves[slave].fixed_address, sizeof(osal_uint16_t));
         } else {
-            (*(osal_uint16_t *)buf) = 0;
+            osal_uint16_t value = 0u;
+            (void)memcpy(buf, &value, sizeof(osal_uint16_t));
         }
 
         (*len) = sizeof(osal_uint16_t);
@@ -671,9 +640,9 @@ static int ec_coe_master_get_object_length(ec_coe_object_t *coe_obj, osal_bool_t
     int ret = EC_OK;
     osal_size_t tmp = 0u;
 
-    osal_uint16_t i = 0u;
-    if (with_sub_index_0 == OSAL_FALSE) {
-        i = 1u;
+    osal_uint16_t i = 1u;
+    if (with_sub_index_0 == OSAL_TRUE) {
+        tmp += 2u;  // subindex 0 always is stored as 2-byte-unsigned
     }
 
     while (i <= coe_obj->obj_desc->max_subindices) {
@@ -722,33 +691,33 @@ static int ec_coe_master_get_object_data(ec_coe_object_t *coe_obj, osal_uint8_t 
     if (complete == 0) {
         if (sub_index <= coe_obj->obj_desc->max_subindices) {
             if (coe_obj->data != NULL) {
-                osal_uint8_t *tmp = coe_obj->data;
+                osal_off_t pos = 0u;
 
                 for (osal_uint16_t i = 0; i <= sub_index; ++i) {
                     if (i == sub_index) {
-                        (*data) = tmp;
+                        (*data) = &coe_obj->data[pos];
                         (*data_len) = coe_obj->entry_desc[i].bit_length >> 3;
                         ret = EC_OK;
                         break;
                     }
 
-                    tmp += coe_obj->entry_desc[i].bit_length >> 3;
+                    pos += coe_obj->entry_desc[i].bit_length >> 3;
                 }
             }
         }
     } else { // complete != 0
         osal_size_t complete_len = 0u;
-        osal_bool_t with_sub_index_0 = (sub_index == 0) ? OSAL_TRUE : OSAL_FALSE;
+        osal_bool_t with_sub_index_0 = (sub_index == 0u) ? OSAL_TRUE : OSAL_FALSE;
         ret = ec_coe_master_get_object_length(coe_obj, with_sub_index_0, &complete_len);
 
         if (ret == EC_OK) {
-            osal_uint8_t *tmp = coe_obj->data;
+            osal_off_t pos = 0u;
 
             if (sub_index != 0u) {
-                tmp += 1; // skip subindex 0
+                pos += 2; // skip subindex 0
             }
 
-            (*data) = tmp;
+            (*data) = &coe_obj->data[pos];
             (*data_len) = complete_len;
         }
     }
@@ -770,22 +739,24 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
     ec_coe_object_t *coe_obj = NULL;
     ret = ec_coe_master_get_object(index, &coe_obj);
 
-    if ((coe_obj != NULL) && (coe_obj->read != NULL)) {
-        ret = (*coe_obj->read)(pec, coe_obj, index, sub_index, complete, buf, len, abort_code);
-    } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
-        osal_uint8_t *data = NULL;
-        osal_size_t data_len = 0;
-        ret = ec_coe_master_get_object_data(coe_obj, sub_index, complete, &data, &data_len);
+    if (ret == EC_OK) {
+        if ((coe_obj != NULL) && (coe_obj->read != NULL)) {
+            ret = (*coe_obj->read)(pec, coe_obj, index, sub_index, complete, buf, len, abort_code);
+        } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
+            osal_uint8_t *data = NULL;
+            osal_size_t data_len = 0;
+            ret = ec_coe_master_get_object_data(coe_obj, sub_index, complete, &data, &data_len);
 
-        if ((ret == EC_OK) && (data != NULL)) {
-            if ((*len) >= data_len) {
-                memcpy(buf, data, data_len);
+            if ((ret == EC_OK) && (data != NULL)) {
+                if ((*len) >= data_len) {
+                    (void)memcpy(buf, data, data_len);
+                }
+
+                (*len) = data_len;
             }
-
-            (*len) = data_len;
+        } else {
+            ret = EC_ERROR_MAILBOX_ABORT;
         }
-    } else {
-        ret = EC_ERROR_MAILBOX_ABORT;
     }
 
     return ret;
@@ -804,24 +775,26 @@ int ec_coe_master_sdo_write(ec_t *pec, osal_uint16_t index,
     ec_coe_object_t *coe_obj = NULL;
     ret = ec_coe_master_get_object(index, &coe_obj);
 
-    if ((coe_obj != NULL) && (coe_obj->write != NULL)) {
-        ret = (*coe_obj->write)(pec, coe_obj, index, sub_index, complete, buf, len, abort_code);
-    } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
-        osal_uint8_t *data = NULL;
-        osal_size_t data_len = 0;
-        ret = ec_coe_master_get_object_data(coe_obj, sub_index, complete, &data, &data_len);
+    if (ret == EC_OK) {
+        if ((coe_obj != NULL) && (coe_obj->write != NULL)) {
+            ret = (*coe_obj->write)(pec, coe_obj, index, sub_index, complete, buf, len, abort_code);
+        } else if ((coe_obj != NULL) && (coe_obj->data != NULL)) {
+            osal_uint8_t *data = NULL;
+            osal_size_t data_len = 0;
+            ret = ec_coe_master_get_object_data(coe_obj, sub_index, complete, &data, &data_len);
 
-        if ((ret == EC_OK) && (data != NULL) && (sub_index <= coe_obj->obj_desc->max_subindices)) {
-            ec_coe_sdo_entry_desc_t *entry_desc = &coe_obj->entry_desc[sub_index];
+            if ((ret == EC_OK) && (data != NULL) && (sub_index <= coe_obj->obj_desc->max_subindices)) {
+                ec_coe_sdo_entry_desc_t *entry_desc = &coe_obj->entry_desc[sub_index];
 
-            if (entry_desc->obj_access & ACCESS_WRITE) {
-                if (len <= data_len) {
-                    memcpy(data, buf, len);
+                if ((entry_desc->obj_access & ACCESS_WRITE) != 0u) {
+                    if (len <= data_len) {
+                        (void)memcpy(data, buf, len);
+                    }
                 }
             }
+        } else {
+            ret = EC_ERROR_MAILBOX_ABORT;
         }
-    } else {
-        ret = EC_ERROR_MAILBOX_ABORT;
     }
 
     return ret;
@@ -834,90 +807,47 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len) {
     assert(len != NULL);
     int ret = EC_OK;
 
-    // return just an uint16_t array of indices
-    //uint16_t test_indices[] = { 0x8000, 0x9000, 0xA000, 0xF000, 0xF002, 0xF020, 0xF040 };
-    //osal_size_t od_len = sizeof(uint16_t) * 7;//sizeof(test_indices);
+    osal_off_t pos = 0u;
 
-    osal_uint8_t *tmp = buf;
-    osal_uint8_t *end = buf + *len;
+#define BUF_ASSIGN(data) {                                      \
+    if (pos < *len) {                                           \
+        osal_uint16_t value = (data);                           \
+        (void)memcpy(&buf[pos], (void *)&value, sizeof(value)); \
+    }                                                           \
+    pos += sizeof(osal_uint16_t);                               \
+}
 
-    if (tmp < end) {
-        *(osal_uint16_t *)tmp = 0x1000;
-        tmp += sizeof(osal_uint16_t);
+    BUF_ASSIGN(0x1000u);
+    BUF_ASSIGN(0x1008u);
+    BUF_ASSIGN(0x1009u);
+    BUF_ASSIGN(0x100Au);
+    BUF_ASSIGN(0x1018u);
+    
+    for (osal_uint16_t i = 0; (i < pec->pd_group_cnt); ++i) {
+        BUF_ASSIGN(0x2000u | ((osal_uint16_t)i << 1u));
+        BUF_ASSIGN(0x2001u | ((osal_uint16_t)i << 1u));
     }
     
-    if (tmp < end) {
-        *(osal_uint16_t *)tmp = 0x1008;
-        tmp += sizeof(osal_uint16_t);
+    for (osal_uint16_t i = 0; (i < pec->slave_cnt); ++i) {
+        BUF_ASSIGN(0x3000u | (osal_uint16_t)i);
+        BUF_ASSIGN(0x8000u | (osal_uint16_t)i);
+        BUF_ASSIGN(0x9000u | (osal_uint16_t)i);
+        BUF_ASSIGN(0xA000u | (osal_uint16_t)i);
     }
+
+    BUF_ASSIGN(0xF000u);
+    BUF_ASSIGN(0xF002u);
     
-    if (tmp < end) {
-        *(osal_uint16_t *)tmp = 0x1009;
-        tmp += sizeof(osal_uint16_t);
+    for (osal_uint16_t i = 0u; (i < ((pec->slave_cnt/255u) + 1u)); ++i) {
+        BUF_ASSIGN(0xF020u | (osal_uint16_t)i);
+        BUF_ASSIGN(0xF040u | (osal_uint16_t)i);
     }
 
-    if (tmp < end) {
-        *(osal_uint16_t *)tmp = 0x100A;
-        tmp += sizeof(osal_uint16_t);
-    }
-    
-    if (tmp < end) {
-        *(osal_uint16_t *)tmp = 0x1018;
-        tmp += sizeof(osal_uint16_t);
-    }
-    
-    for (int i = 0; (i < pec->pd_group_cnt) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0x2000 | (i << 1u);
-        tmp += sizeof(osal_uint16_t);
-        *(osal_uint16_t *)tmp = 0x2001 | (i << 1u);
-        tmp += sizeof(osal_uint16_t);
-    }
-    
-    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0x3000 | i;
-        tmp += sizeof(osal_uint16_t);
-    }
-
-    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0x8000 | i;
-        tmp += sizeof(osal_uint16_t);
-    }
-    
-    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0x9000 | i;
-        tmp += sizeof(osal_uint16_t);
-    }
-
-    for (int i = 0; (i < pec->slave_cnt) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0xA000 | i;
-        tmp += sizeof(osal_uint16_t);
-    }
-
-    if (tmp < end) {
-        *(osal_uint16_t *)tmp = 0xF000;
-        tmp += sizeof(osal_uint16_t);
-    }
-
-    if (tmp < end) {
-        *(osal_uint16_t *)tmp = 0xF002;
-        tmp += sizeof(osal_uint16_t);
-    }
-    
-    for (int i = 0; (i < ((pec->slave_cnt/255) + 1)) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0xF020 | i;
-        tmp += sizeof(osal_uint16_t);
-    }
-
-    for (int i = 0; (i < ((pec->slave_cnt/255) + 1)) && (tmp < end); ++i) {
-        *(osal_uint16_t *)tmp = 0xF040 | i;
-        tmp += sizeof(osal_uint16_t);
-    }
-
-    if (tmp >= end) {
+    if (pos > (*len)) {
         ret = EC_ERROR_MAILBOX_BUFFER_TOO_SMALL;
-    } else {
-        (*len) = tmp - buf;
-    }
+    } 
+        
+    (*len) = pos;
 
     return ret;
 }
@@ -935,14 +865,14 @@ int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index,
     ec_coe_object_t *coe_obj = NULL;
     ret = ec_coe_master_get_object(index, &coe_obj);
 
-    if (coe_obj) {
+    if (coe_obj != NULL) {
         (void)memcpy(desc, coe_obj->obj_desc, sizeof(ec_coe_sdo_desc_t));
 
-        if (index >= 0xF000) {
-            if ((index != 0xF000) && (index != 0xF002)) {
-                osal_uint16_t slave_range = index & 0x000F;
-                osal_uint16_t slave_begin = slave_range * 256;
-                osal_uint16_t slave_end = slave_begin + 255;
+        if (index >= 0xF000u) {
+            if ((index != 0xF000u) && (index != 0xF002u)) {
+                osal_uint16_t slave_range = index & 0x000Fu;
+                osal_uint16_t slave_begin = slave_range * 256u;
+                osal_uint16_t slave_end = slave_begin + 255u;
 
                 (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                         CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu-%hu", slave_begin, slave_end);
@@ -954,28 +884,29 @@ int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index,
                     desc->max_subindices = 0;
                 }
             }
-        } else if ((index >= 0x8000) || ((index & coe_obj->index_mask) == 0x3000)) {
+        } else if ((index >= 0x8000u) || ((index & coe_obj->index_mask) == 0x3000u)) {
             osal_uint16_t slave = index & ~coe_obj->index_mask;
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", slave);
             desc->name_len = strlen(desc->name);
-        } else if ((index & 0xFF01) == 0x2000) {
-            osal_uint16_t group = (index & 0x0FE) >> 1;
+        } else if ((index & 0xFF01u) == 0x2000u) {
+            osal_uint16_t group = (index & 0x0FEu) >> 1u;
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", group);
             desc->name_len = strlen(desc->name);
-        } else if ((index & 0xFF01) == 0x2001) {
-            osal_uint16_t group = (index & 0x0FE) >> 1;
+        } else if ((index & 0xFF01u) == 0x2001u) {
+            osal_uint16_t group = (index & 0x00FEu) >> 1;
             (void)snprintf(&desc->name[strlen(coe_obj->obj_desc->name)], 
                     CANOPEN_MAXNAME - strlen(coe_obj->obj_desc->name), " %hu", group);
             desc->name_len = strlen(desc->name);
             desc->max_subindices = 0;
 
             for (uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
-                if (pec->slaves[slave].assigned_pd_group == group) {
+                if (pec->slaves[slave].assigned_pd_group == (int)group) {
                     desc->max_subindices++;
                 }
             }
+        } else {
         }
     }
 
@@ -997,13 +928,13 @@ int ec_coe_master_sdo_entry_desc_read(const ec_t *pec, osal_uint16_t index,
     ec_coe_object_t *coe_obj = NULL;
     ret = ec_coe_master_get_object(index, &coe_obj);
 
-    if (coe_obj) {
+    if (coe_obj != NULL) {
         if (sub_index <= coe_obj->obj_desc->max_subindices) {
             if ((sub_index != 0) && (coe_obj->obj_desc->obj_code == OBJCODE_ARR)) {
                 ec_coe_sdo_entry_desc_t *entry_desc = &coe_obj->entry_desc[1];
                 (void)memcpy(desc, entry_desc, sizeof(ec_coe_sdo_entry_desc_t));
 
-                if (((index & 0xFFF0) == 0xF020) || ((index & 0xFFF0) == 0xF040)) {
+                if (((index & 0xFFF0u) == 0xF020u) || ((index & 0xFFF0u) == 0xF040u)) {
                     osal_uint16_t slave_range = index & 0x000Fu;
                     osal_uint16_t slave = (slave_range * 255) + (sub_index - 1);
 
