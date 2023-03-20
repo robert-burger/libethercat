@@ -67,6 +67,7 @@ typedef struct hw {
 
     pool_entry_t *tx_send[256];     //!< sent datagrams
 
+    osal_size_t bytes_last_sent;
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
     int mmap_packets;
     osal_char_t *rx_ring;                  //!< kernel mmap receive buffers
@@ -74,8 +75,6 @@ typedef struct hw {
 
     off_t rx_ring_offset;
     off_t tx_ring_offset;
-
-    osal_size_t bytes_last_sent;
 #define ETH_FRAME_LEN   0x1518
     osal_uint8_t recv_frame[ETH_FRAME_LEN];
 #elif LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1

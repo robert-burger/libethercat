@@ -97,8 +97,6 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     no_verbose_log(0, NULL, "cyclic_task: exiting!\n");
 }
 
-extern size_t hw_frame_len;
-
 int main(int argc, char **argv) {
     int ret, slave, i, phy = 0;
     char *intf = NULL, *fn = NULL;
@@ -291,7 +289,7 @@ int main(int argc, char **argv) {
                 "Frame len %d bytes, Timer %+9.3fus (jitter avg %+7.3fus, max %+7.3fus), "
                 "Duration %+7.3fus (jitter avg %+7.3fus, max %+7.3fus), "
                 "Round trip %+7.3fus (jitter avg %+7.3fus, max %+7.3fus)\n", 
-		hw_frame_len,
+                ec.hw.bytes_last_sent,
                 to_us(timer_tx_med), 
                 to_us(timer_tx_avg_jit), 
                 to_us(timer_tx_max_jit), 
