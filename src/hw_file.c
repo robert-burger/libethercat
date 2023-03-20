@@ -156,6 +156,8 @@ int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     return ret;
 }
 
+size_t hw_frame_len = 0;
+
 //! Send a frame from an EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -170,6 +172,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     int ret = EC_OK;
 
     // no more datagrams need to be sent or no more space in frame
+    hw_frame_len = pframe->len;
     osal_ssize_t bytestx = write(phw->sockfd, pframe, pframe->len);
 
     if ((osal_ssize_t)pframe->len != bytestx) {
