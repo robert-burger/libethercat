@@ -34,6 +34,8 @@ struct ethercat_device {
     unsigned int rx_skb_index_last_recv;
     unsigned int rx_skb_index_last_read;
 
+    bool ethercat_polling;
+
     bool monitor_enabled;
     struct net_device *monitor_dev;
     struct net_device_stats monitor_stats;
@@ -42,6 +44,7 @@ struct ethercat_device {
 /* ioctls */
 #define ETHERCAT_DEVICE_MAGIC             'e'
 #define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
+#define ETHERCAT_DEVICE_GET_POLLING       _IOR (ETHERCAT_DEVICE_MAGIC, 2, unsigned int)
 
 int ethercat_device_init(void);
 int ethercat_device_exit(void);

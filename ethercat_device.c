@@ -153,6 +153,8 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     struct ethhdr *eth;
     int ret = 0;
     unsigned i = 0;
+    char monitor_name[64];
+    int local_ret;
 
     debug_pr_info("libethercat: creating EtherCAT character device...\n");
 
@@ -221,6 +223,30 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
 
     ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
 
+    ecat_dev->ethercat_polling = false;
+    local_ret = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40001);
+    if (local_ret > 0) {
+        ecat_dev->ethercat_polling = true;
+    }
+
+    snprintf(&monitor_name[0], 64, "%s_monitor", ecat_dev->net_dev->name);
+    if (!(ecat_dev->monitor_dev = alloc_netdev(sizeof(struct ethercat_device *), 
+                    monitor_name, NET_NAME_UNKNOWN, ether_setup))) {
+        pr_err("error allocating monitor device\n");
+    } else {
+        ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
+        *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
+
+        memcpy(ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
+//        ecat_dev->monitor_dev->flags |= IFF_UP | IFF_LOWER_UP | IFF_RUNNING;
+
+        if ((ret = register_netdev(ecat_dev->monitor_dev))) {
+            pr_err("error registering monitor net device!\n");
+        } else {
+//            netif_carrier_on(ecat_dev->monitor_dev);
+        }
+    }
+
     ecat_dev->monitor_enabled = false; 
 
     return ecat_dev;
@@ -249,6 +275,13 @@ EXPORT_SYMBOL(ethercat_device_create);
 
 int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     int i = 0;
+
+    if (ecat_dev->monitor_dev != NULL) {
+        unregister_netdev(ecat_dev->monitor_dev);
+        free_netdev(ecat_dev->monitor_dev);
+
+        ecat_dev->monitor_dev = NULL;
+    }
 
     ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
 
@@ -306,8 +339,11 @@ void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data,
     debug_print_frame("libethercat char dev driver: received", skb->data, skb->len);
 
     ecat_dev->rx_skb_index_last_recv = next_index;
-    ecat_dev->poll_mask |= POLLIN | POLLRDNORM;
-    swake_up_one(&ecat_dev->ir_queue);
+
+    if (ecat_dev->ethercat_polling == false) {
+        ecat_dev->poll_mask |= POLLIN | POLLRDNORM;
+        swake_up_one(&ecat_dev->ir_queue);
+    }
 
     ethercat_monitor_frame(ecat_dev, data, size);
 }
@@ -381,14 +417,30 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
 
     debug_pr_info("libethercat char dev driver: read called\n");
 
-    if (user->ecat_dev->rx_skb_index_last_recv == user->ecat_dev->rx_skb_index_last_read) {
+    if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
         if (filp->f_flags & O_NONBLOCK) {
             // no frame received until now
             return -EWOULDBLOCK; 
         } else {
-            if (!swait_event_interruptible_timeout_exclusive(ecat_dev->ir_queue, 
-                        ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read, HZ)) {
-                return -EAGAIN;
+            if (ecat_dev->ethercat_polling) {
+                unsigned long wait_jiffies = jiffies + HZ;
+
+                do {
+                    (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40000);
+
+                    if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
+                        break;
+                    }
+                } while (time_before(jiffies, wait_jiffies));
+
+                if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
+                    return -EAGAIN;
+                }
+            } else {
+                if (!swait_event_interruptible_timeout_exclusive(ecat_dev->ir_queue, 
+                            ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read, HZ)) {
+                    return -EAGAIN;
+                }
             }
         }
     }
@@ -504,38 +556,18 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
             }
 
             if (monitor_enable != 0) {
-                char monitor_name[64];
-                snprintf(&monitor_name[0], 64, "%s_monitor", ecat_dev->net_dev->name);
-                if (!(ecat_dev->monitor_dev = alloc_netdev(sizeof(struct ethercat_device *), 
-                                monitor_name, NET_NAME_UNKNOWN, ether_setup))) {
-                    pr_err("error allocating monitor device\n");
-                    return -EFAULT;
-                }
-
-                ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
-                *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
-
-                memcpy(ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
-
-                if ((ret = register_netdev(ecat_dev->monitor_dev))) {
-                    pr_err("error registering monitor net device!\n");
-                    return -EFAULT;
-                }
-
-                netif_carrier_on(ecat_dev->monitor_dev);
-
                 ecat_dev->monitor_enabled = true;
             } else {
                 ecat_dev->monitor_enabled = false;
-
-                if (ecat_dev->monitor_dev != NULL) {
-                    unregister_netdev(ecat_dev->monitor_dev);
-                    free_netdev(ecat_dev->monitor_dev);
-
-                    ecat_dev->monitor_dev = NULL;
-                }
             }
 
+            break;
+        }
+        case ETHERCAT_DEVICE_GET_POLLING: {
+            unsigned int val = ecat_dev->ethercat_polling == false ? 0 : 1;
+            if (__copy_to_user((void *)arg, &val, sizeof(unsigned int))) {
+                ret = -EFAULT;
+            }
             break;
         }
         default:
