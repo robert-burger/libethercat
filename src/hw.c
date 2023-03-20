@@ -74,6 +74,7 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
     int ret;
 
     phw->pec = pec;
+    phw->bytes_last_sent = 0;
 
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);

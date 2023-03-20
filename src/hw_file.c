@@ -85,8 +85,6 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     (void)memcpy(pframe->mac_dest, mac_dest, 6);
     (void)memcpy(pframe->mac_src, mac_src, 6);
 
-    phw->bytes_last_sent = 0;
-
     // check polling mode
     phw->polling_mode = OSAL_FALSE;
     unsigned int pollval = 0;
@@ -158,8 +156,6 @@ int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     return ret;
 }
 
-size_t hw_frame_len = 0;
-
 //! Send a frame from an EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -174,7 +170,6 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     int ret = EC_OK;
 
     // no more datagrams need to be sent or no more space in frame
-    hw_frame_len = pframe->len;
     osal_ssize_t bytestx = write(phw->sockfd, pframe, pframe->len);
 
     if ((osal_ssize_t)pframe->len != bytestx) {
@@ -200,11 +195,11 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
 void hw_device_send_finished(hw_t *phw) {
     // in case of polling do receive now
     if (phw->polling_mode == OSAL_TRUE) {
-	// sleep a little bit (at least packet-on-wire-duration)
-	int time_bit = 10; // 10 [ns] per bit on 100 Mbit/s Ethernet.
-	osal_sleep(time_bit * 8 * phw->bytes_last_sent);
-	phw->bytes_last_sent = 0;
-	
+        // sleep a little bit (at least packet-on-wire-duration)
+        int time_bit = 10; // 10 [ns] per bit on 100 Mbit/s Ethernet.
+        osal_sleep(time_bit * 8 * phw->bytes_last_sent);
+        phw->bytes_last_sent = 0;
+
         hw_device_recv_internal(phw);
     }
 }

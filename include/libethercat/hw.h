@@ -75,6 +75,7 @@ typedef struct hw {
     off_t rx_ring_offset;
     off_t tx_ring_offset;
 
+    osal_size_t bytes_last_sent;
 #define ETH_FRAME_LEN   0x1518
     osal_uint8_t recv_frame[ETH_FRAME_LEN];
 #elif LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
@@ -86,7 +87,6 @@ typedef struct hw {
     osal_uint8_t send_frame[ETH_FRAME_LEN];
     osal_uint8_t recv_frame[ETH_FRAME_LEN];
     osal_bool_t polling_mode;
-    osal_size_t bytes_last_sent;
 #elif LIBETHERCAT_BUILD_PIKEOS == 1
     vm_file_desc_t fd;
     drv_sbuf_desc_t sbuf;

@@ -196,3 +196,11 @@ int hw_device_recv(hw_t *phw, ec_frame_t *pframe) {
     return EC_OK;
 }
 
+//! Doing internal stuff when finished sending frames
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ */
+void hw_device_send_finished(hw_t *phw) {
+}
+
+
