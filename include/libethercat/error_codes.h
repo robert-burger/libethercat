@@ -62,6 +62,8 @@
 #define EC_ERROR_EEPROM_CONTROL_TO_EC           (EC_ERROR_EEPROM_MASK  | 0x00000100)
 #define EC_ERROR_EEPROM_CONTROL_TO_PDI          (EC_ERROR_EEPROM_MASK  | 0x00000200)
 
+#define EC_ERROR_HW_MASK                        0x00080000
+#define EC_ERROR_HW_NOT_SUPPORTED               (EC_ERROR_HW_MASK      | 0x00000001)
 
 #define EC_ERROR_MAILBOX_MASK                   0x00100000
 

@@ -58,7 +58,7 @@
 #endif
 
 //! receiver thread forward declaration
-static void *hw_rx_thread(void *arg);
+void *hw_rx_thread(void *arg);
 
 //! open a new hw
 /*!
@@ -162,7 +162,9 @@ void *hw_rx_thread(void *arg) {
     ec_log(10, "HW_RX", "receive thread running (prio %d)\n", rx_prio);
 
     while (phw->rxthreadrunning != 0) {
-        (void)hw_device_recv(phw);
+        if (hw_device_recv(phw) != EC_OK) {
+            break;
+        }
     }
     
     ec_log(10, "HW_RX", "receive thread stopped\n");
@@ -170,53 +172,44 @@ void *hw_rx_thread(void *arg) {
     return NULL;
 }
 
-//! start sending queued ethercat datagrams
-/*!
- * \param phw hardware handle
- * \return 0 or error code
- */
-int hw_tx(hw_t *phw) {
+//! internal tx func
+void hw_tx_pool(hw_t *phw, pool_t *pool) {
     assert(phw != NULL);
 
-    int ret = EC_OK;
+    int sent = 0;
     ec_frame_t *pframe = NULL;
-
-    osal_mutex_lock(&phw->hw_lock);
 
     (void)hw_device_get_tx_buffer(phw, &pframe);
 
     ec_datagram_t *pdg = ec_datagram_first(pframe);
     ec_datagram_t *pdg_prev = NULL;
 
-    pool_t *pools[] = { &phw->tx_high, &phw->tx_low};
-    int pool_idx = 0;
     pool_entry_t *p_entry = NULL;
     ec_datagram_t *p_entry_dg = NULL;
 
-    // send high priority cyclic frames
-    while ((pool_idx < 2) && (ret == EC_OK)) {
-        osal_size_t len = 0;
-        (void)pool_peek(pools[pool_idx], &p_entry);
+    // send frames
+    osal_size_t len;
+    do {
+        (void)pool_peek(pool, &p_entry);
         if (p_entry !=  NULL) {
             // cppcheck-suppress misra-c2012-11.3
             p_entry_dg = (ec_datagram_t *)p_entry->data;
             len = ec_datagram_length(p_entry_dg);
-        }
+        } else { len = 0u; }
 
         if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len == sizeof(ec_frame_t)) {
                 // nothing to send
             } else {
-                ret = hw_device_send(phw, pframe);
+                (void)hw_device_send(phw, pframe);
+                sent = 1;
                 (void)hw_device_get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
             }
-
-            pool_idx++;
         }
 
         if (len != 0u) {
-            ret = pool_get(pools[pool_idx], &p_entry, NULL);
+            int ret = pool_get(pool, &p_entry, NULL);
             if (ret == EC_OK) {
                 if (pdg_prev != NULL) {
                     ec_datagram_mark_next(pdg_prev);
@@ -233,11 +226,30 @@ int hw_tx(hw_t *phw) {
                 // store as sent
                 phw->tx_send[p_entry_dg->idx] = p_entry;
             } else {
-                ret = EC_OK;
-                break;
+                len = 0;
             }
         }
+    } while (len > 0);
+    
+    if (sent != 0) {
+        hw_device_send_finished(phw);
     }
+}
+
+//! start sending queued ethercat datagrams
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_tx(hw_t *phw) {
+    assert(phw != NULL);
+
+    int ret = EC_OK;
+
+    osal_mutex_lock(&phw->hw_lock);
+
+    hw_tx_pool(phw, &phw->tx_high);
+    hw_tx_pool(phw, &phw->tx_low);
 
     osal_mutex_unlock(&phw->hw_lock);
 

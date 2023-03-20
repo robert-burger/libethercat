@@ -35,6 +35,7 @@
 
 #include <assert.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
@@ -51,6 +52,11 @@
 #if LIBETHERCAT_HAVE_WINSOCK_H == 1
 #include <winsock.h>
 #endif
+
+/* ioctls from ethercat_device */
+#define ETHERCAT_DEVICE_MAGIC             'e'
+#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
+#define ETHERCAT_DEVICE_GET_POLLING       _IOR (ETHERCAT_DEVICE_MAGIC, 2, unsigned int)
 
 //! Opens EtherCAT hw device.
 /*!
@@ -79,7 +85,31 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     (void)memcpy(pframe->mac_dest, mac_dest, 6);
     (void)memcpy(pframe->mac_src, mac_src, 6);
 
+    // check polling mode
+    phw->polling_mode = OSAL_FALSE;
+    unsigned int pollval = 0;
+    if (ioctl(phw->sockfd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
+        phw->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
+    }
+    
+    unsigned int monitor = 0;
+    (void)ioctl(phw->sockfd, ETHERCAT_DEVICE_MONITOR_ENABLE, &monitor);
+
+    ec_log(10, "HW_OPEN", "%s polling mode\n", phw->polling_mode == OSAL_FALSE ? "not using" : "using");
+
     return ret;
+}
+
+void hw_device_recv_internal(hw_t *phw) {
+    // cppcheck-suppress misra-c2012-11.3
+    ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
+
+    // using tradional recv function
+    osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
+
+    if (bytesrx > 0) {
+        hw_process_rx_frame(phw, pframe);
+    }
 }
 
 //! Receive a frame from an EtherCAT hw device.
@@ -90,15 +120,11 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
  * \return 0 or negative error code
  */
 int hw_device_recv(hw_t *phw) {
-    // cppcheck-suppress misra-c2012-11.3
-    ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
+    if (phw->polling_mode) {
+        return EC_ERROR_HW_NOT_SUPPORTED;
+    } 
 
-    // using tradional recv function
-    osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
-
-    if (bytesrx > 0) {
-        hw_process_rx_frame(phw, pframe);
-    }
+    hw_device_recv_internal(phw);
 
     return EC_OK;
 }
@@ -160,3 +186,13 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
     return ret;
 }
 
+//! Doing internal stuff when finished sending frames
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ */
+void hw_device_send_finished(hw_t *phw) {
+    // in case of polling do receive now
+    if (phw->polling_mode == OSAL_TRUE) {
+        hw_device_recv_internal(phw);
+    }
+}

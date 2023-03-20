@@ -173,6 +173,7 @@ int main(int argc, char **argv) {
                 void anon_cb(void *arg, int num) { 
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
                     osal_uint64_t time_start = duration_tx_pos == 0 ? start_tx_in_ns[DURATION_TX_COUNT-1] : start_tx_in_ns[duration_tx_pos-1];
+                    //osal_uint64_t time_start = start_tx_in_ns[duration_tx_pos];//duration_tx_pos == 0 ? start_tx_in_ns[DURATION_TX_COUNT-1] : start_tx_in_ns[duration_tx_pos-1];
 
                     duration_round_trip_in_ns[duration_round_trip_pos++] = time_end - time_start;
                     if (duration_round_trip_pos >= DURATION_TX_COUNT) {

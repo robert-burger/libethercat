@@ -85,6 +85,7 @@ typedef struct hw {
 #define ETH_FRAME_LEN   0x1518
     osal_uint8_t send_frame[ETH_FRAME_LEN];
     osal_uint8_t recv_frame[ETH_FRAME_LEN];
+    osal_bool_t polling_mode;
 #elif LIBETHERCAT_BUILD_PIKEOS == 1
     vm_file_desc_t fd;
     drv_sbuf_desc_t sbuf;
@@ -154,6 +155,12 @@ int hw_device_recv(hw_t *phw);
  * \return 0 or negative error code
  */
 int hw_device_send(hw_t *phw, ec_frame_t *pframe);
+
+//! Doing internal stuff when finished sending frames
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ */
+void hw_device_send_finished(hw_t *phw);
 
 //! Get a free tx buffer from underlying hw device.
 /*!
