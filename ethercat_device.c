@@ -362,6 +362,11 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
     ecat_dev = (void *)container_of(inode->i_cdev, struct ethercat_device, cdev);
 
     debug_pr_info("libethercat char dev driver: open called\n");
+
+    if (ecat_dev->ethercat_polling) {
+        // consume frames ...
+        (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40000);
+    }
     
     ecat_dev->tx_skb_index_next = 0;
     ecat_dev->rx_skb_index_last_recv = 0;
