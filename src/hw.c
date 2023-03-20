@@ -83,8 +83,6 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
 
     ret = hw_device_open(phw, devname);
 
-    phw->bytes_last_sent = 0;
-
     if (ret == EC_OK) {
         phw->rxthreadrunning = 1;
         osal_task_attr_t attr;

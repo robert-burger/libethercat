@@ -85,6 +85,8 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     (void)memcpy(pframe->mac_dest, mac_dest, 6);
     (void)memcpy(pframe->mac_src, mac_src, 6);
 
+    phw->bytes_last_sent = 0;
+
     // check polling mode
     phw->polling_mode = OSAL_FALSE;
     unsigned int pollval = 0;
