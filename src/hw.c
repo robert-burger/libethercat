@@ -266,7 +266,7 @@ int hw_tx(hw_t *phw) {
 
     osal_mutex_lock(&phw->hw_lock);
 
-    osal_timer_init(&phw->next_cylce_start, 1000000);
+    osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
     hw_tx_pool(phw, &phw->tx_high);
     hw_tx_pool(phw, &phw->tx_low);
 
