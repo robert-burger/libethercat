@@ -1227,9 +1227,18 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
 
         // send frame immediately if in sync mode
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
-                (pec->master_state != EC_STATE_OP)  ) {
-            if (hw_tx(&pec->hw) != EC_OK) {
+                (pec->master_state != EC_STATE_OP)) {
+            if (hw_tx_low(&pec->hw) != EC_OK) {
                 ec_log(1, "MASTER_TRANSCEIVE", "hw_tx failed!\n");
+            }
+        } else {
+            osal_timer_t test;
+            // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 120% threshold
+            osal_timer_init(&test, (10 * 8 * pec->hw.mtu_size) * 1.2);  
+            if (osal_timer_cmp(&test, &pec->hw.next_cylce_start, <)) {
+                if (hw_tx_low(&pec->hw) != EC_OK) {
+                    ec_log(1, "MASTER_TRANSCEIVE", "hw_tx_low failed!\n");
+                } 
             }
         }
 
@@ -1316,8 +1325,8 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         // send frame immediately if in sync mode
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
                 (pec->master_state != EC_STATE_OP)  ) {
-            if (hw_tx(&pec->hw) != EC_OK) {
-                ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "hw_tx failed!\n");
+            if (hw_tx_low(&pec->hw) != EC_OK) {
+                ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "hw_tx_low failed!\n");
             }
         }
     }

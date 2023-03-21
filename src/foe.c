@@ -67,8 +67,8 @@ typedef struct PACKED ec_foe_header {
 typedef struct PACKED ec_foe_rw_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        password;   //!< FoE password
-    osal_char_t            file_name[MAX_FILE_NAME_SIZE];
+    osal_uint32_t   password;   //!< FoE password
+    osal_char_t     file_name[MAX_FILE_NAME_SIZE];
                                 //!< FoE filename to read/write
 } PACKED ec_foe_rw_request_t;
 
@@ -76,7 +76,7 @@ typedef struct PACKED ec_foe_rw_request {
 typedef struct PACKED ec_foe_data_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        packet_nr;  //!< FoE segmented packet number
+    osal_uint32_t   packet_nr;  //!< FoE segmented packet number
     ec_data_t       data;       //!< FoE segmented packet data
 } PACKED ec_foe_data_request_t;
 
@@ -84,15 +84,15 @@ typedef struct PACKED ec_foe_data_request {
 typedef struct PACKED ec_foe_ack_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        packet_nr;  //!< FoE segmented packet number
+    osal_uint32_t   packet_nr;  //!< FoE segmented packet number
 } PACKED ec_foe_ack_request_t;
 
 //! error request
 typedef struct PACKED ec_foe_error_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        error_code; //!< error code
-    osal_char_t            error_text[MAX_ERROR_TEXT_SIZE];
+    osal_uint32_t   error_code; //!< error code
+    osal_char_t     error_text[MAX_ERROR_TEXT_SIZE];
                                 //!< error text
 } PACKED ec_foe_error_request_t;
 
@@ -152,7 +152,7 @@ static void ec_foe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     ec_mbx_sched_read(pec, slave);
 
     osal_timer_t timeout;
-    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_init(&timeout, (osal_uint64_t)30 * EC_DEFAULT_TIMEOUT_MBX); // 30 !!! seconds
 
     // ignore return value here, may fail if no new message are currently available
     (void)pool_get(&slv->mbx.foe.recv_pool, pp_entry, &timeout);
@@ -215,6 +215,12 @@ static const osal_char_t *dump_foe_error_request(const osal_char_t *ctx, int sla
 
     return ret;
 }
+static int next_counter(int counter) {
+    counter++;
+    if (counter == 8) 
+        return 1;
+    return counter;
+}
 
 // read file over foe
 int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
@@ -244,9 +250,14 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         osal_size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
         osal_size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
 
+        int counter = 1;
+
         // mailbox header
         write_buf->mbx_hdr.length    = 6u + file_name_len;
         write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
+        write_buf->mbx_hdr.counter   = counter;
+        counter = next_counter(counter);
+
         // foe header (2 Byte)
         write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_READ_REQUEST;
         // read request (password 4 Byte)
@@ -300,6 +311,8 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                         // mailbox header
                         write_buf_ack->mbx_hdr.length    = 6; 
                         write_buf_ack->mbx_hdr.mbxtype   = EC_MBX_FOE;
+                        write_buf->mbx_hdr.counter   = counter;
+                        counter = next_counter(counter);
                         // foe
                         write_buf_ack->foe_hdr.op_code   = EC_FOE_OP_CODE_ACK_REQUEST;
                         write_buf_ack->packet_nr         = packet_nr;
@@ -339,6 +352,8 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
     int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
+        
+    int counter = 1;
 
     osal_mutex_lock(&slv->mbx.lock);
 
@@ -357,6 +372,8 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         // mailbox header
         write_buf->mbx_hdr.length    = 6u + file_name_len;
         write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
+        write_buf->mbx_hdr.counter   = counter;
+        counter = next_counter(counter);
         // foe header (2 Byte)
         write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_WRITE_REQUEST;
         // read request (password 4 Byte)
@@ -386,6 +403,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }
             } else {
+                ec_log(10, "FOE_WRITE", "got ack, requested packet no %d\n", read_buf_ack->packet_nr);
                 ret = EC_OK;
             }
 
@@ -425,6 +443,8 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 // mailbox header
                 write_buf_data->mbx_hdr.length    = 6u + bytes_read; 
                 write_buf_data->mbx_hdr.mbxtype   = EC_MBX_FOE;
+                write_buf_data->mbx_hdr.counter   = counter;
+                counter = next_counter(counter);
                 // foe
                 write_buf_data->foe_hdr.op_code   = EC_FOE_OP_CODE_DATA_REQUEST;
                 write_buf_data->packet_nr         = packet_nr;

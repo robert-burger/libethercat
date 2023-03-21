@@ -242,6 +242,23 @@ void hw_tx_pool(hw_t *phw, pool_t *pool) {
  * \param phw hardware handle
  * \return 0 or error code
  */
+int hw_tx_low(hw_t *phw) {
+    assert(phw != NULL);
+
+    int ret = EC_OK;
+
+    osal_mutex_lock(&phw->hw_lock);
+    hw_tx_pool(phw, &phw->tx_low);
+    osal_mutex_unlock(&phw->hw_lock);
+
+    return ret;
+}
+
+//! start sending queued ethercat datagrams
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
 int hw_tx(hw_t *phw) {
     assert(phw != NULL);
 
@@ -249,6 +266,7 @@ int hw_tx(hw_t *phw) {
 
     osal_mutex_lock(&phw->hw_lock);
 
+    osal_timer_init(&phw->next_cylce_start, 1000000);
     hw_tx_pool(phw, &phw->tx_high);
     hw_tx_pool(phw, &phw->tx_low);
 

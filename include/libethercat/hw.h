@@ -68,6 +68,7 @@ typedef struct hw {
     pool_entry_t *tx_send[256];     //!< sent datagrams
 
     osal_size_t bytes_last_sent;
+    osal_timer_t next_cylce_start;
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
     int mmap_packets;
     osal_char_t *rx_ring;                  //!< kernel mmap receive buffers
@@ -115,6 +116,13 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
  * \return 0 or negative error code
  */
 int hw_close(hw_t *phw);
+
+//! start sending queued ethercat datagrams
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_tx_low(hw_t *phw);
 
 //! start sending queued ethercat datagrams
 /*!

@@ -286,9 +286,9 @@ int main(int argc, char **argv) {
         
 #define to_us(x)    ((double)(x)/1000.)
         no_verbose_log(0, NULL, 
-                "Frame len %d bytes, Timer %+9.3fus (jitter avg %+7.3fus, max %+7.3fus), "
-                "Duration %+7.3fus (jitter avg %+7.3fus, max %+7.3fus), "
-                "Round trip %+7.3fus (jitter avg %+7.3fus, max %+7.3fus)\n", 
+                "Frame len %d bytes, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
                 ec.hw.bytes_last_sent,
                 to_us(timer_tx_med), 
                 to_us(timer_tx_avg_jit), 
