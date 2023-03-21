@@ -132,6 +132,9 @@ typedef struct ec {
                                      * again by the master.
                                      */
     
+    osal_int64_t main_cycle_interval;
+                                    //!< \brief Expected timer increment of one EtherCAT cycle in [ns].
+    
     pool_entry_t mbx_mp_recv_free_entries[LEC_MAX_MBX_ENTRIES];
     pool_entry_t mbx_mp_send_free_entries[LEC_MAX_MBX_ENTRIES];
     pool_t mbx_message_pool_recv_free; 

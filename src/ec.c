@@ -1642,9 +1642,9 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
 
         // get clock difference
-        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time) % pec->dc.timer_override; 
-        if (pec->dc.act_diff > (pec->dc.timer_override/2)) { pec->dc.act_diff -= pec->dc.timer_override; }
-        else if (pec->dc.act_diff < (-1. * (pec->dc.timer_override / 2))) { pec->dc.act_diff += pec->dc.timer_override; }
+        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time) % pec->main_cycle_interval; 
+        if (pec->dc.act_diff > (pec->main_cycle_interval/2)) { pec->dc.act_diff -= pec->main_cycle_interval; }
+        else if (pec->dc.act_diff < (-1. * (pec->main_cycle_interval / 2))) { pec->dc.act_diff += pec->main_cycle_interval; }
         else {}
 
         if (pec->dc.mode == dc_mode_ref_clock) {
@@ -1762,8 +1762,8 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
             osal_uint64_t act_rtc_time = osal_timer_gettime_nsec();
 
             if (pec->dc.mode == dc_mode_ref_clock) {
-                if (pec->dc.timer_override > 0) {
-                    pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
+                if (pec->main_cycle_interval > 0) {
+                    pec->dc.rtc_time += (osal_uint64_t)(pec->main_cycle_interval);
                 }   
             } else {
                 pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
@@ -1912,7 +1912,7 @@ void ec_configure_dc(ec_t *pec, osal_uint64_t timer, ec_dc_mode_t mode,
 {
     assert(pec != NULL);
 
-    pec->dc.timer_override = timer;
+    pec->main_cycle_interval = timer;
     pec->dc.mode = mode;
     pec->dc.cdg.user_cb = user_cb;
     pec->dc.cdg.user_cb_arg = user_cb_arg;

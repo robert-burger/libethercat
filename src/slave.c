@@ -986,12 +986,12 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // configure distributed clocks if needed 
                 if (pec->dc.have_dc && slv->dc.use_dc) {
                     if (slv->dc.cycle_time_0 == 0u) {
-                        slv->dc.cycle_time_0 = pec->dc.timer_override; 
+                        slv->dc.cycle_time_0 = pec->main_cycle_interval; 
                     }
 
                     if (slv->dc.type == 1) {
                         if (slv->dc.cycle_time_1 == 0u) {
-                            slv->dc.cycle_time_1 = pec->dc.timer_override; 
+                            slv->dc.cycle_time_1 = pec->main_cycle_interval; 
                         }
 
                         ec_log(10, get_transition_string(transition), 

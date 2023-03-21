@@ -81,7 +81,6 @@ typedef struct ec_dc_info {
     osal_uint64_t rtc_time;         //!< \brief Time from realtime (EtherCAT master) clock.
     osal_int64_t rtc_sto;           //!< \brief System time offset of realtime clock.
     osal_int64_t act_diff;          //!< \brief Actual difference of DC and RTC clock.
-    osal_int64_t timer_override;    //!< \brief Expected timer increment of one EtherCAT in [ns].
     osal_uint64_t packet_duration;  //!< \brief Packet duration on wire.
 
     double timer_correction;        //!< \brief Correction value for EtherCAT master timer in [ns].
