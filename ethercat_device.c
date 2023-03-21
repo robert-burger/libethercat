@@ -192,8 +192,6 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     // init wait queue
     init_swait_queue_head(&ecat_dev->ir_queue);
 
-    ecat_dev->poll_mask = 0;
-
     for (i = 0; i < EC_TX_RING_SIZE; i++) {
         struct sk_buff *skb;
         skb = dev_alloc_skb(ETH_FRAME_LEN);
@@ -224,7 +222,8 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
 
     ecat_dev->ethercat_polling = false;
-    local_ret = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40001);
+    local_ret = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(
+            ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
     if (local_ret > 0) {
         ecat_dev->ethercat_polling = true;
     }
@@ -367,7 +366,8 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
         int not_cleaned = 1;
         // consume frames ...
         do {
-            not_cleaned = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40000);
+            not_cleaned = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev,
+                    NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
         } while (not_cleaned != 0);
     }
     
