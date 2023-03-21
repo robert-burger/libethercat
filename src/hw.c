@@ -173,8 +173,6 @@ void *hw_rx_thread(void *arg) {
     return NULL;
 }
 
-extern void pool_remove(pool_t *pp, pool_entry_t *entry);
-
 //! internal tx func
 void hw_tx_pool(hw_t *phw, pool_t *pool) {
     assert(phw != NULL);
