@@ -139,6 +139,20 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
     return ret;
 }
 
+//! \brief Remove entry from pool
+/*!
+ * \param[in]   pp      Pointer to pool.
+ * \param[in]   entry   Pool Entry to remove, got previously by pool_peek
+ */
+void pool_remove(pool_t *pp, pool_entry_t *entry) {
+    assert(pp != NULL);
+    assert(entry != NULL);
+
+    osal_mutex_lock(&pp->_pool_lock);
+    TAILQ_REMOVE(&pp->avail, entry, qh);
+    osal_mutex_unlock(&pp->_pool_lock);
+}
+
 //! \brief Peek next entry from pool
 /*!
  * \param[in]   pp          Pointer to pool.

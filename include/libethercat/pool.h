@@ -100,6 +100,13 @@ int pool_close(pool_t *pp);
  */
 int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout);
 
+//! \brief Remove entry from pool
+/*!
+ * \param[in]   pp      Pointer to pool.
+ * \param[in]   entry   Pool Entry to remove, got previously by pool_peek
+ */
+void pool_remove(pool_t *pp, pool_entry_t *entry);
+
 //! \brief Peek next entry from pool
 /*!
  * \param[in]   pp          Pointer to pool.

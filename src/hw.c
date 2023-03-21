@@ -173,11 +173,13 @@ void *hw_rx_thread(void *arg) {
     return NULL;
 }
 
+extern void pool_remove(pool_t *pp, pool_entry_t *entry);
+
 //! internal tx func
 void hw_tx_pool(hw_t *phw, pool_t *pool) {
     assert(phw != NULL);
 
-    int sent = 0;
+    osal_bool_t sent = OSAL_FALSE;
     ec_frame_t *pframe = NULL;
 
     (void)hw_device_get_tx_buffer(phw, &pframe);
@@ -199,45 +201,39 @@ void hw_tx_pool(hw_t *phw, pool_t *pool) {
         } else { len = 0u; }
 
         if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
-            if (pframe->len == sizeof(ec_frame_t)) {
-                // nothing to send
-            } else {
+            if (pframe->len != sizeof(ec_frame_t)) {
                 (void)hw_device_send(phw, pframe);
-                sent = 1;
+                sent = OSAL_TRUE;
                 (void)hw_device_get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
             }
         }
 
         if (len != 0u) {
-            int ret = pool_get(pool, &p_entry, NULL);
-            if (ret == EC_OK) {
-                if (pdg_prev != NULL) {
-                    ec_datagram_mark_next(pdg_prev);
-                }
-
-                // cppcheck-suppress misra-c2012-11.3
-                p_entry_dg = (ec_datagram_t *)p_entry->data;
-                p_entry_dg->next = 0;
-                (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
-                pframe->len += ec_datagram_length(p_entry_dg);
-                pdg_prev = pdg;
-                pdg = ec_datagram_next(pdg);
-
-                // store as sent
-                phw->tx_send[p_entry_dg->idx] = p_entry;
-            } else {
-                len = 0;
+            pool_remove(pool, p_entry);
+            if (pdg_prev != NULL) {
+                ec_datagram_mark_next(pdg_prev);
             }
+
+            // cppcheck-suppress misra-c2012-11.3
+            p_entry_dg = (ec_datagram_t *)p_entry->data;
+            p_entry_dg->next = 0;
+            (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
+            pframe->len += ec_datagram_length(p_entry_dg);
+            pdg_prev = pdg;
+            pdg = ec_datagram_next(pdg);
+
+            // store as sent
+            phw->tx_send[p_entry_dg->idx] = p_entry;
         }
     } while (len > 0);
     
-    if (sent != 0) {
+    if (sent == OSAL_TRUE) {
         hw_device_send_finished(phw);
     }
 }
 
-//! start sending queued ethercat datagrams
+//! start sending queued ethercat datagrams (low prio queue)
 /*!
  * \param phw hardware handle
  * \return 0 or error code
@@ -254,7 +250,7 @@ int hw_tx_low(hw_t *phw) {
     return ret;
 }
 
-//! start sending queued ethercat datagrams
+//! start sending queued ethercat datagrams (high and low)
 /*!
  * \param phw hardware handle
  * \return 0 or error code
