@@ -364,8 +364,11 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
     debug_pr_info("libethercat char dev driver: open called\n");
 
     if (ecat_dev->ethercat_polling) {
+        int not_cleaned = 1;
         // consume frames ...
-        (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40000);
+        do {
+            not_cleaned = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40000);
+        } while (not_cleaned != 0);
     }
     
     ecat_dev->tx_skb_index_next = 0;
