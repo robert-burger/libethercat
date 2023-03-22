@@ -120,7 +120,7 @@ void hw_device_recv_internal(hw_t *phw) {
  * \return 0 or negative error code
  */
 int hw_device_recv(hw_t *phw) {
-    if (phw->polling_mode) {
+    if (phw->polling_mode == OSAL_TRUE) {
         return EC_ERROR_HW_NOT_SUPPORTED;
     } 
 
@@ -183,7 +183,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
         ret = EC_ERROR_HW_SEND;
     }
     
-    phw->bytes_last_sent += bytestx;
+    phw->bytes_sent += bytestx;
 
     return ret;
 }
@@ -197,8 +197,9 @@ void hw_device_send_finished(hw_t *phw) {
     if (phw->polling_mode == OSAL_TRUE) {
         // sleep a little bit (at least packet-on-wire-duration)
         //int time_bit = 10; // 10 [ns] per bit on 100 Mbit/s Ethernet.
-        //osal_sleep(time_bit * 8 * phw->bytes_last_sent);
-        phw->bytes_last_sent = 0;
+        //osal_sleep(time_bit * 8 * phw->bytes_sent);
+        phw->bytes_last_sent = phw->bytes_sent;
+        phw->bytes_sent = 0;
 
         hw_device_recv_internal(phw);
     }
