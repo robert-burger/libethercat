@@ -109,7 +109,7 @@ static char debug_buf[DBG_BUF_SIZE];
 /*
  * Nothing to open here.
  */
-int ethercat_monitor_open(struct net_device *dev) {
+static int ethercat_monitor_open(struct net_device *dev) {
     return 0;
 }
 
@@ -117,7 +117,7 @@ int ethercat_monitor_open(struct net_device *dev) {
 /*
  * Nothing to close here.
  */
-int ethercat_monitor_stop(struct net_device *dev) {
+static int ethercat_monitor_stop(struct net_device *dev) {
     return 0;
 }
 
@@ -125,7 +125,7 @@ int ethercat_monitor_stop(struct net_device *dev) {
 /*
  * Drop all frame someone wants to send to the monitor device from outside.
  */
-int ethercat_monitor_tx(struct sk_buff *skb, struct net_device *dev) {
+static int ethercat_monitor_tx(struct sk_buff *skb, struct net_device *dev) {
     struct ethercat_device *ecat_dev = (struct ethercat_device *)netdev_priv(dev);
     dev_kfree_skb(skb);
     ecat_dev->monitor_stats.tx_dropped++;
@@ -136,7 +136,7 @@ int ethercat_monitor_tx(struct sk_buff *skb, struct net_device *dev) {
 /*
  * \return current device statistics.
  */
-struct net_device_stats *ethercat_monitor_stats(struct net_device *dev) {
+static struct net_device_stats *ethercat_monitor_stats(struct net_device *dev) {
     struct ethercat_device *ecat_dev = (struct ethercat_device *)netdev_priv(dev);
     return &ecat_dev->monitor_stats;
 }
@@ -154,7 +154,7 @@ static const struct net_device_ops ethercat_monitor_netdev_ops = {
  * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
  * \return 0 on success, -1 on error.
  */
-int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
+static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
     int ret = 0;
     char monitor_name[64];
 
@@ -184,7 +184,7 @@ int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
 /*!
  * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
  */
-void ethercat_monitor_destroy(struct ethercat_device *ecat_dev) {
+static void ethercat_monitor_destroy(struct ethercat_device *ecat_dev) {
     if (ecat_dev->monitor_dev != NULL) {
         unregister_netdev(ecat_dev->monitor_dev);
         free_netdev(ecat_dev->monitor_dev);
@@ -199,7 +199,7 @@ void ethercat_monitor_destroy(struct ethercat_device *ecat_dev) {
  * \param[in]   data        Pointer to memory containing the beginning of the EtherCAT frame.
  * \param[in]   datalen     Size of EtherCAT frame.
  */
-void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8_t *data, size_t datalen) {
+static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8_t *data, size_t datalen) {
     struct sk_buff *skb = NULL;
 
     if (!ecat_dev->monitor_enabled) {
