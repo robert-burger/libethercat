@@ -1,3 +1,32 @@
+/**
+ * \file ethercat_device.h
+ *
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 2023-03-23
+ *
+ * \brief Character device for EtherCAT network device.
+ *
+ */
+
+/*
+ * This file is part of libethercat.
+ *
+ * libethercat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * libethercat is distributed in the hope that 
+ * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with libethercat
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef ETHERCAT_DEVICE__H
 #define ETHERCAT_DEVICE__H
 
@@ -50,14 +79,33 @@ struct ethercat_device {
 #define ETHERCAT_DEVICE_NET_DEVICE_DO_POLL          (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0000)
 #define ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING      (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0001)
 
-//! \brief Module init func.
-int ethercat_device_init(void);
-
-int ethercat_device_exit(void);
-
+//! \brief Create an characted device node for provided network device.
+/*!
+ * \param[in]   net_dev     Network device to attach.
+ * \return Pointer to newly created EtherCAT device on success.
+ */
 struct ethercat_device *ethercat_device_create(struct net_device *net_dev);
+
+//! \brief Destructs an EtherCAT device.
+/*!
+ * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
+ * \return 0 on success.
+ */
 int ethercat_device_destroy(struct ethercat_device *ecat_dev);
+
+//! \brief Receive function called from network device if a frame was received.
+/*!
+ * \param[in]   ecat_dev    Pointer to EtherCAT device.
+ * \param[in]   data        Pointer to memory containing the beginning of the EtherCAT frame.
+ * \param[in]   size        Size of EtherCAT frame.
+ */
 void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data, size_t size);
+
+//! \brief Set link status of EtherCAT device.
+/*!
+ * \param[in]   ecat_dev    Pointer to EtherCAT device.
+ * \param[in]   link        New link state.
+ */
 void ethercat_device_set_link(struct ethercat_device *ecat_dev, bool link);
 
 #endif 

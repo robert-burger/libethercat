@@ -1,3 +1,32 @@
+/**
+ * \file ethercat_device.h
+ *
+ * \author Robert Burger <robert.burger@dlr.de>
+ *
+ * \date 2023-03-23
+ *
+ * \brief Character device for EtherCAT network device.
+ *
+ */
+
+/*
+ * This file is part of libethercat.
+ *
+ * libethercat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * libethercat is distributed in the hope that 
+ * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with libethercat
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "ethercat_device.h"
 
 #include <linux/kernel.h>
@@ -64,16 +93,38 @@ static char debug_buf[DBG_BUF_SIZE];
 #define debug_print_frame(msg, buf, buflen)
 #endif
 
+//================================================================================================
+//                                  monitor device stuff
+//
+// Creates a network interface for monitoring purpose called ecat%d_monitor and registers it to
+// the linux network stack. Ensure that the interface is brought up by something like:
+//
+// $ ip link set up ecat0_monitor
+//
+// Then use the usual tools to log sent and received EtherCAT frames like tcpdump, wireshark, etc....
+//
+// WARNING: This should only be enabled for debugging purpose as it may allocate and free memory!!!
+
+//! Open Callback
+/*
+ * Nothing to open here.
+ */
 int ethercat_monitor_open(struct net_device *dev) {
-    pr_info("monitor open called\n");
     return 0;
 }
 
+//! Close Callback
+/*
+ * Nothing to close here.
+ */
 int ethercat_monitor_stop(struct net_device *dev) {
-    pr_info("monitor stop called\n");
     return 0;
 }
 
+//! TX callback function
+/*
+ * Drop all frame someone wants to send to the monitor device from outside.
+ */
 int ethercat_monitor_tx(struct sk_buff *skb, struct net_device *dev) {
     struct ethercat_device *ecat_dev = (struct ethercat_device *)netdev_priv(dev);
     dev_kfree_skb(skb);
@@ -81,19 +132,73 @@ int ethercat_monitor_tx(struct sk_buff *skb, struct net_device *dev) {
     return 0;
 }
 
+//! Get statistics callback
+/*
+ * \return current device statistics.
+ */
 struct net_device_stats *ethercat_monitor_stats(struct net_device *dev) {
     struct ethercat_device *ecat_dev = (struct ethercat_device *)netdev_priv(dev);
     return &ecat_dev->monitor_stats;
 }
 
-static const struct net_device_ops ethercat_monitor_netdev_ops =
-{
+//! Network device ops.
+static const struct net_device_ops ethercat_monitor_netdev_ops = {
     .ndo_open = ethercat_monitor_open,
     .ndo_stop = ethercat_monitor_stop,
     .ndo_start_xmit = ethercat_monitor_tx,
     .ndo_get_stats = ethercat_monitor_stats,
 };
 
+//! Creates an EtherCAT monitor device
+/*!
+ * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
+ * \return 0 on success, -1 on error.
+ */
+int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
+    int ret = 0;
+    char monitor_name[64];
+
+    snprintf(&monitor_name[0], 64, "%s_monitor", ecat_dev->net_dev->name);
+    if (!(ecat_dev->monitor_dev = alloc_netdev(sizeof(struct ethercat_device *), 
+                    monitor_name, NET_NAME_UNKNOWN, ether_setup))) {
+        pr_err("error allocating monitor device\n");
+        ret = -1;
+    } else {
+        ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
+        *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
+
+        memcpy(ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
+
+        if ((ret = register_netdev(ecat_dev->monitor_dev))) {
+            pr_err("error registering monitor net device!\n");
+            ret = -1;
+        }
+    }
+
+    ecat_dev->monitor_enabled = false; 
+
+    return ret;
+}
+
+//! Destroys an EtherCAT monitor device
+/*!
+ * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
+ */
+void ethercat_monitor_destroy(struct ethercat_device *ecat_dev) {
+    if (ecat_dev->monitor_dev != NULL) {
+        unregister_netdev(ecat_dev->monitor_dev);
+        free_netdev(ecat_dev->monitor_dev);
+
+        ecat_dev->monitor_dev = NULL;
+    }
+}
+
+//! Send an EtherCAT frame to the monitor device
+/*!
+ * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
+ * \param[in]   data        Pointer to memory containing the beginning of the EtherCAT frame.
+ * \param[in]   datalen     Size of EtherCAT frame.
+ */
 void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8_t *data, size_t datalen) {
     struct sk_buff *skb = NULL;
 
@@ -119,7 +224,15 @@ void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8_t *dat
     netif_rx_ni(skb);
 }
 
-int ethercat_device_init(void) {
+//================================================================================================
+//                                    ethercat device stuff
+//
+
+//! \brief EtherCAT device initialization.
+/*!
+ * \return 0 on success
+ */
+static int ethercat_device_init(void) {
 	int ret = 0;
 
 	// create driver class and character devices
@@ -138,7 +251,11 @@ int ethercat_device_init(void) {
 	return 0;
 }
 
-int ethercat_device_exit(void) {
+//! \brief EtherCAT device destruction.
+/*!
+ * \return 0 on success
+ */
+static int ethercat_device_exit(void) {
     // unregister the allocated region and character device class
     unregister_chrdev_region(ecat_chr_dev, ecat_chr_cnt);
     class_destroy(ecat_chr_class);
@@ -153,7 +270,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     struct ethhdr *eth;
     int ret = 0;
     unsigned i = 0;
-    char monitor_name[64];
+    //char monitor_name[64];
     int local_ret;
 
     debug_pr_info("libethercat: creating EtherCAT character device...\n");
@@ -228,25 +345,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
         ecat_dev->ethercat_polling = true;
     }
 
-    snprintf(&monitor_name[0], 64, "%s_monitor", ecat_dev->net_dev->name);
-    if (!(ecat_dev->monitor_dev = alloc_netdev(sizeof(struct ethercat_device *), 
-                    monitor_name, NET_NAME_UNKNOWN, ether_setup))) {
-        pr_err("error allocating monitor device\n");
-    } else {
-        ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
-        *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
-
-        memcpy(ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
-//        ecat_dev->monitor_dev->flags |= IFF_UP | IFF_LOWER_UP | IFF_RUNNING;
-
-        if ((ret = register_netdev(ecat_dev->monitor_dev))) {
-            pr_err("error registering monitor net device!\n");
-        } else {
-//            netif_carrier_on(ecat_dev->monitor_dev);
-        }
-    }
-
-    ecat_dev->monitor_enabled = false; 
+    (void)ethercat_monitor_create(ecat_dev);
 
     return ecat_dev;
 
@@ -275,13 +374,8 @@ EXPORT_SYMBOL(ethercat_device_create);
 int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     int i = 0;
 
-    if (ecat_dev->monitor_dev != NULL) {
-        unregister_netdev(ecat_dev->monitor_dev);
-        free_netdev(ecat_dev->monitor_dev);
-
-        ecat_dev->monitor_dev = NULL;
-    }
-
+    ethercat_monitor_destroy(ecat_dev);
+    
     ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
 
     for (i = 0; i < EC_TX_RING_SIZE; i++) {
