@@ -1,3 +1,10 @@
+//! ethercat example with distributed clocks
+/*!
+ * author: Robert Burger
+ *
+ * $Id$
+ */
+
 #include <libethercat/config.h>
 #include <libethercat/ec.h>
 #include <libethercat/error_codes.h>
