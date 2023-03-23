@@ -76,26 +76,27 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     phw->sockfd = open(devname, O_RDWR, 0644);
     if (phw->sockfd <= 0) {
         ec_log(1, "HW_OPEN", "error opening %s: %s\n", devname, strerror(errno));
+        ret = EC_ERROR_HW_NO_INTERFACE;
     } else {
         phw->mtu_size = 1480;
-    }
     
-    // cppcheck-suppress misra-c2012-11.3
-    pframe = (ec_frame_t *)phw->send_frame;
-    (void)memcpy(pframe->mac_dest, mac_dest, 6);
-    (void)memcpy(pframe->mac_src, mac_src, 6);
+        // cppcheck-suppress misra-c2012-11.3
+        pframe = (ec_frame_t *)phw->send_frame;
+        (void)memcpy(pframe->mac_dest, mac_dest, 6);
+        (void)memcpy(pframe->mac_src, mac_src, 6);
 
-    // check polling mode
-    phw->polling_mode = OSAL_FALSE;
-    unsigned int pollval = 0;
-    if (ioctl(phw->sockfd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
-        phw->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
+        // check polling mode
+        phw->polling_mode = OSAL_FALSE;
+        unsigned int pollval = 0;
+        if (ioctl(phw->sockfd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
+            phw->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
+        }
+
+        unsigned int monitor = 0;
+        (void)ioctl(phw->sockfd, ETHERCAT_DEVICE_MONITOR_ENABLE, &monitor);
+
+        ec_log(10, "HW_OPEN", "%s polling mode\n", phw->polling_mode == OSAL_FALSE ? "not using" : "using");
     }
-    
-    unsigned int monitor = 0;
-    (void)ioctl(phw->sockfd, ETHERCAT_DEVICE_MONITOR_ENABLE, &monitor);
-
-    ec_log(10, "HW_OPEN", "%s polling mode\n", phw->polling_mode == OSAL_FALSE ? "not using" : "using");
 
     return ret;
 }
