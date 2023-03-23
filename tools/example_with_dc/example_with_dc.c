@@ -153,6 +153,9 @@ int main(int argc, char **argv) {
     ec_log_func = &no_verbose_log;
             
     ret = ec_open(&ec, intf, base_prio - 1, base_affinity, 1);
+    if (ret != EC_OK) {
+        goto exit;
+    }
 
     ec.threaded_startup = 0;
     
@@ -314,6 +317,7 @@ int main(int argc, char **argv) {
 
     int j, fd;
 
+exit:
     ec_close(&ec);
 
     return 0;

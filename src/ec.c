@@ -1108,6 +1108,8 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
 
     if (ret != EC_OK) {
         if (pec != NULL) {
+            ec_log(1, "MASTER_OPEN", "error occured, closing EtherCAT!\n");
+
             int local_ret = hw_close(&pec->hw);
             if (local_ret != EC_OK) {
                 ec_log(1, "MASTER_OPEN", "hw_close failed with %d\n", local_ret);

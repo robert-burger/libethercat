@@ -64,6 +64,7 @@
 
 #define EC_ERROR_HW_MASK                        0x00080000
 #define EC_ERROR_HW_NOT_SUPPORTED               (EC_ERROR_HW_MASK      | 0x00000001)
+#define EC_ERROR_HW_NO_INTERFACE                (EC_ERROR_HW_MASK      | 0x00000002)
 
 #define EC_ERROR_MAILBOX_MASK                   0x00100000
 
