@@ -44,8 +44,7 @@
  * \return EC_OK on success, otherwise error code.
  */
 int ec_cyclic_datagram_init(ec_cyclic_datagram_t *cdg, osal_uint64_t recv_timeout) {
-    osal_mutex_attr_t attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
-    osal_mutex_init(&cdg->lock, &attr);
+    osal_mutex_init(&cdg->lock, NULL);
     cdg->p_entry = NULL;
     cdg->p_idx = NULL;
     cdg->recv_timeout_ns = recv_timeout;
