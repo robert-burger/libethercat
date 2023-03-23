@@ -1419,30 +1419,30 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
     ec_log(100, "MASTER_SEND_PD_GROUP", "group %2d: sending process data\n", group);
 #endif
 
-    osal_mutex_lock(&pd->cdg.lock);
+    if (pd->use_lrw == OSAL_TRUE) {
+        osal_mutex_lock(&pd->cdg.lock);
 
-    if (pd->cdg.p_idx == NULL) {
-        if (ec_index_get(&pec->idx_q, &pd->cdg.p_idx) != EC_OK) {
-            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
-            ret = EC_ERROR_OUT_OF_INDICES;
+        if (pd->cdg.p_idx == NULL) {
+            if (ec_index_get(&pec->idx_q, &pd->cdg.p_idx) != EC_OK) {
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
+                ret = EC_ERROR_OUT_OF_INDICES;
+            }
         }
-    }
 
-    if ((ret == EC_OK) && (pd->cdg.p_entry == NULL)) {
-        if (pool_get(&pec->pool, &pd->cdg.p_entry, NULL) != EC_OK) {
-            ec_index_put(&pec->idx_q, pd->cdg.p_idx);
-            pd->cdg.p_idx = NULL;
-            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
-            ret = EC_ERROR_OUT_OF_DATAGRAMS;
-        } else {
-            pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
-            pd->cdg.p_entry->user_cb = cb_process_data_group;
-            pd->cdg.p_entry->user_arg = pd->group;
+        if ((ret == EC_OK) && (pd->cdg.p_entry == NULL)) {
+            if (pool_get(&pec->pool, &pd->cdg.p_entry, NULL) != EC_OK) {
+                ec_index_put(&pec->idx_q, pd->cdg.p_idx);
+                pd->cdg.p_idx = NULL;
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
+                ret = EC_ERROR_OUT_OF_DATAGRAMS;
+            } else {
+                pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
+                pd->cdg.p_entry->user_cb = cb_process_data_group;
+                pd->cdg.p_entry->user_arg = pd->group;
+            }
         }
-    }
 
-    if (ret == EC_OK) {
-        if (pd->use_lrw == OSAL_TRUE) {
+        if (ret == EC_OK) {
             if (pd->log_len > 0u) {
                 p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
 
@@ -1459,12 +1459,12 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 // queue frame and trigger tx
                 pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
             }
-        } else { // use_lrw == OSAL_FALSE
-            ec_log(1, "MASTER_SEND_PD_GROUP", "LRD/LWR not implemented!\n");
         }
-    }
 
-    osal_mutex_unlock(&pd->cdg.lock);
+        osal_mutex_unlock(&pd->cdg.lock);
+    } else { // use_lrw == OSAL_FALSE
+        ec_log(1, "MASTER_SEND_PD_GROUP", "LRD/LWR not implemented!\n");
+    }
 
     return ret;
 }

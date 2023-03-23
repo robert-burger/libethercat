@@ -103,7 +103,9 @@ typedef struct ec_pd_group {
     
     int recv_missed;                //!< missed continues ethercat frames 
 
-    ec_cyclic_datagram_t cdg;       //!< Group cyclic datagram.
+    ec_cyclic_datagram_t cdg;       //!< Group cyclic datagram LRW case.
+    ec_cyclic_datagram_t cdg_lrd;   //!< Group cyclic datagram LRD case.
+    ec_cyclic_datagram_t cdg_lwr;   //!< Group cyclic datagram LWR case.
     
     int divisor;                    //!< Timer Divisor
     int divisor_cnt;                //!< Actual timer cycle count
