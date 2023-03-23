@@ -174,7 +174,7 @@ void *hw_rx_thread(void *arg) {
 }
 
 //! internal tx func
-void hw_tx_pool(hw_t *phw, pool_t *pool) {
+static void hw_tx_pool(hw_t *phw, pool_t *pool) {
     assert(phw != NULL);
 
     osal_bool_t sent = OSAL_FALSE;
@@ -213,11 +213,9 @@ void hw_tx_pool(hw_t *phw, pool_t *pool) {
                 ec_datagram_mark_next(pdg_prev);
             }
 
-            // cppcheck-suppress misra-c2012-11.3
-            p_entry_dg = (ec_datagram_t *)p_entry->data;
             p_entry_dg->next = 0;
             (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
-            pframe->len += ec_datagram_length(p_entry_dg);
+            pframe->len += len;
             pdg_prev = pdg;
             pdg = ec_datagram_next(pdg);
 

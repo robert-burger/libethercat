@@ -79,8 +79,8 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         start_tx_in_ns[duration_tx_pos] = time_start;
 
         // execute one EtherCAT cycle
-        ec_send_process_data(pec);
         ec_send_distributed_clocks_sync(pec);
+        ec_send_process_data(pec);
         ec_send_brd_ec_state(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
@@ -149,6 +149,8 @@ int main(int argc, char **argv) {
     if (ret != EC_OK) {
         goto exit;
     }
+
+    ec.threaded_startup = 0;
     
     ec_set_state(&ec, EC_STATE_INIT);
 
@@ -289,10 +291,10 @@ int main(int argc, char **argv) {
         
 #define to_us(x)    ((double)(x)/1000.)
         no_verbose_log(0, NULL, 
-                "Frame len %d bytes, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                "Frame len %d bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
-                ec.hw.bytes_last_sent,
+                ec.hw.bytes_last_sent, (10 * 8 * ec.hw.bytes_last_sent) / 1000.,
                 to_us(timer_tx_med), 
                 to_us(timer_tx_avg_jit), 
                 to_us(timer_tx_max_jit), 

@@ -67,6 +67,7 @@ typedef struct hw {
 
     pool_entry_t *tx_send[256];     //!< sent datagrams
 
+    osal_size_t bytes_sent;
     osal_size_t bytes_last_sent;
     osal_timer_t next_cylce_start;
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
