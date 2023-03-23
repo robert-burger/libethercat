@@ -434,7 +434,8 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
                 unsigned long wait_jiffies = jiffies + HZ;
 
                 do {
-                    (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, NULL, 0x88A40000);
+                    (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, 
+                            NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
 
                     if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
                         break;
