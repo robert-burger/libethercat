@@ -22,10 +22,12 @@ struct ethercat_device {
     uint8_t link_state;
     unsigned int poll_mask;
 
+    // internal ring buffer with socket buffers to be sent on network device.
 #define EC_TX_RING_SIZE 0x100
     struct sk_buff *tx_skb[EC_TX_RING_SIZE];
     unsigned int tx_skb_index_next;
 
+    // internal ring buffer with socket buffers containing received EtherCAT frames.
 #define EC_RX_RING_SIZE 0x100
     struct sk_buff *rx_skb[EC_RX_RING_SIZE];
     unsigned int rx_skb_index_last_recv;
@@ -48,8 +50,11 @@ struct ethercat_device {
 #define ETHERCAT_DEVICE_NET_DEVICE_DO_POLL          (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0000)
 #define ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING      (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0001)
 
+//! \brief Module init func.
 int ethercat_device_init(void);
+
 int ethercat_device_exit(void);
+
 struct ethercat_device *ethercat_device_create(struct net_device *net_dev);
 int ethercat_device_destroy(struct ethercat_device *ecat_dev);
 void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data, size_t size);
