@@ -67,7 +67,7 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
 
     ec_slave_ptr(slv, pec, slave);
 
-    if ((slv->features & 0x04u) != 0u) { // dc available
+    if ((slv->features & EC_REG_ESCSUP__DC_SUPP) != 0u) { // dc available
         osal_uint8_t dc_cuc = 0u;
         osal_uint8_t dc_active = 0u;
         osal_uint16_t wkc = 0u;
@@ -223,7 +223,7 @@ int ec_dc_config(struct ec *pec) {
         ec_slave_ptr(slv, pec, slave);
         slv->dc.available_ports = slv->active_ports;
 
-        if ((slv->dc.use_dc == 0) || ((slv->features & 0x04u) == 0u)) {
+        if ((slv->dc.use_dc == 0) || ((slv->features & EC_REG_ESCSUP__DC_SUPP) == 0u)) {
             ec_log(100, "DC_CONFIG", "slave %2d: not using DC (use %d, features 0x%X)\n", 
                     slave, slv->dc.use_dc, slv->features);
 
@@ -312,7 +312,7 @@ int ec_dc_config(struct ec *pec) {
             }
         } while (!((parent == -1) || 
                     ((pec->slaves[parent].dc.use_dc) && 
-                     (pec->slaves[parent].features & 0x04u))));
+                     (pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP))));
 
         ec_log(100, "DC_CONFIG", "slave %2d: parent %d\n", slave, parent);
 
