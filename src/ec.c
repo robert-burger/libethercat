@@ -132,15 +132,16 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
     // cppcheck-suppress misra-c2012-21.3
     for (osal_uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
         (void)ec_cyclic_datagram_init(&pec->pd_groups[i].cdg, 10000000);
-        pec->pd_groups[i].group     = i;
-        pec->pd_groups[i].log       = 0x10000u * ((osal_uint32_t)i+1u);
-        pec->pd_groups[i].log_len   = 0u;
-        pec->pd_groups[i].pdout_len = 0u;
-        pec->pd_groups[i].pdin_len  = 0u;
-        pec->pd_groups[i].use_lrw   = 1;
-        pec->pd_groups[i].recv_missed = 0;
-        pec->pd_groups[i].divisor   = 1;
-        pec->pd_groups[i].divisor_cnt = 0;
+        pec->pd_groups[i].group             = i;
+        pec->pd_groups[i].log               = 0x10000u * ((osal_uint32_t)i+1u);
+        pec->pd_groups[i].log_len           = 0u;
+        pec->pd_groups[i].pdout_len         = 0u;
+        pec->pd_groups[i].pdin_len          = 0u;
+        pec->pd_groups[i].use_lrw           = 1;
+        pec->pd_groups[i].lrw_overlapping   = 1;
+        pec->pd_groups[i].recv_missed       = 0;
+        pec->pd_groups[i].divisor           = 1;
+        pec->pd_groups[i].divisor_cnt       = 0;
     }
 
     return 0;
@@ -899,9 +900,21 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 
             // ====> create logical mapping for cyclic operation
             for (osal_uint16_t group = 0u; group < pec->pd_group_cnt; ++group) {
+                for (osal_uint16_t slave = 0u; slave < pec->slave_cnt; ++slave) {
+                    if (    (pec->slaves[slave].assigned_pd_group == group) && 
+                            ((pec->slaves[slave].features & EC_REG_ESCSUP__NOT_SUPP_LRW) == EC_REG_ESCSUP__NOT_SUPP_LRW)) {
+                        pec->pd_groups[group].use_lrw = 0;
+                        break;
+                    }
+                }
+
                 if (pec->pd_groups[group].use_lrw != 0) {
+                    ec_log(10, get_state_string(pec->master_state), "group %2d: using LRW, "
+                            "support from all slaves in group\n", group);
                     ec_create_logical_mapping_lrw(pec, group);
                 } else {
+                    ec_log(10, get_state_string(pec->master_state), "group %2d: using LRD/LWR, "
+                            "not all slaves support LRW in group\n", group);
                     ec_create_logical_mapping(pec, group);
                 }
             }
@@ -1357,7 +1370,8 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
 
     wkc = ec_datagram_wkc(p_dg);
     if (pd->pd != NULL) {
-        if (pd->use_lrw != 0) {
+        if ((pd->use_lrw != 0) || (pd->lrw_overlapping)) {
+            // use this if lrw overlapping or lrd command
             (void)memcpy(&pd->pd[pd->pdout_len], ec_datagram_payload(p_dg), pd->pdin_len);
         } else {
             (void)memcpy(&pd->pd[pd->pdout_len], &ec_datagram_payload(p_dg)[pd->pdout_len], pd->pdin_len);
@@ -1463,7 +1477,87 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
 
         osal_mutex_unlock(&pd->cdg.lock);
     } else { // use_lrw == OSAL_FALSE
-        ec_log(1, "MASTER_SEND_PD_GROUP", "LRD/LWR not implemented!\n");
+        osal_mutex_lock(&pd->cdg_lwr.lock);
+
+        if (pd->cdg_lwr.p_idx == NULL) {
+            if (ec_index_get(&pec->idx_q, &pd->cdg_lwr.p_idx) != EC_OK) {
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
+                ret = EC_ERROR_OUT_OF_INDICES;
+            }
+        }
+
+        if ((ret == EC_OK) && (pd->cdg_lwr.p_entry == NULL)) {
+            if (pool_get(&pec->pool, &pd->cdg_lwr.p_entry, NULL) != EC_OK) {
+                ec_index_put(&pec->idx_q, pd->cdg_lwr.p_idx);
+                pd->cdg_lwr.p_idx = NULL;
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
+                ret = EC_ERROR_OUT_OF_DATAGRAMS;
+            } else {
+                pd->cdg_lwr.p_entry->p_idx = pd->cdg_lwr.p_idx;
+                pd->cdg_lwr.p_entry->user_cb = NULL;
+                pd->cdg_lwr.p_entry->user_arg = 0;
+            }
+        }
+
+        if (ret == EC_OK) {
+            if (pd->log_len > 0u) {
+                p_dg = ec_datagram_cast(pd->cdg_lwr.p_entry->data);
+
+                (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd->log_len + 2u);
+                p_dg->cmd = EC_CMD_LWR;
+                p_dg->idx = pd->cdg_lwr.p_idx->idx;
+                p_dg->adr = pd->log;
+                p_dg->len = pd->pdout_len;
+
+                if (pd->pd != NULL) {
+                    (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
+                }
+
+                // queue frame and trigger tx
+                pool_put(&pec->hw.tx_high, pd->cdg_lwr.p_entry);
+            }
+        }
+
+        osal_mutex_unlock(&pd->cdg_lwr.lock);
+        
+        osal_mutex_lock(&pd->cdg_lrd.lock);
+
+        if (pd->cdg_lrd.p_idx == NULL) {
+            if (ec_index_get(&pec->idx_q, &pd->cdg_lrd.p_idx) != EC_OK) {
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
+                ret = EC_ERROR_OUT_OF_INDICES;
+            }
+        }
+
+        if ((ret == EC_OK) && (pd->cdg_lrd.p_entry == NULL)) {
+            if (pool_get(&pec->pool, &pd->cdg_lrd.p_entry, NULL) != EC_OK) {
+                ec_index_put(&pec->idx_q, pd->cdg_lrd.p_idx);
+                pd->cdg_lrd.p_idx = NULL;
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
+                ret = EC_ERROR_OUT_OF_DATAGRAMS;
+            } else {
+                pd->cdg_lrd.p_entry->p_idx = pd->cdg_lrd.p_idx;
+                pd->cdg_lrd.p_entry->user_cb = cb_process_data_group;
+                pd->cdg_lrd.p_entry->user_arg = pd->group;
+            }
+        }
+
+        if (ret == EC_OK) {
+            if (pd->log_len > 0u) {
+                p_dg = ec_datagram_cast(pd->cdg_lrd.p_entry->data);
+
+                (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd->log_len + 2u);
+                p_dg->cmd = EC_CMD_LRD;
+                p_dg->idx = pd->cdg_lrd.p_idx->idx;
+                p_dg->adr = pd->log + pd->pdout_len;
+                p_dg->len = pd->pdin_len;
+
+                // queue frame and trigger tx
+                pool_put(&pec->hw.tx_high, pd->cdg_lrd.p_entry);
+            }
+        }
+
+        osal_mutex_unlock(&pd->cdg_lrd.lock);
     }
 
     return ret;

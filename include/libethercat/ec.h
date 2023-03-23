@@ -91,6 +91,8 @@ typedef struct ec_pd_group {
                                      * data exchange
                                      */
 
+    int lrw_overlapping;            //!< LRW areas overlapping.
+
     osal_uint16_t wkc_expected;     //!< expected working counter
                                     /*!< 
                                      * This is the expected working counter 
