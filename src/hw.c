@@ -133,6 +133,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
         ec_datagram_t *d = ec_datagram_first(pframe); 
         while ((osal_uint8_t *) d < (osal_uint8_t *) ec_frame_end(pframe)) {
             pool_entry_t *entry = phw->tx_send[d->idx];
+            phw->tx_send[d->idx] = NULL;
 
             if (!entry) {
                 ec_log(1, "HW_RX", "received idx %d, but we did not send one?\n", d->idx);
