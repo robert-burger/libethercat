@@ -1248,8 +1248,8 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             }
         } else {
             osal_timer_t test;
-            // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 120% threshold
-            osal_timer_init(&test, (10 * 8 * pec->hw.mtu_size) * 1.2);  
+            // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
+            osal_timer_init(&test, (10 * 8 * pec->hw.mtu_size) * 1.5);  
             if (osal_timer_cmp(&test, &pec->hw.next_cylce_start, <)) {
                 if (hw_tx_low(&pec->hw) != EC_OK) {
                     ec_log(1, "MASTER_TRANSCEIVE", "hw_tx_low failed!\n");
