@@ -101,7 +101,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     return ret;
 }
 
-void hw_device_recv_internal(hw_t *phw) {
+static void hw_device_recv_internal(hw_t *phw) {
     // cppcheck-suppress misra-c2012-11.3
     ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
 
@@ -197,8 +197,9 @@ void hw_device_send_finished(hw_t *phw) {
     // in case of polling do receive now
     if (phw->polling_mode == OSAL_TRUE) {
         // sleep a little bit (at least packet-on-wire-duration)
-        //int time_bit = 10; // 10 [ns] per bit on 100 Mbit/s Ethernet.
-        //osal_sleep(time_bit * 8 * phw->bytes_sent);
+        // 10 [ns] per bit on 100 Mbit/s Ethernet.
+        //uint64_t packet_time = 10 * 8 * phw->bytes_sent; 
+        //osal_sleep(packet_time * 0.4);
         phw->bytes_last_sent = phw->bytes_sent;
         phw->bytes_sent = 0;
 
