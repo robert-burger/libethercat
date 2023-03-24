@@ -91,6 +91,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
 
         // check polling mode
         phw->polling_mode = OSAL_FALSE;
+#if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
         unsigned int pollval = 0;
         if (ioctl(phw->sockfd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
             phw->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
@@ -98,6 +99,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
 
         unsigned int monitor = 0;
         (void)ioctl(phw->sockfd, ETHERCAT_DEVICE_MONITOR_ENABLE, &monitor);
+#endif
 
         ec_log(10, "HW_OPEN", "%s polling mode\n", phw->polling_mode == OSAL_FALSE ? "not using" : "using");
     }
