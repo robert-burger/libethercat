@@ -35,7 +35,11 @@
 
 #include <assert.h>
 #include <sys/stat.h>
+
+#if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
 #include <sys/ioctl.h>
+#endif
+
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
