@@ -238,12 +238,17 @@ static void ec_eoe_wait_response(ec_t *pec, osal_uint16_t slave, pool_entry_t **
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_mbx_sched_read(pec, slave);
-
     osal_timer_t timeout;
-    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout_loop;
+    osal_timer_init(&timeout_loop, (osal_int64_t)EC_DEFAULT_TIMEOUT_MBX*10);
 
-    (void)pool_get(&slv->mbx.eoe.response_pool, pp_entry, &timeout);
+    do {
+        // trigger mailbox read more often while waiting 
+        ec_mbx_sched_read(pec, slave);
+
+        osal_timer_init(&timeout, 100000);
+        (void)pool_get(&slv->mbx.eoe.response_pool, pp_entry, &timeout);
+    } while ((osal_timer_expired(&timeout_loop) == OSAL_OK) && (*pp_entry == NULL));
 }
 
 //! \brief Wait for EoE message received from slave.
@@ -263,12 +268,17 @@ static void ec_eoe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_mbx_sched_read(pec, slave);
-
     osal_timer_t timeout;
-    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout_loop;
+    osal_timer_init(&timeout_loop, (osal_int64_t)EC_DEFAULT_TIMEOUT_MBX*10);
 
-    (void)pool_get(&slv->mbx.eoe.recv_pool, pp_entry, &timeout);
+    do {
+        // trigger mailbox read more often while waiting 
+        ec_mbx_sched_read(pec, slave);
+
+        osal_timer_init(&timeout, 100000);
+        (void)pool_get(&slv->mbx.eoe.recv_pool, pp_entry, &timeout);
+    } while ((osal_timer_expired(&timeout_loop) == OSAL_OK) && (*pp_entry == NULL));
 }
 
 //! \brief Enqueue EoE message received from slave.
