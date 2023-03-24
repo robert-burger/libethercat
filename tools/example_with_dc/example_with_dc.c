@@ -42,7 +42,7 @@ int usage(int argc, char **argv) {
     return 0;
 }
 
-int max_print_level = 100;
+int max_print_level = 10;
 
 // only log level <= 10 
 void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
@@ -184,8 +184,10 @@ int main(int argc, char **argv) {
     ec_configure_dc(&ec, cycle_rate, dc_mode_master_as_ref_clock, ({
                 void anon_cb(void *arg, int num) { 
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
-                    //osal_uint64_t time_start = duration_tx_pos == 0 ? start_tx_in_ns[DURATION_TX_COUNT-1] : start_tx_in_ns[duration_tx_pos-1];
-                    osal_uint64_t time_start = start_tx_in_ns[duration_tx_pos];
+                    osal_uint64_t time_start = duration_tx_pos == 0 ? start_tx_in_ns[DURATION_TX_COUNT-1] : start_tx_in_ns[duration_tx_pos-1];
+                    if ((time_end - time_start) > cycle_rate) {
+                        time_start = start_tx_in_ns[duration_tx_pos];
+                    }
 
                     duration_round_trip_in_ns[duration_round_trip_pos++] = time_end - time_start;
                     if (duration_round_trip_pos >= DURATION_TX_COUNT) {
