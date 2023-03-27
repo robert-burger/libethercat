@@ -231,6 +231,7 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
     assert(len != NULL);
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
     
@@ -244,9 +245,12 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
         // cppcheck-suppress misra-c2012-11.3
         ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
+        (void)ec_mbx_next_counter(pec, slave, &counter);
+
         // mailbox header
         write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
         write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
+        write_buf->mbx_hdr.counter  = counter;
         // soe header
         write_buf->soe_hdr.op_code    = EC_SOE_READ_REQ;
         write_buf->soe_hdr.atn        = atn;
@@ -321,6 +325,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
     assert(buf != NULL);
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
 
@@ -358,9 +363,12 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                 // cppcheck-suppress misra-c2012-11.3
                 ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
+                (void)ec_mbx_next_counter(pec, slave, &counter);
+
                 // mailbox header
                 write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
                 write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
+                write_buf->mbx_hdr.counter  = counter;
                 // soe header
                 write_buf->soe_hdr.op_code    = EC_SOE_WRITE_REQ;
                 write_buf->soe_hdr.atn        = atn;

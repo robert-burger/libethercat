@@ -330,6 +330,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
 
     pool_entry_t *p_entry;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     
     osal_mutex_lock(&slv->mbx.eoe.lock);
@@ -341,6 +342,8 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
     } else {
         ec_log(10, "EOE_SET_IP_PARAMETER", "slave %2d: set ip parameter\n", slave);
 
+        (void)ec_mbx_next_counter(pec, slave, &counter);
+
         // cppcheck-suppress misra-c2012-11.3
         ec_eoe_set_ip_parameter_request_t *write_buf = (ec_eoe_set_ip_parameter_request_t *)(p_entry->data);
 
@@ -348,6 +351,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
         // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (4) + siphdr (4)
         write_buf->mbx_hdr.length    = 8;
         write_buf->mbx_hdr.mbxtype   = EC_MBX_EOE;
+        write_buf->mbx_hdr.counter   = counter;
         // eoe header
         write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_SET_IP_ADDRESS_REQUEST;
         write_buf->eoe_hdr.last_fragment      = 0x01;
@@ -422,6 +426,7 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
     assert(frame != NULL);
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     
     osal_mutex_lock(&slv->mbx.eoe.lock);
@@ -452,11 +457,14 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
             // cppcheck-suppress misra-c2012-11.3
             ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
 
+            (void)ec_mbx_next_counter(pec, slave, &counter);
+
             ec_log(100, "EOE_SEND_FRAME", "slave %2d: sending eoe fragment %d\n", slave, frag_number);
             // mailbox header
             // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
             write_buf->mbx_hdr.length           = 4u + frag_len;
             write_buf->mbx_hdr.mbxtype          = EC_MBX_EOE;
+            write_buf->mbx_hdr.counter          = counter;
             // eoe header
             write_buf->eoe_hdr.frame_type       = EOE_FRAME_TYPE_REQUEST;
             write_buf->eoe_hdr.fragment_number  = frag_number;

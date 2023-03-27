@@ -78,6 +78,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
     if (slv->mbx.handler_running == 0) {
         ec_log(10, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
 
+        slv->mbx.seq_counter = 1;
         slv->mbx.map_mbx_state = OSAL_TRUE;
 
         (void)ec_cyclic_datagram_init(&slv->mbx.cdg, 10000000);
@@ -649,3 +650,29 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
     return ret;
 }
 
+//! \brief Get next sequence counter.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] seq_cnt   Returns sequence counter.
+ *
+ * \return EC_OK on success.
+ */
+int ec_mbx_next_counter(ec_t *pec, int slave, int *seq_counter) {
+    assert(pec != NULL);
+    assert(slave < pec->slave_cnt);
+    assert(seq_counter != NULL);
+
+    ec_slave_ptr(slv, pec, slave);
+
+    if ((++slv->mbx.seq_counter) > 7) {
+        slv->mbx.seq_counter = 1;
+    }
+
+    (*seq_counter) = slv->mbx.seq_counter;
+
+    return EC_OK;
+}

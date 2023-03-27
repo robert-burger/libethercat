@@ -110,6 +110,8 @@ typedef struct ec_mbx {
                                  * moment.
                                  */
 
+    int seq_counter;            //!< mailbox sequence counter
+
     pool_t message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
     ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
@@ -198,6 +200,19 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave);
  * \return 1 if supported, 0 otherwise
  */
 int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag);
+
+//! \brief Get next sequence counter.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] seq_cnt   Returns sequence counter.
+ *
+ * \return EC_OK on success.
+ */
+int ec_mbx_next_counter(ec_t *pec, int slave, int *seq_counter); 
 
 #define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) \
     pool_get(&(pec)->mbx_message_pool_recv_free, &(entry), (timeout))
