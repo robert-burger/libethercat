@@ -479,7 +479,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }
             }
-        } while ((last_pkt != 0) && (ret == EC_OK));
+        } while ((last_pkt == 0) && (ret == EC_OK));
 
         if (ret == EC_OK) {
             ec_log(10, "FOE_WRITE", "file download finished\n");
