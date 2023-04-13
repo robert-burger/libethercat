@@ -206,7 +206,9 @@ int main(int argc, char **argv) {
         ec.slaves[i].assigned_pd_group = 0;
         ec_slave_set_dc_config(&ec, i, 1, 0, 1000000, 0, 0);
 
-	//ec.slaves[i].mbx.map_mbx_state = OSAL_FALSE;
+        if ((ec.slaves[i].eeprom.vendor_id = 0x9A) && (ec.slaves[i].eeprom.product_code == 0x01100002)) {
+            ec.slaves[i].mbx.map_mbx_state = OSAL_FALSE;
+        }
     }
 
     osal_binary_semaphore_init(&duration_tx_sync, NULL);
