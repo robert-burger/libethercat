@@ -269,17 +269,22 @@ int ec_dc_config(struct ec *pec) {
 
         // read receive time of all ports and try to find entry port
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0, &slv->dc.receive_times[0], 4 * sizeof(slv->dc.receive_times[0]), &wkc);
-        slv->entry_port = 0;
+        slv->entry_port = -1;
         for (i = 0u; i < 4u; ++i) {
             if ((slv->active_ports & (1u << i)) != 0u) {
-                if (slv->dc.receive_times[i] < slv->dc.receive_times[slv->entry_port]) {
+                if ((slv->entry_port == -1) || (slv->dc.receive_times[i] < slv->dc.receive_times[slv->entry_port])) {
                     // port with smallest value is entry port
                     slv->entry_port = i; 
                 }
 
-                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d - %d\n", 
+                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", 
                         slave, i, slv->dc.receive_times[i]);
             }
+        }
+
+        if (slv->entry_port != 0) {
+            // we have weird order, processing unit sits behind port 0, so processing is done in wrong order
+            ec_log(5, "DC_CONFIG", "slave %2d: entry port is not the first port, check wiring order!\n", slave);
         }
             
         // remove entry_port from available ports
