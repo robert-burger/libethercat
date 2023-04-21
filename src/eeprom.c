@@ -363,9 +363,10 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
         } else if ((eepcsr & 0x2000u) != 0u) {
             ret = EC_ERROR_EEPROM_WRITE_ERROR;
         } else if ((eepcsr & 0x0800u) != 0u) {
-            ec_log(1, "EEPROM_WRITE", 
-                    "checksum error at in ESC configuration area\n");
-            ret = EC_ERROR_EEPROM_CHECKSUM;
+            // ignore this on write
+            //ec_log(1, "EEPROM_WRITE", 
+            //        "checksum error at in ESC configuration area\n");
+            //ret = EC_ERROR_EEPROM_CHECKSUM;
         } else {}
     }
 
