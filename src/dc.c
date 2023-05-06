@@ -122,57 +122,36 @@ static osal_uint8_t eval_port(ec_t *pec, osal_uint16_t slave, osal_uint8_t a, os
     return ret_port;
 }
 
-//! determine previous active port, starting at port
-static inline osal_uint8_t ec_dc_previous_port(ec_t *pec, osal_uint16_t slave, osal_uint8_t port) {
-    assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+// port order (ET1100, Section 1, 3.2)
+const osal_uint8_t forward_port_order[4][4] = { { 3, 1, 2, 0 }, { 2, 0, 3, 1 }, { 0, 3, 1, 2 }, { 1, 2, 0, 3 } };
+const osal_uint8_t reverse_port_order[4][4] = { { 2, 1, 3, 0 }, { 3, 0, 2, 1 }, { 1, 3, 0, 2 }, { 0, 2, 1, 3 } };
 
+//! determine previous active port, starting at port
+static osal_uint8_t ec_dc_previous_port(ec_slave_t *slv, osal_uint8_t port) {
+    const osal_uint8_t *port_order = &reverse_port_order[port][0];
     osal_uint8_t ret_port = port;
 
-    switch(port) {
-        case 0: {
-            ret_port = eval_port(pec, slave, 2, 1, 3, port);
+    for (osal_uint8_t i = 0u; i < 3u; ++i) { 
+        if ((slv->active_ports & (1u << port_order[i])) != 0u) { 
+            ret_port = port_order[i]; 
             break;
-        }
-        case 1: {
-            ret_port = eval_port(pec, slave, 3, 0, 2, port);
-            break;
-        }
-        case 2: {
-            ret_port = eval_port(pec, slave, 1, 3, 0, port);
-            break;
-        }
-        case 3: {
-            ret_port = eval_port(pec, slave, 0, 2, 1, port);
-            break;
-        }      
-        default: {
-            break;
-        }
+        } 
     }
 
     return ret_port;
 }
 
-//! search for available port and return
-static inline osal_uint8_t ec_dc_port_on_parent(ec_t *pec, osal_uint16_t parent) {
-    // read et1100 docs about port order
-    const osal_uint8_t port_idx[] = { 3, 1, 2, 0 };
+//! search for available next outgoing port and return
+static inline osal_uint8_t ec_dc_port_on_parent(ec_slave_t *slv_parent) {
+    assert(slv_parent != NULL);
     osal_uint8_t port_on_parent = 0;
-    
-    assert(pec != NULL);
-    assert(parent < pec->slave_cnt);
-
-    ec_log(100, "DC_CONFIG", "parent %d, available_ports mask 0x%X\n", 
-            parent, pec->slaves[parent].dc.available_ports);
+    const osal_uint8_t *port_order = &forward_port_order[slv_parent->entry_port][0];
 
     for (int i = 0; i < 4; ++i) {
-        osal_uint8_t port = port_idx[i];
-
-        if ((pec->slaves[parent].dc.available_ports & (1u << port)) != 0u) {
+        if ((slv_parent->dc.available_ports & (1u << port_order[i])) != 0u) {
             // mask it out for next port search
-            port_on_parent = port;
-            pec->slaves[parent].dc.available_ports &= ~(1u << port);
+            port_on_parent = port_order[i];
+            slv_parent->dc.available_ports &= ~(1u << port_order[i]);
             break;
         }
     }
