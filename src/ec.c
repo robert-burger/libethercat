@@ -598,6 +598,7 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 pec->slaves[slave].worker_arg.state = state;
 
                 osal_task_attr_t attr;
+                attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
                 (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
@@ -648,6 +649,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
                 pec->slaves[slave].worker_arg.state = state;
 
                 osal_task_attr_t attr;
+                attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
                 (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
@@ -750,6 +752,20 @@ static void ec_scan(ec_t *pec) {
                     ec_log(1, "MASTER_SCAN", "salve %2d: reading al control failed with %d\n", i, local_ret);
                 }
 
+                ec_log(10, "MASTER_SCAN", "slave %2d: closing all ports except 0\n", i);
+                osal_uint32_t dlctl = 0x0000FC03;
+                ec_fpwr(pec, fixed, EC_REG_DLCTL, &dlctl, sizeof(dlctl), &wkc);
+                ec_log(10, "MASTER_SCAN", "slave %2d: check if still something responding\n", i);
+                int ret = ec_brd(pec, EC_REG_TYPE, (osal_uint8_t *)&val, sizeof(val), &wkc); 
+                if (ret == EC_OK) {
+                    ec_log(10, "MASTER_SCAN", "slave %2d: success would expect %d, got %d\n", i, i+1, wkc);
+                } else {
+                    ec_log(10, "MASTER_SCAN", "slave %2d: error in comm\n", i);
+                }
+
+                dlctl = 0x00000001;
+                ec_fpwr(pec, fixed, EC_REG_DLCTL, &dlctl, sizeof(dlctl), &wkc);
+                
                 fixed++;
             } else {
                 ec_log(1, "MASTER_SCAN", "ec_aprd %d returned %d\n", auto_inc, local_ret);

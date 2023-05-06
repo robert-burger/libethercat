@@ -38,6 +38,8 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* libethercat header includes */
 #include "libethercat/dc.h"
@@ -74,6 +76,7 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         osal_int64_t dc_start = 0;
         osal_int64_t dc_time = 0;
         osal_int64_t tmp_time = 0;
+        osal_uint16_t speed_counter_start = 0u;
 
         // deactivate DC's to stop cyclic operation, enable write access of dc's
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
@@ -88,10 +91,16 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         // the generic first sync delay and the cycle shift. the first sync delay 
         // has to be a multiple of cycle time.  
         tmp_time = ((dc_time - (osal_int64_t)pec->dc.rtc_time) / (osal_int64_t)pec->main_cycle_interval) + 100;
+        if (tmp_time < 0) tmp_time = 100;
         dc_start = (osal_int64_t)pec->dc.rtc_time + (tmp_time * (osal_int64_t)pec->main_cycle_interval) + cycle_shift;
+
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
+
+        // resetting the time control loop (ET1100, Section 1, 9.1.4)
+        check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSPEEDCNT, &speed_counter_start, sizeof(speed_counter_start), &wkc);
+        check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSPEEDCNT, &speed_counter_start, sizeof(speed_counter_start), &wkc);
         
         // activate distributed clock on slave
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
@@ -108,18 +117,58 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
     }
 }
 
-static osal_uint8_t eval_port(ec_t *pec, osal_uint16_t slave, osal_uint8_t a, osal_uint8_t b, osal_uint8_t c, osal_uint8_t def) {
-    int ret_port = def;
+// mesaure packet duration (important in case of master_as_ref_clock !
+static osal_uint64_t ec_dc_packet_duration(ec_t *pec) {
+    pool_entry_t *p_entry;
+    ec_datagram_t *p_dg;
+    idx_entry_t *p_idx;
 
-    const osal_uint8_t port_idx[] = { a, b, c }; 
-    for (osal_uint8_t i = 0u; i < 3u; ++i) { 
-        if ((pec->slaves[slave].active_ports & (1u << port_idx[i])) != 0u) { 
-            ret_port = port_idx[i]; 
-            break;
-        } 
+    osal_uint64_t duration = 0u;
+
+    if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
+        ec_log(1, "MASTER_TRANSCEIVE", "error getting ethercat index\n");
+        //ret = EC_ERROR_OUT_OF_INDICES;
+    } else if (pool_get(&pec->pool, &p_entry, NULL) != EC_OK) {
+        ec_index_put(&pec->idx_q, p_idx);
+        ec_log(1, "MASTER_TRANSCEIVE", "error getting datagram from pool\n");
+        //ret = EC_ERROR_OUT_OF_DATAGRAMS;
+    } else {
+        p_dg = ec_datagram_cast(p_entry->data);
+
+        (void)memset(p_dg, 0, sizeof(ec_datagram_t) + 2u + 2u);
+        p_dg->cmd = EC_CMD_BRD;
+        p_dg->idx = 0;
+        p_dg->adr = 0;
+        p_dg->len = 2;
+        p_dg->irq = 0;
+
+        p_entry->p_idx = p_idx;
+        p_entry->user_cb = ({
+                void anon_cb(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {      
+                    osal_binary_semaphore_post(&p_entry->p_idx->waiter);
+                } &anon_cb; });
+
+        // queue frame and trigger tx
+        pool_put(&pec->hw.tx_high, p_entry);
+
+        osal_uint64_t start = osal_timer_gettime_nsec();
+        hw_tx(&pec->hw);
+        
+        // wait for completion
+        osal_timer_t to;
+        osal_timer_init(&to, 100000000);
+        int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
+        if (local_ret == OSAL_OK) {
+            duration = osal_timer_gettime_nsec() - start;
+        } else {
+            duration = 0;
+        }
+        
+        pool_put(&pec->pool, p_entry);
+        ec_index_put(&pec->idx_q, p_idx);
     }
 
-    return ret_port;
+    return duration;
 }
 
 // port order (ET1100, Section 1, 3.2)
@@ -180,11 +229,11 @@ int ec_dc_config(struct ec *pec) {
 
     osal_uint32_t i;
     int parent;
-    int child;
+    //int child;
     int parenthold = 0;
-    osal_int64_t delay_childs;
-    osal_int64_t delay_previous_slaves;
-    osal_int64_t delay_slave_with_childs;
+    //osal_int64_t delay_childs;
+    //osal_int64_t delay_previous_slaves;
+    //osal_int64_t delay_slave_with_childs;
     osal_uint16_t wkc;
 
     pec->dc.have_dc = 0;
@@ -194,6 +243,9 @@ int ec_dc_config(struct ec *pec) {
     osal_int32_t dc_time0 = 0;
     check_ec_bwr(pec, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
     int prev = -1;
+
+    osal_uint64_t packet_duration = ec_dc_packet_duration(pec);
+    ec_log(100, "DC_CONFIG", "master packet duration %" PRIu64 "\n", packet_duration);
 
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
         ec_slave_ptr(slv, pec, slave);
@@ -220,7 +272,7 @@ int ec_dc_config(struct ec *pec) {
 
             // if branch has no DC slaves consume port on root parent
             if (parenthold && (slv->link_cnt == 1u)) {
-                (void)ec_dc_port_on_parent(pec, parenthold);
+                (void)ec_dc_port_on_parent(&pec->slaves[parenthold]);
                 parenthold = 0;
             }
 
@@ -261,6 +313,17 @@ int ec_dc_config(struct ec *pec) {
         if (slv->entry_port != 0) {
             // we have weird order, processing unit sits behind port 0, so processing is done in wrong order
             ec_log(5, "DC_CONFIG", "slave %2d: entry port is not the first port, check wiring order!\n", slave);
+            osal_uint8_t reverse = 1u;
+            ec_fpwr(pec, slv->fixed_address, 0x936, &reverse, 1, &wkc);
+
+            // latch DC receive time on slaves
+            dc_time0 = 0;
+            check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
+            check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0, &slv->dc.receive_times[0], 4 * sizeof(slv->dc.receive_times[0]), &wkc);
+            for (i = 0u; i < 4u; ++i) {
+                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", 
+                        slave, i, slv->dc.receive_times[i]);
+            }
         }
             
         // remove entry_port from available ports
@@ -285,7 +348,7 @@ int ec_dc_config(struct ec *pec) {
         // find parent with active distributed clocks
         parent = slave;
         do {
-            child = parent;
+            //child = parent;
             parent = pec->slaves[parent].parent;
             if (parent >= 0) {
                 ec_log(100, "DC_CONFIG", "slave %2d: checking parent "
@@ -296,63 +359,42 @@ int ec_dc_config(struct ec *pec) {
                      (pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP))));
 
         ec_log(100, "DC_CONFIG", "slave %2d: parent %d\n", slave, parent);
+            
+        const int t_diff = 20; // ET1100, Section 3, Table 56
+        osal_uint32_t *times_slave  = &slv->dc.receive_times[0];
+        int last_connected_port  = ec_dc_previous_port(slv, slv->entry_port);
+            
+        slv->dc.t_delay_childs = (osal_int32_t)times_slave[last_connected_port] - times_slave[slv->entry_port];
 
-        // no need to calculate propagation delay for distributed clocks master slave
-        slv->pdelay = 0;
         if (parent >= 0) {
+            ec_slave_ptr(slv_parent, pec, parent);
+            osal_uint32_t *times_parent = &slv_parent->dc.receive_times[0];
+
             // find port on parent this slave is connected to
-            slv->port_on_parent = ec_dc_port_on_parent(pec, parent);
+            slv->port_on_parent = ec_dc_port_on_parent(slv_parent);
             if (pec->slaves[parent].link_cnt == 1u) { 
                 slv->port_on_parent = pec->slaves[parent].entry_port;
             }
 
-            ec_log(100, "DC_CONFIG", "slave %2d: port on port_on_parent "
-                    "%d\n", slave, slv->port_on_parent);
-            delay_childs = 0;
-            delay_previous_slaves = 0;
+            int parent_previous_port = ec_dc_previous_port(slv_parent, slv->port_on_parent); 
 
-            int port_on_parent_previous = ec_dc_previous_port(pec, parent, slv->port_on_parent);
-            osal_int64_t port_time_parent = pec->slaves[parent].dc.receive_times[slv->port_on_parent];
-            osal_int64_t port_time_parent_previous = pec->slaves[parent].dc.receive_times[port_on_parent_previous];
-
-            ec_log(100, "DC_CONFIG", "slave %2d: ports %d, %d, times "
-                    "%" PRId64 ", %" PRId64 "\n", slave, slv->port_on_parent, port_on_parent_previous, 
-                    port_time_parent, port_time_parent_previous);
-
-            // this describes the delay from the actual slave and all it's 
-            // childrens
-            delay_slave_with_childs = port_time_parent - port_time_parent_previous;
-
-            // if we have childrens, get the delay of all childs
-            if (slv->link_cnt > 1u) {
-                int prev_port = ec_dc_previous_port(pec, slave, slv->entry_port);
-                delay_childs = pec->slaves[slave].dc.receive_times[prev_port] - pec->slaves[slave].dc.receive_times[slv->entry_port];
-            }
-
-            if (delay_childs > delay_slave_with_childs) {
-                delay_childs = -delay_childs;
-            }
-
-            // get delay of previous slaves on parent, if any
-            if ((child - parent) > 0) {
-                delay_previous_slaves = port_time_parent_previous - pec->slaves[parent].dc.receive_times[pec->slaves[parent].entry_port];
-
-                if (delay_previous_slaves < 0) {
-                    delay_previous_slaves = -delay_previous_slaves;
-                }
-            }
-
-            // calculate current slave delay from delta times
-            // assumption : forward delay equals return delay
-            slv->pdelay = (((delay_slave_with_childs - delay_childs) / 2) + 
-                delay_previous_slaves + pec->slaves[parent].pdelay);
-
-            ec_log(100, "DC_CONFIG", "slave %2d: delay_childs %" PRId64 ", "
-                    "delay_previous_slaves %" PRId64 ", delay_slave_with_childs %" PRId64 "\n", 
-                    slave, delay_childs, delay_previous_slaves, 
-                    delay_slave_with_childs);
-
+            ec_log(100, "DISTRIBUTED_CLOCK", "parent %d, parent_previous_port %d, t_parent_previous %u, t_parent_entry %u\n", 
+                    parent, parent_previous_port, times_parent[parent_previous_port], times_parent[slv_parent->entry_port]);
+            slv->dc.t_delay_with_childs = abs((osal_int32_t)times_parent[slv->port_on_parent] - times_parent[parent_previous_port]);
+            slv->dc.t_delay_slave = abs((slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2);
+            slv->dc.t_delay_parent_previous = times_parent[parent_previous_port] - times_parent[slv_parent->entry_port];
+            slv->pdelay = slv_parent->pdelay + slv->dc.t_delay_parent_previous + slv->dc.t_delay_slave;
+        } else {
+            slv->dc.t_delay_with_childs = packet_duration;
+            slv->dc.t_delay_slave = abs(slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2;
+            slv->dc.t_delay_parent_previous = 0;
+            slv->pdelay = slv->dc.t_delay_slave;
         }
+
+        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, delay_slave %d, "
+                "delay_parent_previous_slaves %d, delay_with_childs %d\n", 
+                slave, slv->dc.t_delay_childs, slv->dc.t_delay_slave, slv->dc.t_delay_parent_previous,
+                slv->dc.t_delay_with_childs);
 
         // write propagation delay
         ec_log(100, "DC_CONFIG", "slave %2d: sysdelay %d\n", slave, slv->pdelay);

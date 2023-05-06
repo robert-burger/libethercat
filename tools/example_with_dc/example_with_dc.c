@@ -42,7 +42,7 @@ int usage(int argc, char **argv) {
     return 0;
 }
 
-int max_print_level = 10;
+int max_print_level = 100;
 
 // only log level <= 10 
 void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
     
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
-        if (ec_mbx_check(&ec, slave, EC_EEPROM_MBX_EOE) == EC_OK) {
+        if (ec_mbx_check(&ec, i, EC_EEPROM_MBX_EOE) == EC_OK) {
             ec_slave_set_eoe_settings(&ec, i, mac, ip_address, subnet, gateway, dns, NULL);
             mac[0]++;
             ip_address[0]++;
@@ -204,7 +204,11 @@ int main(int argc, char **argv) {
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
         ec.slaves[i].assigned_pd_group = 0;
-        ec_slave_set_dc_config(&ec, i, 1, 0, 1000000, 0, 0);
+        if (i == 7) {
+            ec_slave_set_dc_config(&ec, i, 1, 1, 250000, 900000, 150000);
+        } else {
+            ec_slave_set_dc_config(&ec, i, 1, 0, 1000000, 0, 0);
+        }
 
         if ((ec.slaves[i].eeprom.vendor_id = 0x9A) && (ec.slaves[i].eeprom.product_code == 0x01100002)) {
             ec.slaves[i].mbx.map_mbx_state = OSAL_FALSE;
@@ -213,7 +217,7 @@ int main(int argc, char **argv) {
 
     osal_binary_semaphore_init(&duration_tx_sync, NULL);
     cyclic_task_running = OSAL_TRUE;
-    osal_task_attr_t cyclic_task_attr = { "cyclic_task", 0, base_prio, base_affinity };
+    osal_task_attr_t cyclic_task_attr = { "cyclic_task", OSAL_SCHED_POLICY_FIFO, base_prio, base_affinity };
     osal_task_t cyclic_task_hdl;
     osal_task_create(&cyclic_task_hdl, &cyclic_task_attr, cyclic_task, &ec);
 

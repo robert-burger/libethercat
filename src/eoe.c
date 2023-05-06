@@ -757,6 +757,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
         } else {
             pec->tun_running = 1;
             osal_task_attr_t attr;
+            attr.policy = OSAL_SCHED_POLICY_FIFO;
             attr.priority = 5;
             attr.affinity = 0xFF;
             (void)strcpy(&attr.task_name[0], "ecat.tun");

@@ -110,6 +110,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         slv->mbx.slave = slave;
     
         osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_OTHER;
         attr.priority = 0;
         attr.affinity = 0xFF;
         (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.mbx%d", slave);
