@@ -155,9 +155,6 @@ static inline osal_uint8_t ec_dc_port_on_parent(ec_slave_t *slv_parent) {
             break;
         }
     }
-    
-    ec_log(100, "DC_CONFIG", "parent %d, port_on_parent %d\n", 
-            parent, port_on_parent);
 
     return port_on_parent;
 }
