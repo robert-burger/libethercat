@@ -39,6 +39,7 @@ int usage(int argc, char **argv) {
     printf("  -v|--verbose      Set libethercat to print verbose output.\n");
     printf("  -p|--prio         Set base priority for cyclic and rx thread.\n");
     printf("  -a|--affinity     Set CPU affinity for cyclic and rx thread.\n");
+    printf("  -c|--clock        Distributed clock master (master/ref).\n");
     return 0;
 }
 
@@ -58,6 +59,7 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 
 static ec_t ec;
 static osal_uint64_t cycle_rate = 1000000;
+static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
 static osal_binary_semaphore_t duration_tx_sync;
 #define DURATION_TX_COUNT   1000
@@ -131,6 +133,15 @@ int main(int argc, char **argv) {
                 else
                     base_affinity = strtoul(argv[i], NULL, 10);
             }
+        } else if ((strcmp(argv[i], "-c") == 0) ||
+                (strcmp(argv[i], "--clock") == 0)) {
+            if (++i < argc) {
+                if (strcmp(argv[i], "master") == 0) {
+                    dc_mode = dc_mode_master_as_ref_clock;
+                } else {
+                    dc_mode = dc_mode_ref_clock;
+                }
+            }
         } else {
             // interpret as reg:value
             char *tmp = strstr(argv[i], ":");
@@ -181,8 +192,14 @@ int main(int argc, char **argv) {
 
     ec_set_state(&ec, EC_STATE_PREOP);
 
-    ec_configure_dc(&ec, cycle_rate, dc_mode_master_as_ref_clock, ({
+    ec.dc.control.kp      = 0.1;
+    ec.dc.control.ki      = 0.01;
+    ec_configure_dc(&ec, cycle_rate, dc_mode, ({
                 void anon_cb(void *arg, int num) { 
+                    if (dc_mode == dc_mode_ref_clock) {
+                        cycle_rate += ec.dc.timer_correction;
+                    }
+
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
                     osal_uint64_t time_start = duration_tx_pos == 0 ? start_tx_in_ns[DURATION_TX_COUNT-1] : start_tx_in_ns[duration_tx_pos-1];
                     if ((time_end - time_start) > cycle_rate) {
