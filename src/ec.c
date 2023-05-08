@@ -753,20 +753,6 @@ static void ec_scan(ec_t *pec) {
                     ec_log(1, "MASTER_SCAN", "salve %2d: reading al control failed with %d\n", i, local_ret);
                 }
 
-                ec_log(10, "MASTER_SCAN", "slave %2d: closing all ports except 0\n", i);
-                osal_uint32_t dlctl = 0x0000FC03;
-                ec_fpwr(pec, fixed, EC_REG_DLCTL, &dlctl, sizeof(dlctl), &wkc);
-                ec_log(10, "MASTER_SCAN", "slave %2d: check if still something responding\n", i);
-                int ret = ec_brd(pec, EC_REG_TYPE, (osal_uint8_t *)&val, sizeof(val), &wkc); 
-                if (ret == EC_OK) {
-                    ec_log(10, "MASTER_SCAN", "slave %2d: success would expect %d, got %d\n", i, i+1, wkc);
-                } else {
-                    ec_log(10, "MASTER_SCAN", "slave %2d: error in comm\n", i);
-                }
-
-                dlctl = 0x00000001;
-                ec_fpwr(pec, fixed, EC_REG_DLCTL, &dlctl, sizeof(dlctl), &wkc);
-                
                 fixed++;
             } else {
                 ec_log(1, "MASTER_SCAN", "ec_aprd %d returned %d\n", auto_inc, local_ret);
