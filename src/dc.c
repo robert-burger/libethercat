@@ -144,8 +144,8 @@ static osal_uint64_t ec_dc_packet_duration(ec_t *pec) {
 
         p_entry->p_idx = p_idx;
         p_entry->user_cb = ({
-                void anon_cb(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {      
-                    osal_binary_semaphore_post(&p_entry->p_idx->waiter);
+                void anon_cb(struct ec *cb_pec, pool_entry_t *cb_p_entry, ec_datagram_t *cb_p_dg) {      
+                    osal_binary_semaphore_post(&cb_p_entry->p_idx->waiter);
                 } &anon_cb; });
 
         // queue frame and trigger tx
