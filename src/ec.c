@@ -735,6 +735,7 @@ static void ec_scan(ec_t *pec) {
                 pec->slaves[i].sm_set_by_user = 0;
                 pec->slaves[i].subdev_cnt = 0;
                 pec->slaves[i].eeprom.read_eeprom = 0;
+                pec->slaves[i].type = val;
                 TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
                 TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
                 LIST_INIT(&pec->slaves[i].init_cmds);

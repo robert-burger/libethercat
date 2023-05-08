@@ -214,6 +214,7 @@ typedef struct ec_slave {
     osal_int16_t auto_inc_address;   //!< physical bus address
     osal_uint16_t fixed_address;//!< virtual bus address, programmed on start
 
+    osal_uint16_t type;         //!< value of EC_REG_TYPE
     osal_uint8_t sm_ch;         //!< number of sync manager channels
     osal_uint8_t fmmu_ch;       //!< number of fmmu channels
     osal_uint32_t ram_size;     //!< ram size in bytes
