@@ -49,6 +49,8 @@
 
 // mesaure packet duration (important in case of master_as_ref_clock !)
 static inline osal_uint64_t get_packet_duration(ec_t *pec) {
+    assert(pec != NULL);
+
     pool_entry_t *p_entry;
     ec_datagram_t *p_dg;
     idx_entry_t *p_idx;
@@ -174,12 +176,10 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         osal_int64_t tmp_time = 0;
         osal_uint16_t speed_counter_start = 0u;
 
-        // deactivate DC's to stop cyclic operation, enable write access of dc's, read local time
+        // deactivate DC generation, enable write access of dc's, read local time
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
-
-        dc_active = active;
 
         // Calculate DC start time as a sum of the actual EtherCAT master time,
         // the generic first sync delay and the cycle shift. the first sync delay 
@@ -198,6 +198,7 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSPEEDCNT, &speed_counter_start, sizeof(speed_counter_start), &wkc);
         
         // activate distributed clock on slave
+        dc_active = active;
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
         if (dc_active != 0u) {
