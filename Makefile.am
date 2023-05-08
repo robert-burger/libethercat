@@ -9,7 +9,6 @@ SUBDIRS+=tools/ethercatdiag
 SUBDIRS+=tools/eepromtool
 SUBDIRS+=tools/example_with_dc
 SUBDIRS+=tools/foe_download
-SUBDIRS+=tools/dc_test
 endif
 
 pkgconfig_DATA = libethercat.pc
