@@ -229,11 +229,6 @@ int ec_dc_config(struct ec *pec) {
 
     osal_uint32_t i;
     int parent;
-    //int child;
-    int parenthold = 0;
-    //osal_int64_t delay_childs;
-    //osal_int64_t delay_previous_slaves;
-    //osal_int64_t delay_slave_with_childs;
     osal_uint16_t wkc;
 
     pec->dc.have_dc = 0;
@@ -255,26 +250,9 @@ int ec_dc_config(struct ec *pec) {
             ec_log(100, "DC_CONFIG", "slave %2d: not using DC (use %d, features 0x%X)\n", 
                     slave, slv->dc.use_dc, slv->features);
 
-            slv->dc.use_dc = 0;
-
             // dc not available or not activated
-            for (i = 0u; i < 4u; ++i) {
-                slv->dc.receive_times[i] = 0;
-            }
-
-            parent = slv->parent;
-            
-            // if non DC slave found on first position on branch hold root 
-            // parent
-            if ((parent > 0) && (pec->slaves[parent].link_cnt > 2u)) {
-                parenthold = parent;
-            }
-
-            // if branch has no DC slaves consume port on root parent
-            if (parenthold && (slv->link_cnt == 1u)) {
-                (void)ec_dc_port_on_parent(&pec->slaves[parenthold]);
-                parenthold = 0;
-            }
+            slv->dc.use_dc = 0;
+            for (i = 0u; i < 4u; ++i) { slv->dc.receive_times[i] = 0; }
 
             continue; // check next slave
         }
@@ -291,8 +269,6 @@ int ec_dc_config(struct ec *pec) {
             slv->dc.prev = prev;
         }
 
-        // this branch has DC slave so remove parenthold 
-        parenthold = 0;
         prev = slave;
 
         // read receive time of all ports and try to find entry port
@@ -313,16 +289,20 @@ int ec_dc_config(struct ec *pec) {
         if (slv->entry_port != 0) {
             // we have weird order, processing unit sits behind port 0, so processing is done in wrong order
             ec_log(5, "DC_CONFIG", "slave %2d: entry port is not the first port, check wiring order!\n", slave);
-            osal_uint8_t reverse = 1u;
-            ec_fpwr(pec, slv->fixed_address, 0x936, &reverse, 1, &wkc);
 
-            // latch DC receive time on slaves
-            dc_time0 = 0;
-            check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
-            check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0, &slv->dc.receive_times[0], 4 * sizeof(slv->dc.receive_times[0]), &wkc);
-            for (i = 0u; i < 4u; ++i) {
-                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", 
-                        slave, i, slv->dc.receive_times[i]);
+            // this is only needed on ET1200
+            if (slv->type == 0x1200) {
+                osal_uint8_t reverse = 1u;
+                ec_fpwr(pec, slv->fixed_address, 0x936, &reverse, 1, &wkc);
+
+                // latch DC receive time on slaves
+                dc_time0 = 0;
+                check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
+                check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0, &slv->dc.receive_times[0], 4 * sizeof(slv->dc.receive_times[0]), &wkc);
+                for (i = 0u; i < 4u; ++i) {
+                    ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", 
+                            slave, i, slv->dc.receive_times[i]);
+                }
             }
         }
             
@@ -346,17 +326,12 @@ int ec_dc_config(struct ec *pec) {
         }
 
         // find parent with active distributed clocks
-        parent = slave;
-        do {
-            //child = parent;
-            parent = pec->slaves[parent].parent;
-            if (parent >= 0) {
-                ec_log(100, "DC_CONFIG", "slave %2d: checking parent "
-                        "%d, dc 0x%X\n", slave, parent, pec->slaves[parent].features);
+        for (parent = slv->parent; parent > 0; parent = pec->slaves[parent].parent) {
+            ec_log(100, "DC_CONFIG", "slave %2d: checking parent %d, dc 0x%X\n", slave, parent, pec->slaves[parent].features);
+            if ((pec->slaves[parent].dc.use_dc) && (pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP)) {
+                break;
             }
-        } while (!((parent == -1) || 
-                    ((pec->slaves[parent].dc.use_dc) && 
-                     (pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP))));
+        }
 
         ec_log(100, "DC_CONFIG", "slave %2d: parent %d\n", slave, parent);
             
@@ -383,14 +358,18 @@ int ec_dc_config(struct ec *pec) {
             slv->dc.t_delay_with_childs = abs((osal_int32_t)times_parent[slv->port_on_parent] - times_parent[parent_previous_port]);
             slv->dc.t_delay_slave = abs((slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2);
             slv->dc.t_delay_parent_previous = times_parent[parent_previous_port] - times_parent[slv_parent->entry_port];
-            slv->pdelay = slv_parent->pdelay + slv->dc.t_delay_parent_previous + slv->dc.t_delay_slave;
+            if (slv->entry_port == 0) {
+                slv->pdelay = slv_parent->pdelay + slv->dc.t_delay_parent_previous + slv->dc.t_delay_slave;
+            } else {
+                slv->pdelay = slv_parent->pdelay + (abs(times_slave[slv->entry_port] - times_slave[0] + t_diff) / 2);
+            }
         } else {
             slv->dc.t_delay_with_childs = packet_duration;
             slv->dc.t_delay_slave = abs(slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2;
             slv->dc.t_delay_parent_previous = 0;
             slv->pdelay = slv->dc.t_delay_slave;
         }
-
+        
         ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, delay_slave %d, "
                 "delay_parent_previous_slaves %d, delay_with_childs %d\n", 
                 slave, slv->dc.t_delay_childs, slv->dc.t_delay_slave, slv->dc.t_delay_parent_previous,
