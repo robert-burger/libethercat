@@ -56,7 +56,7 @@ class MainProject(ConanFile):
         "ecat_device": "sock_raw",
     }
 
-    generators = "pkg_config"
+    generators = "pkg_config", "cmake_find_package"
     requires = [ "libosal/0.0.2@common/unstable", ]
 
     def source(self):
