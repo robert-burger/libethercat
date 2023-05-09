@@ -12,23 +12,32 @@
  * slaves to enable the sync0 and/or sync1 pulse generation.
  */
 
-
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 /* autoconf header goes first */
