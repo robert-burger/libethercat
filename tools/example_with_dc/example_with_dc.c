@@ -112,6 +112,8 @@ int main(int argc, char **argv) {
     long reg = 0, val = 0;
     int base_prio = 60;
     int base_affinity = 0x8;
+    double dc_kp = 0.1;
+    double dc_ki = 0.01;
 
     for (i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "-i") == 0) ||
@@ -140,6 +142,18 @@ int main(int argc, char **argv) {
                     dc_mode = dc_mode_master_as_ref_clock;
                 } else {
                     dc_mode = dc_mode_ref_clock;
+
+                    if ((i+1) < argc) {
+                        if (argv[i+1][0] != '-') {
+                            i++;
+                            dc_kp = strtod(argv[i], NULL);
+
+                            if (argv[i+1][0] != '-') {
+                                i++;
+                                dc_ki = strtod(argv[i], NULL);
+                            }
+                        }
+                    }
                 }
             }
         } else {
@@ -192,8 +206,8 @@ int main(int argc, char **argv) {
 
     ec_set_state(&ec, EC_STATE_PREOP);
 
-    ec.dc.control.kp      = 0.1;
-    ec.dc.control.ki      = 0.01;
+    ec.dc.control.kp = dc_kp;
+    ec.dc.control.ki = dc_ki;
     ec_configure_dc(&ec, cycle_rate, dc_mode, ({
                 void anon_cb(void *arg, int num) { 
                     if (dc_mode == dc_mode_ref_clock) {
