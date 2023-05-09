@@ -324,7 +324,7 @@ int ec_dc_config(struct ec *pec) {
 
         // store our system time offsets if we got the dc master clock
         if (pec->dc.master_address == slv->fixed_address) {
-            pec->dc.dc_sto = dcsof;
+            pec->dc.dc_sto = 0; // we did a reset 5 lines above
             pec->dc.rtc_sto = osal_timer_gettime_nsec();
             ec_log(100, "DC_CONFIG", "initial dc_sto %" PRId64 ", rtc_sto %" PRId64 "\n", pec->dc.dc_sto, pec->dc.rtc_sto);
         }
@@ -346,19 +346,15 @@ int ec_dc_config(struct ec *pec) {
         slv->dc.t_delay_childs = (osal_int32_t)times_slave[last_connected_port] - times_slave[slv->entry_port];
 
         if (parent >= 0) {
+            int parent_previous_port;
+
             ec_slave_ptr(slv_parent, pec, parent);
             osal_uint32_t *times_parent = &slv_parent->dc.receive_times[0];
 
             // find port on parent this slave is connected to
             slv->port_on_parent = get_and_consume_next_available_port(slv_parent, slv_parent->entry_port);
-            if (pec->slaves[parent].link_cnt == 1u) { 
-                slv->port_on_parent = pec->slaves[parent].entry_port;
-            }
+            parent_previous_port = get_previous_active_port(slv_parent, slv->port_on_parent); 
 
-            int parent_previous_port = get_previous_active_port(slv_parent, slv->port_on_parent); 
-
-            ec_log(100, "DISTRIBUTED_CLOCK", "parent %d, parent_previous_port %d, t_parent_previous %u, t_parent_entry %u\n", 
-                    parent, parent_previous_port, times_parent[parent_previous_port], times_parent[slv_parent->entry_port]);
             slv->dc.t_delay_with_childs = abs((osal_int32_t)times_parent[slv->port_on_parent] - times_parent[parent_previous_port]);
             slv->dc.t_delay_slave = abs((slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2);
             slv->dc.t_delay_parent_previous = times_parent[parent_previous_port] - times_parent[slv_parent->entry_port];
@@ -374,10 +370,8 @@ int ec_dc_config(struct ec *pec) {
             slv->pdelay = slv->dc.t_delay_slave;
         }
         
-        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, delay_slave %d, "
-                "delay_parent_previous_slaves %d, delay_with_childs %d\n", 
-                slave, slv->dc.t_delay_childs, slv->dc.t_delay_slave, slv->dc.t_delay_parent_previous,
-                slv->dc.t_delay_with_childs);
+        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, delay_slave %d, delay_parent_previous_slaves %d, delay_with_childs %d\n", 
+                slave, slv->dc.t_delay_childs, slv->dc.t_delay_slave, slv->dc.t_delay_parent_previous, slv->dc.t_delay_with_childs);
 
         // write propagation delay
         ec_log(100, "DC_CONFIG", "slave %2d: sysdelay %d\n", slave, slv->pdelay);
