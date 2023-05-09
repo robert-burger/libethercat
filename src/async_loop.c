@@ -234,7 +234,7 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
 
     if (osal_timer_expired(&paml->next_check_group) == OSAL_OK) {
         // no need to check now
-        ec_log(100, "ASYNC_CHECK_GROUP", "group %d: not checking now, timeout not reached\n", gid);
+        ec_log(200, "ASYNC_CHECK_GROUP", "group %d: not checking now, timeout not reached\n", gid);
     } else {
         osal_timer_init(&paml->next_check_group, 1000000000);
 
@@ -290,6 +290,7 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
     paml->loop_running = 1;
     if (osal_timer_gettime(&paml->next_check_group) == 0) { 
         osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_OTHER;
         attr.priority = 0;
         attr.affinity = 0xFF;
         (void)strcpy(&attr.task_name[0], "ecat.async");

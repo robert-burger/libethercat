@@ -86,6 +86,7 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
     if (ret == EC_OK) {
         phw->rxthreadrunning = 1;
         osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_FIFO;
         attr.priority = prio;
         attr.affinity = cpumask;
         (void)strcpy(&attr.task_name[0], "ecat.rx");

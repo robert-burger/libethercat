@@ -598,6 +598,7 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 pec->slaves[slave].worker_arg.state = state;
 
                 osal_task_attr_t attr;
+                attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
                 (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
@@ -648,6 +649,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
                 pec->slaves[slave].worker_arg.state = state;
 
                 osal_task_attr_t attr;
+                attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
                 (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
@@ -733,6 +735,7 @@ static void ec_scan(ec_t *pec) {
                 pec->slaves[i].sm_set_by_user = 0;
                 pec->slaves[i].subdev_cnt = 0;
                 pec->slaves[i].eeprom.read_eeprom = 0;
+                pec->slaves[i].type = val;
                 TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
                 TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
                 LIST_INIT(&pec->slaves[i].init_cmds);
