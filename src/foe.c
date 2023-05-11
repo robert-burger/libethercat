@@ -440,8 +440,8 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 
                 (void)ec_mbx_next_counter(pec, slave, &counter);
 
-                ec_log(10, "FOE_WRITE", "slave %2d: sending file offset %" PRIu64 ", bytes %" PRIu64 "\n", 
-                        slave, file_offset, bytes_read);
+                ec_log(10, "FOE_WRITE", "slave %2d: sending file offset %" PRIu64 ", bytes %4" PRIu64 ", progress %6.2f\n", 
+                        slave, file_offset, bytes_read, ((double)file_offset/file_data_len) * 100);
 
                 file_offset += bytes_read;
 
