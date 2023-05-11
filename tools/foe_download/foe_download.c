@@ -95,7 +95,9 @@ void propagation_delays(ec_t *pec) {
     ret = ec_set_state(pec, EC_STATE_SAFEOP);
 }
 
-int max_print_level = 1000;
+int max_print_level = 10;
+static char message[512];
+int new_line = 0;
 
 // only log level <= 10 
 void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
@@ -105,7 +107,20 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 
     va_list ap;
     va_start(ap, format);
-    vfprintf(stderr, format, ap);
+    if (strstr(format, "sending file offset") != NULL) {
+        vsnprintf(&message[1], 511, format, ap);
+        message[0] = '\r';
+        message[strlen(message)-1] = '\0';
+        fprintf(stderr, message);
+        new_line = 1;
+    } else {
+        if (new_line == 1) {
+            new_line = 0;
+            fprintf(stderr, "\n");
+        }
+
+        vfprintf(stderr, format, ap);
+    }
     va_end(ap);
 };
 
@@ -186,6 +201,8 @@ int main(int argc, char **argv) {
 //                val = strtol(valstr, NULL, 16);
 //            } else 
 //                printf("command \"%s\" not understood\n", argv[i]);
+        } else if (argv[i][0] != '-') {
+            fn = argv[i];
         }
     }
     
@@ -199,18 +216,17 @@ int main(int argc, char **argv) {
 
     ret = ec_open(&ec, intf, 90, 1, 1);
 
-    ec_set_state(&ec, EC_STATE_INIT);
-    ec_set_state(&ec, EC_STATE_PREOP);
-    osal_sleep(10 * 1E9);
+//    ec_set_state(&ec, EC_STATE_INIT);
+//    ec_set_state(&ec, EC_STATE_PREOP);
+//    osal_sleep(10 * 1E9);
     ec_set_state(&ec, EC_STATE_INIT);
     ec_set_state(&ec, EC_STATE_BOOT);
 
-    osal_sleep(10 * 1E9);
     osal_uint8_t *file_data;
     osal_size_t file_data_len;
     const osal_char_t *error_message;
 
-    FILE *f = fopen("FoEFW 01.02.17.02 24Jul2022B00G 256K .abs", "rb");
+    FILE *f = fopen(fn, "rb");
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
@@ -224,8 +240,8 @@ int main(int argc, char **argv) {
     file_data = (osal_uint8_t *)&string[0];
     file_data_len = fsize;
 
-    printf("got fsize: %ld\n", file_data_len);
-    ec_foe_write(&ec, 0, 0xF0EACCEC, "FoEFW 01.02.17.02 24Jul2022", file_data, 
+    //printf("got fsize: %ld\n", file_data_len);
+    ec_foe_write(&ec, slave, 0x0, "ECATFW__slave.bin", file_data, 
         file_data_len, &error_message);
 
 //    if (show_propagation_delays)
