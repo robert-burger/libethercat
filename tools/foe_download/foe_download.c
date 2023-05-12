@@ -27,72 +27,8 @@ void no_log(int lvl, void *user, const char *format, ...)
 
 
 int usage(int argc, char **argv) {
-    printf("%s -i|--interface <intf> [-p|--propagation-delay]\n", argv[0]);
+    printf("%s -i|--interface <intf> [-r|--read] [-w|--write] -s|--slave <nr> [-p|--password <pw>] from to\n", argv[0]);
     return 0;
-}
-
-void propagation_delays(ec_t *pec) {
-    int slave, ret = ec_set_state(pec, EC_STATE_INIT);
-    ec_dc_config(pec);
-
-    printf("propagation delays for distributed clocks: \n\n");
-
-    printf("ethercat master\n");
-
-    ec_create_pd_groups(pec, 1);
-    
-    for(slave = 0; slave < ec_get_slave_count(pec); ++slave) {
-#define print_prefix() {                                    \
-        int tmp_parent = pec->slaves[slave].parent;         \
-        while (tmp_parent >= 0) {                           \
-            printf("|   ");                                 \
-            tmp_parent = pec->slaves[tmp_parent].parent;    \
-        } }
-
-        ec_slave_t *slv = &pec->slaves[slave];
-        slv->assigned_pd_group = 0;
-
-        print_prefix();
-        printf("|---");
-        printf("slave %2d: ", 
-                slave);
-
-        if ((slv->eeprom.general.name_idx > 0) &&
-                (slv->eeprom.general.name_idx <= slv->eeprom.strings_cnt)) {
-            printf("%s", slv->eeprom.strings[slv->eeprom.general.name_idx-1]);
-        }
-        printf("\n");
-        
-
-        print_prefix();
-        printf("|   ");
-        printf("|         dc support %X, propagation delay %d [ns]\n", 
-                (slv->features & 0x04) == 0x04, 
-                slv->pdelay);
-
-        print_prefix();
-        printf("|   ");
-        printf("|         link's %d, active ports %d, ptype 0x%X\n",
-                slv->link_cnt,
-                slv->active_ports,
-                slv->ptype);
-
-        print_prefix();
-        printf("|   ");
-        printf("|         sync manager channel's %d, fmmu channel's %d\n", 
-                slv->sm_ch,
-                slv->fmmu_ch);      
-        
-        print_prefix();
-        printf("|   ");
-        printf("|         auto inc adr %d, fixed addr %d\n", 
-                slv->auto_inc_address,
-                slv->fixed_address);      
-    }
-    
-    ret = ec_set_state(pec, EC_STATE_PREOP);
-
-    ret = ec_set_state(pec, EC_STATE_SAFEOP);
 }
 
 int max_print_level = 10;
@@ -107,7 +43,9 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 
     va_list ap;
     va_start(ap, format);
-    if (strstr(format, "sending file offset") != NULL) {
+    if (    (strstr(format, "sending file offset") != NULL) ||
+            (strstr(format, "retrieving file offset") != NULL) )
+    {
         vsnprintf(&message[1], 511, format, ap);
         message[0] = '\r';
         message[strlen(message)-1] = '\0';
@@ -124,27 +62,10 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
     va_end(ap);
 };
 
-void mii_read(int fd, ec_t *pec, int slave, int phy) {
-    int i;
-    for (i = 0; i < 0x20; ++i) {
-        uint16_t data = 0;
-        ec_miiread(pec, slave, phy, i, &data);
-#if LIBETHERCAT_BUILD_POSIX == 1
-        int ret = write(fd, &data, sizeof(data));
-
-        if (ret == -1) {
-            perror("write returned:");
-            break;
-        }
-#endif
-    }
-}
-
 enum tool_mode {
     mode_undefined,
     mode_read,
     mode_write, 
-    mode_test
 };
     
 ec_t ec;
@@ -154,7 +75,8 @@ ec_t ec;
 int main(int argc, char **argv) {
     int ret, slave, i, phy = 0;
 
-    char *intf = NULL, *fn = NULL;
+    char *intf = NULL, *first_fn = NULL, *second_fn = NULL;
+    uint32_t password = 0;
     int show_propagation_delays = 0;
     
     long reg = 0, val = 0;
@@ -163,46 +85,33 @@ int main(int argc, char **argv) {
 //    ec_log_func = &no_log;
 
     for (i = 1; i < argc; ++i) {
-        if ((strcmp(argv[i], "-i") == 0) ||
-                (strcmp(argv[i], "--interface") == 0)) {
-            if (++i < argc)
+        if ((strcmp(argv[i], "-i") == 0) || (strcmp(argv[i], "--interface") == 0)) {
+            if (++i < argc) {
                 intf = argv[i];
-//        } else if ((strcmp(argv[i], "-p") == 0) ||
-//                (strcmp(argv[i], "--propagation-delays") == 0)) {
-//            show_propagation_delays = 1; 
-//        } else if ((strcmp(argv[i], "-r") == 0) ||
-//                (strcmp(argv[i], "--read") == 0)) {
-//            mode = mode_read; 
-//        } else if ((strcmp(argv[i], "-t") == 0) ||
-//                (strcmp(argv[i], "--test") == 0)) {
-//            mode = mode_test; 
-//        } else if ((strcmp(argv[i], "-w") == 0) ||
-//                (strcmp(argv[i], "--write") == 0)) {
-//            mode = mode_write; 
-        } else if ((strcmp(argv[i], "-s") == 0) ||
-                (strcmp(argv[i], "--slave") == 0)) {
-            if (++i < argc)
+            }
+        } else if ((strcmp(argv[i], "-r") == 0) || (strcmp(argv[i], "--read") == 0)) {
+            mode = mode_read; 
+        } else if ((strcmp(argv[i], "-w") == 0) || (strcmp(argv[i], "--write") == 0)) {
+            mode = mode_write; 
+        } else if ((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--slave") == 0)) {
+            if (++i < argc) {
                 slave = atoi(argv[i]);
-//        } else if ((strcmp(argv[i], "-p") == 0) ||
-//                (strcmp(argv[i], "--phy-address") == 0)) {
-//            if (++i < argc)
-//                phy = atoi(argv[i]);
-//        } else if ((strcmp(argv[i], "-v") == 0) || 
-//                (strcmp(argv[i], "--verbose") == 0)) {
-//            max_print_level = 100;
-//        } else {
-//            // interpret as reg:value
-//            char *tmp = strstr(argv[i], ":");
-//            if (tmp) {
-//                char *regstr = strndup(argv[i], (int)(tmp-argv[i]));
-//                char *valstr = strndup(&tmp[1], (int)(strlen(argv[i]))-strlen(regstr)-1);
-//                printf("got reg %s, val %s\n", regstr, valstr);
-//                reg = strtol(regstr, NULL, 16);
-//                val = strtol(valstr, NULL, 16);
-//            } else 
-//                printf("command \"%s\" not understood\n", argv[i]);
-        } else if (argv[i][0] != '-') {
-            fn = argv[i];
+            }
+        } else if ((strcmp(argv[i], "-p") == 0) || (strcmp(argv[i], "--password") == 0)) {
+            if (++i < argc) {
+                if (argv[i][0] == '0' && (argv[i][1] == 'x' || argv[i][1] == 'X')) {
+                    password = strtoul(argv[i], NULL, 16);
+                } else {
+                    password = strtoul(argv[i], NULL, 10);
+                }
+            }
+        } else if ((strcmp(argv[i], "-v") == 0) || 
+                (strcmp(argv[i], "--verbose") == 0)) {
+            max_print_level = 100;
+        } else if ((argv[i][0] != '-') && (first_fn == NULL)) {
+            first_fn = argv[i];
+        } else if ((argv[i][0] != '-') && (second_fn == NULL)) {
+            second_fn = argv[i];
         }
     }
     
@@ -216,9 +125,6 @@ int main(int argc, char **argv) {
 
     ret = ec_open(&ec, intf, 90, 1, 1);
 
-//    ec_set_state(&ec, EC_STATE_INIT);
-//    ec_set_state(&ec, EC_STATE_PREOP);
-//    osal_sleep(10 * 1E9);
     ec_set_state(&ec, EC_STATE_INIT);
     ec_set_state(&ec, EC_STATE_BOOT);
 
@@ -226,51 +132,40 @@ int main(int argc, char **argv) {
     osal_size_t file_data_len;
     const osal_char_t *error_message;
 
-    FILE *f = fopen(fn, "rb");
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
+    if (mode == mode_read) {
+        osal_uint8_t *string = NULL;
+        osal_size_t fsize = 0;
+        const osal_char_t *err;
 
-    char *string = malloc(fsize + 1);
-    fread(string, fsize, 1, f);
-    fclose(f);
+        ec_foe_read(&ec, slave, password, first_fn, &string, &fsize, &err);
 
-    string[fsize] = 0;
+        if (string != NULL) {        
+            if (strcmp(second_fn, ".") == 0) { second_fn = first_fn; }
+            FILE *f = fopen(second_fn, "wb");
+            fwrite(string, fsize, 1, f);
+            fclose(f);
 
-    file_data = (osal_uint8_t *)&string[0];
-    file_data_len = fsize;
+            free(string);
+        } else {
+            printf("file read was not successfull: data %p, fsize %d, err %s\n", string, fsize, err);
+        }
+    } else if (mode == mode_write) {
+        FILE *f = fopen(first_fn, "rb");
+        fseek(f, 0, SEEK_END);
+        long fsize = ftell(f);
+        fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
 
-    //printf("got fsize: %ld\n", file_data_len);
-    ec_foe_write(&ec, slave, 0x0, "ECATFW__slave.bin", file_data, 
-        file_data_len, &error_message);
+        char *string = malloc(fsize + 1);
+        fread(string, fsize, 1, f);
+        fclose(f);
 
-//    if (show_propagation_delays)
-//        propagation_delays(&ec);
-//
-//    int j, fd;
-//    
-//    if (mode == mode_read) {
-//        if (fn) {
-//#if LIBETHERCAT_BUILD_POSIX == 1
-//            fd = open(fn, O_CREAT | O_RDWR);
-//#endif
-//            mii_read(fd, &ec, slave, phy);
-//#if LIBETHERCAT_BUILD_POSIX == 1
-//            close(fd);
-//#endif
-//        } else
-//            mii_read(1, &ec, slave, phy);
-//    } else if (mode == mode_write) {
-//        uint16_t mii_value = val;
-//        ec_miiwrite(&ec, slave, phy, reg, &mii_value);
-//    } else if (mode == mode_test) {
-//        printf("now in test mode...\n");
-//        while (1) {
-//            uint16_t tmp, wkc;
-//            ec_brd(&ec, 0, &tmp, 2, &wkc);
-//        }
-//    }
-//        
+        string[fsize] = 0;
+
+        file_data = (osal_uint8_t *)&string[0];
+        file_data_len = fsize;
+
+        ec_foe_write(&ec, slave, password, second_fn, file_data, file_data_len, &error_message);
+    }
 
     ec_close(&ec);
 
