@@ -296,6 +296,9 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ec_log(10, "FOE_READ", "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
                 } else {
                     osal_size_t len = read_buf_data->mbx_hdr.length - 6u;
+                
+                    ec_log(10, "FOE_READ", "slave %2d: retrieving file offset %" PRIu64"\n", slave, *file_data_len);
+
                     // cppcheck-suppress misra-c2012-21.3
                     *file_data = (osal_uint8_t *)realloc(*file_data, *file_data_len + len);
                     (void)memcpy(&(*file_data)[*file_data_len], &read_buf_data->data[0], len); 
