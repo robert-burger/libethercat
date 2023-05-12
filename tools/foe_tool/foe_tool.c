@@ -27,7 +27,13 @@ void no_log(int lvl, void *user, const char *format, ...)
 
 
 int usage(int argc, char **argv) {
-    printf("%s -i|--interface <intf> [-r|--read] [-w|--write] -s|--slave <nr> [-p|--password <pw>] from to\n", argv[0]);
+    printf("%s -i|--interface <intf> [-v|--verbose] [-r|--read] [-w|--write] -s|--slave <nr> [-p|--password <pw>] from to\n", argv[0]);
+    printf("  -i|--interface <intf>     EtherCAT master interface to use.\n");
+    printf("  -v|--verbose              Set libethercat to print verbose output.\n");
+    printf("  -r|--read                 Tool read/upload mode.\n");
+    printf("  -w|--write                Tool write/download mode.\n");
+    printf("  -s|--slave <nr>           Slave number for upload/download\n");
+    printf("  -p|--password <pw>        File password (32-bit unsigned number, either decimal or hex (e.g. 0x12345678))\n");
     return 0;
 }
 
