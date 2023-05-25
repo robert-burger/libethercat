@@ -1,2 +1,18 @@
 @Library('rmc-jenkins-libraries-v2-no-changelog') _
 rmcBuild.auto()
+
+node('default') {
+    stage('create and publish gh-pages') {
+        def context = conan.init()
+        context.getGitRepo().checkout()
+        sshagent(credentials: [context.getConfig().gitCredentialsId]) {
+            lock("gh-pages-${context.getGitRepo().getOrganization()}-${context.getGitRepo().getName()}") {
+                sh """
+                export CONAN_USER_HOME=${pwd()}/conan_home
+                cd repo_dir
+                make -f Makefile.doc gh-pages
+                """
+            }
+        }
+    }
+}
