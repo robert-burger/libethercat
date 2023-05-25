@@ -1,7 +1,6 @@
-[![Build Status](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/badge/icon)](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/)
+# libethercat [![Build Status](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/badge/icon)](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/)
 
-# libethercat
-@mainpage EtherCAT master library  
+EtherCAT-master library  
 
 This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface. 
 
