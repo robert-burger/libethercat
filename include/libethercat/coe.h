@@ -48,7 +48,7 @@
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
 
-/** \defgroup coe_group CoE
+/** \defgroup coe_group CanOpen over Ethercat (CoE)
  *
  * This modules contains functions on how to communicate to the CANOpen over EtherCAT mailbox.
  *

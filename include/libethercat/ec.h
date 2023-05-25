@@ -54,9 +54,16 @@
 #include "libethercat/async_loop.h"
 #include "libethercat/eeprom.h"
 
-#define EC_SHORT_TIMEOUT_MBX        10000000
-#define EC_DEFAULT_TIMEOUT_MBX      1000000000
-#define EC_DEFAULT_DELAY            2000000
+/** \defgroup ec_group EC Master
+ *
+ * This modules contains main EtherCAT master functions.
+ *
+ * @{
+ */
+
+#define EC_SHORT_TIMEOUT_MBX        (10000000)          //!< \brief Short timeout value in [ns].
+#define EC_DEFAULT_TIMEOUT_MBX      (1000000000)        //!< \brief Default timeout value in [ns].
+#define EC_DEFAULT_DELAY            (2000000)           //!< \brief Default delay in [ns].
 
 struct ec;
 struct ec_slave;
@@ -64,7 +71,7 @@ typedef struct ec_slave ec_slave_t;
     
 //! process data group structure
 typedef struct ec_pd_group {
-    osal_uint32_t group;
+    osal_uint32_t group;            //!< Number of group.
     osal_uint32_t log;              //!< logical address
                                     /*!<
                                      * This defines the logical start address
@@ -127,7 +134,7 @@ typedef struct ec_pd_group {
 typedef struct ec {
     hw_t hw;                        //!< pointer to hardware interface
 
-    pool_entry_t dg_entries[LEC_MAX_DATAGRAMS];
+    pool_entry_t dg_entries[LEC_MAX_DATAGRAMS]; //!< static datagrams for datagram pool.
     pool_t pool;                    //!< datagram pool
                                     /*!<
                                      * All EtherCAT datagrams will be pre-
@@ -149,10 +156,10 @@ typedef struct ec {
     osal_int64_t main_cycle_interval;
                                     //!< \brief Expected timer increment of one EtherCAT cycle in [ns].
     
-    pool_entry_t mbx_mp_recv_free_entries[LEC_MAX_MBX_ENTRIES];
-    pool_entry_t mbx_mp_send_free_entries[LEC_MAX_MBX_ENTRIES];
-    pool_t mbx_message_pool_recv_free; 
-    pool_t mbx_message_pool_send_free;  //!< \brief Pool with free mailbox buffers.
+    pool_entry_t mbx_mp_recv_free_entries[LEC_MAX_MBX_ENTRIES]; //!< \brief static buffers for mailbox receive pool.
+    pool_entry_t mbx_mp_send_free_entries[LEC_MAX_MBX_ENTRIES]; //!< \brief static buffers for mailbox send pool.
+    pool_t mbx_message_pool_recv_free;  //!< \brief Pool with free receive mailbox buffers.
+    pool_t mbx_message_pool_send_free;  //!< \brief Pool with free send mailbox buffers.
 
     osal_uint16_t slave_cnt;        //!< count of found EtherCAT slaves
     ec_slave_t slaves[LEC_MAX_SLAVES];             //!< array with EtherCAT slaves
@@ -192,6 +199,15 @@ extern "C" {
 extern void *ec_log_func_user;
 extern void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...);
 
+//! \brief EtherCAT logging function 
+/*!
+ * This function does all EtherCAT logging. 
+ *
+ * \param[in]   lvl         Log level of message.
+ * \param[in]   pre         String prepended to message.
+ * \param[in]   format      String format.
+ * \param[in]   ...         String format arguments.
+ */
 void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
 
 //! \brief Open ethercat master.
@@ -201,8 +217,8 @@ void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) __a
  * receive thread is spawned with given priority (@p prio) and affinity (@p affinity). 
  * Ensure that they meet your realtime requirements.
  *
- * After the successfull completion of \link ec_open \endlink an EtherCAT 
- * scan should be performed with \link ec_scan \endlink.
+ * After the successfull completion a switch to EC_STATE_INIT will perform 
+ * a initial scan of the bus.
  *
  * \param[out] pec          Ethercat master instance pointer.
  * \param[in]  ifname       Ethercat master interface name.
@@ -304,8 +320,8 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
  */
 int ec_set_state(ec_t *pec, ec_state_t state);
 
-#define ec_group_will_be_sent(pec, group) (int)((((pec)->pd_groups[(group)].divisor_cnt+1) % (pec)->pd_groups[(group)].divisor) == 0)
-#define ec_group_was_sent(pec, group)     (int)((pec)->pd_groups[(group)].divisor_cnt == 0)
+#define ec_group_will_be_sent(pec, group) (int)((((pec)->pd_groups[(group)].divisor_cnt+1) % (pec)->pd_groups[(group)].divisor) == 0)   //!< \brief Group datagram will be send on next time step.
+#define ec_group_was_sent(pec, group)     (int)((pec)->pd_groups[(group)].divisor_cnt == 0)                                             //!< \brief Group datagram was sent.
 
 //! send process data with logical commands
 /*!
@@ -341,60 +357,80 @@ int ec_get_slave_count(ec_t *pec);
 };
 #endif
 
+//! \brief Macro for EtherCAT address generation.
 #define ec_to_adr(ado, adp) \
     ((osal_uint32_t)(adp) << 16u) | ((ado) & 0xFFFFu)
 
+//! \brief Perform a broadcast read (BRD).
 #define ec_brd(pec, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_BRD, ((osal_uint32_t)(ado) << 16u), \
             (osal_uint8_t *)(data), (datalen), (wkc))
+
+//! \brief Perform a broadcast write (BWR).
 #define ec_bwr(pec, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_BWR, ((osal_uint32_t)(ado) << 16u), \
             (osal_uint8_t *)(data), (datalen), (wkc))
+
+//! \brief Perform a broadcast read/write (BRW).
 #define ec_brw(pec, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_BRW, ((osal_uint32_t)(ado) << 16u), \
             (osal_uint8_t *)(data), (datalen), (wkc))
 
+//! \brief Perform a positional physical read (APRD)
 #define ec_aprd(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APRD, ((osal_uint32_t)(ado) << 16u) | \
             (*(osal_uint16_t *)&(adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
+
+//! \brief Perform a positional physical write (APWR)
 #define ec_apwr(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APWR, ((osal_uint32_t)(ado) << 16u) | \
             (*(osal_uint16_t *)&(adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
+
+//! \brief Perform a positional physical read/write (APRW)
 #define ec_aprw(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_APRW, ((osal_uint32_t)(ado) << 16u) | \
             (*(osal_uint16_t *)&(adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 
+//! \brief Perform a configured-address physical read (FPRD)
 #define ec_fprd(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_FPRD, ((osal_uint32_t)(ado) << 16lu) | \
             (osal_uint32_t)((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
+
+//! \brief Perform a configured-address physical write (FPWR)
 #define ec_fpwr(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_FPWR, ((osal_uint32_t)(ado) << 16u) | \
             ((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
+
+//! \brief Perform a configured-address physical read/write (FPRW)
 #define ec_fprw(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_FPRW, ((osal_uint32_t)(ado) << 16u) | \
             ((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
+
+//! \brief Perform a configured-address physical read/multiple-write (FPMW)
 #define ec_frmw(pec, adp, ado, data, datalen, wkc) \
     ec_transceive((pec), EC_CMD_FRMW, ((osal_uint32_t)(ado) << 16u) | \
             ((adp) & 0xFFFFu), (osal_uint8_t *)(data), (datalen), (wkc))
 
+//! \brief Macro that checks return value and prints message in error case.
 #define check_ret(fcn, ...) { \
     if (fcn(__VA_ARGS__) != EC_OK) { \
         ec_log(1, __func__, "" #fcn "(" #__VA_ARGS__ ") failed!\n"); \
     } }
 
-#define check_ec_bwr(...)  check_ret(ec_bwr, __VA_ARGS__)
-#define check_ec_brd(...)  check_ret(ec_brd, __VA_ARGS__)
-#define check_ec_brw(...)  check_ret(ec_brw, __VA_ARGS__)
+#define check_ec_bwr(...)  check_ret(ec_bwr, __VA_ARGS__)   //!< \brief Macro that checks return value and prints message in error case.
+#define check_ec_brd(...)  check_ret(ec_brd, __VA_ARGS__)   //!< \brief Macro that checks return value and prints message in error case.
+#define check_ec_brw(...)  check_ret(ec_brw, __VA_ARGS__)   //!< \brief Macro that checks return value and prints message in error case.
 
-#define check_ec_apwr(...)  check_ret(ec_apwr, __VA_ARGS__)
-#define check_ec_aprd(...)  check_ret(ec_aprd, __VA_ARGS__)
-#define check_ec_aprw(...)  check_ret(ec_aprw, __VA_ARGS__)
+#define check_ec_apwr(...)  check_ret(ec_apwr, __VA_ARGS__) //!< \brief Macro that checks return value and prints message in error case.
+#define check_ec_aprd(...)  check_ret(ec_aprd, __VA_ARGS__) //!< \brief Macro that checks return value and prints message in error case.
+#define check_ec_aprw(...)  check_ret(ec_aprw, __VA_ARGS__) //!< \brief Macro that checks return value and prints message in error case.
 
-#define check_ec_fpwr(...)  check_ret(ec_fpwr, __VA_ARGS__)
-#define check_ec_fprd(...)  check_ret(ec_fprd, __VA_ARGS__)
-#define check_ec_fprw(...)  check_ret(ec_fprw, __VA_ARGS__)
-#define check_ec_frmw(...)  check_ret(ec_frmw, __VA_ARGS__)
+#define check_ec_fpwr(...)  check_ret(ec_fpwr, __VA_ARGS__) //!< \brief Macro that checks return value and prints message in error case.
+#define check_ec_fprd(...)  check_ret(ec_fprd, __VA_ARGS__) //!< \brief Macro that checks return value and prints message in error case.
+#define check_ec_fprw(...)  check_ret(ec_fprw, __VA_ARGS__) //!< \brief Macro that checks return value and prints message in error case.
+#define check_ec_frmw(...)  check_ret(ec_frmw, __VA_ARGS__) //!< \brief Macro that checks return value and prints message in error case.
 
+/** @} */
 
 #endif // LIBETHERCAT_EC_H
 

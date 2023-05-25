@@ -51,8 +51,15 @@
 #include "libethercat/pool.h"
 #include "libethercat/datagram.h"
 
-#define MAILBOX_WRITE   (osal_uint16_t)(0u)
-#define MAILBOX_READ    (osal_uint16_t)(1u)
+/** \defgroup mailbox_group Mailbox
+ *
+ * This modules contains EtherCAT mailbox funcitons.
+ *
+ * @{
+ */
+
+#define MAILBOX_WRITE   (osal_uint16_t)(0u)     //!< \brief Write mailbox number.
+#define MAILBOX_READ    (osal_uint16_t)(1u)     //!< \brief Read mailbox number.
 
 // forward declarations
 struct ec;
@@ -95,9 +102,9 @@ typedef struct PACKED ec_mbx_buffer {
 } PACKED ec_mbx_buffer_t;
 
 typedef struct ec_mbx {
-    osal_uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
-    osal_mutex_t sync_mutex;    //!< \brief Sync mutex for handler flags.
-    osal_binary_semaphore_t sync_sem;
+    osal_uint32_t handler_flags;        //!< \brief Flags signalling handler recv of send action.
+    osal_mutex_t sync_mutex;            //!< \brief Sync mutex for handler flags.
+    osal_binary_semaphore_t sync_sem;   //!< \brief Mailbox sync semaphore.
 
     int handler_running;        //!< \brief Mailbox handler thread running flag.
     ec_t *pec;                  //!< \brief Pointer to ethercat master structure.
@@ -254,6 +261,8 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_MBX_H
 
