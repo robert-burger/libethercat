@@ -22,7 +22,7 @@ This library provides all functionality to communicate with EtherCAT slaves atta
 
 
 # Tools
-@page Tools
+Tools
 
 libethercat also provides some small helper programs for the EtherCAT bus.
 
