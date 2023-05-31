@@ -122,7 +122,7 @@ void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
         (void)vsnprintf(&tmp[ret], 512-ret, format, args);
         va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 
-        ec_log_func(lvl, ec_log_func_user, buf);
+        ec_log_func(lvl, ec_log_func_user, "%s", buf);
     }
 }
 
@@ -1130,7 +1130,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     ec_log(10, "MASTER_OPEN", "  MAX_DATA                   : %" PRIi64 "\n", LEC_MAX_DATA);
     ec_log(10, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
-    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %d\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
+    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
 
     if (ret != EC_OK) {
         if (pec != NULL) {

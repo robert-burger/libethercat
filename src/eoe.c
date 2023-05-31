@@ -564,7 +564,10 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     if (read_buf->eoe_hdr.last_fragment != 0u) {
                         if (pec->tun_fd > 0) {
 #if LIBETHERCAT_BUILD_POSIX == 1
-                            write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
+                            int local_ret = write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
+			    if (local_ret < 0) {
+				    ec_log(1, "EOE_RECV", "writing failed!\n");
+			    }
 #endif
                             pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                         } else {
@@ -588,7 +591,10 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     eoe_debug_print("EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
 
 #if LIBETHERCAT_BUILD_POSIX == 1
-                    write(pec->tun_fd, eth_frame->frame_data, frame_offset);
+                    int local_ret = write(pec->tun_fd, eth_frame->frame_data, frame_offset);
+		    if (local_ret < 0) {
+			    ec_log(1, "EOE_RECV", "writing failed!\n");
+		    }
 #endif
                     pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
