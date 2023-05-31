@@ -1,0 +1,162 @@
+:root {
+    /* Content */
+    --bgcolor: #ffffff;
+    --bgfont: #303030;
+    --bgfont2: #6cb9dc;
+    --bgfont-hover: #6cb9dc;
+    --bgfont-hover-text-decoration: none;
+    --bgborder: #7d7d7d;
+    --bgborder2: #f6f6f6;
+    /* Main Header */
+    --bg1color: #303030;
+    --bg1font: #ffffff;
+    --bg1font2: #6cb9dc;
+    /* Second header */
+    --bg2color: #E2E2E2;
+    --bg2font: #7D7D7D;
+    --bg2-hover-bg: #ffffff;
+    --bg2-hover-font: #303030;
+    --bg2-hover-topborder: #6cb9dc;
+    /* Third header */
+    --bg3color: #f6f6f6;
+    --bg3font: #303030;
+    --bg3font2: #7D7D7D;
+    /* Code */
+    --code-bg: #f6f6f6;
+    --code-comment: #7D7D7D;
+    --code-keyword: #d73a49;
+    --code-preprocessor: #d73a49;
+    --code-keywordtype: #d73a49;
+    --code-text: #303030;
+    --code-code: #6f42c1;
+    --code-line: #7D7D7D;
+    --code-line-bg: #D8D8D8;
+    /* Namespace List, Class List icon */
+    --icon-bg: #303030;
+    --icon-font: #6cb9dc;
+    /* Class Index */
+    --qindex-menu-bg: #303030;
+    --qindex-menu-font: #ffffff;
+    --qindex-menu-font-hover: #6cb9dc;
+    --qindex-icon-bg: #6cb9dc;
+    --qindex-icon-font: #303030;
+    /* Member table */
+    --mem-title-bg: #303030;
+    --mem-title-font: #ffffff;
+    --mem-subtitle-bg: #a7d3ec;
+    --mem-subtitle-font: #303030;
+    --mem-subtitle-font-hover: #303030;
+    --mem-content-bg: #ffffff;
+    --mem-content-font: #303030;
+    --mem-content-border: #f6f6f6;
+    /* Nav Tree */
+    --nav-tree-bg: #E2E2E2;
+    --nav-tree-bg-hover: #6cb9dc;
+    --nav-tree-font: #303030;
+    --nav-tree-font-hover: #303030;
+    --nav-tree-bg-selected: #6cb9dc;
+    --nav-tree-font-selected: #303030;
+}
+
+body {
+	background-color: white;
+	color: black;
+        margin: 0;
+}
+
+body, table, div, p, dl {
+	font: 400 14px/22px Roboto,sans-serif;
+}
+
+
+#titlearea {
+	padding: 0px;
+	margin: 0px;
+	width: 100%;
+	border-bottom: 1px solid #5373B4;
+    border-bottom: none;
+    padding-bottom: 20px;
+    padding-top: 20px;
+}
+
+#titlearea, #titlearea * {
+    color: var(--bg1font);
+    background-color: var(--bg1color);
+}
+
+#projectname {
+    padding: 0px 40px !important;
+	font: 300% Tahoma, Arial,sans-serif;
+	margin: 0px;
+	padding: 2px 0px;
+}
+
+#projectbrief {
+    padding: 0px 40px !important;
+	font: 120% Tahoma, Arial,sans-serif;
+	margin: 0px;
+	padding: 0px;
+}
+
+#projectalign {
+    padding: 0px !important;
+    vertical-align: middle;
+}
+
+div.headertitle {
+    padding: 5px 40px;
+}
+
+div.header, div.header * {
+    color: var(--bg3font);
+    background-color: var(--bg3color);
+    border-bottom: none;
+}      
+
+#nav-tree-contents {
+    background-color: var(--nav-tree-bg);
+    margin: 0px;
+}
+
+#side-nav, #nav-tree {
+    background-image: none;
+    background-color: var(--nav-tree-bg);
+}
+
+#nav-tree .item {
+    background-color: var(--nav-tree-bg);
+    font-family: Arial;
+    text-transform: uppercase;
+    text-shadow: none;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px;
+    color: var(--nav-tree-font);
+}
+
+#nav-tree .arrow {
+    color: var(--nav-tree-font);
+}
+
+#div .selected {
+    background-image: none;
+    background-color: var(--nav-tree-bg-selected);
+}
+
+#nav-tree .selected {
+    background-image: none;
+    background-color: var(--nav-tree-bg-selected);
+}
+
+#nav-tree .selected a {
+    color: var(--nav-tree-font-selected);
+}
+
+#nav-tree .item:hover {
+    background-color: var(--nav-tree-bg-hover);
+    color: var(--nav-tree-font-hover);
+}
+
+#nav-tree .item a:hover {
+    color: var(--nav-tree-font-hover);
+}

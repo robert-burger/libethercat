@@ -48,6 +48,13 @@
 #include "libethercat/dc.h"
 #include "libethercat/mbx.h"
 
+/** \defgroup slave_group Slave
+ *
+ * This modules contains main EtherCAT slave functions.
+ *
+ * @{
+ */
+
 //! EtherCAT slave state transitions
 #define BOOT_2_BOOT      0x0303u  //!< \brief BOOT to BOOT state transition
 #define BOOT_2_INIT      0x0301u  //!< \brief BOOT to INIT state transition
@@ -180,7 +187,7 @@ typedef struct ec_init_cmd {
                                  * target state. (e.g. 0x24 -> PRE to SAFE, ..)
                                  */
 
-    LIST_ENTRY(ec_init_cmd) le;
+    LIST_ENTRY(ec_init_cmd) le; //!< List entry handle.
 
     int id;                     //!< index 
                                 /*!< 
@@ -213,10 +220,10 @@ typedef struct ec_init_cmd {
 LIST_HEAD(ec_init_cmds, ec_init_cmd);
 
 typedef struct worker_arg {
-    struct ec *pec;
-    int slave;
-    ec_state_t state;
-} worker_arg_t;
+    struct ec *pec;             //!< \brief Pointer to EtherCAT master struct.
+    int slave;                  //!< \brief Slave number this worker is doing things for.
+    ec_state_t state;           //!< \brief State of EtherCAT slave.
+} worker_arg_t;                 //!< \brief Worker thread argument structure.
 
 typedef struct ec_slave {
     osal_uint32_t slave;            //!< \brief Slave index in EtherCAT master array.
@@ -265,7 +272,7 @@ typedef struct ec_slave {
                                  * \endlink.
                                  */
 
-    int assigned_pd_group;
+    int assigned_pd_group;      //!< Process data group this slave is assigned to.
     ec_pd_t pdin;               //!< input process data 
                                 /*!<
                                  * This is the complete input process data of 
@@ -310,8 +317,8 @@ typedef struct ec_slave {
     ec_state_t expected_state;  //!< Master expected slave state
     ec_state_t act_state;       //!< Actual/Last read slave state.
 
-    osal_mutex_t transition_mutex;
-    osal_bool_t transition_active;
+    osal_mutex_t transition_mutex;  //!< Lock for state transition pending.
+    osal_bool_t transition_active;  //!< Flag is state transition is currently active.
 
     struct ec_init_cmds init_cmds;
                                 //!< EtherCAT slave init commands
@@ -550,6 +557,8 @@ const osal_char_t *al_status_code_2_string(int code);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_SLAVE_H
 

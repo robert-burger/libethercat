@@ -1304,6 +1304,8 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
         }
             
         (void)osal_mutex_unlock(&slv->mbx.coe.lock);
+
+        ret = EC_OK;
     }
 
     return ret;

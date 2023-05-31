@@ -46,8 +46,16 @@
 
 #include "libethercat/common.h"
 
+/** \defgroup foe_group File transfer over EtherCAT (FoE)
+ *
+ * This modules contains EtherCAT FoE funcitons.
+ *
+ * @{
+ */
+
+
 typedef struct ec_foe {
-    pool_t recv_pool;
+    pool_t recv_pool;                               //!< \brief Pool for received FoE messages.
 } ec_foe_t;
 
 #define MAX_FILE_NAME_SIZE  512u                    //!< \brief file name max size
@@ -149,7 +157,11 @@ void ec_foe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
  *                              set by the EtherCAT slave. If any error has occured,
  *                              this has to be freed by the caller.
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \retval  EC_OK                                   On success.
+ * \retval  EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      FoE not supported by slave.
+ * \retval  EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS    No more mailbox send buffers left.
+ * \retval  EC_ERROR_MAILBOX_FOE_AGAIN              Try again.
+ * \retval  EC_ERROR_MAILBOX_FOE_ERROR_REQ          Error on FoE request.
  */
 int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t **file_data, 
@@ -172,7 +184,12 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
  *                              set by the EtherCAT slave. If any error has occured,
  *                              this has to be freed by the caller.
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \retval  EC_OK                                   On success.
+ * \retval  EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      FoE not supported by slave.
+ * \retval  EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS    No more mailbox send buffers left.
+ * \retval  EC_ERROR_MAILBOX_FOE_AGAIN              Try again.
+ * \retval  EC_ERROR_MAILBOX_FOE_ERROR_REQ          Error on FoE request.
+ * \retval  EC_ERROR_MAILBOX_FOE_NO_ACK             No Ack on segment write.
  */
 int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t *file_data, 
@@ -181,6 +198,8 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_COE_H
 
