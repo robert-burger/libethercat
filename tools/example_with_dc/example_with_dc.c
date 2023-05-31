@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <inttypes.h>
 
 #if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
@@ -337,7 +338,7 @@ int main(int argc, char **argv) {
         
 #define to_us(x)    ((double)(x)/1000.)
         no_verbose_log(0, NULL, 
-                "Frame len %d bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
                 ec.hw.bytes_last_sent, (10 * 8 * ec.hw.bytes_last_sent) / 1000.,

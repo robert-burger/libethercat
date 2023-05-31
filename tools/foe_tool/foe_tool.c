@@ -1,6 +1,7 @@
 #include <libethercat/config.h>
 
 #include <stdio.h>
+#include <inttypes.h>
 
 #if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
@@ -55,7 +56,7 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
         vsnprintf(&message[1], 511, format, ap);
         message[0] = '\r';
         message[strlen(message)-1] = '\0';
-        fprintf(stderr, message);
+        fprintf(stderr, "%s", message);
         new_line = 1;
     } else {
         if (new_line == 1) {
@@ -153,7 +154,7 @@ int main(int argc, char **argv) {
 
             free(string);
         } else {
-            printf("file read was not successfull: data %p, fsize %d, err %s\n", string, fsize, err);
+            printf("file read was not successfull: data %p, fsize %" PRIu64 ", err %s\n", string, fsize, err);
         }
     } else if (mode == mode_write) {
         FILE *f = fopen(first_fn, "rb");
@@ -162,7 +163,10 @@ int main(int argc, char **argv) {
         fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
 
         char *string = malloc(fsize + 1);
-        fread(string, fsize, 1, f);
+        int local_ret = fread(string, fsize, 1, f);
+        if (local_ret == 0) {
+            printf("waring got 0 bytes from file!\n");
+        }
         fclose(f);
 
         string[fsize] = 0;
