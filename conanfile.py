@@ -57,7 +57,7 @@ class MainProject(ConanFile):
     }
 
     generators = "pkg_config", "cmake_find_package"
-    requires = [ "libosal/0.0.2@common/unstable", ]
+    requires = [ "libosal/[>=0.0.2]@common/stable", ]
 
     def source(self):
         filedata = None
