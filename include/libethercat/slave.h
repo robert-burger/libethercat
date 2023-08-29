@@ -307,7 +307,7 @@ typedef struct ec_slave {
                                  * axes per slave, ...
                                  */
 
-    ec_mbx_t mbx;               //!< EtherCAT mailbox structure */
+    ec_mbx_t mbx;               //!< EtherCAT mailbox structure
 
     eeprom_info_t eeprom;       //!< EtherCAT slave EEPROM data
     ec_dc_info_slave_t dc;      //!< Distributed Clock settings
