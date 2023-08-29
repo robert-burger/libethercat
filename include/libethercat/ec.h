@@ -119,13 +119,30 @@ typedef struct ec_pd_group {
                                      * writes data by 2 and by every slave that
                                      * reads and writes data by 3.
                                      */
-    
+
     int recv_missed;                //!< missed continues ethercat frames 
+
+    osal_uint32_t log_mbx_state;    //!< logical address mailbox state.
+                                    /*!<
+                                     * This defines the logical start address
+                                     * for reading out the read mailbox full state bit.
+                                     */
+
+    osal_uint32_t log_mbx_state_len;//!< Byte lenght at logical address mailbox state.
+
+    osal_uint16_t wkc_expected_mbx_state;
+                                    //!< Expected working counter
+                                    /*!<
+                                     * This defines the expected working for reading 
+                                     * all read mailbox full state bits.
+                                     */
 
     ec_cyclic_datagram_t cdg;       //!< Group cyclic datagram LRW case.
     ec_cyclic_datagram_t cdg_lrd;   //!< Group cyclic datagram LRD case.
     ec_cyclic_datagram_t cdg_lwr;   //!< Group cyclic datagram LWR case.
-    
+    ec_cyclic_datagram_t cdg_lrd_mbx_state;
+                                    //!< Group cyclic datagram LRD mailbox state.
+
     int divisor;                    //!< Timer Divisor
     int divisor_cnt;                //!< Actual timer cycle count
 } ec_pd_group_t;
