@@ -392,6 +392,8 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
 
                 slv->mbx.sm_state_bitno = log_base_mbx_state_bitlen;
                 log_base_mbx_state_bitlen += 1u;
+            } else {
+                slv->mbx.sm_state = NULL;
             }
         }
 

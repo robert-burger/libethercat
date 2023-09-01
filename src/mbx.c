@@ -602,7 +602,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
     while (slv->mbx.handler_running != 0) {
         int ret;
         osal_timer_t to;
-        if ((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) {
+        if (((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) || (slv->mbx.sm_state == NULL)) {
             osal_timer_init(&to, 1000000);
         } else {
             osal_timer_init(&to, 100000000);
@@ -617,7 +617,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
                 slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
 
                 // check receive mailbox on timeout if PREOP or lower
-                if ((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) {
+                if (((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) || (slv->mbx.sm_state == NULL)) {
                     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
                 }
                 osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
