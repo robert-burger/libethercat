@@ -383,7 +383,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
                 slv->fmmu[fmmu_next].log_len = 1;
                 slv->fmmu[fmmu_next].log_bit_start = (log_base_mbx_state_bitlen % 8);
                 slv->fmmu[fmmu_next].log_bit_stop = (log_base_mbx_state_bitlen % 8);
-                slv->fmmu[fmmu_next].phys_bit_start = 4;
+                slv->fmmu[fmmu_next].phys_bit_start = 3;
                 slv->fmmu[fmmu_next].phys = EC_REG_SM1STAT;
                 slv->fmmu[fmmu_next].type = 1;
                 slv->fmmu[fmmu_next].active = 1;
