@@ -1458,7 +1458,9 @@ static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
 
         wkc_mismatch_cnt_mbx_state = 0;
     } else {
-        if ((wkc_mismatch_cnt_mbx_state++%1000) == 0) {
+        if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+                    (pec->master_state == EC_STATE_OP)  ) && 
+                (wkc_mismatch_cnt_mbx_state++%1000) == 0) {
             ec_log(1, "MASTER_RECV_MBX_STATE", 
                     "group %2d: working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
