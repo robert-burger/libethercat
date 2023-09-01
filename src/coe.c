@@ -399,7 +399,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(10, "COE_SDO_READ", "slave %2d: got sdo abort request on idx %#X, subidx %d, "
+                    ec_log(100, "COE_SDO_READ", "slave %2d: got sdo abort request on idx %#X, subidx %d, "
                             "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
@@ -522,7 +522,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(10, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                    ec_log(100, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
                             "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
@@ -625,7 +625,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(10, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                    ec_log(100, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
                             "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
@@ -705,7 +705,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                                 // cppcheck-suppress misra-c2012-11.3
                                 ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                                ec_log(10, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
+                                ec_log(100, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
                                         "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
 
                                 *abort_code = abort_buf->abort_code;
@@ -1165,6 +1165,9 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                             idx, i, ret);
                     continue;
                 }
+
+                ec_log(100, "COE_MAPPING", "slave %2d: 0x%04X/%d mapped pdo 0x%04X\n",
+                        slave, idx, i, entry_idx);
 
                 // read entry subindex with mapped value
                 if (entry_idx == 0u) {
