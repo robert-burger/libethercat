@@ -1437,20 +1437,22 @@ static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
     wkc = ec_datagram_wkc(p_dg);
     if (wkc == pd->wkc_expected_mbx_state) {
         buf = (osal_uint8_t *)ec_datagram_payload(p_dg);	
-    
+
         for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
             ec_slave_ptr(slv, pec, slave);
-            if (slv->assigned_pd_group != pd->group) { continue; }
+            if ((slv->assigned_pd_group != pd->group) || (slv->eeprom.mbx_supported == 0u)) { 
+                continue; // skip this slave, not in our group or no mailbox support.
+            }
 
-            if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
-                *slv->mbx.sm_state = (buf[slv->mbx.sm_state_bitno/8] & (slv->mbx.sm_state_bitno % 8)) ? 0x08u : 0u;
-
-                if ((*slv->mbx.sm_state & 0x08u) != 0u) {
-#ifdef LIBETHERCAT_DEBUG
-                    ec_log(100, "MASTER_RECV_MBX_STATE", "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
-#endif
-                    ec_mbx_sched_read(pec, slave);
+            if ((buf[slv->mbx.sm_state_bitno/8] & (1 << (slv->mbx.sm_state_bitno % 8))) != 0u) { 
+                if (slv->mbx.sm_state != NULL) {
+                    *slv->mbx.sm_state = 0x08u;
                 }
+
+#ifdef LIBETHERCAT_DEBUG
+                ec_log(100, "MASTER_RECV_MBX_STATE", "slave %2d: got something in mailbox\n", slave);
+#endif
+                ec_mbx_sched_read(pec, slave);
             }
         }
 
