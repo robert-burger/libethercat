@@ -539,9 +539,21 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
         // just return, we got an error from ec_transceive
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
     } else if ((state & EC_STATE_RESET) != 0u) {
-        ec_log(1, get_transition_string(transition), "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
-        // just return here, we did an error reset
-        osal_sleep(100000000);
+        osal_timer_t timeout;
+        osal_timer_init(&timeout, 1000000000);
+
+        do {
+            osal_uint16_t act_state = 0u;
+            wkc = 0u;
+
+            (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc);
+            (void)ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &act_state, sizeof(act_state), &wkc);
+
+            if ((wkc != 0u) && !(act_state & EC_STATE_ERROR)) {
+                ec_log(1, get_transition_string(transition), "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
+                break;
+            }
+        } while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT);
     } else {
         ec_log(10, get_transition_string(transition), "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
 
@@ -557,11 +569,12 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
 
                 if ((act_state & EC_STATE_ERROR) != 0u) {
                     if (ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
-                        ec_log(10, get_transition_string(transition), "slave %2d: state switch to %d failed, "
-                                "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
+                        if (value != 0u) {
+                            ec_log(10, get_transition_string(transition), "slave %2d: state switch to %d failed, "
+                                    "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
 
-                        (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
-                        break;
+                            (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
+                        }
                     }
                 }
             }
