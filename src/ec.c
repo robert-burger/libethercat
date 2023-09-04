@@ -153,10 +153,16 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
         pec->pd_groups[i].pdin_len          = 0u;
         pec->pd_groups[i].use_lrw           = 1;
         pec->pd_groups[i].overlapping       = 1;
-        pec->pd_groups[i].recv_missed       = 0;
+        pec->pd_groups[i].wkc_mismatch_cnt_lrw = 0;
+        pec->pd_groups[i].wkc_mismatch_cnt_lrd = 0;
+        pec->pd_groups[i].wkc_mismatch_cnt_lwr = 0;
+        pec->pd_groups[i].recv_missed_lrw   = 0;
+        pec->pd_groups[i].recv_missed_lrd   = 0;
+        pec->pd_groups[i].recv_missed_lwr   = 0;
         pec->pd_groups[i].log_mbx_state     = 0x9000000u + ((osal_uint32_t)i*1000u);
         pec->pd_groups[i].log_mbx_state_len = 0u;;
         pec->pd_groups[i].wkc_expected_mbx_state = 0u;
+        pec->pd_groups[i].wkc_mismatch_cnt_mbx_state = 0;
         pec->pd_groups[i].divisor           = 1;
         pec->pd_groups[i].divisor_cnt       = 0;
     }
@@ -489,7 +495,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
                         slv->pdout.len += slv->sm[k].len;
                     }
 
-                    wkc_expected_lwr = 2u;
+                    wkc_expected_lwr += 1u;
 
                     osal_uint32_t z;
                     osal_uint32_t pdoff = 0u;
@@ -517,7 +523,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
                         slv->pdin.len += slv->sm[k].len;
                     }
 
-                    wkc_expected_lrd = 1u;
+                    wkc_expected_lrd += 1u;
 
                     osal_uint32_t z;
                     osal_uint32_t pdoff = 0u;
@@ -921,6 +927,11 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                         pec->pd_groups[group].use_lrw = 0;
                         break;
                     }
+                }
+
+                if (pec->pd_groups[group].use_lrw == 0) {
+                    // only do overlapping in case of LRW command!
+                    pec->pd_groups[group].overlapping = 0;
                 }
 
                 if (pec->pd_groups[group].overlapping != 0) {
@@ -1364,13 +1375,51 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
     return ret;
 }
 
+//! datagram callack for receiving LWR process data group answer
+static void cb_process_data_group_lwr(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
+    assert(pec != NULL);
+    assert(p_entry != NULL);
+    assert(p_dg != NULL);
+
+    ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
+    osal_uint16_t wkc = 0;
+    osal_uint16_t wkc_expected = pd->wkc_expected_lwr;
+#ifdef LIBETHERCAT_DEBUG
+    ec_log(100, "MASTER_RECV_PD_LWR", "group %2d: lwr process data\n", p_entry->user_arg);
+#endif
+
+    osal_mutex_lock(&pd->cdg.lock);
+    
+    // reset consecutive missed counter
+    pd->recv_missed_lrw = 0;
+
+    wkc = ec_datagram_wkc(p_dg);
+    
+    osal_mutex_unlock(&pd->cdg.lock);
+
+    if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+                (pec->master_state == EC_STATE_OP)  ) && 
+            (wkc != wkc_expected)) {
+        if ((pd->wkc_mismatch_cnt_lwr++%1000) == 0) {
+            ec_log(1, "MASTER_RECV_PD_LWR", 
+                    "group %2d: working counter mismatch got %u, "
+                    "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
+                    pd->group, wkc, wkc_expected, 
+                    pec->slave_cnt, pd->wkc_mismatch_cnt_lwr);
+        }
+
+        ec_async_check_group(&pec->async_loop, pd->group);
+    } else {
+        pd->wkc_mismatch_cnt_lwr = 0;
+    }
+}
+
 //! datagram callack for receiving process data group answer
 static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
     assert(pec != NULL);
     assert(p_entry != NULL);
     assert(p_dg != NULL);
 
-    static int wkc_mismatch_cnt = 0;
     ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
     osal_uint16_t wkc = 0;
     osal_uint16_t wkc_expected = pd->use_lrw == 0 ? pd->wkc_expected_lrd : pd->wkc_expected_lrw;
@@ -1382,7 +1431,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     osal_mutex_lock(&pd->cdg.lock);
     
     // reset consecutive missed counter
-    pd->recv_missed = 0;
+    pd->recv_missed_lrw = 0;
 
     wkc = ec_datagram_wkc(p_dg);
     if (pd->pd != NULL) {
@@ -1403,17 +1452,17 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                 (pec->master_state == EC_STATE_OP)  ) && 
             (wkc != wkc_expected)) {
-        if ((wkc_mismatch_cnt++%1000) == 0) {
+        if ((pd->wkc_mismatch_cnt_lrw++%1000) == 0) {
             ec_log(1, "MASTER_RECV_PD_GROUP", 
                     "group %2d: working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
                     pd->group, wkc, wkc_expected, 
-                    pec->slave_cnt, wkc_mismatch_cnt);
+                    pec->slave_cnt, pd->wkc_mismatch_cnt_lrw);
         }
 
         ec_async_check_group(&pec->async_loop, pd->group);
     } else {
-        wkc_mismatch_cnt = 0;
+        pd->wkc_mismatch_cnt_lrw = 0;
     }
 }
 
@@ -1426,8 +1475,6 @@ static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
     osal_uint16_t wkc = 0u;
     osal_uint8_t *buf = NULL;
     ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
-
-    static int wkc_mismatch_cnt_mbx_state = 0;
 
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, "MASTER_RECV_MBX_STATE", "slave %2d: received mbx state\n", p_entry->user_arg);
@@ -1457,16 +1504,16 @@ static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
             }
         }
 
-        wkc_mismatch_cnt_mbx_state = 0;
+        pd->wkc_mismatch_cnt_mbx_state = 0;
     } else {
         if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                     (pec->master_state == EC_STATE_OP)  ) && 
-                (wkc_mismatch_cnt_mbx_state++%1000) == 0) {
+                (pd->wkc_mismatch_cnt_mbx_state++%1000) == 0) {
             ec_log(1, "MASTER_RECV_MBX_STATE", 
                     "group %2d: working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
                     pd->group, wkc, pd->wkc_expected_mbx_state, 
-                    pec->slave_cnt, wkc_mismatch_cnt_mbx_state);
+                    pec->slave_cnt, pd->wkc_mismatch_cnt_mbx_state);
         }
     }
 
@@ -1554,8 +1601,8 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 ret = EC_ERROR_OUT_OF_DATAGRAMS;
             } else {
                 pd->cdg_lwr.p_entry->p_idx = pd->cdg_lwr.p_idx;
-                pd->cdg_lwr.p_entry->user_cb = NULL;
-                pd->cdg_lwr.p_entry->user_arg = 0;
+                pd->cdg_lwr.p_entry->user_cb = cb_process_data_group_lwr;
+                pd->cdg_lwr.p_entry->user_arg = pd->group;
             }
         }
 

@@ -130,7 +130,7 @@ static struct PACKED {
  * 0x20nn   Configuration Cyclic Group
  */
 
-static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 11, { "Configuration Cyclic Group" }, 26 };
+static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 13, { "Configuration Cyclic Group" }, 26 };
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
     { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }                  , 10 }, // 0
     { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Logical Address" }             , 15 },
@@ -142,7 +142,9 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
     { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter LRW" }, 28 }, 
     { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter LRD" }, 28 }, 
     { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter LWR" }, 28 }, 
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed" }              , 14 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed LRW" }          , 18 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed LRD" }          , 18 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed LWR" }          , 18 }, 
     { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Timer Divisor" }               , 13 } };
 
 static int callback_master_0x20nn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
@@ -183,8 +185,12 @@ static int callback_master_0x20nn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     } else if (sub_index == 9u) {
         BUF_PUT(osal_uint16_t, &pec->pd_groups[group].wkc_expected_lwr);
     } else if (sub_index == 10u) {
-        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].recv_missed);
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].recv_missed_lrw);
     } else if (sub_index == 11u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].recv_missed_lrd);
+    } else if (sub_index == 12u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].recv_missed_lwr);
+    } else if (sub_index == 13u) {
         BUF_PUT(osal_uint32_t, &pec->pd_groups[group].divisor);
     } else {
         ret = EC_ERROR_MAILBOX_COE_SUBINDEX_NOT_FOUND;

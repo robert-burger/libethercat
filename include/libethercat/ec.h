@@ -138,7 +138,14 @@ typedef struct ec_pd_group {
                                      * that writes data by 2.
                                      */
 
-    int recv_missed;                //!< missed continues ethercat frames 
+    int wkc_mismatch_cnt_lrw;       //!< LRW missed counter to avoid flooding log output.
+    int wkc_mismatch_cnt_lrd;       //!< LRD missed counter to avoid flooding log output.
+    int wkc_mismatch_cnt_lwr;       //!< LWR missed counter to avoid flooding log output.
+
+    int recv_missed_lrw;            //!< Missed continues LRW ethercat frames.
+    int recv_missed_lrd;            //!< Missed continues LRD ethercat frames.
+    int recv_missed_lwr;            //!< Missed continues LWR ethercat frames.
+
 
     osal_uint32_t log_mbx_state;    //!< logical address mailbox state.
                                     /*!<
@@ -154,6 +161,9 @@ typedef struct ec_pd_group {
                                      * This defines the expected working for reading 
                                      * all read mailbox full state bits.
                                      */
+
+    int wkc_mismatch_cnt_mbx_state; //!< MBX state command missed counter to avoid
+                                    //   flooding of log output.
 
     ec_cyclic_datagram_t cdg;       //!< Group cyclic datagram LRW case.
     ec_cyclic_datagram_t cdg_lrd;   //!< Group cyclic datagram LRD case.
