@@ -152,7 +152,7 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
         pec->pd_groups[i].pdout_len         = 0u;
         pec->pd_groups[i].pdin_len          = 0u;
         pec->pd_groups[i].use_lrw           = 1;
-        pec->pd_groups[i].lrw_overlapping   = 1;
+        pec->pd_groups[i].overlapping       = 1;
         pec->pd_groups[i].recv_missed       = 0;
         pec->pd_groups[i].log_mbx_state     = 0x9000000u + ((osal_uint32_t)i*1000u);
         pec->pd_groups[i].log_mbx_state_len = 0u;;
@@ -230,7 +230,7 @@ static const osal_char_t *get_state_string(ec_state_t state) {
     return ret;
 }
 
-static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
+static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group) {
     assert(pec != NULL);
     assert(group < pec->pd_group_cnt);
 
@@ -240,7 +240,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
     pd->pdout_len = 0;
     pd->pdin_len = 0;
     pd->pd_lrw_len = 0;
-    pd->wkc_expected = 0;
+    pd->wkc_expected_lrw = 0;
 
     pd->log_mbx_state_len = 0;
     pd->wkc_expected_mbx_state = 0; 
@@ -302,7 +302,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
         }
 
         osal_uint32_t fmmu_next = 0u;
-        osal_uint16_t wkc_expected = 0u;
+        osal_uint16_t wkc_expected_lrw = 0u;
 
         osal_uint8_t *tmp_pdout = pdout;
         osal_uint8_t *tmp_pdin = pdin;
@@ -330,7 +330,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
                         slv->pdout.len += slv->sm[k].len;
                     }
 
-                    wkc_expected |= 2u;
+                    wkc_expected_lrw |= 2u;
 
                     osal_uint32_t z;
                     osal_off_t pdoff = 0;
@@ -358,7 +358,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
                         slv->pdin.len += slv->sm[k].len;
                     }
 
-                    wkc_expected |= 1u;
+                    wkc_expected_lrw |= 1u;
 
                     osal_uint32_t z;
                     osal_off_t pdoff = 0;
@@ -375,8 +375,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
             fmmu_next++;
         }
 
-        if (    (slv->eeprom.mbx_supported != 0u) &&
-                (slv->mbx.map_mbx_state == OSAL_TRUE)) {
+        if (slv->eeprom.mbx_supported != 0u) {
             if (fmmu_next < slv->fmmu_ch) {
                 // add state of sync manager read mailbox
                 slv->fmmu[fmmu_next].log = log_base_mbx_state + (log_base_mbx_state_bitlen / 8);
@@ -400,7 +399,7 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
         pdin = &pdin[max(slv->pdin.len, slv->pdout.len)];
         pdout = &pdout[max(slv->pdin.len, slv->pdout.len)];
         log_base = max(log_base_in, log_base_out);
-        pd->wkc_expected += wkc_expected;
+        pd->wkc_expected_lrw += wkc_expected_lrw;
     }
 
     pd->log_mbx_state_len = (log_base_mbx_state_bitlen + 7u) / 8u;
@@ -417,7 +416,11 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
     ec_pd_group_t *pd = &pec->pd_groups[group];
     pd->pdout_len = 0;
     pd->pdin_len = 0;
-    pd->wkc_expected = 0u;
+    pd->wkc_expected_lrd = 0u;
+    pd->wkc_expected_lrw = 0u;
+
+    pd->log_mbx_state_len = 0;
+    pd->wkc_expected_mbx_state = 0; 
 
     osal_mutex_lock(&pd->cdg.lock);
 
@@ -436,11 +439,6 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
                 pd->pdin_len += slv->sm[k].len;  // inputs
             }
         }
-
-        if (slv->eeprom.mbx_supported != 0u) {
-            // add state of sync manager read mailbox
-            pd->pdin_len += 1u; 
-        }
     }
 
     ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
@@ -454,6 +452,9 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
 
     osal_uint32_t log_base_out = pd->log;
     osal_uint32_t log_base_in = pd->log + pd->pdout_len;
+               
+    osal_uint32_t log_base_mbx_state = pd->log_mbx_state;
+    osal_uint32_t log_base_mbx_state_bitlen = 0;
 
     for (i = 0; i < pec->slave_cnt; ++i) {
         ec_slave_t *slv = &pec->slaves[i];
@@ -464,7 +465,8 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
         }
 
         osal_uint32_t fmmu_next = 0u;
-        osal_uint32_t wkc_expected = 0u;
+        osal_uint32_t wkc_expected_lrd = 0u;
+        osal_uint32_t wkc_expected_lwr = 0u;
 
         for (k = start_sm; k < slv->sm_ch; ++k) {
             if ((!slv->sm[k].len)) {
@@ -487,7 +489,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
                         slv->pdout.len += slv->sm[k].len;
                     }
 
-                    wkc_expected |= 2u;
+                    wkc_expected_lwr = 2u;
 
                     osal_uint32_t z;
                     osal_uint32_t pdoff = 0u;
@@ -515,7 +517,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
                         slv->pdin.len += slv->sm[k].len;
                     }
 
-                    wkc_expected |= 1u;
+                    wkc_expected_lrd = 1u;
 
                     osal_uint32_t z;
                     osal_uint32_t pdoff = 0u;
@@ -532,37 +534,33 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
             fmmu_next++;
         }
 
-        if (    (slv->eeprom.mbx_supported != 0u) &&
-                (slv->mbx.map_mbx_state == OSAL_TRUE)) {
+        if (slv->eeprom.mbx_supported != 0u) {
             if (fmmu_next < slv->fmmu_ch) {
                 // add state of sync manager read mailbox
-                slv->fmmu[fmmu_next].log = log_base_in;
+                slv->fmmu[fmmu_next].log = log_base_mbx_state + (log_base_mbx_state_bitlen / 8);
                 slv->fmmu[fmmu_next].log_len = 1;
-                slv->fmmu[fmmu_next].log_bit_start = 0;
-                slv->fmmu[fmmu_next].log_bit_stop = 7;
+                slv->fmmu[fmmu_next].log_bit_start = (log_base_mbx_state_bitlen % 8);
+                slv->fmmu[fmmu_next].log_bit_stop = (log_base_mbx_state_bitlen % 8);
+                slv->fmmu[fmmu_next].phys_bit_start = 3;
                 slv->fmmu[fmmu_next].phys = EC_REG_SM1STAT;
                 slv->fmmu[fmmu_next].type = 1;
                 slv->fmmu[fmmu_next].active = 1;
 
-                if (!slv->pdin.len) {
-                    slv->pdin.pd = pdin; 
-                    slv->pdin.len = 1;
-                } else {
-                    slv->pdin.len += 1u;
-                }
+                pd->wkc_expected_mbx_state += 1u;
 
-                slv->mbx.sm_state = pdin;
-
-                wkc_expected |= 1u;
+                slv->mbx.sm_state_bitno = log_base_mbx_state_bitlen;
+                log_base_mbx_state_bitlen += 1u;
+            } else {
+                slv->mbx.sm_state = NULL;
             }
-
-            pdin = &pdin[1];
-            log_base_in += 1u;
         }
 
-        pd->wkc_expected += wkc_expected;
+        pd->wkc_expected_lrd += wkc_expected_lrd;
+        pd->wkc_expected_lwr += wkc_expected_lwr;
     }
     
+    pd->log_mbx_state_len = (log_base_mbx_state_bitlen + 7u) / 8u;
+
     osal_mutex_unlock(&pd->cdg.lock);
 }
 
@@ -925,10 +923,10 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                     }
                 }
 
-                if (pec->pd_groups[group].use_lrw != 0) {
+                if (pec->pd_groups[group].overlapping != 0) {
                     ec_log(10, get_state_string(pec->master_state), "group %2d: using LRW, "
                             "support from all slaves in group\n", group);
-                    ec_create_logical_mapping_lrw(pec, group);
+                    ec_create_logical_mapping_overlapping(pec, group);
                 } else {
                     ec_log(10, get_state_string(pec->master_state), "group %2d: using LRD/LWR, "
                             "not all slaves support LRW in group\n", group);
@@ -1373,8 +1371,9 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     assert(p_dg != NULL);
 
     static int wkc_mismatch_cnt = 0;
-    osal_uint16_t wkc = 0;
     ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
+    osal_uint16_t wkc = 0;
+    osal_uint16_t wkc_expected = pd->use_lrw == 0 ? pd->wkc_expected_lrd : pd->wkc_expected_lrw;
 
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, "MASTER_RECV_PD_GROUP", "group %2d: received process data\n", p_entry->user_arg);
@@ -1387,7 +1386,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
 
     wkc = ec_datagram_wkc(p_dg);
     if (pd->pd != NULL) {
-        if ((pd->use_lrw != 0) || (pd->lrw_overlapping)) {
+        if ((pd->use_lrw != 0) || (pd->overlapping)) {
             // use this if lrw overlapping or lrd command
             (void)memcpy(&pd->pd[pd->pdout_len], ec_datagram_payload(p_dg), pd->pdin_len);
         } else {
@@ -1403,12 +1402,12 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
 
     if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                 (pec->master_state == EC_STATE_OP)  ) && 
-            (wkc != pd->wkc_expected)) {
+            (wkc != wkc_expected)) {
         if ((wkc_mismatch_cnt++%1000) == 0) {
             ec_log(1, "MASTER_RECV_PD_GROUP", 
                     "group %2d: working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
-                    pd->group, wkc, pd->wkc_expected, 
+                    pd->group, wkc, wkc_expected, 
                     pec->slave_cnt, wkc_mismatch_cnt);
         }
 

@@ -108,9 +108,9 @@ typedef struct ec_pd_group {
                                      * data exchange
                                      */
 
-    int lrw_overlapping;            //!< LRW areas overlapping.
+    int overlapping;                //!< Logical areas (inputs and outputs) are overlapping.
 
-    osal_uint16_t wkc_expected;     //!< expected working counter
+    osal_uint16_t wkc_expected_lrw; //!< expected working counter
                                     /*!< 
                                      * This is the expected working counter 
                                      * for the LRW command. The working counter
@@ -118,6 +118,24 @@ typedef struct ec_pd_group {
                                      * reads data by 1, by every slave that 
                                      * writes data by 2 and by every slave that
                                      * reads and writes data by 3.
+                                     */
+
+    osal_uint16_t wkc_expected_lrd; //!< Expected working couinter LRD
+                                    /*!<
+                                     * This is the expected working counter 
+                                     * if LRW is disabled and LRD/LWR is used 
+                                     * instead. The working counter for the LRD
+                                     * command will be incremented by every slave
+                                     * that read data by 1.
+                                     */
+
+    osal_uint16_t wkc_expected_lwr; //!< Expected working couinter LWR
+                                    /*!<
+                                     * This is the expected working counter 
+                                     * if LRW is disabled and LRD/LWR is used 
+                                     * instead. The working counter for the LWR
+                                     * command will be incremented by every slave
+                                     * that writes data by 2.
                                      */
 
     int recv_missed;                //!< missed continues ethercat frames 

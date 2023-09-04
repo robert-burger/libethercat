@@ -130,17 +130,20 @@ static struct PACKED {
  * 0x20nn   Configuration Cyclic Group
  */
 
-static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 8, { "Configuration Cyclic Group" }, 26 };
+static ec_coe_sdo_desc_t obj_desc_master_0x20nn = { DEFTYPE_RECORD, OBJCODE_REC, 11, { "Configuration Cyclic Group" }, 26 };
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x20nn[] = {
-    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }              , 10 }, // 0
-    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Logical Address" }         , 15 },
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Logical Length" }          , 14 },
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Output Length" }           , 13 },
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Input Length" }            , 12 },
-    { 0, DEFTYPE_UNSIGNED8,     8, ACCESS_READ, { "Overlapping" }             , 11 },
-    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter" }, 24 }, 
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed" }          , 14 }, 
-    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Timer Divisor" }           , 13 } };
+    { 0, DEFTYPE_UNSIGNED8 ,    8, ACCESS_READ, { "Subindex 0" }                  , 10 }, // 0
+    { 0, DEFTYPE_DWORD,        32, ACCESS_READ, { "Logical Address" }             , 15 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Logical Length" }              , 14 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Output Length" }               , 13 },
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Input Length" }                , 12 },
+    { 0, DEFTYPE_BOOLEAN,       8, ACCESS_READ, { "Overlapping" }                 , 11 },
+    { 0, DEFTYPE_BOOLEAN,       8, ACCESS_READ, { "Use LRW" }                     ,  7 },
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter LRW" }, 28 }, 
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter LRD" }, 28 }, 
+    { 0, DEFTYPE_UNSIGNED16,   16, ACCESS_READ, { "Expected Working Counter LWR" }, 28 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Receive Missed" }              , 14 }, 
+    { 0, DEFTYPE_UNSIGNED32,   32, ACCESS_READ, { "Timer Divisor" }               , 13 } };
 
 static int callback_master_0x20nn(ec_t *pec, const ec_coe_object_t *coe_obj, osal_uint16_t index, osal_uint8_t sub_index, 
         int complete, osal_uint8_t *buf, osal_size_t *len, osal_uint32_t *abort_code) 
@@ -159,7 +162,7 @@ static int callback_master_0x20nn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     osal_uint16_t group = (index & 0x00FEu) >> 1u;
 
     if (sub_index == 0u) {
-        osal_uint8_t tmp_val = 8u;
+        osal_uint8_t tmp_val = 11u;
         BUF_PUT(osal_uint8_t, &tmp_val);
     } else if (sub_index == 1u) {
         BUF_PUT(osal_uint32_t, &pec->pd_groups[group].log);
@@ -170,12 +173,18 @@ static int callback_master_0x20nn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     } else if (sub_index == 4u) {
         BUF_PUT(osal_uint32_t, &pec->pd_groups[group].pdin_len);
     } else if (sub_index == 5u) {
-        BUF_PUT(osal_uint8_t, &pec->pd_groups[group].use_lrw);
+        BUF_PUT(osal_uint8_t, &pec->pd_groups[group].overlapping);
     } else if (sub_index == 6u) {
-        BUF_PUT(osal_uint16_t, &pec->pd_groups[group].wkc_expected);
+        BUF_PUT(osal_uint8_t, &pec->pd_groups[group].use_lrw);
     } else if (sub_index == 7u) {
-        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].recv_missed);
+        BUF_PUT(osal_uint16_t, &pec->pd_groups[group].wkc_expected_lrw);
     } else if (sub_index == 8u) {
+        BUF_PUT(osal_uint16_t, &pec->pd_groups[group].wkc_expected_lrd);
+    } else if (sub_index == 9u) {
+        BUF_PUT(osal_uint16_t, &pec->pd_groups[group].wkc_expected_lwr);
+    } else if (sub_index == 10u) {
+        BUF_PUT(osal_uint32_t, &pec->pd_groups[group].recv_missed);
+    } else if (sub_index == 11u) {
         BUF_PUT(osal_uint32_t, &pec->pd_groups[group].divisor);
     } else {
         ret = EC_ERROR_MAILBOX_COE_SUBINDEX_NOT_FOUND;
