@@ -543,7 +543,6 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
         osal_timer_init(&timeout, 1000000000);
 
         do {
-            osal_uint16_t act_state = 0u;
             wkc = 0u;
 
             (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc);
