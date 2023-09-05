@@ -1067,7 +1067,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                     // safeop to op stuff 
                     ec_log(10, get_transition_string(transition), 
-                            "slave %2d: log%d 0x%08X/%d/%d, len %3d, pyhs "
+                            "slave %2d: log%d 0x%08X/%d/%d, len %3d, phys "
                             "0x%04X/%d, type %d, active %d\n", slave, fmmu_idx,
                             slv->fmmu[fmmu_idx].log, 
                             slv->fmmu[fmmu_idx].log_bit_start,

@@ -563,6 +563,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
 
         pd->wkc_expected_lrd += wkc_expected_lrd;
         pd->wkc_expected_lwr += wkc_expected_lwr;
+        pd->wkc_expected_lrw += wkc_expected_lrd + (2 * wkc_expected_lwr);
     }
     
     pd->log_mbx_state_len = (log_base_mbx_state_bitlen + 7u) / 8u;
@@ -940,7 +941,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                     ec_create_logical_mapping_overlapping(pec, group);
                 } else {
                     ec_log(10, get_state_string(pec->master_state), "group %2d: using LRD/LWR, "
-                            "not all slaves support LRW in group\n", group);
+                            "not all slaves support LRW in group or disabled\n", group);
                     ec_create_logical_mapping(pec, group);
                 }
             }

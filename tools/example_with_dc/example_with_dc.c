@@ -37,10 +37,13 @@ void no_log(int lvl, void *user, const char *format, ...)
 
 int usage(int argc, char **argv) {
     printf("%s -i|--interface <intf> [-v|--verbose] [-p|--prio] [-a|--affinity]\n", argv[0]);
-    printf("  -v|--verbose      Set libethercat to print verbose output.\n");
-    printf("  -p|--prio         Set base priority for cyclic and rx thread.\n");
-    printf("  -a|--affinity     Set CPU affinity for cyclic and rx thread.\n");
-    printf("  -c|--clock        Distributed clock master (master/ref).\n");
+    printf("  -v|--verbose          Set libethercat to print verbose output.\n");
+    printf("  -p|--prio             Set base priority for cyclic and rx thread.\n");
+    printf("  -a|--affinity         Set CPU affinity for cyclic and rx thread.\n");
+    printf("  -c|--clock            Distributed clock master (master/ref).\n");
+    printf("  -e|--eoe              Enable EoE for slave network comm.\n");
+    printf("  --disable-overlapping Disable LRW data overlapping.\n");
+    printf("  --disable-lrw         Disable LRW and use LRD/LWR instead (implies --disable-overlapping).\n");
     return 0;
 }
 
@@ -91,7 +94,6 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         // execute one EtherCAT cycle
         ec_send_distributed_clocks_sync(pec);
         ec_send_process_data(pec);
-        ec_send_brd_ec_state(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
         hw_tx(&pec->hw);
@@ -113,6 +115,9 @@ int main(int argc, char **argv) {
     long reg = 0, val = 0;
     int base_prio = 60;
     int base_affinity = 0x8;
+    int eoe = 0;
+    int disable_overlapping = 0;
+    int disable_lrw = 0;
     double dc_kp = 0.1;
     double dc_ki = 0.01;
 
@@ -124,6 +129,13 @@ int main(int argc, char **argv) {
         } else if ((strcmp(argv[i], "-v") == 0) || 
                 (strcmp(argv[i], "--verbose") == 0)) {
             max_print_level = 100;
+        } else if ((strcmp(argv[i], "-e") == 0) || 
+                (strcmp(argv[i], "--eoe") == 0)) {
+            eoe = 1;
+        } else if (strcmp(argv[i], "--disable-overlapping") == 0) {
+            disable_overlapping = 1;
+        } else if (strcmp(argv[i], "--disable-lrw") == 0) {
+            disable_lrw = 1;
         } else if ((strcmp(argv[i], "-p") == 0) || 
                 (strcmp(argv[i], "--prio") == 0)) {
             if (++i < argc)
@@ -187,21 +199,23 @@ int main(int argc, char **argv) {
     
     ec_set_state(&ec, EC_STATE_INIT);
 
-    osal_uint8_t ip[4] = { 1, 100, 168, 192 };
-    ec_configure_tun(&ec, ip);
-    
-    osal_uint8_t mac[6] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
-    osal_uint8_t ip_address[4] = { 2, 100, 168, 192 };
-    osal_uint8_t subnet[4] = { 0, 255, 255, 255 };
-    osal_uint8_t gateway[4] = { 1, 100, 168, 192 };
-    osal_uint8_t dns[4] = { 1, 100, 168, 192 };
-    
-    // configure slave settings.
-    for (int i = 0; i < ec.slave_cnt; ++i) {
-        if (ec_mbx_check(&ec, i, EC_EEPROM_MBX_EOE) == EC_OK) {
-            ec_slave_set_eoe_settings(&ec, i, mac, ip_address, subnet, gateway, dns, NULL);
-            mac[0]++;
-            ip_address[0]++;
+    if (eoe != 0) {
+        osal_uint8_t ip[4] = { 1, 100, 168, 192 };
+        ec_configure_tun(&ec, ip);
+
+        osal_uint8_t mac[6] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+        osal_uint8_t ip_address[4] = { 2, 100, 168, 192 };
+        osal_uint8_t subnet[4] = { 0, 255, 255, 255 };
+        osal_uint8_t gateway[4] = { 1, 100, 168, 192 };
+        osal_uint8_t dns[4] = { 1, 100, 168, 192 };
+
+        // configure slave settings.
+        for (int i = 0; i < ec.slave_cnt; ++i) {
+            if (ec_mbx_check(&ec, i, EC_EEPROM_MBX_EOE) == EC_OK) {
+                ec_slave_set_eoe_settings(&ec, i, mac, ip_address, subnet, gateway, dns, NULL);
+                mac[0]++;
+                ip_address[0]++;
+            }
         }
     }
 
@@ -232,6 +246,9 @@ int main(int argc, char **argv) {
     ec_create_pd_groups(&ec, 1);
     ec_configure_pd_group(&ec, 0, 1, NULL, NULL);
         
+    ec.pd_groups[0].use_lrw = disable_lrw == 0 ? 1 : 0;
+    ec.pd_groups[0].overlapping = disable_overlapping == 0 ? 1 : 0;
+
     // -----------------------------------------------------------
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
@@ -240,10 +257,6 @@ int main(int argc, char **argv) {
             ec_slave_set_dc_config(&ec, i, 1, 1, 250000, 900000, 150000);
         } else {
             ec_slave_set_dc_config(&ec, i, 1, 0, 1000000, 0, 0);
-        }
-
-        if ((ec.slaves[i].eeprom.vendor_id = 0x9A) && (ec.slaves[i].eeprom.product_code == 0x01100002)) {
-            ec.slaves[i].mbx.map_mbx_state = OSAL_FALSE;
         }
     }
 
