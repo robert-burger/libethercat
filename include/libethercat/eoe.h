@@ -46,6 +46,13 @@
 
 #include "libethercat/common.h"
 
+/** \defgroup eoe_group Ethernet over Ethercat (CoE)
+ *
+ * This modules contains functions on how to communicate via Ethernet over EtherCAT mailbox.
+ *
+ * @{
+ */
+
 #define LEC_EOE_MAC_LEN         (6u)
 #define LEC_EOE_IP_ADDRESS_LEN  (4u)
 #define LEC_EOE_SUBNET_LEN      (4u)
@@ -112,6 +119,25 @@ void ec_eoe_deinit(ec_t *pec, osal_uint16_t slave);
  */
 void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
+//! Set IP parameters to slave with EoE support.
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ * \param[in] slave         Number of ethercat slave. this depends on 
+ *                          the physical order of the ethercat slaves 
+ *                          (usually the n'th slave attached).
+ * \param[in] mac           MAC address to be set (6 byte) or NULL.
+ * \param[in] ip_address    IP address to be set (4 byte) or NULL.
+ * \param[in] subnet        Subnet mask to be set (4 byte) or NULL.
+ * \param[in] gateway       Default gateway ip address (4 byte) or NULL.
+ * \param[in] dns           Nameserver to set (4 byte) or NULL.
+ * \param[in] dns_name      Hostname to be set (null-teminating) or NULL.
+ *
+ * \retval EC_OK                                EoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS No more free send buffer available.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE   No EoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT             Got timeout waiting for message.
+ */
 int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
         osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, 
         osal_uint8_t *dns, osal_char_t *dns_name);
@@ -126,7 +152,9 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
  * \param[in] frame         Ethernet frame buffer to be sent.
  * \param[in] frame_len     Length of Ethernet frame buffer.
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                EoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE   No EoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT             Got timeout waiting for message.
  */
 int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, 
         osal_size_t frame_len);
@@ -135,6 +163,9 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame,
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
+ *
+ * \retval EC_OK                EoE transfer was successfull.
+ * \retval EC_ERROR_UNAVAILABLE Setting up tun failed for some reason.
  */
 int ec_eoe_setup_tun(ec_t *pec);
 

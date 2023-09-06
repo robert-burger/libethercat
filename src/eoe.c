@@ -330,7 +330,7 @@ void ec_eoe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     }
 }
 
-// read coe sdo 
+// Set IP parameters to slave with EoE support.
 int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
         osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, 
         osal_uint8_t *dns, osal_char_t *dns_name) 
