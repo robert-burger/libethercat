@@ -141,7 +141,11 @@ void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
  * \param[in,out] elements  ServoDrive elements according to ServoDrive Bus Specification.
  * \param[in,out] buf   Buffer for where to store the answer. 
  * \param[in,out] len   Length of \p buf, see 'buf' descriptions. Returns length of answer.
- * \return 0 on successs
+ *
+ * \retval EC_OK                                    SoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT                 Got timeout waiting for message.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE       No SoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS    No more free write buffer available.
  */
 int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
         osal_uint8_t *elements, osal_uint8_t *buf, osal_size_t *len);
@@ -166,7 +170,11 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
  * \param[in] elements  ServoDrive elements according to ServoDrive Bus Specification.
  * \param[in] buf       Buffer with values to write to the given \p idn.
  * \param[in] len       Length of \p buf.
- * \return 0 on successs
+ *
+ * \retval EC_OK                                    SoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT                 Got timeout waiting for message.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE       No SoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS    No more free write buffer available.
  */
 int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
         osal_uint8_t elements, osal_uint8_t *buf, osal_size_t len);
@@ -181,7 +189,11 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
  * \param[in] slave     Number of ethercat slave. this depends on 
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
- * \return 0 on success
+ *
+ * \retval EC_OK                                    SoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT                 Got timeout waiting for message.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE       No SoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS    No more free write buffer available.
  */
 int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave);
 
