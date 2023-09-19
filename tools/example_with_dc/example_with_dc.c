@@ -47,7 +47,7 @@ int usage(int argc, char **argv) {
     return 0;
 }
 
-int max_print_level = 100;
+int max_print_level = 10;
 
 // only log level <= 10 
 void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
@@ -265,7 +265,6 @@ int main(int argc, char **argv) {
     osal_task_attr_t cyclic_task_attr = { "cyclic_task", OSAL_SCHED_POLICY_FIFO, base_prio, base_affinity };
     osal_task_t cyclic_task_hdl;
     osal_task_create(&cyclic_task_hdl, &cyclic_task_attr, cyclic_task, &ec);
-
     ec_set_state(&ec, EC_STATE_SAFEOP);
     ec_set_state(&ec, EC_STATE_OP);
 

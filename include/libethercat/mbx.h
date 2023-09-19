@@ -135,7 +135,6 @@ typedef struct ec_mbx {
     ec_foe_t foe;               //!< \brief Structure for File over EtherCAT mailbox.
     ec_eoe_t eoe;               //!< \brief Strucutre for Ethernet over EtherCAT mailbox.
     
-    osal_bool_t map_mbx_state;  //!< Map the sync manager state with LRW/LRD command
     osal_uint32_t sm_state_bitno;
     osal_uint8_t *sm_state;     //!< Sync manager state of read mailbox.
                                 /*!<
@@ -145,7 +144,6 @@ typedef struct ec_mbx {
                                  * without the need to poll the state manually.
                                  */
 
-    ec_cyclic_datagram_t cdg;   //!< \brief Cyclic datagram if mbx state is not mapped with lrw.
     osal_uint8_t mbx_state;	    //!< \brief State if not mapped.
 } ec_mbx_t;
 

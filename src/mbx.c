@@ -89,10 +89,6 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         ec_log(10, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
 
         slv->mbx.seq_counter = 1;
-        slv->mbx.map_mbx_state = OSAL_TRUE;
-
-        (void)ec_cyclic_datagram_init(&slv->mbx.cdg, 10000000);
-
         slv->mbx.sm_state = &slv->mbx.mbx_state; // this may be overwritten by logical mapping
 
         (void)pool_open(&slv->mbx.message_pool_send_queued, 0, NULL);
@@ -166,8 +162,6 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
         osal_mutex_destroy(&slv->mbx.sync_mutex);
 
         (void)pool_close(&slv->mbx.message_pool_send_queued);
-        
-        (void)ec_cyclic_datagram_destroy(&slv->mbx.cdg);
     }
 }
 
