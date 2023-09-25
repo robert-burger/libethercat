@@ -153,7 +153,7 @@ case $target_os in
         AC_DEFINE([BUILD_PIKEOS], [1], [Use PikeOS build])
         ;;
     **)
-        AC_MSG_ERROR([unknown target os: $target_os, $target_cpu, $target_vendor! Got target $target])
+        AC_MSG_NOTICE([unknown target os: $target_os, $target_cpu, $target_vendor! Got target $target])
         ;;
 esac
 
