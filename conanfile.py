@@ -57,7 +57,7 @@ class MainProject(ConanFile):
     }
 
     generators = "pkg_config", "cmake_find_package"
-    requires = [ "libosal/[>=0.0.2]@common/stable", ]
+    requires = [ "libosal/[>=0.0.3]@common/unstable", ]
 
     def source(self):
         filedata = None
@@ -68,6 +68,7 @@ class MainProject(ConanFile):
             f.write(re.sub("VERSION *=.*[^\n]", f"VERSION = {self.version}", filedata))
 
     def build(self):
+        print("os %s, compiler %s, build_type %s, arch %s" % (self.settings.os, self.settings.compiler, self.settings.build_type, self.settings.arch))
         self.run("autoreconf -i")
         autotools = AutoToolsBuildEnvironment(self)
         autotools.libs=[]

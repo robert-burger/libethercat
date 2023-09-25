@@ -1498,17 +1498,7 @@ case $os in
 		os=dicos
 		;;
 	pikeos*)
-		# Until real need of OS specific support for
-		# particular features comes up, bare metal
-		# configurations are quite functional.
-		case $cpu in
-		    arm*)
-			os=eabi
-			;;
-		    *)
-			os=elf
-			;;
-		esac
+		os=pikeos
 		;;
 	*)
 		# No normalization, but not necessarily accepted, that comes below.
@@ -1716,6 +1706,9 @@ case $os in
 		;;
 	# Likewise for "kernel-abi"
 	eabi* | gnueabi*)
+		;;
+	# Likewise for "pikeos"
+	pikeos*)
 		;;
 	# VxWorks passes extra cpu info in the 4th filed.
 	simlinux | simwindows | spe)

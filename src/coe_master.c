@@ -154,7 +154,9 @@ static int callback_master_0x20nn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     assert(coe_obj != NULL);
 
     // unused
+    (void)coe_obj;
     (void)abort_code;
+    (void)complete;
     
     //osal_uint8_t *tmp_buf = buf;
     //osal_size_t tmp_len = (*len);
@@ -216,6 +218,7 @@ static int callback_master_0x20nm(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     assert(coe_obj != NULL);
     
     // unused
+    (void)coe_obj;
     (void)abort_code;
     (void)complete;
     
@@ -275,6 +278,7 @@ static int callback_master_0x3nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     assert(coe_obj != NULL);
     
     // unused
+    (void)coe_obj;
     (void)abort_code;
     (void)complete;
 
@@ -371,6 +375,8 @@ static int callback_master_0x8nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
+    (void)coe_obj;
+
     int ret = EC_OK;
 
     osal_uint16_t slave = index & 0x0FFFu;
@@ -463,6 +469,8 @@ static int callback_master_0x9nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     assert(pec != NULL);
     assert(coe_obj != NULL);
     
+    (void)coe_obj;
+
     int ret = EC_OK;
 
     osal_uint16_t slave = index & 0x0FFFu;
@@ -508,6 +516,7 @@ static int callback_master_0xAnnn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     assert(coe_obj != NULL);
     
     // unused
+    (void)coe_obj;
     (void)abort_code;
     (void)complete;
 
@@ -609,6 +618,7 @@ static int callback_master_0xF0nn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     assert(coe_obj != NULL);
     
     // unused
+    (void)coe_obj;
     (void)abort_code;
     (void)complete;
 
@@ -945,6 +955,8 @@ int ec_coe_master_sdo_entry_desc_read(const ec_t *pec, osal_uint16_t index,
 {
     assert(pec != NULL);
     assert(desc != NULL);
+
+    (void)pec;
     (void)value_info;
     (void)error_code;
 

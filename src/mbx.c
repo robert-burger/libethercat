@@ -644,6 +644,8 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
 
+    (void)slave;
+
     int ret = pool_get(&pec->mbx_message_pool_send_free, pp_entry, timeout);
     if (ret == EC_OK) {
         (*pp_entry)->p_idx = NULL;

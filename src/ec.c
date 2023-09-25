@@ -33,6 +33,7 @@
  *
  */
 
+#include <libosal/io.h>
 #include <libethercat/config.h>
 
 #include <errno.h>
@@ -105,7 +106,7 @@ void default_log_func(int lvl, void* user, const osal_char_t *format, ...) {
 
     va_list args;                   // cppcheck-suppress misra-c2012-17.1
     va_start(args, format);         // cppcheck-suppress misra-c2012-17.1
-    (void)vfprintf(stderr, format, args);
+    (void)osal_vfprintf(LIBOSAL_IO_STDERR, format, args);
     va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 }
 
@@ -1489,7 +1490,7 @@ static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
 
         for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
             ec_slave_ptr(slv, pec, slave);
-            if ((slv->assigned_pd_group != pd->group) || (slv->eeprom.mbx_supported == 0u)) { 
+            if ((slv->assigned_pd_group != (int)pd->group) || (slv->eeprom.mbx_supported == 0u)) { 
                 continue; // skip this slave, not in our group or no mailbox support.
             }
 

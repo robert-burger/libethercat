@@ -50,15 +50,15 @@
 #include <assert.h>
 #include <string.h>
 
-#if LIBETHERCAT_HAVE_INTTYPES_H == 1
+#ifdef LIBETHERCAT_HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
 
-#if LIBETHERCAT_HAVE_FCNTL_H == 1
+#ifdef LIBETHERCAT_HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
 
-#if LIBETHERCAT_HAVE_UNISTD_H == 1
+#ifdef LIBETHERCAT_HAVE_UNISTD_H
 #include <unistd.h>
 #endif 
 

@@ -42,31 +42,31 @@
 #include <stdio.h>
 #include <string.h>
 
-#if LIBETHERCAT_HAVE_UNISTD_H == 1
+#ifdef LIBETHERCAT_HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#if LIBETHERCAT_HAVE_FCNTL_H == 1
+#ifdef LIBETHERCAT_HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
 
-#if LIBETHERCAT_HAVE_SYS_TYPES_H == 1
+#ifdef LIBETHERCAT_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 
-#if LIBETHERCAT_HAVE_SYS_STAT_H == 1
+#ifdef LIBETHERCAT_HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
 
-#if LIBETHERCAT_HAVE_SYS_SOCKET_H == 1
+#ifdef LIBETHERCAT_HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
 
-#if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
+#ifdef LIBETHERCAT_HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
 
-#if LIBETHERCAT_HAVE_INTTYPES_H == 1
+#ifdef LIBETHERCAT_HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
 
@@ -552,7 +552,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     // cppcheck-suppress misra-c2012-11.3
                     read_buf = (ec_eoe_request_t *)(p_entry->data);
 
-                    if (frame_offset != (read_buf->eoe_hdr.complete_size << 5u)) {
+                    if ((int)frame_offset != (read_buf->eoe_hdr.complete_size << 5u)) {
                         ec_log(1, "EOE_RECV", "slave %d: frame offset mismatch %" PRIu64 " != %d\n", 
                                 slave, frame_offset, read_buf->eoe_hdr.complete_size << 5u);
                     }
@@ -780,6 +780,8 @@ int ec_eoe_setup_tun(ec_t *pec) {
             osal_task_create(&pec->tun_tid, &attr, ec_eoe_tun_handler_wrapper, pec);
         }
     }
+#else 
+    (void)pec;
 #endif
 
     return ret;

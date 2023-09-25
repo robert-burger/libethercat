@@ -47,7 +47,7 @@
 #include <errno.h>
 #include <string.h>
 
-#if LIBETHERCAT_HAVE_INTTYPES_H == 1
+#ifdef LIBETHERCAT_HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
 
@@ -55,15 +55,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#if LIBETHERCAT_HAVE_ARPA_INET_H == 1
+#ifdef LIBETHERCAT_HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
-#if LIBETHERCAT_HAVE_WINSOCK_H == 1
+#ifdef LIBETHERCAT_HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
 
-#if LIBETHERCAT_HAVE_NET_UTIL_INET_H == 1
+#ifdef LIBETHERCAT_HAVE_NET_UTIL_INET_H
 #include <net/util/inet.h>
 #endif
 

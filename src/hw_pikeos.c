@@ -81,12 +81,14 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
         ret = EC_ERROR_UNAVAILABLE;
     }
 
+#if !(__GNUC__ == 5) // unsupported by pikeos-4.2
     if (ret == EC_OK) {
         if ((pinfo.abilities & VM_AB_ULOCK_SHARED) == 0) {
             ec_log(1, "HW_OPEN", "sbuf mode needs VM_AB_ULOCK_SHARED!\n");
             ret = EC_ERROR_UNAVAILABLE;
         }
     }
+#endif
 
     if (ret == EC_OK) {
         local_retval = vm_open(devname, VM_O_RD_WR | VM_O_MAP, &phw->fd);
@@ -240,5 +242,6 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
  * \param[in]   phw         Pointer to hw handle.
  */
 void hw_device_send_finished(hw_t *phw) {
+    (void)phw;
 }
 
