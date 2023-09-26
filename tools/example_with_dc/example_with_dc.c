@@ -5,6 +5,8 @@
  * $Id$
  */
 
+#include <libosal/trace.h>
+
 #include <libethercat/config.h>
 #include <libethercat/ec.h>
 #include <libethercat/error_codes.h>
@@ -65,14 +67,9 @@ static ec_t ec;
 static osal_uint64_t cycle_rate = 1000000;
 static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
-static osal_binary_semaphore_t duration_tx_sync;
-#define DURATION_TX_COUNT   1000
-static int duration_tx_pos   = 0;
-static osal_uint64_t start_tx_in_ns[DURATION_TX_COUNT];
-static osal_uint64_t duration_tx_in_ns[DURATION_TX_COUNT];
-
-static int duration_round_trip_pos = 0;
-static osal_uint64_t duration_round_trip_in_ns[DURATION_TX_COUNT];
+osal_trace_t *tx_start;
+osal_trace_t *tx_duration;
+osal_trace_t *roundtrip_duration;
 
 //! Cyclic (high priority realtime) task for sending EtherCAT datagrams.
 static osal_bool_t cyclic_task_running = OSAL_FALSE;
@@ -89,7 +86,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         osal_sleep_until_nsec(abs_timeout);
 
         time_start = osal_timer_gettime_nsec();
-        start_tx_in_ns[duration_tx_pos] = time_start;
+        osal_trace_time(tx_start, time_start);
 
         // execute one EtherCAT cycle
         ec_send_distributed_clocks_sync(pec);
@@ -98,12 +95,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         // transmit cyclic packets (and also acyclic if there are any)
         hw_tx(&pec->hw);
 
-        time_end = osal_timer_gettime_nsec();
-        duration_tx_in_ns[duration_tx_pos++] = time_end - time_start;
-        if (duration_tx_pos >= DURATION_TX_COUNT) {
-            duration_tx_pos = 0;
-            osal_binary_semaphore_post(&duration_tx_sync);
-        }
+        osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
     }
 
     no_verbose_log(0, NULL, "cyclic_task: exiting!\n");
@@ -186,6 +178,10 @@ int main(int argc, char **argv) {
     if ((argc == 1) || (intf == NULL))
         return usage(argc, argv);
 
+    osal_trace_alloc(&tx_start, 1000);
+    osal_trace_alloc(&tx_duration, 1000);
+    osal_trace_alloc(&roundtrip_duration, 1000);
+
     // use our log function
     ec_log_func_user = NULL;
     ec_log_func = &no_verbose_log;
@@ -230,15 +226,9 @@ int main(int argc, char **argv) {
                     }
 
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
-                    osal_uint64_t time_start = duration_tx_pos == 0 ? start_tx_in_ns[DURATION_TX_COUNT-1] : start_tx_in_ns[duration_tx_pos-1];
-                    if ((time_end - time_start) > cycle_rate) {
-                        time_start = start_tx_in_ns[duration_tx_pos];
-                    }
+                    osal_uint64_t time_start = osal_trace_get_last_time(tx_start);
 
-                    duration_round_trip_in_ns[duration_round_trip_pos++] = time_end - time_start;
-                    if (duration_round_trip_pos >= DURATION_TX_COUNT) {
-                        duration_round_trip_pos = 0;
-                    }
+                    osal_trace_time(roundtrip_duration, time_end - time_start);
                 } &anon_cb; }), NULL);
 
     // -----------------------------------------------------------
@@ -260,7 +250,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    osal_binary_semaphore_init(&duration_tx_sync, NULL);
     cyclic_task_running = OSAL_TRUE;
     osal_task_attr_t cyclic_task_attr = { "cyclic_task", OSAL_SCHED_POLICY_FIFO, base_prio, base_affinity };
     osal_task_t cyclic_task_hdl;
@@ -268,85 +257,19 @@ int main(int argc, char **argv) {
     ec_set_state(&ec, EC_STATE_SAFEOP);
     ec_set_state(&ec, EC_STATE_OP);
 
-    osal_binary_semaphore_wait(&duration_tx_sync);
-
     // wait here
-    osal_uint64_t timer_tx_sum = 0;
-    osal_uint64_t timer_tx_med = 0;
-    osal_uint64_t timer_tx_avg_jit = 0;
-    osal_uint64_t timer_tx_max_jit = 0;
+    osal_uint64_t tx_timer_med = 0, tx_timer_avg_jit = 0, tx_timer_max_jit = 0;
+    osal_uint64_t tx_duration_med = 0, tx_duration_avg_jit = 0, tx_duration_max_jit = 0;
+    osal_uint64_t roundtrip_duration_med = 0, roundtrip_duration_avg_jit = 0, roundtrip_duration_max_jit = 0;
 
-    osal_uint64_t duration_tx_sum = 0;
-    osal_uint64_t duration_tx_med = 0;
-    osal_uint64_t duration_tx_avg_jit = 0;
-    osal_uint64_t duration_tx_max_jit = 0;
-
-    osal_uint64_t duration_round_trip_sum = 0;
-    osal_uint64_t duration_round_trip_med = 0;
-    osal_uint64_t duration_round_trip_avg_jit = 0;
-    osal_uint64_t duration_round_trip_max_jit = 0;
-
-    osal_uint64_t timer_intervals[DURATION_TX_COUNT];
 	for (;;) {
-        osal_binary_semaphore_wait(&duration_tx_sync);
+        osal_timer_t to;
+        osal_timer_init(&to, 10000000000);
+        osal_trace_timedwait(roundtrip_duration, &to);
 
-        timer_tx_avg_jit = 0;
-        timer_tx_max_jit = 0;
-        timer_tx_sum = 0;
-        for (int i = 0; i < DURATION_TX_COUNT-1; ++i) {
-            timer_intervals[i] = start_tx_in_ns[i+1] - start_tx_in_ns[i];
-            timer_tx_sum += timer_intervals[i];
-        }
-
-        timer_tx_med = timer_tx_sum / (DURATION_TX_COUNT-1);
-        
-        for (int i = 0; i < DURATION_TX_COUNT-1; ++i) {
-            osal_int64_t dev = timer_tx_med - timer_intervals[i];
-            if (dev < 0) { dev *= -1; }
-            if (dev > timer_tx_max_jit) { timer_tx_max_jit = dev; }
-
-            timer_tx_avg_jit += (dev * dev);
-        }
-        
-        timer_tx_avg_jit = sqrt(timer_tx_avg_jit/(DURATION_TX_COUNT-1));
-
-        duration_tx_avg_jit = 0;
-        duration_tx_max_jit = 0;
-        duration_tx_sum = 0;
-        for (int i = 0; i < DURATION_TX_COUNT; ++i) {
-            duration_tx_sum += duration_tx_in_ns[i];
-        }
-
-        duration_tx_med = duration_tx_sum / DURATION_TX_COUNT;
-        
-        for (int i = 0; i < DURATION_TX_COUNT; ++i) {
-            osal_int64_t dev = duration_tx_med - duration_tx_in_ns[i];
-            if (dev < 0) { dev *= -1; }
-            if (dev > duration_tx_max_jit) { duration_tx_max_jit = dev; }
-
-            duration_tx_avg_jit += (dev * dev);
-        }
-        
-        duration_tx_avg_jit = sqrt(duration_tx_avg_jit/DURATION_TX_COUNT);
-
-        duration_round_trip_avg_jit = 0;
-        duration_round_trip_max_jit = 0;
-        duration_round_trip_sum = 0;
-        for (int i = 0; i < DURATION_TX_COUNT; ++i) {
-            duration_round_trip_sum += duration_round_trip_in_ns[i];
-        }
-
-        duration_round_trip_med = duration_round_trip_sum / DURATION_TX_COUNT;
-        
-        for (int i = 0; i < DURATION_TX_COUNT; ++i) {
-            osal_int64_t dev = duration_round_trip_med - duration_round_trip_in_ns[i];
-            if (dev < 0) { dev *= -1; }
-            if (dev > duration_round_trip_max_jit) { duration_round_trip_max_jit = dev; }
-
-            duration_round_trip_avg_jit += (dev * dev);
-        }
-        
-        duration_round_trip_avg_jit = sqrt(duration_round_trip_avg_jit/DURATION_TX_COUNT);
+        osal_trace_analyze(tx_start, &tx_timer_med, &tx_timer_avg_jit, &tx_timer_max_jit);
+        osal_trace_analyze(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
+        osal_trace_analyze(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
         
 #define to_us(x)    ((double)(x)/1000.)
         no_verbose_log(0, NULL, 
@@ -354,15 +277,9 @@ int main(int argc, char **argv) {
                 "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
                 ec.hw.bytes_last_sent, (10 * 8 * ec.hw.bytes_last_sent) / 1000.,
-                to_us(timer_tx_med), 
-                to_us(timer_tx_avg_jit), 
-                to_us(timer_tx_max_jit), 
-                to_us(duration_tx_med), 
-                to_us(duration_tx_avg_jit), 
-                to_us(duration_tx_max_jit), 
-                to_us(duration_round_trip_med),
-                to_us(duration_round_trip_avg_jit), 
-                to_us(duration_round_trip_max_jit));
+                to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
+                to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
+                to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
 	}
 
     osal_task_join(&cyclic_task_hdl, NULL);
@@ -371,6 +288,10 @@ int main(int argc, char **argv) {
 
 exit:
     ec_close(&ec);
+    
+    osal_trace_free(tx_start);
+    osal_trace_free(tx_duration);
+    osal_trace_free(roundtrip_duration);
 
     return 0;
 }
