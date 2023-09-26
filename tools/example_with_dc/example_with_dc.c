@@ -268,8 +268,8 @@ int main(int argc, char **argv) {
         osal_trace_timedwait(roundtrip_duration, &to);
 
         osal_trace_analyze(tx_start, &tx_timer_med, &tx_timer_avg_jit, &tx_timer_max_jit);
-        osal_trace_analyze(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
-        osal_trace_analyze(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
+        osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
+        osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
         
 #define to_us(x)    ((double)(x)/1000.)
         no_verbose_log(0, NULL, 
