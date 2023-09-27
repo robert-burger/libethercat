@@ -44,6 +44,7 @@ int usage(int argc, char **argv) {
     printf("  -a|--affinity         Set CPU affinity for cyclic and rx thread.\n");
     printf("  -c|--clock            Distributed clock master (master/ref).\n");
     printf("  -e|--eoe              Enable EoE for slave network comm.\n");
+    printf("  -f|--cycle-frequency  Specify cycle frequency in [Hz].\n");
     printf("  --disable-overlapping Disable LRW data overlapping.\n");
     printf("  --disable-lrw         Disable LRW and use LRD/LWR instead (implies --disable-overlapping).\n");
     return 0;
@@ -132,6 +133,10 @@ int main(int argc, char **argv) {
                 (strcmp(argv[i], "--prio") == 0)) {
             if (++i < argc)
                 base_prio = strtoul(argv[i], NULL, 10);
+        } else if ((strcmp(argv[i], "-f") == 0) || 
+                (strcmp(argv[i], "--cycle-frequency") == 0)) {
+            if (++i < argc)
+                cycle_rate = (1. / strtoul(argv[i], NULL, 10)) * 1E9; // should be [Hz]
         } else if ((strcmp(argv[i], "-a") == 0) || 
                 (strcmp(argv[i], "--affinty") == 0)) {
             if (++i < argc) {
@@ -178,9 +183,10 @@ int main(int argc, char **argv) {
     if ((argc == 1) || (intf == NULL))
         return usage(argc, argv);
 
-    osal_trace_alloc(&tx_start, 1000);
-    osal_trace_alloc(&tx_duration, 1000);
-    osal_trace_alloc(&roundtrip_duration, 1000);
+    int num_samples = 1. / (cycle_rate * 1E-9);
+    osal_trace_alloc(&tx_start, num_samples);
+    osal_trace_alloc(&tx_duration, num_samples);
+    osal_trace_alloc(&roundtrip_duration, num_samples);
 
     // use our log function
     ec_log_func_user = NULL;
