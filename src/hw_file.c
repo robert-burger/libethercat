@@ -12,19 +12,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -35,6 +45,11 @@
 
 #include <assert.h>
 #include <sys/stat.h>
+
+#if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
+#include <sys/ioctl.h>
+#endif
+
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
@@ -51,6 +66,11 @@
 #if LIBETHERCAT_HAVE_WINSOCK_H == 1
 #include <winsock.h>
 #endif
+
+/* ioctls from ethercat_device */
+#define ETHERCAT_DEVICE_MAGIC             'e'
+#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
+#define ETHERCAT_DEVICE_GET_POLLING       _IOR (ETHERCAT_DEVICE_MAGIC, 2, unsigned int)
 
 //! Opens EtherCAT hw device.
 /*!
@@ -70,16 +90,43 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     phw->sockfd = open(devname, O_RDWR, 0644);
     if (phw->sockfd <= 0) {
         ec_log(1, "HW_OPEN", "error opening %s: %s\n", devname, strerror(errno));
+        ret = EC_ERROR_HW_NO_INTERFACE;
     } else {
         phw->mtu_size = 1480;
-    }
     
-    // cppcheck-suppress misra-c2012-11.3
-    pframe = (ec_frame_t *)phw->send_frame;
-    (void)memcpy(pframe->mac_dest, mac_dest, 6);
-    (void)memcpy(pframe->mac_src, mac_src, 6);
+        // cppcheck-suppress misra-c2012-11.3
+        pframe = (ec_frame_t *)phw->send_frame;
+        (void)memcpy(pframe->mac_dest, mac_dest, 6);
+        (void)memcpy(pframe->mac_src, mac_src, 6);
+
+        // check polling mode
+        phw->polling_mode = OSAL_FALSE;
+#if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
+        unsigned int pollval = 0;
+        if (ioctl(phw->sockfd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
+            phw->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
+        }
+
+        unsigned int monitor = 0;
+        (void)ioctl(phw->sockfd, ETHERCAT_DEVICE_MONITOR_ENABLE, &monitor);
+#endif
+
+        ec_log(10, "HW_OPEN", "%s polling mode\n", phw->polling_mode == OSAL_FALSE ? "not using" : "using");
+    }
 
     return ret;
+}
+
+static void hw_device_recv_internal(hw_t *phw) {
+    // cppcheck-suppress misra-c2012-11.3
+    ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
+
+    // using tradional recv function
+    osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
+
+    if (bytesrx > 0) {
+        hw_process_rx_frame(phw, pframe);
+    }
 }
 
 //! Receive a frame from an EtherCAT hw device.
@@ -90,15 +137,11 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
  * \return 0 or negative error code
  */
 int hw_device_recv(hw_t *phw) {
-    // cppcheck-suppress misra-c2012-11.3
-    ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
+    if (phw->polling_mode == OSAL_TRUE) {
+        return EC_ERROR_HW_NOT_SUPPORTED;
+    } 
 
-    // using tradional recv function
-    osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
-
-    if (bytesrx > 0) {
-        hw_process_rx_frame(phw, pframe);
-    }
+    hw_device_recv_internal(phw);
 
     return EC_OK;
 }
@@ -156,7 +199,26 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
 
         ret = EC_ERROR_HW_SEND;
     }
+    
+    phw->bytes_sent += bytestx;
 
     return ret;
 }
 
+//! Doing internal stuff when finished sending frames
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ */
+void hw_device_send_finished(hw_t *phw) {
+    // in case of polling do receive now
+    if (phw->polling_mode == OSAL_TRUE) {
+        // sleep a little bit (at least packet-on-wire-duration)
+        // 10 [ns] per bit on 100 Mbit/s Ethernet.
+        //uint64_t packet_time = 10 * 8 * phw->bytes_sent; 
+        //osal_sleep(packet_time * 0.4);
+        phw->bytes_last_sent = phw->bytes_sent;
+        phw->bytes_sent = 0;
+
+        hw_device_recv_internal(phw);
+    }
+}

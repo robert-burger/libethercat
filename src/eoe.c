@@ -6,19 +6,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -238,12 +248,17 @@ static void ec_eoe_wait_response(ec_t *pec, osal_uint16_t slave, pool_entry_t **
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_mbx_sched_read(pec, slave);
-
     osal_timer_t timeout;
-    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout_loop;
+    osal_timer_init(&timeout_loop, (osal_int64_t)EC_DEFAULT_TIMEOUT_MBX*10);
 
-    (void)pool_get(&slv->mbx.eoe.response_pool, pp_entry, &timeout);
+    do {
+        // trigger mailbox read more often while waiting 
+        ec_mbx_sched_read(pec, slave);
+
+        osal_timer_init(&timeout, 100000);
+        (void)pool_get(&slv->mbx.eoe.response_pool, pp_entry, &timeout);
+    } while ((osal_timer_expired(&timeout_loop) == OSAL_OK) && (*pp_entry == NULL));
 }
 
 //! \brief Wait for EoE message received from slave.
@@ -263,12 +278,17 @@ static void ec_eoe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_mbx_sched_read(pec, slave);
-
     osal_timer_t timeout;
-    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_t timeout_loop;
+    osal_timer_init(&timeout_loop, (osal_int64_t)EC_DEFAULT_TIMEOUT_MBX*10);
 
-    (void)pool_get(&slv->mbx.eoe.recv_pool, pp_entry, &timeout);
+    do {
+        // trigger mailbox read more often while waiting 
+        ec_mbx_sched_read(pec, slave);
+
+        osal_timer_init(&timeout, 100000);
+        (void)pool_get(&slv->mbx.eoe.recv_pool, pp_entry, &timeout);
+    } while ((osal_timer_expired(&timeout_loop) == OSAL_OK) && (*pp_entry == NULL));
 }
 
 //! \brief Enqueue EoE message received from slave.
@@ -320,6 +340,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
 
     pool_entry_t *p_entry;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     
     osal_mutex_lock(&slv->mbx.eoe.lock);
@@ -331,6 +352,8 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
     } else {
         ec_log(10, "EOE_SET_IP_PARAMETER", "slave %2d: set ip parameter\n", slave);
 
+        (void)ec_mbx_next_counter(pec, slave, &counter);
+
         // cppcheck-suppress misra-c2012-11.3
         ec_eoe_set_ip_parameter_request_t *write_buf = (ec_eoe_set_ip_parameter_request_t *)(p_entry->data);
 
@@ -338,6 +361,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
         // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (4) + siphdr (4)
         write_buf->mbx_hdr.length    = 8;
         write_buf->mbx_hdr.mbxtype   = EC_MBX_EOE;
+        write_buf->mbx_hdr.counter   = counter;
         // eoe header
         write_buf->eoe_hdr.frame_type         = EOE_FRAME_TYPE_SET_IP_ADDRESS_REQUEST;
         write_buf->eoe_hdr.last_fragment      = 0x01;
@@ -412,6 +436,7 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
     assert(frame != NULL);
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     
     osal_mutex_lock(&slv->mbx.eoe.lock);
@@ -442,11 +467,14 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
             // cppcheck-suppress misra-c2012-11.3
             ec_eoe_request_t *write_buf = (ec_eoe_request_t *)(p_entry->data);
 
+            (void)ec_mbx_next_counter(pec, slave, &counter);
+
             ec_log(100, "EOE_SEND_FRAME", "slave %2d: sending eoe fragment %d\n", slave, frag_number);
             // mailbox header
             // (mbxhdr (6) - mbxhdr.length (2)) + eoehdr (8) + sdohdr (4)
             write_buf->mbx_hdr.length           = 4u + frag_len;
             write_buf->mbx_hdr.mbxtype          = EC_MBX_EOE;
+            write_buf->mbx_hdr.counter          = counter;
             // eoe header
             write_buf->eoe_hdr.frame_type       = EOE_FRAME_TYPE_REQUEST;
             write_buf->eoe_hdr.fragment_number  = frag_number;
@@ -536,7 +564,10 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     if (read_buf->eoe_hdr.last_fragment != 0u) {
                         if (pec->tun_fd > 0) {
 #if LIBETHERCAT_BUILD_POSIX == 1
-                            write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
+                            int local_ret = write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
+			    if (local_ret < 0) {
+				    ec_log(1, "EOE_RECV", "writing failed!\n");
+			    }
 #endif
                             pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                         } else {
@@ -560,7 +591,10 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     eoe_debug_print("EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
 
 #if LIBETHERCAT_BUILD_POSIX == 1
-                    write(pec->tun_fd, eth_frame->frame_data, frame_offset);
+                    int local_ret = write(pec->tun_fd, eth_frame->frame_data, frame_offset);
+		    if (local_ret < 0) {
+			    ec_log(1, "EOE_RECV", "writing failed!\n");
+		    }
 #endif
                     pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
@@ -739,6 +773,7 @@ int ec_eoe_setup_tun(ec_t *pec) {
         } else {
             pec->tun_running = 1;
             osal_task_attr_t attr;
+            attr.policy = OSAL_SCHED_POLICY_FIFO;
             attr.priority = 5;
             attr.affinity = 0xFF;
             (void)strcpy(&attr.task_name[0], "ecat.tun");

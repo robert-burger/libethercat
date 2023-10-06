@@ -8,6 +8,7 @@ if BUILD_POSIX
 SUBDIRS+=tools/ethercatdiag 
 SUBDIRS+=tools/eepromtool
 SUBDIRS+=tools/example_with_dc
+SUBDIRS+=tools/foe_tool
 endif
 
 pkgconfig_DATA = libethercat.pc

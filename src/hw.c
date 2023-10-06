@@ -12,19 +12,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -58,7 +68,7 @@
 #endif
 
 //! receiver thread forward declaration
-static void *hw_rx_thread(void *arg);
+void *hw_rx_thread(void *arg);
 
 //! open a new hw
 /*!
@@ -74,18 +84,19 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
     int ret;
 
     phw->pec = pec;
+    phw->bytes_last_sent = 0;
 
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
 
-    osal_mutex_attr_t mtx_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
-    osal_mutex_init(&phw->hw_lock, &mtx_attr);
+    osal_mutex_init(&phw->hw_lock, NULL);
 
     ret = hw_device_open(phw, devname);
 
     if (ret == EC_OK) {
         phw->rxthreadrunning = 1;
         osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_FIFO;
         attr.priority = prio;
         attr.affinity = cpumask;
         (void)strcpy(&attr.task_name[0], "ecat.rx");
@@ -133,6 +144,7 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
         ec_datagram_t *d = ec_datagram_first(pframe); 
         while ((osal_uint8_t *) d < (osal_uint8_t *) ec_frame_end(pframe)) {
             pool_entry_t *entry = phw->tx_send[d->idx];
+            phw->tx_send[d->idx] = NULL;
 
             if (!entry) {
                 ec_log(1, "HW_RX", "received idx %d, but we did not send one?\n", d->idx);
@@ -162,7 +174,9 @@ void *hw_rx_thread(void *arg) {
     ec_log(10, "HW_RX", "receive thread running (prio %d)\n", rx_prio);
 
     while (phw->rxthreadrunning != 0) {
-        (void)hw_device_recv(phw);
+        if (hw_device_recv(phw) != EC_OK) {
+            break;
+        }
     }
     
     ec_log(10, "HW_RX", "receive thread stopped\n");
@@ -170,7 +184,80 @@ void *hw_rx_thread(void *arg) {
     return NULL;
 }
 
-//! start sending queued ethercat datagrams
+//! internal tx func
+static void hw_tx_pool(hw_t *phw, pool_t *pool) {
+    assert(phw != NULL);
+
+    osal_bool_t sent = OSAL_FALSE;
+    ec_frame_t *pframe = NULL;
+
+    (void)hw_device_get_tx_buffer(phw, &pframe);
+
+    ec_datagram_t *pdg = ec_datagram_first(pframe);
+    ec_datagram_t *pdg_prev = NULL;
+
+    pool_entry_t *p_entry = NULL;
+    ec_datagram_t *p_entry_dg = NULL;
+
+    // send frames
+    osal_size_t len;
+    do {
+        (void)pool_peek(pool, &p_entry);
+        if (p_entry !=  NULL) {
+            // cppcheck-suppress misra-c2012-11.3
+            p_entry_dg = (ec_datagram_t *)p_entry->data;
+            len = ec_datagram_length(p_entry_dg);
+        } else { len = 0u; }
+
+        if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
+            if (pframe->len != sizeof(ec_frame_t)) {
+                (void)hw_device_send(phw, pframe);
+                sent = OSAL_TRUE;
+                (void)hw_device_get_tx_buffer(phw, &pframe);
+                pdg = ec_datagram_first(pframe);
+            }
+        }
+
+        if (len != 0u) {
+            pool_remove(pool, p_entry);
+            if (pdg_prev != NULL) {
+                ec_datagram_mark_next(pdg_prev);
+            }
+
+            p_entry_dg->next = 0;
+            (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
+            pframe->len += len;
+            pdg_prev = pdg;
+            pdg = ec_datagram_next(pdg);
+
+            // store as sent
+            phw->tx_send[p_entry_dg->idx] = p_entry;
+        }
+    } while (len > 0);
+    
+    if (sent == OSAL_TRUE) {
+        hw_device_send_finished(phw);
+    }
+}
+
+//! start sending queued ethercat datagrams (low prio queue)
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_tx_low(hw_t *phw) {
+    assert(phw != NULL);
+
+    int ret = EC_OK;
+
+    osal_mutex_lock(&phw->hw_lock);
+    hw_tx_pool(phw, &phw->tx_low);
+    osal_mutex_unlock(&phw->hw_lock);
+
+    return ret;
+}
+
+//! start sending queued ethercat datagrams (high and low)
 /*!
  * \param phw hardware handle
  * \return 0 or error code
@@ -179,65 +266,12 @@ int hw_tx(hw_t *phw) {
     assert(phw != NULL);
 
     int ret = EC_OK;
-    ec_frame_t *pframe = NULL;
 
     osal_mutex_lock(&phw->hw_lock);
 
-    (void)hw_device_get_tx_buffer(phw, &pframe);
-
-    ec_datagram_t *pdg = ec_datagram_first(pframe);
-    ec_datagram_t *pdg_prev = NULL;
-
-    pool_t *pools[] = { &phw->tx_high, &phw->tx_low};
-    int pool_idx = 0;
-    pool_entry_t *p_entry = NULL;
-    ec_datagram_t *p_entry_dg = NULL;
-
-    // send high priority cyclic frames
-    while ((pool_idx < 2) && (ret == EC_OK)) {
-        osal_size_t len = 0;
-        (void)pool_peek(pools[pool_idx], &p_entry);
-        if (p_entry !=  NULL) {
-            // cppcheck-suppress misra-c2012-11.3
-            p_entry_dg = (ec_datagram_t *)p_entry->data;
-            len = ec_datagram_length(p_entry_dg);
-        }
-
-        if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
-            if (pframe->len == sizeof(ec_frame_t)) {
-                // nothing to send
-            } else {
-                ret = hw_device_send(phw, pframe);
-                (void)hw_device_get_tx_buffer(phw, &pframe);
-                pdg = ec_datagram_first(pframe);
-            }
-
-            pool_idx++;
-        }
-
-        if (len != 0u) {
-            ret = pool_get(pools[pool_idx], &p_entry, NULL);
-            if (ret == EC_OK) {
-                if (pdg_prev != NULL) {
-                    ec_datagram_mark_next(pdg_prev);
-                }
-
-                // cppcheck-suppress misra-c2012-11.3
-                p_entry_dg = (ec_datagram_t *)p_entry->data;
-                p_entry_dg->next = 0;
-                (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
-                pframe->len += ec_datagram_length(p_entry_dg);
-                pdg_prev = pdg;
-                pdg = ec_datagram_next(pdg);
-
-                // store as sent
-                phw->tx_send[p_entry_dg->idx] = p_entry;
-            } else {
-                ret = EC_OK;
-                break;
-            }
-        }
-    }
+    osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
+    hw_tx_pool(phw, &phw->tx_high);
+    hw_tx_pool(phw, &phw->tx_low);
 
     osal_mutex_unlock(&phw->hw_lock);
 

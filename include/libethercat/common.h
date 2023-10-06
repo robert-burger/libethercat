@@ -13,19 +13,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_COMMON_H
@@ -38,117 +48,155 @@
 #include <stdint.h>
 
 #ifdef LIBETHERCAT_MAX_SLAVES
+//! Maximum number of EtherCAT slaves supported.
 #define LEC_MAX_SLAVES                      ( (osal_size_t)LIBETHERCAT_MAX_SLAVES )
 #else
-#define LEC_MAX_SLAVES                      (      256u)
+//! Maximum number of EtherCAT slaves supported.
+#define LEC_MAX_SLAVES                      ( (osal_size_t)     256u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_GROUPS
+//! Maximum number of EtherCAT groups supported.
 #define LEC_MAX_GROUPS                      ( (osal_size_t)LIBETHERCAT_MAX_GROUPS )
 #else
-#define LEC_MAX_GROUPS                      (        8u)
+//! Maximum number of EtherCAT groups supported.
+#define LEC_MAX_GROUPS                      ( (osal_size_t)       8u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_PDLEN
+//! Maximum process data length.
 #define LEC_MAX_PDLEN                       ( (osal_size_t)LIBETHERCAT_MAX_PDLEN )
 #else
-#define LEC_MAX_PDLEN                       (2u * 1518u)
+//! Maximum process data length.
+#define LEC_MAX_PDLEN                       ( (osal_size_t)(2u * 1518u))
 #endif
 
 #ifdef LIBETHERCAT_MAX_MBX_ENTRIES
+//! Maximum number of mailbox entries.
 #define LEC_MAX_MBX_ENTRIES                 ( (osal_size_t)LIBETHERCAT_MAX_MBX_ENTRIES )
 #else
-#define LEC_MAX_MBX_ENTRIES                 (       16u)
+//! Maximum number of mailbox entries.
+#define LEC_MAX_MBX_ENTRIES                 ( (osal_size_t)      16u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_INIT_CMD_DATA
+//! Maximum size of init command data.
 #define LEC_MAX_INIT_CMD_DATA               ( (osal_size_t)LIBETHERCAT_MAX_INIT_CMD_DATA )
 #else
-#define LEC_MAX_INIT_CMD_DATA               (     2048u)
+//! Maximum size of init command data.
+#define LEC_MAX_INIT_CMD_DATA               ( (osal_size_t)    2048u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_SLAVE_FMMU
+//! Maximum number of slave FMMUs.
 #define LEC_MAX_SLAVE_FMMU                  ( (osal_size_t)LIBETHERCAT_MAX_SLAVE_FMMU )
 #else
-#define LEC_MAX_SLAVE_FMMU                  (        8u)
+//! Maximum number of slave FMMUs.
+#define LEC_MAX_SLAVE_FMMU                  ( (osal_size_t)       8u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_SLAVE_SM
+//! Maximum number of slave sync managers.
 #define LEC_MAX_SLAVE_SM                    ( (osal_size_t)LIBETHERCAT_MAX_SLAVE_SM )
 #else
-#define LEC_MAX_SLAVE_SM                    (        8u)
+//! Maximum number of slave sync managers.
+#define LEC_MAX_SLAVE_SM                    ( (osal_size_t)       8u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_DATAGRAMS                   
+//! Maximum number of datagrams.
 #define LEC_MAX_DATAGRAMS                   ( (osal_size_t)LIBETHERCAT_MAX_DATAGRAMS )
 #else
-#define LEC_MAX_DATAGRAMS                   (      100u)
+//! Maximum number of datagrams.
+#define LEC_MAX_DATAGRAMS                   ( (osal_size_t)     100u)
 #endif 
 
 #ifdef LIBETHERCAT_MAX_EEPROM_CAT_SM
+//! Maximum number of EEPROM catergory sync manager entries.
 #define LEC_MAX_EEPROM_CAT_SM               ( (osal_size_t)LIBETHERCAT_MAX_EEPROM_CAT_SM )
 #else
-#define LEC_MAX_EEPROM_CAT_SM               (LEC_MAX_SLAVE_SM)
+//! Maximum number of EEPROM catergory sync manager entries.
+#define LEC_MAX_EEPROM_CAT_SM               ( (osal_size_t)LEC_MAX_SLAVE_SM)
 #endif
 
 #ifdef LIBETHERCAT_MAX_EEPROM_CAT_FMMU
+//! Maximum number of EEPROM catergory FMMU entries.
 #define LEC_MAX_EEPROM_CAT_FMMU             ( (osal_size_t)LIBETHERCAT_MAX_EEPROM_CAT_FMMU )
 #else
-#define LEC_MAX_EEPROM_CAT_FMMU             (LEC_MAX_SLAVE_FMMU)
+//! Maximum number of EEPROM catergory FMMU entries.
+#define LEC_MAX_EEPROM_CAT_FMMU             ( (osal_size_t)LEC_MAX_SLAVE_FMMU)
 #endif
 
 #ifdef LIBETHERCAT_MAX_EEPROM_CAT_PDO
+//! Maximum number of EEPROM catergory PDO entries.
 #define LEC_MAX_EEPROM_CAT_PDO              ( (osal_size_t)LIBETHERCAT_MAX_EEPROM_CAT_PDO )
 #else
-#define LEC_MAX_EEPROM_CAT_PDO              (      128u)
+//! Maximum number of EEPROM catergory PDO entries.
+#define LEC_MAX_EEPROM_CAT_PDO              ( (osal_size_t)     128u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_EEPROM_CAT_PDO_ENTRIES
+//! Maximum number of EEPROM catergory PDO entries.
 #define LEC_MAX_EEPROM_CAT_PDO_ENTRIES      ( (osal_size_t)LIBETHERCAT_MAX_EEPROM_CAT_PDO_ENTRIES )
 #else
-#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES      (       32u)
+//! Maximum number of EEPROM catergory PDO entries.
+#define LEC_MAX_EEPROM_CAT_PDO_ENTRIES      ( (osal_size_t)      32u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_EEPROM_CAT_STRINGS      
+//! Maximum number of EEPROM catergory string entries.
 #define LEC_MAX_EEPROM_CAT_STRINGS          ( (osal_size_t)LIBETHERCAT_MAX_EEPROM_CAT_STRINGS )
 #else
-#define LEC_MAX_EEPROM_CAT_STRINGS          (      128u)
+//! Maximum number of EEPROM catergory string entries.
+#define LEC_MAX_EEPROM_CAT_STRINGS          ( (osal_size_t)     128u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_EEPROM_CAT_DC      
+//! Maximum number of EEPROM catergory distributed clocks entries.
 #define LEC_MAX_EEPROM_CAT_DC               ( (osal_size_t)LIBETHERCAT_MAX_EEPROM_CAT_DC )
 #else
-#define LEC_MAX_EEPROM_CAT_DC               (        8u)
+//! Maximum number of EEPROM catergory distributed clocks entries.
+#define LEC_MAX_EEPROM_CAT_DC               ( (osal_size_t)       8u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_STRING_LEN
+//! Maximum string length.
 #define LEC_MAX_STRING_LEN                  ( (osal_size_t)LIBETHERCAT_MAX_STRING_LEN )
 #else
-#define LEC_MAX_STRING_LEN                  (      128u)
+//! Maximum string length.
+#define LEC_MAX_STRING_LEN                  ( (osal_size_t)     128u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_DATA
+//! Maximum data length.
 #define LEC_MAX_DATA                        ( (osal_size_t)LIBETHERCAT_MAX_DATA )
 #else
-#define LEC_MAX_DATA                        (     4096u)
+//! Maximum data length.
+#define LEC_MAX_DATA                        ( (osal_size_t)    4096u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_DS402_SUBDEVS
+//! Maximum DS420 sub devices.
 #define LEC_MAX_DS402_SUBDEVS               ( (osal_size_t)LIBETHERCAT_MAX_DS402_SUBDEVS )
 #else
-#define LEC_MAX_DS402_SUBDEVS               (        4u)
+//! Maximum DS420 sub devices.
+#define LEC_MAX_DS402_SUBDEVS               ( (osal_size_t)       4u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_COE_EMERGENCIES
+//! Maximum number of CoE emergency messages.
 #define LEC_MAX_COE_EMERGENCIES             ( (osal_size_t)LIBETHERCAT_MAX_COE_EMERGENCIES )
 #else
-#define LEC_MAX_COE_EMERGENCIES             (       10u)
+//! Maximum number of CoE emergency messages.
+#define LEC_MAX_COE_EMERGENCIES             ( (osal_size_t)      10u)
 #endif
 
 #ifdef LIBETHERCAT_MAX_COE_EMERGENCY_MSG_LEN
+//! Maximum message length of CoE emergency messages.
 #define LEC_MAX_COE_EMERGENCY_MSG_LEN       ( (osal_size_t)LIBETHERCAT_MAX_COE_EMERGENCY_MSG_LEN )
 #else
-#define LEC_MAX_COE_EMERGENCY_MSG_LEN       (       32u)
+//! Maximum message length of CoE emergency messages.
+#define LEC_MAX_COE_EMERGENCY_MSG_LEN       ( (osal_size_t)      32u)
 #endif
 
 #define PACKED __attribute__((__packed__))

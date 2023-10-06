@@ -30,8 +30,9 @@ enum tool_mode {
     mode_write
 };
 
+ec_t ec;
+
 int main(int argc, char **argv) {
-    ec_t ec;
     int ret, slave = -1, i;
 
     char *intf = NULL, *fn = NULL;
@@ -70,6 +71,7 @@ int main(int argc, char **argv) {
     ec_log_func = &no_verbose_log;
 
     ret = ec_open(&ec, intf, 90, 1, 1);
+    ec_set_state(&ec, EC_STATE_INIT);
 
     switch (mode) {
         default: 
@@ -102,6 +104,7 @@ int main(int argc, char **argv) {
             uint8_t bigbuf[2048];
             size_t bigbuf_len = 2048;
             int bytes;
+            uint16_t wkc;
             
             if (fn) {
                 int fd = open(fn, O_CREAT | O_RDWR, 0777);
@@ -111,6 +114,17 @@ int main(int argc, char **argv) {
                 bytes = read(0, bigbuf, bigbuf_len);
             
             ec_eepromwrite_len(&ec, slave, 0, (uint8_t *)bigbuf, bigbuf_len);
+                
+            ec_log(10, "EEPROM WRITE", "slave %2d: try to reset PDI\n", slave);
+            osal_uint8_t reset_vals[] = { (osal_uint8_t)'R', (osal_uint8_t)'E', (osal_uint8_t)'S' };
+            for (int i = 0; i < 3; ++i) {
+                (void)ec_fpwr(&ec, ec.slaves[slave].fixed_address, 0x41, &reset_vals[i], 1, &wkc);
+            }
+            ec_log(10, "EEPROM WRITE", "slave %2d: try to reset ESC\n", slave);
+            for (int i = 0; i < 3; ++i) {
+                (void)ec_fpwr(&ec, ec.slaves[slave].fixed_address, 0x40, &reset_vals[i], 1, &wkc);
+            }
+
             break;
         }
     }

@@ -13,19 +13,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_SLAVE_H
@@ -37,6 +47,13 @@
 #include "libethercat/eeprom.h"
 #include "libethercat/dc.h"
 #include "libethercat/mbx.h"
+
+/** \defgroup slave_group Slave
+ *
+ * This modules contains main EtherCAT slave functions.
+ *
+ * @{
+ */
 
 //! EtherCAT slave state transitions
 #define BOOT_2_BOOT      0x0303u  //!< \brief BOOT to BOOT state transition
@@ -170,7 +187,7 @@ typedef struct ec_init_cmd {
                                  * target state. (e.g. 0x24 -> PRE to SAFE, ..)
                                  */
 
-    LIST_ENTRY(ec_init_cmd) le;
+    LIST_ENTRY(ec_init_cmd) le; //!< List entry handle.
 
     int id;                     //!< index 
                                 /*!< 
@@ -203,10 +220,10 @@ typedef struct ec_init_cmd {
 LIST_HEAD(ec_init_cmds, ec_init_cmd);
 
 typedef struct worker_arg {
-    struct ec *pec;
-    int slave;
-    ec_state_t state;
-} worker_arg_t;
+    struct ec *pec;             //!< \brief Pointer to EtherCAT master struct.
+    int slave;                  //!< \brief Slave number this worker is doing things for.
+    ec_state_t state;           //!< \brief State of EtherCAT slave.
+} worker_arg_t;                 //!< \brief Worker thread argument structure.
 
 typedef struct ec_slave {
     osal_uint32_t slave;            //!< \brief Slave index in EtherCAT master array.
@@ -214,6 +231,7 @@ typedef struct ec_slave {
     osal_int16_t auto_inc_address;   //!< physical bus address
     osal_uint16_t fixed_address;//!< virtual bus address, programmed on start
 
+    osal_uint16_t type;         //!< value of EC_REG_TYPE
     osal_uint8_t sm_ch;         //!< number of sync manager channels
     osal_uint8_t fmmu_ch;       //!< number of fmmu channels
     osal_uint32_t ram_size;     //!< ram size in bytes
@@ -254,7 +272,7 @@ typedef struct ec_slave {
                                  * \endlink.
                                  */
 
-    int assigned_pd_group;
+    int assigned_pd_group;      //!< Process data group this slave is assigned to.
     ec_pd_t pdin;               //!< input process data 
                                 /*!<
                                  * This is the complete input process data of 
@@ -289,7 +307,7 @@ typedef struct ec_slave {
                                  * axes per slave, ...
                                  */
 
-    ec_mbx_t mbx;               //!< EtherCAT mailbox structure */
+    ec_mbx_t mbx;               //!< EtherCAT mailbox structure
 
     eeprom_info_t eeprom;       //!< EtherCAT slave EEPROM data
     ec_dc_info_slave_t dc;      //!< Distributed Clock settings
@@ -299,8 +317,8 @@ typedef struct ec_slave {
     ec_state_t expected_state;  //!< Master expected slave state
     ec_state_t act_state;       //!< Actual/Last read slave state.
 
-    osal_mutex_t transition_mutex;
-    osal_bool_t transition_active;
+    osal_mutex_t transition_mutex;  //!< Lock for state transition pending.
+    osal_bool_t transition_active;  //!< Flag is state transition is currently active.
 
     struct ec_init_cmds init_cmds;
                                 //!< EtherCAT slave init commands
@@ -539,6 +557,8 @@ const osal_char_t *al_status_code_2_string(int code);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_SLAVE_H
 

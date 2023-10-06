@@ -10,20 +10,31 @@
  */
 
 /*
- * This file is part of robotkernel.
+ * This file is part of libethercat.
  *
- * robotkernel is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * robotkernel is distributed in the hope that it will be useful,
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * You should have received a copy of the GNU General Public License
- * along with robotkernel.  If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -986,12 +997,12 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // configure distributed clocks if needed 
                 if (pec->dc.have_dc && slv->dc.use_dc) {
                     if (slv->dc.cycle_time_0 == 0u) {
-                        slv->dc.cycle_time_0 = pec->dc.timer_override; 
+                        slv->dc.cycle_time_0 = pec->main_cycle_interval; 
                     }
 
                     if (slv->dc.type == 1) {
                         if (slv->dc.cycle_time_1 == 0u) {
-                            slv->dc.cycle_time_1 = pec->dc.timer_override; 
+                            slv->dc.cycle_time_1 = pec->main_cycle_interval; 
                         }
 
                         ec_log(10, get_transition_string(transition), 

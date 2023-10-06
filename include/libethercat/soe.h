@@ -10,23 +10,32 @@
  * Implementaion of the Servodrive over EtherCAT mailbox protocol
  */
 
-
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_SOE_H
@@ -37,10 +46,17 @@
 
 #include "libethercat/common.h"
 
+/** \defgroup soe_group Servodrive over EtherCAT (SoE)
+ *
+ * This modules contains EtherCAT SoE mailbox functions.
+ *
+ * @{
+ */
+
 typedef struct ec_soe {
-    pool_t recv_pool;
-    osal_mutex_t lock;
-} ec_soe_t;
+    pool_t recv_pool;       //!< Mailbox received messages pool.
+    osal_mutex_t lock;      //!< Mailbox lock.
+} ec_soe_t;                 //!< SoE mailbox struct type.
 
 //! ServoDrive attributes of an IDN
 typedef struct PACKED ec_soe_idn_attribute {
@@ -49,24 +65,24 @@ typedef struct PACKED ec_soe_idn_attribute {
     osal_uint32_t list        :1;           //!< \brief IDN is list.
     osal_uint32_t command     :1;           //!< \brief IDN is command.
     osal_uint32_t datatype    :3;           //!< \brief Datatype according to ServoDrive Specification.
-    osal_uint32_t reserved1   :1;
+    osal_uint32_t reserved1   :1;           //!< \brief for future use.
     osal_uint32_t decimals    :4;           //!< \brief If float, number of decimals.
     osal_uint32_t wp_preop    :1;           //!< \brief Write protect in PREOP.
     osal_uint32_t wp_safeop   :1;           //!< \brief Write protect in SAFEOP.
     osal_uint32_t wp_op       :1;           //!< \brief Write protect in OP.
-    osal_uint32_t reserved2   :1;
+    osal_uint32_t reserved2   :1;           //!< \brief for future use.
 } PACKED ec_soe_idn_attribute_t;
 
 //! ServoDrive elements of an IDN
 enum ec_soe_element {
-    EC_SOE_DATASTATE   = 0x01,
+    EC_SOE_DATASTATE   = 0x01,              //!< \brief idn data state
     EC_SOE_NAME        = 0x02,              //!< \brief idn name
     EC_SOE_ATTRIBUTE   = 0x04,              //!< \brief idn attributes
     EC_SOE_UNIT        = 0x08,              //!< \brief idn unit
     EC_SOE_MIN         = 0x10,              //!< \brief idn minimum value
     EC_SOE_MAX         = 0x20,              //!< \brief idn maximum value
     EC_SOE_VALUE       = 0x40,              //!< \brief idn value
-    EC_SOE_DEFAULT     = 0x80       
+    EC_SOE_DEFAULT     = 0x80               //!< \brief idn data/default
 };
 
 #ifdef __cplusplus
@@ -172,6 +188,8 @@ int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_SOE_H
 

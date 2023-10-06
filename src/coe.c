@@ -8,19 +8,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -286,12 +296,17 @@ static void ec_coe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_mbx_sched_read(pec, slave);
-
     osal_timer_t timeout;
-    osal_timer_init(&timeout, (osal_int64_t)EC_DEFAULT_TIMEOUT_MBX*10);
+    osal_timer_t timeout_loop;
+    osal_timer_init(&timeout_loop, (osal_int64_t)EC_DEFAULT_TIMEOUT_MBX*10);
 
-    (void)pool_get(&slv->mbx.coe.recv_pool, pp_entry, &timeout);
+    do {
+        // trigger mailbox read more often while waiting 
+        ec_mbx_sched_read(pec, slave);
+
+        osal_timer_init(&timeout, 100000);
+        (void)pool_get(&slv->mbx.coe.recv_pool, pp_entry, &timeout);
+    } while ((osal_timer_expired(&timeout_loop) == OSAL_OK) && (*pp_entry == NULL));
 }
 
 //! \brief Enqueue CoE message received from slave.
@@ -334,6 +349,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
         
     // default error return
@@ -354,10 +370,13 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
             // cppcheck-suppress misra-c2012-11.3
             ec_sdo_normal_upload_req_t *write_buf = (ec_sdo_normal_upload_req_t *)(p_entry->data);
 
+            (void)ec_mbx_next_counter(pec, slave, &counter);
+
             // mailbox header
             // (mbxhdr (6) - mbxhdr.length (2)) + coehdr (2) + sdohdr (4)
             write_buf->mbx_hdr.length    = EC_SDO_NORMAL_HDR_LEN; 
             write_buf->mbx_hdr.mbxtype   = EC_MBX_COE;
+            write_buf->mbx_hdr.counter   = counter;
             // coe header
             write_buf->coe_hdr.service   = EC_COE_SDOREQ;
             // sdo header
@@ -448,6 +467,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
 
     // default error return
@@ -467,10 +487,13 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
             // cppcheck-suppress misra-c2012-11.3
             ec_sdo_expedited_download_req_t *exp_write_buf = (void *)(p_entry->data);
 
+            (void)ec_mbx_next_counter(pec, slave, &counter);
+
             // mailbox header
             // (mbxhdr (6) - mbxhdr.length (2)) + coehdr (2) + sdohdr (4)
             exp_write_buf->mbx_hdr.length           = EC_SDO_NORMAL_HDR_LEN;
             exp_write_buf->mbx_hdr.mbxtype          = EC_MBX_COE;
+            exp_write_buf->mbx_hdr.counter          = counter;
             // coe header
             exp_write_buf->coe_hdr.service          = EC_COE_SDOREQ;
             // sdo header
@@ -540,6 +563,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
 
     // default error return
@@ -555,6 +579,8 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
             ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
         } else { 
             assert(p_entry != NULL);
+            
+            (void)ec_mbx_next_counter(pec, slave, &counter);
 
             // cppcheck-suppress misra-c2012-11.3
             ec_sdo_normal_download_req_t *write_buf = (ec_sdo_normal_download_req_t *)(p_entry->data);
@@ -567,6 +593,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
             // (mbxhdr (6) - mbxhdr.length (2)) + coehdr (2) + sdohdr (4)
             write_buf->mbx_hdr.length           = EC_SDO_NORMAL_HDR_LEN + seg_len; 
             write_buf->mbx_hdr.mbxtype          = EC_MBX_COE;
+            write_buf->mbx_hdr.counter          = counter;
             // coe header
             write_buf->coe_hdr.service          = EC_COE_SDOREQ;
             // sdo header
@@ -636,9 +663,12 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
 
                         ec_sdo_seg_download_req_t *seg_write_buf = (void *)(p_entry->data);
 
+                        (void)ec_mbx_next_counter(pec, slave, &counter);
+
                         // need to send more segments
                         seg_write_buf->mbx_hdr.length           = EC_SDO_SEG_HDR_LEN + seg_len;
                         seg_write_buf->mbx_hdr.mbxtype          = EC_MBX_COE;
+                        seg_write_buf->mbx_hdr.counter          = counter;
                         // coe header
                         seg_write_buf->coe_hdr.service          = EC_COE_SDOREQ;
                         // sdo header
@@ -754,6 +784,7 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_OK; 
+    int counter;
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
@@ -766,6 +797,8 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
             ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
         } else { 
             assert(p_entry != NULL);
+                        
+            (void)ec_mbx_next_counter(pec, slave, &counter);
 
             // cppcheck-suppress misra-c2012-11.3
             ec_sdo_odlist_req_t *write_buf = (ec_sdo_odlist_req_t *)(p_entry->data);
@@ -773,6 +806,7 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
             // mailbox header
             write_buf->mbx_hdr.length       = 8;//12; // (mbxhdr (6) - length (2)) + coehdr (2) + sdoinfohdr (4)
             write_buf->mbx_hdr.mbxtype      = EC_MBX_COE;
+            write_buf->mbx_hdr.counter      = counter;
             // coe header
             write_buf->coe_hdr.service      = EC_COE_SDOINFO;
             // sdo header
@@ -867,6 +901,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_OK;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
@@ -879,6 +914,8 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
             ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
         } else { 
             assert(p_entry != NULL);
+            
+            (void)ec_mbx_next_counter(pec, slave, &counter);
 
             // cppcheck-suppress misra-c2012-11.3
             ec_sdo_desc_req_t *write_buf = (ec_sdo_desc_req_t *)(p_entry->data);
@@ -886,6 +923,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
             // mailbox header
             write_buf->mbx_hdr.length       = 12; // (mbxhdr - length) + coehdr + sdohdr
             write_buf->mbx_hdr.mbxtype      = EC_MBX_COE;
+            write_buf->mbx_hdr.counter      = counter;
             // coe header
             write_buf->coe_hdr.service      = EC_COE_SDOINFO;
             // sdo header
@@ -979,6 +1017,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_READ;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
@@ -992,12 +1031,15 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
         } else { 
             assert(p_entry != NULL);
 
+            (void)ec_mbx_next_counter(pec, slave, &counter);
+
             // cppcheck-suppress misra-c2012-11.3
             ec_sdo_entry_desc_req_t *write_buf = (ec_sdo_entry_desc_req_t *)(p_entry->data);
 
             // mailbox header
             write_buf->mbx_hdr.length       = 10; // (mbxhdr - length) + coehdr + sdohdr
             write_buf->mbx_hdr.mbxtype      = EC_MBX_COE;
+            write_buf->mbx_hdr.counter      = counter;
             // coe header
             write_buf->coe_hdr.service      = EC_COE_SDOINFO;
             // sdo header
@@ -1262,6 +1304,8 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
         }
             
         (void)osal_mutex_unlock(&slv->mbx.coe.lock);
+
+        ret = EC_OK;
     }
 
     return ret;

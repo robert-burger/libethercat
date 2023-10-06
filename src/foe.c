@@ -11,23 +11,32 @@
  * mailbox protocol.
  */
 
-
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -67,8 +76,8 @@ typedef struct PACKED ec_foe_header {
 typedef struct PACKED ec_foe_rw_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        password;   //!< FoE password
-    osal_char_t            file_name[MAX_FILE_NAME_SIZE];
+    osal_uint32_t   password;   //!< FoE password
+    osal_char_t     file_name[MAX_FILE_NAME_SIZE];
                                 //!< FoE filename to read/write
 } PACKED ec_foe_rw_request_t;
 
@@ -76,7 +85,7 @@ typedef struct PACKED ec_foe_rw_request {
 typedef struct PACKED ec_foe_data_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        packet_nr;  //!< FoE segmented packet number
+    osal_uint32_t   packet_nr;  //!< FoE segmented packet number
     ec_data_t       data;       //!< FoE segmented packet data
 } PACKED ec_foe_data_request_t;
 
@@ -84,15 +93,15 @@ typedef struct PACKED ec_foe_data_request {
 typedef struct PACKED ec_foe_ack_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        packet_nr;  //!< FoE segmented packet number
+    osal_uint32_t   packet_nr;  //!< FoE segmented packet number
 } PACKED ec_foe_ack_request_t;
 
 //! error request
 typedef struct PACKED ec_foe_error_request {
     ec_mbx_header_t mbx_hdr;    //!< mailbox header
     ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t        error_code; //!< error code
-    osal_char_t            error_text[MAX_ERROR_TEXT_SIZE];
+    osal_uint32_t   error_code; //!< error code
+    osal_char_t     error_text[MAX_ERROR_TEXT_SIZE];
                                 //!< error text
 } PACKED ec_foe_error_request_t;
 
@@ -152,7 +161,7 @@ static void ec_foe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     ec_mbx_sched_read(pec, slave);
 
     osal_timer_t timeout;
-    osal_timer_init(&timeout, EC_DEFAULT_TIMEOUT_MBX);
+    osal_timer_init(&timeout, (osal_uint64_t)30 * EC_DEFAULT_TIMEOUT_MBX); // 30 !!! seconds
 
     // ignore return value here, may fail if no new message are currently available
     (void)pool_get(&slv->mbx.foe.recv_pool, pp_entry, &timeout);
@@ -227,6 +236,7 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
     assert(file_data_len != NULL);
 
     int ret = EC_OK;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry_send;
 
@@ -244,9 +254,13 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         osal_size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
         osal_size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
 
+        (void)ec_mbx_next_counter(pec, slave, &counter);
+
         // mailbox header
         write_buf->mbx_hdr.length    = 6u + file_name_len;
         write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
+        write_buf->mbx_hdr.counter   = counter;
+
         // foe header (2 Byte)
         write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_READ_REQUEST;
         // read request (password 4 Byte)
@@ -282,6 +296,9 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ec_log(10, "FOE_READ", "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
                 } else {
                     osal_size_t len = read_buf_data->mbx_hdr.length - 6u;
+                
+                    ec_log(10, "FOE_READ", "slave %2d: retrieving file offset %" PRIu64"\n", slave, *file_data_len);
+
                     // cppcheck-suppress misra-c2012-21.3
                     *file_data = (osal_uint8_t *)realloc(*file_data, *file_data_len + len);
                     (void)memcpy(&(*file_data)[*file_data_len], &read_buf_data->data[0], len); 
@@ -295,11 +312,14 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     } else {
                         // cppcheck-suppress misra-c2012-11.3
                         ec_foe_ack_request_t *write_buf_ack = (ec_foe_ack_request_t *)(p_entry_send->data);
+        
+                        (void)ec_mbx_next_counter(pec, slave, &counter);
 
                         // everthing is fine, send ack 
                         // mailbox header
                         write_buf_ack->mbx_hdr.length    = 6; 
                         write_buf_ack->mbx_hdr.mbxtype   = EC_MBX_FOE;
+                        write_buf->mbx_hdr.counter   = counter;
                         // foe
                         write_buf_ack->foe_hdr.op_code   = EC_FOE_OP_CODE_ACK_REQUEST;
                         write_buf_ack->packet_nr         = packet_nr;
@@ -337,9 +357,10 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
     assert(file_data != NULL);
 
     int ret = EC_OK;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
-
+        
     osal_mutex_lock(&slv->mbx.lock);
 
     if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) != EC_OK) { 
@@ -353,10 +374,13 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         // calc lengths
         osal_size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
         osal_size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
+        
+        (void)ec_mbx_next_counter(pec, slave, &counter);
 
         // mailbox header
         write_buf->mbx_hdr.length    = 6u + file_name_len;
         write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
+        write_buf->mbx_hdr.counter   = counter;
         // foe header (2 Byte)
         write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_WRITE_REQUEST;
         // read request (password 4 Byte)
@@ -386,6 +410,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }
             } else {
+                ec_log(10, "FOE_WRITE", "got ack, requested packet no %d\n", read_buf_ack->packet_nr);
                 ret = EC_OK;
             }
 
@@ -415,9 +440,11 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 if (bytes_read < data_len) {
                     last_pkt = 1;
                 }
+                
+                (void)ec_mbx_next_counter(pec, slave, &counter);
 
-                ec_log(10, "FOE_WRITE", "slave %2d: sending file offset %" PRIu64 ", bytes %" PRIu64 "\n", 
-                        slave, file_offset, bytes_read);
+                ec_log(10, "FOE_WRITE", "slave %2d: sending file offset %" PRIu64 ", bytes %4" PRIu64 ", progress %6.2f\n", 
+                        slave, file_offset, bytes_read, ((double)file_offset/file_data_len) * 100);
 
                 file_offset += bytes_read;
 
@@ -425,6 +452,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 // mailbox header
                 write_buf_data->mbx_hdr.length    = 6u + bytes_read; 
                 write_buf_data->mbx_hdr.mbxtype   = EC_MBX_FOE;
+                write_buf_data->mbx_hdr.counter   = counter;
                 // foe
                 write_buf_data->foe_hdr.op_code   = EC_FOE_OP_CODE_DATA_REQUEST;
                 write_buf_data->packet_nr         = packet_nr;
@@ -463,7 +491,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }
             }
-        } while ((last_pkt != 0) && (ret == EC_OK));
+        } while ((last_pkt == 0) && (ret == EC_OK));
 
         if (ret == EC_OK) {
             ec_log(10, "FOE_WRITE", "file download finished\n");

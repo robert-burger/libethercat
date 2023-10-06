@@ -1,0 +1,40 @@
+# Minimal makefile for creating the documentation
+#
+
+# You can set these variables from the command line.
+DOXYFILE          = doxygen.cfg
+SOURCEDIR         = ./
+BUILDDIR          = $(SOURCEDIR)/doc
+GH_PAGES_DIR_NAME = gh-pages
+BRANCH_DIR_NAME   = $(subst /,_,$(BRANCH_NAME))
+BUILDCMD          = cissy run -c $(SOURCEDIR) -p doxygen/[~=1.8]@3rdparty/stable doxygen
+DOCS              = "$(GH_PAGES_DIR_NAME)/$(BRANCH_DIR_NAME)"
+
+.PHONY: Makefile.doc gh-pages
+
+.DEFAULT: Makefile.doc
+	$(BUILDCMD) $(DOXYFILE)
+
+gh-pages:
+	rm -rf "$(GH_PAGES_DIR_NAME)"
+	git clone `git config --get remote.origin.url` --branch gh-pages --depth 1 gh-pages
+	install -d $(BUILDDIR)
+	rm -rf "$(BUILDDIR)/html"
+	rm -rf "$(DOCS)"
+	make -f Makefile.doc doc/html
+	touch "$(BUILDDIR)/html/.nojekyll"
+	mv "$(BUILDDIR)/html" $(DOCS)
+	cd "$(GH_PAGES_DIR_NAME)" && python3 ../doc/create_directory_listing.py
+	# add updated branch listing
+	cp $(BUILDDIR)/*.css $(GH_PAGES_DIR_NAME)/
+	cp $(BUILDDIR)/index.html $(GH_PAGES_DIR_NAME)/
+	git -C $(GH_PAGES_DIR_NAME) config user.name "Robert Burger"
+	git -C $(GH_PAGES_DIR_NAME) config user.email "robert.burger@dlr.de"
+	git -C $(GH_PAGES_DIR_NAME) add index.html
+	git -C $(GH_PAGES_DIR_NAME) add content.html
+	git -C $(GH_PAGES_DIR_NAME) add navtree.css
+	git -C $(GH_PAGES_DIR_NAME) add main.css
+	git -C $(GH_PAGES_DIR_NAME) add "$(BRANCH_DIR_NAME)/*"
+	-git -C $(GH_PAGES_DIR_NAME) commit -m 'Automatic update of GH pages'
+	# The pipeline has to lock the execution of this script, so no updates of the branch are done since clone.
+	git -C $(GH_PAGES_DIR_NAME) push

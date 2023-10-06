@@ -14,19 +14,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_EEPROM_H
@@ -36,6 +46,13 @@
 #include <libosal/types.h>
 
 #include "libethercat/common.h"
+
+/** \defgroup eeprom_group EEPROM (SII)
+ *
+ * This modules contains EtherCAT SII functions for EEPROM access.
+ *
+ * @{
+ */
 
 //------------------ Category General ---------------
 
@@ -151,8 +168,8 @@ typedef struct eeprom_info {
     osal_uint8_t fmmus_cnt;                 //!< count of fmmu settings    
     ec_eeprom_cat_fmmu_t fmmus[LEC_MAX_EEPROM_CAT_FMMU]; //!< array of fmmu settings
 
-    ec_eeprom_cat_pdo_t free_pdos[LEC_MAX_EEPROM_CAT_PDO];
-    struct ec_eeprom_cat_pdo_queue free_pdo_queue;
+    ec_eeprom_cat_pdo_t free_pdos[LEC_MAX_EEPROM_CAT_PDO];  //!< \brief static pdos for free queue.
+    struct ec_eeprom_cat_pdo_queue free_pdo_queue;          //!< \brief free pdo queue.
 
     struct ec_eeprom_cat_pdo_queue txpdos;  //!< queue with TXPDOs
     struct ec_eeprom_cat_pdo_queue rxpdos;  //!< queue with RXPDOs
@@ -208,7 +225,8 @@ struct ec;
  *                              the physical order of the EtherCAT slaves 
  *                              (usually the n'th slave attached).
  *
- * \retval 0    On success
+ * \retval  EC_OK                           On success.
+ * \retval  EC_ERROR_EEPROM_CONTROL_TO_PDI  Error setting control to PDI.
  */
 int ec_eeprom_to_pdi(struct ec *pec, osal_uint16_t slave);
 
@@ -220,7 +238,8 @@ int ec_eeprom_to_pdi(struct ec *pec, osal_uint16_t slave);
  *                              the physical order of the EtherCAT slaves 
  *                              (usually the n'th slave attached).
  *
- * \retval 0    On success
+ * \retval  EC_OK                           On success.
+ * \retval  EC_ERROR_EEPROM_CONTROL_TO_EC   Error setting control to EC.
  */
 int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave);
 
@@ -234,7 +253,11 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave);
  * \param[in] eepadr            Address in eeprom where to read data.
  * \param[out] data             Returns read 32-bit data value.
  *
- * \retval 0    On success
+ * \retval  EC_OK                               On success.
+ * \retval  EC_ERROR_EEPROM_READ_ERROR          Read error on EEPROM.
+ * \retval  EC_ERROR_EEPROM_WRITE_IN_PROGRESS   Write on EEPROM is currently in progress.
+ * \retval  EC_ERROR_EEPROM_WRITE_ENABLE        EEPROM write is enabled.
+ * \retval  EC_ERROR_EEPROM_CHECKSUM            EEPROM checksum is wrong.
  */
 int ec_eepromread(struct ec *pec, osal_uint16_t slave, 
         osal_uint32_t eepadr, osal_uint32_t *data);
@@ -249,7 +272,11 @@ int ec_eepromread(struct ec *pec, osal_uint16_t slave,
  * \param[in] eepadr            Address in eeprom where to write data.
  * \param[out] data             32-bit data value which will be written.
  *
- * \retval 0    On success
+ * \retval  EC_OK                               On success.
+ * \retval  EC_ERROR_EEPROM_WRITE_ERROR         Write error on EEPROM.
+ * \retval  EC_ERROR_EEPROM_WRITE_IN_PROGRESS   Write on EEPROM is currently in progress.
+ * \retval  EC_ERROR_EEPROM_WRITE_ENABLE        EEPROM write is enabled.
+ * \retval  EC_ERROR_EEPROM_CHECKSUM            EEPROM checksum is wrong.
  */
 int ec_eepromwrite(struct ec *pec, osal_uint16_t slave, 
         osal_uint32_t eepadr, osal_uint16_t *data);
@@ -265,7 +292,11 @@ int ec_eepromwrite(struct ec *pec, osal_uint16_t slave,
  * \param[out] buf              Data buffer where the read data will be copied.
  * \param[in] buflen            Length of data buffer provided by user.
  *
- * \retval 0    On success
+ * \retval  EC_OK                               On success.
+ * \retval  EC_ERROR_EEPROM_READ_ERROR          Read error on EEPROM.
+ * \retval  EC_ERROR_EEPROM_WRITE_IN_PROGRESS   Write on EEPROM is currently in progress.
+ * \retval  EC_ERROR_EEPROM_WRITE_ENABLE        EEPROM write is enabled.
+ * \retval  EC_ERROR_EEPROM_CHECKSUM            EEPROM checksum is wrong.
  */
 int ec_eepromread_len(struct ec *pec, osal_uint16_t slave, 
         osal_uint32_t eepadr, osal_uint8_t *buf, osal_size_t buflen);
@@ -282,7 +313,11 @@ int ec_eepromread_len(struct ec *pec, osal_uint16_t slave,
  *                              EtherCAT slave's eeprom.
  * \param[in] buflen            Length of data buffer provided by user.
  *
- * \retval 0    On success
+ * \retval  EC_OK                               On success.
+ * \retval  EC_ERROR_EEPROM_WRITE_ERROR         Write error on EEPROM.
+ * \retval  EC_ERROR_EEPROM_WRITE_IN_PROGRESS   Write on EEPROM is currently in progress.
+ * \retval  EC_ERROR_EEPROM_WRITE_ENABLE        EEPROM write is enabled.
+ * \retval  EC_ERROR_EEPROM_CHECKSUM            EEPROM checksum is wrong.
  */
 int ec_eepromwrite_len(struct ec *pec, osal_uint16_t slave, 
         osal_uint32_t eepadr, const osal_uint8_t *buf, osal_size_t buflen);
@@ -294,12 +329,20 @@ int ec_eepromwrite_len(struct ec *pec, osal_uint16_t slave,
  * \param[in] slave             Number of EtherCAT slave. this depends on 
  *                              the physical order of the EtherCAT slaves 
  *                              (usually the n'th slave attached).
+ *
+ * \retval  EC_OK                               On success.
+ * \retval  EC_ERROR_EEPROM_READ_ERROR          Read error on EEPROM.
+ * \retval  EC_ERROR_EEPROM_WRITE_IN_PROGRESS   Write on EEPROM is currently in progress.
+ * \retval  EC_ERROR_EEPROM_WRITE_ENABLE        EEPROM write is enabled.
+ * \retval  EC_ERROR_EEPROM_CHECKSUM            EEPROM checksum is wrong.
  */
 void ec_eeprom_dump(struct ec *pec, osal_uint16_t slave);
 
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_EEPROM_H
 

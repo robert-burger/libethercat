@@ -10,23 +10,32 @@
  * These are EtherCAT pool specific configuration functions.
  */
 
-
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef POOL_H
@@ -41,7 +50,14 @@
 #include "libethercat/common.h"
 #include "libethercat/idx.h"
 
-#define LEC_MAX_POOL_DATA_SIZE  1600
+/** \defgroup pool_group Pool
+ *
+ * This modules contains EtherCAT data pools.
+ *
+ * @{
+ */
+
+#define LEC_MAX_POOL_DATA_SIZE      (1600)      //!< \brief Maximum data size of ony pool entry.
 
 // forward declaration
 struct ec; 
@@ -51,12 +67,12 @@ struct ec_datagram;
 typedef struct pool_entry {
     void (*user_cb)(struct ec *pec, struct pool_entry *p_entry, struct ec_datagram *p_dg);  //!< \brief User callback.
     int user_arg;                                           //!< \brief User argument for user_cb.
-    idx_entry_t *p_idx;                                                                                        
+    idx_entry_t *p_idx;                                     //!< \brief Assigned datagram index.                
 
     TAILQ_ENTRY(pool_entry) qh;                             //!< \brief Queue handle of pool objects.
     
     osal_uint8_t data[LEC_MAX_POOL_DATA_SIZE];              //!< \brief Data entry.
-} pool_entry_t;
+} pool_entry_t;                                             //!< \breif Pool entry type.
 
 //! queue head for pool queue
 TAILQ_HEAD(pool_queue, pool_entry);
@@ -66,7 +82,7 @@ typedef struct pool {
     struct pool_queue avail;                                //!< \brief Queue with available datagrams.
     osal_semaphore_t avail_cnt;                             //!< \brief Available datagrams in pool.
     osal_mutex_t _pool_lock;                                //!< \brief Pool lock.
-} pool_t;
+} pool_t;                                                   //!< \brief Pool type.
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,7 +94,7 @@ extern "C" {
  * \param[in]   cnt         Number of entries in pool.
  * \param[in]   data_size   Size of data stored in each entry.
  *
- * \return EC_OK or error code
+ * \retval  EC_OK           On success.
  */
 int pool_open(pool_t *pp, osal_size_t cnt, pool_entry_t *entries);
 
@@ -86,7 +102,7 @@ int pool_open(pool_t *pp, osal_size_t cnt, pool_entry_t *entries);
 /*!
  * \param[in]   pp          Pointer to pool.
  *
- * \return EC_OK or error code
+ * \retval  EC_OK           On success.
  */
 int pool_close(pool_t *pp);
 
@@ -96,9 +112,18 @@ int pool_close(pool_t *pp);
  * \param[out]  entry       Returns pointer to pool entry.
  * \param[in]   timeout     Timeout waiting for free entry.
  *
- * \return EC_OK or error code
+ * \retval  EC_OK                   On success.
+ * \retval  EC_ERROR_TIMEOUT        Timeout occured waiting for pool entry.
+ * \retval  EC_ERROR_UNAVAILABLE    Waiting failed for other reason.
  */
 int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout);
+
+//! \brief Remove entry from pool
+/*!
+ * \param[in]   pp      Pointer to pool.
+ * \param[in]   entry   Pool Entry to remove, got previously by pool_peek
+ */
+void pool_remove(pool_t *pp, pool_entry_t *entry);
 
 //! \brief Peek next entry from pool
 /*!
@@ -106,7 +131,8 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout);
  * \param[out]  entry       Returns pointer to pool entry. Be 
  *                          carefull, entry relies still in pool.
  *
- * \return EC_OK or error code
+ * \retval  EC_OK                   On success.
+ * \retval  EC_ERROR_UNAVAILABLE    Waiting failed for other reason.
  */
 int pool_peek(pool_t *pp, pool_entry_t **entry);
     
@@ -127,6 +153,8 @@ void pool_put_head(pool_t *pp, pool_entry_t *entry);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // POOL_H
 

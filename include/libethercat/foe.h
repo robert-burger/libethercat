@@ -14,19 +14,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_FOE_H
@@ -36,8 +46,16 @@
 
 #include "libethercat/common.h"
 
+/** \defgroup foe_group File transfer over EtherCAT (FoE)
+ *
+ * This modules contains EtherCAT FoE funcitons.
+ *
+ * @{
+ */
+
+
 typedef struct ec_foe {
-    pool_t recv_pool;
+    pool_t recv_pool;                               //!< \brief Pool for received FoE messages.
 } ec_foe_t;
 
 #define MAX_FILE_NAME_SIZE  512u                    //!< \brief file name max size
@@ -139,7 +157,11 @@ void ec_foe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
  *                              set by the EtherCAT slave. If any error has occured,
  *                              this has to be freed by the caller.
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \retval  EC_OK                                   On success.
+ * \retval  EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      FoE not supported by slave.
+ * \retval  EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS    No more mailbox send buffers left.
+ * \retval  EC_ERROR_MAILBOX_FOE_AGAIN              Try again.
+ * \retval  EC_ERROR_MAILBOX_FOE_ERROR_REQ          Error on FoE request.
  */
 int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t **file_data, 
@@ -162,7 +184,12 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
  *                              set by the EtherCAT slave. If any error has occured,
  *                              this has to be freed by the caller.
  *
- * \return Working counter of the get state command, should be 1 if it was successfull.
+ * \retval  EC_OK                                   On success.
+ * \retval  EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      FoE not supported by slave.
+ * \retval  EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS    No more mailbox send buffers left.
+ * \retval  EC_ERROR_MAILBOX_FOE_AGAIN              Try again.
+ * \retval  EC_ERROR_MAILBOX_FOE_ERROR_REQ          Error on FoE request.
+ * \retval  EC_ERROR_MAILBOX_FOE_NO_ACK             No Ack on segment write.
  */
 int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t *file_data, 
@@ -171,6 +198,8 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_COE_H
 

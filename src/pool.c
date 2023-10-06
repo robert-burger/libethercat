@@ -13,19 +13,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -53,8 +63,7 @@ int pool_open(pool_t *pp, osal_size_t cnt, pool_entry_t *entries) {
     assert(pp != NULL);
     int ret = EC_OK;
 
-    osal_mutex_attr_t attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
-    osal_mutex_init(&pp->_pool_lock, &attr);
+    osal_mutex_init(&pp->_pool_lock, NULL);
     osal_mutex_lock(&pp->_pool_lock);
 
     osal_semaphore_init(&pp->avail_cnt, 0, cnt);
@@ -137,6 +146,20 @@ int pool_get(pool_t *pp, pool_entry_t **entry, osal_timer_t *timeout) {
     }
 
     return ret;
+}
+
+//! \brief Remove entry from pool
+/*!
+ * \param[in]   pp      Pointer to pool.
+ * \param[in]   entry   Pool Entry to remove, got previously by pool_peek
+ */
+void pool_remove(pool_t *pp, pool_entry_t *entry) {
+    assert(pp != NULL);
+    assert(entry != NULL);
+
+    osal_mutex_lock(&pp->_pool_lock);
+    TAILQ_REMOVE(&pp->avail, entry, qh);
+    osal_mutex_unlock(&pp->_pool_lock);
 }
 
 //! \brief Peek next entry from pool

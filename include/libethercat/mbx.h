@@ -9,23 +9,32 @@
  *
  */
 
-
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_MBX_H
@@ -42,8 +51,15 @@
 #include "libethercat/pool.h"
 #include "libethercat/datagram.h"
 
-#define MAILBOX_WRITE   (osal_uint16_t)(0u)
-#define MAILBOX_READ    (osal_uint16_t)(1u)
+/** \defgroup mailbox_group Mailbox
+ *
+ * This modules contains EtherCAT mailbox funcitons.
+ *
+ * @{
+ */
+
+#define MAILBOX_WRITE   (osal_uint16_t)(0u)     //!< \brief Write mailbox number.
+#define MAILBOX_READ    (osal_uint16_t)(1u)     //!< \brief Read mailbox number.
 
 // forward declarations
 struct ec;
@@ -86,9 +102,9 @@ typedef struct PACKED ec_mbx_buffer {
 } PACKED ec_mbx_buffer_t;
 
 typedef struct ec_mbx {
-    osal_uint32_t handler_flags;     //!< \brief Flags signalling handler recv of send action.
-    osal_mutex_t sync_mutex;    //!< \brief Sync mutex for handler flags.
-    osal_binary_semaphore_t sync_sem;
+    osal_uint32_t handler_flags;        //!< \brief Flags signalling handler recv of send action.
+    osal_mutex_t sync_mutex;            //!< \brief Sync mutex for handler flags.
+    osal_binary_semaphore_t sync_sem;   //!< \brief Mailbox sync semaphore.
 
     int handler_running;        //!< \brief Mailbox handler thread running flag.
     ec_t *pec;                  //!< \brief Pointer to ethercat master structure.
@@ -110,6 +126,8 @@ typedef struct ec_mbx {
                                  * moment.
                                  */
 
+    int seq_counter;            //!< mailbox sequence counter
+
     pool_t message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
     ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
@@ -118,6 +136,7 @@ typedef struct ec_mbx {
     ec_eoe_t eoe;               //!< \brief Strucutre for Ethernet over EtherCAT mailbox.
     
     osal_bool_t map_mbx_state;  //!< Map the sync manager state with LRW/LRD command
+    osal_uint32_t sm_state_bitno;
     osal_uint8_t *sm_state;     //!< Sync manager state of read mailbox.
                                 /*!<
                                  * The field is used to receive the mailbox 
@@ -199,6 +218,19 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave);
  */
 int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag);
 
+//! \brief Get next sequence counter.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ * \param[in] seq_cnt   Returns sequence counter.
+ *
+ * \return EC_OK on success.
+ */
+int ec_mbx_next_counter(ec_t *pec, int slave, int *seq_counter); 
+
 #define ec_mbx_get_free_recv_buffer(pec, slave, entry, timeout, lock) \
     pool_get(&(pec)->mbx_message_pool_recv_free, &(entry), (timeout))
 
@@ -230,6 +262,8 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_MBX_H
 

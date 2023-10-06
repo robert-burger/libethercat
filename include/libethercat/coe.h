@@ -13,19 +13,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_COE_H
@@ -38,6 +48,13 @@
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
 
+/** \defgroup coe_group CanOpen over Ethercat (CoE)
+ *
+ * This modules contains functions on how to communicate to the CANOpen over EtherCAT mailbox.
+ *
+ * @{
+ */
+
 //! Message queue qentry
 typedef struct ec_coe_emergency_message {
     osal_timer_t timestamp;     //!< \brief timestamp, when emergency was received
@@ -46,7 +63,7 @@ typedef struct ec_coe_emergency_message {
 } ec_coe_emergency_message_t;
 
 typedef struct ec_coe {
-    pool_t recv_pool;
+    pool_t recv_pool;           //!< \brief receive CoE message pool
     
     osal_mutex_t lock;          //!< \brief CoE mailbox lock.
                                 /*!<
@@ -54,10 +71,10 @@ typedef struct ec_coe {
                                  * EtherCAT slave CoE mailbox is possible 
                                  */
 
-    uint32_t emergency_next_read;
-    uint32_t emergency_next_write;
-    ec_coe_emergency_message_t emergencies[LEC_MAX_COE_EMERGENCIES];    //!< message pool queue
-} ec_coe_t;
+    uint32_t emergency_next_read;   //!< \brief next received emergency message in ring buffer
+    uint32_t emergency_next_write;  //!< \brief next message in ring buffer to be written.
+    ec_coe_emergency_message_t emergencies[LEC_MAX_COE_EMERGENCIES];    //!< \brief emergency message ring buffer.
+} ec_coe_t;             //!< \brief CoE type.
 
 //! CoE mailbox types
 enum {
@@ -171,8 +188,8 @@ enum {
     ACCESS_WRITE_OP             = 0x0020,  //!< Write only in OP
 };
 
-#define CANOPEN_MAXNAME             40u
-#define CANOPEN_MAXDATA             128u
+#define CANOPEN_MAXNAME                         (40u)       //!< \brief CANOPEN maximum name length.
+#define CANOPEN_MAXDATA                         (128u)      //!< \brief CANOPEN maximum data length.
     
 //! CanOpen over EtherCAT sdo descriptor
 typedef struct PACKED ec_coe_sdo_desc {
@@ -181,7 +198,7 @@ typedef struct PACKED ec_coe_sdo_desc {
     osal_uint8_t  max_subindices;           //!< \brief maximum number of subindices
     osal_char_t   name[CANOPEN_MAXNAME];    //!< \brief element name
     osal_size_t   name_len;                 //!< \brief element name len
-} PACKED ec_coe_sdo_desc_t;
+} PACKED ec_coe_sdo_desc_t;                 //!< \brief CoE SDO description type.
 
 typedef struct PACKED ec_coe_sdo_entry_desc {
     osal_uint8_t  value_info;               //!< \brief valueinfo, how to interpret data
@@ -190,25 +207,25 @@ typedef struct PACKED ec_coe_sdo_entry_desc {
     osal_uint16_t obj_access;               //!< \brief object access
     osal_uint8_t  data[CANOPEN_MAXDATA];    //!< \brief entry name
     osal_size_t   data_len;                 //!< \brief length of name
-} PACKED ec_coe_sdo_entry_desc_t;
+} PACKED ec_coe_sdo_entry_desc_t;           //!< \brief CoE SDO entry description type.
 
-#define EC_COE_SDO_VALUE_INFO_ACCESS_RIGHTS      0x01
-#define EC_COE_SDO_VALUE_INFO_OBJECT_CATEGORY    0x02
-#define EC_COE_SDO_VALUE_INFO_MAPPABLE           0x04
-#define EC_COE_SDO_VALUE_INFO_UNIT               0x08
-#define EC_COE_SDO_VALUE_INFO_DEFAULT_VALUE      0x10
-#define EC_COE_SDO_VALUE_INFO_MIN_VALUE          0x20
-#define EC_COE_SDO_VALUE_INFO_MAX_VALUE          0x40
+#define EC_COE_SDO_VALUE_INFO_ACCESS_RIGHTS      (0x01)     //!< \brief SDO value info access rights.
+#define EC_COE_SDO_VALUE_INFO_OBJECT_CATEGORY    (0x02)     //!< \brief SDO info object category.
+#define EC_COE_SDO_VALUE_INFO_MAPPABLE           (0x04)     //!< \brief SDO info mappable.
+#define EC_COE_SDO_VALUE_INFO_UNIT               (0x08)     //!< \brief SDO info unit.
+#define EC_COE_SDO_VALUE_INFO_DEFAULT_VALUE      (0x10)     //!< \brief SDO info default value.
+#define EC_COE_SDO_VALUE_INFO_MIN_VALUE          (0x20)     //!< \brief SDO info minimum value.
+#define EC_COE_SDO_VALUE_INFO_MAX_VALUE          (0x40)     //!< \brief SDO info maximum value.
 
 // forward declarations
 struct ec;
-typedef struct ec ec_t;
+typedef struct ec ec_t;     //!< \brief typedef to ec struct.
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//! initialize CoE structure 
+//! Initialize CoE structure 
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
@@ -245,7 +262,14 @@ void ec_coe_deinit(ec_t *pec, osal_uint16_t slave);
  * \param[in,out] len       Length of buffer, outputs read length.
  * \param[out] abort_code   Returns the abort code if we got abort request
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_READ                Got unexpected message on CoE read.
+ * \retval EC_ERROR_MAILBOX_BUFFER_TOO_SMALL    Provided buffer was too small, returning size in \p len.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS No more free send buffer available.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE   No CoE support on slave's mailbox.
+ * \retval EC_ERROR_UNAVAILABLE                 Locking mailbox failed for some reason.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT             Got timeout waiting for message.
  */
 int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
         osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t *len, 
@@ -265,7 +289,9 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
  * \param[in,out] len       Length of buffer, outputs read length.
  * \param[out] abort_code   Returns the abort code if we got abort request
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_COE_INDEX_NOT_FOUND Requested index not found.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
  */
 int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index, 
         osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t *len, 
@@ -285,7 +311,13 @@ int ec_coe_master_sdo_read(ec_t *pec, osal_uint16_t index,
  * \param[in] len           Length of buffer.
  * \param[out] abort_code   Returns the abort code if we got abort request
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_UNAVAILABLE                 Locking mailbox failed for some reason.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE   No CoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS No more free send buffer available.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT             Got timeout waiting for message.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
+ * \retval EC_ERROR_MAILBOX_READ                Got unexpected message on CoE read.
  */
 int ec_coe_sdo_write(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
         osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
@@ -302,7 +334,9 @@ int ec_coe_sdo_write(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
  * \param[in] len           Length of buffer.
  * \param[out] abort_code   Returns the abort code if we got abort request
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_COE_INDEX_NOT_FOUND Requested index not found.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
  */
 int ec_coe_master_sdo_write(ec_t *pec, osal_uint16_t index, 
         osal_uint8_t sub_index, int complete, osal_uint8_t *buf, osal_size_t len,
@@ -319,7 +353,12 @@ int ec_coe_master_sdo_write(ec_t *pec, osal_uint16_t index,
  * \param[out] desc         Returns CoE SDO description.
  * \param[out] error_code   Returns the error code if we got one.
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_UNAVAILABLE                 Locking mailbox failed for some reason.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE   No CoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS No more free send buffer available.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
+ * \retval EC_ERROR_MAILBOX_READ                Got unexpected message on CoE read.
  */
 int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index, 
         ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code);
@@ -332,7 +371,9 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
  * \param[out] desc         Returns CoE SDO description.
  * \param[out] error_code   Returns the error code if we got one.
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_COE_INDEX_NOT_FOUND Requested index not found.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
  */
 int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index, 
         ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code);
@@ -350,7 +391,12 @@ int ec_coe_master_sdo_desc_read(const ec_t *pec, osal_uint16_t index,
  * \param[in] desc          Return CoE entry description.
  * \param[out] error_code   Returns the error code if we got one.
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_UNAVAILABLE                 Locking mailbox failed for some reason.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE   No CoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS No more free send buffer available.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
+ * \retval EC_ERROR_MAILBOX_READ                Got unexpected message on CoE read.
  */
 int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
         osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
@@ -366,7 +412,9 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
  * \param[in] desc          Return CoE entry description.
  * \param[out] error_code   Returns the error code if we got one.
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_COE_INDEX_NOT_FOUND Requested index not found.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
  */
 int ec_coe_master_sdo_entry_desc_read(const ec_t *pec, osal_uint16_t index,
         osal_uint8_t sub_index, osal_uint8_t value_info, ec_coe_sdo_entry_desc_t *desc, 
@@ -382,7 +430,12 @@ int ec_coe_master_sdo_entry_desc_read(const ec_t *pec, osal_uint16_t index,
  * \param[out] buf          Pointer to a preallocated buffer.
  * \param[in,out] len       Length of buffer, outputs read length.
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_UNAVAILABLE                 Locking mailbox failed for some reason.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE   No CoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS No more free send buffer available.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT             Got timeout waiting for message.
+ * \retval EC_ERROR_MAILBOX_BUFFER_TOO_SMALL    Provided buffer was too small, returning size in \p len.
  */
 int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t *len);
 
@@ -393,7 +446,10 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
  * \param[out] buf          Pointer to a preallocated buffer.
  * \param[in,out] len       Length of buffer, outputs read length.
  *
- * \return 0 on success, otherwise error code.
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_COE_INDEX_NOT_FOUND Requested index not found.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
+ * \retval EC_ERROR_MAILBOX_BUFFER_TOO_SMALL    Provided buffer was too small, returning size in \p len.
  */
 int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len);
 
@@ -405,14 +461,21 @@ int ec_coe_master_odlist_read(ec_t *pec, osal_uint8_t *buf, osal_size_t *len);
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  *
- * \retval 0 on success
+ * \retval EC_OK                                CoE transfer was successfull.
+ * \retval EC_ERROR_MAILBOX_TIMEOUT             Got timeout waiting for message.
+ * \retval EC_ERROR_UNAVAILABLE                 Locking mailbox failed for some reason.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE   No CoE support on slave's mailbox.
+ * \retval EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS No more free send buffer available.
+ * \retval EC_ERROR_MAILBOX_ABORT               Got SDO abort request.
+ * \retval EC_ERROR_MAILBOX_READ                Got unexpected message on CoE read.
  */
 int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave);
 
 //! queue read mailbox content
 /*!
- * \param pec pointer to ethercat master
- * \param slave slave number
+ * \param[in]   pec     Pointer to ethercat master struct.
+ * \param[in]   slave   Number of EtherCAT slave connected to bus.
+ * \param[in]   p_entry Emergency message to enqueue.
  */
 void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
@@ -435,12 +498,15 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
+ *                      
+ * \retval EC_ERROR_UNAVAILABLE                 No more emergency message in queue.
+ * \retval EC_OK                                Success, got next emergency message.
  */
 void ec_coe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry);
 
 //! \brief Get SDO INFO error string.
 /*!
- * \param[in] error_code    Error code number.
+ * \param[in]   errorcode    Error code number.
  * \return string with decoded error.
  */
 const osal_char_t *get_sdo_info_error_string(osal_uint32_t errorcode);
@@ -448,6 +514,8 @@ const osal_char_t *get_sdo_info_error_string(osal_uint32_t errorcode);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif // LIBETHERCAT_COE_H
 

@@ -15,19 +15,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBETHERCAT_DC_H
@@ -57,7 +67,12 @@ typedef struct ec_dc_info_slave {
 
     osal_uint8_t available_ports;   //!< \brief available ports for dc config
     osal_uint32_t receive_times[4]; //!< \brief latched port receive times
-            
+
+    osal_int32_t t_delay_childs;
+    osal_int32_t t_delay_with_childs;
+    osal_int32_t t_delay_slave;
+    osal_int32_t t_delay_parent_previous;
+                 
     int type;                       //!< \brief dc type, 0 = sync0, 1 = sync01
     osal_uint32_t cycle_time_0;     //!< \brief cycle time of sync 0 [ns]
     osal_uint32_t cycle_time_1;     //!< \brief cycle time of sync 1 [ns]
@@ -81,7 +96,6 @@ typedef struct ec_dc_info {
     osal_uint64_t rtc_time;         //!< \brief Time from realtime (EtherCAT master) clock.
     osal_int64_t rtc_sto;           //!< \brief System time offset of realtime clock.
     osal_int64_t act_diff;          //!< \brief Actual difference of DC and RTC clock.
-    osal_int64_t timer_override;    //!< \brief Expected timer increment of one EtherCAT in [ns].
     osal_uint64_t packet_duration;  //!< \brief Packet duration on wire.
 
     double timer_correction;        //!< \brief Correction value for EtherCAT master timer in [ns].

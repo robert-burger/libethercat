@@ -9,23 +9,32 @@
  *
  */
 
-
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -234,7 +243,7 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
 
     if (osal_timer_expired(&paml->next_check_group) == OSAL_OK) {
         // no need to check now
-        ec_log(100, "ASYNC_CHECK_GROUP", "group %d: not checking now, timeout not reached\n", gid);
+        ec_log(200, "ASYNC_CHECK_GROUP", "group %d: not checking now, timeout not reached\n", gid);
     } else {
         osal_timer_init(&paml->next_check_group, 1000000000);
 
@@ -290,6 +299,7 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
     paml->loop_running = 1;
     if (osal_timer_gettime(&paml->next_check_group) == 0) { 
         osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_OTHER;
         attr.priority = 0;
         attr.affinity = 0xFF;
         (void)strcpy(&attr.task_name[0], "ecat.async");

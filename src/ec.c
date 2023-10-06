@@ -8,19 +8,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -54,6 +64,8 @@
 #define max(a, b) \
     ((a) > (b) ? (a) : (b))
 #endif
+
+//#define LIBETHERCAT_DEBUG
 
 // forward declaration
 static void default_log_func(int lvl, void* user, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
@@ -112,7 +124,7 @@ void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
         (void)vsnprintf(&tmp[ret], 512-ret, format, args);
         va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 
-        ec_log_func(lvl, ec_log_func_user, buf);
+        ec_log_func(lvl, ec_log_func_user, "%s", buf);
     }
 }
 
@@ -132,15 +144,21 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
     // cppcheck-suppress misra-c2012-21.3
     for (osal_uint16_t i = 0; i < pec->pd_group_cnt; ++i) {
         (void)ec_cyclic_datagram_init(&pec->pd_groups[i].cdg, 10000000);
-        pec->pd_groups[i].group     = i;
-        pec->pd_groups[i].log       = 0x10000u * ((osal_uint32_t)i+1u);
-        pec->pd_groups[i].log_len   = 0u;
-        pec->pd_groups[i].pdout_len = 0u;
-        pec->pd_groups[i].pdin_len  = 0u;
-        pec->pd_groups[i].use_lrw   = 1;
-        pec->pd_groups[i].recv_missed = 0;
-        pec->pd_groups[i].divisor   = 1;
-        pec->pd_groups[i].divisor_cnt = 0;
+        (void)ec_cyclic_datagram_init(&pec->pd_groups[i].cdg_lrd_mbx_state, 10000000);
+
+        pec->pd_groups[i].group             = i;
+        pec->pd_groups[i].log               = 0x10000u * ((osal_uint32_t)i+1u);
+        pec->pd_groups[i].log_len           = 0u;
+        pec->pd_groups[i].pdout_len         = 0u;
+        pec->pd_groups[i].pdin_len          = 0u;
+        pec->pd_groups[i].use_lrw           = 1;
+        pec->pd_groups[i].lrw_overlapping   = 1;
+        pec->pd_groups[i].recv_missed       = 0;
+        pec->pd_groups[i].log_mbx_state     = 0x9000000u + ((osal_uint32_t)i*1000u);
+        pec->pd_groups[i].log_mbx_state_len = 0u;;
+        pec->pd_groups[i].wkc_expected_mbx_state = 0u;
+        pec->pd_groups[i].divisor           = 1;
+        pec->pd_groups[i].divisor_cnt       = 0;
     }
 
     return 0;
@@ -224,6 +242,9 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
     pd->pd_lrw_len = 0;
     pd->wkc_expected = 0;
 
+    pd->log_mbx_state_len = 0;
+    pd->wkc_expected_mbx_state = 0; 
+
     osal_mutex_lock(&pd->cdg.lock);
 
     for (i = 0; i < pec->slave_cnt; ++i) {
@@ -245,11 +266,6 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
             }
         }
 
-        if (slv->eeprom.mbx_supported != 0u) {
-            // add state of sync manager read mailbox
-            slv_pdin_len += 1u;
-        }
-        
         osal_size_t max_len = max(slv_pdout_len, slv_pdin_len);
 
         // add to pd lengths
@@ -272,6 +288,9 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
     osal_uint8_t *pdin = &pd->pd[pd->pdout_len];
 
     osal_uint32_t log_base = pd->log;
+               
+    osal_uint32_t log_base_mbx_state = pd->log_mbx_state;
+    osal_uint32_t log_base_mbx_state_bitlen = 0;
 
     for (i = 0; i < pec->slave_cnt; ++i) {
         ec_slave_t *slv = &pec->slaves[i];
@@ -360,28 +379,20 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
                 (slv->mbx.map_mbx_state == OSAL_TRUE)) {
             if (fmmu_next < slv->fmmu_ch) {
                 // add state of sync manager read mailbox
-                slv->fmmu[fmmu_next].log = log_base_in;
+                slv->fmmu[fmmu_next].log = log_base_mbx_state + (log_base_mbx_state_bitlen / 8);
                 slv->fmmu[fmmu_next].log_len = 1;
-                slv->fmmu[fmmu_next].log_bit_start = 0;
-                slv->fmmu[fmmu_next].log_bit_stop = 7;
+                slv->fmmu[fmmu_next].log_bit_start = (log_base_mbx_state_bitlen % 8);
+                slv->fmmu[fmmu_next].log_bit_stop = (log_base_mbx_state_bitlen % 8);
+                slv->fmmu[fmmu_next].phys_bit_start = 4;
                 slv->fmmu[fmmu_next].phys = EC_REG_SM1STAT;
                 slv->fmmu[fmmu_next].type = 1;
                 slv->fmmu[fmmu_next].active = 1;
 
-                if (!slv->pdin.len) {
-                    slv->pdin.pd = tmp_pdin; 
-                    slv->pdin.len = 1u;
-                } else {
-                    slv->pdin.len += 1u;
-                }
+                pd->wkc_expected_mbx_state += 1u;
 
-                slv->mbx.sm_state = tmp_pdin;
-
-                wkc_expected |= 1u;
+                slv->mbx.sm_state_bitno = log_base_mbx_state_bitlen;
+                log_base_mbx_state_bitlen += 1u;
             }
-
-            tmp_pdin = &tmp_pdin[1];
-            log_base_in += 1u;
         }
 
         pdin = &pdin[max(slv->pdin.len, slv->pdout.len)];
@@ -389,6 +400,8 @@ static void ec_create_logical_mapping_lrw(ec_t *pec, osal_uint32_t group) {
         log_base = max(log_base_in, log_base_out);
         pd->wkc_expected += wkc_expected;
     }
+
+    pd->log_mbx_state_len = (log_base_mbx_state_bitlen + 7u) / 8u;
     
     osal_mutex_unlock(&pd->cdg.lock);
 }
@@ -597,6 +610,7 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 pec->slaves[slave].worker_arg.state = state;
 
                 osal_task_attr_t attr;
+                attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
                 (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
@@ -647,6 +661,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
                 pec->slaves[slave].worker_arg.state = state;
 
                 osal_task_attr_t attr;
+                attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
                 (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
@@ -732,6 +747,7 @@ static void ec_scan(ec_t *pec) {
                 pec->slaves[i].sm_set_by_user = 0;
                 pec->slaves[i].subdev_cnt = 0;
                 pec->slaves[i].eeprom.read_eeprom = 0;
+                pec->slaves[i].type = val;
                 TAILQ_INIT(&pec->slaves[i].eeprom.txpdos);
                 TAILQ_INIT(&pec->slaves[i].eeprom.rxpdos);
                 LIST_INIT(&pec->slaves[i].init_cmds);
@@ -774,7 +790,7 @@ static void ec_scan(ec_t *pec) {
                         slv->active_ports |= (osal_uint8_t)1u << port; 
                     }
                 }
-                
+
                 // search for parent
                 slv->parent = -1; // parent is master at beginning
                 if (slave >= 1u) {
@@ -793,7 +809,7 @@ static void ec_scan(ec_t *pec) {
                             default:
                                 break;
                         }
-                        
+
                         if (((topology >= 0) && (pec->slaves[tmp_slave].link_cnt > 1u)) || (tmp_slave == 0)) { 
                             slv->parent = tmp_slave; // parent found
                             break;
@@ -899,15 +915,27 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 
             // ====> create logical mapping for cyclic operation
             for (osal_uint16_t group = 0u; group < pec->pd_group_cnt; ++group) {
+                for (osal_uint16_t slave = 0u; slave < pec->slave_cnt; ++slave) {
+                    if (    (pec->slaves[slave].assigned_pd_group == group) && 
+                            ((pec->slaves[slave].features & EC_REG_ESCSUP__NOT_SUPP_LRW) == EC_REG_ESCSUP__NOT_SUPP_LRW)) {
+                        pec->pd_groups[group].use_lrw = 0;
+                        break;
+                    }
+                }
+
                 if (pec->pd_groups[group].use_lrw != 0) {
+                    ec_log(10, get_state_string(pec->master_state), "group %2d: using LRW, "
+                            "support from all slaves in group\n", group);
                     ec_create_logical_mapping_lrw(pec, group);
                 } else {
+                    ec_log(10, get_state_string(pec->master_state), "group %2d: using LRD/LWR, "
+                            "not all slaves support LRW in group\n", group);
                     ec_create_logical_mapping(pec, group);
                 }
             }
-            
+
             ec_state_transition_loop(pec, EC_STATE_SAFEOP, 1);
-    
+
             if (state == EC_STATE_SAFEOP) {
                 break;
             }
@@ -1104,10 +1132,12 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     ec_log(10, "MASTER_OPEN", "  MAX_DATA                   : %" PRIi64 "\n", LEC_MAX_DATA);
     ec_log(10, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
-    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %d\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
+    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
 
     if (ret != EC_OK) {
         if (pec != NULL) {
+            ec_log(1, "MASTER_OPEN", "error occured, closing EtherCAT!\n");
+
             int local_ret = hw_close(&pec->hw);
             if (local_ret != EC_OK) {
                 ec_log(1, "MASTER_OPEN", "hw_close failed with %d\n", local_ret);
@@ -1227,9 +1257,18 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
 
         // send frame immediately if in sync mode
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
-                (pec->master_state != EC_STATE_OP)  ) {
-            if (hw_tx(&pec->hw) != EC_OK) {
+                (pec->master_state != EC_STATE_OP)) {
+            if (hw_tx_low(&pec->hw) != EC_OK) {
                 ec_log(1, "MASTER_TRANSCEIVE", "hw_tx failed!\n");
+            }
+        } else {
+            osal_timer_t test;
+            // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
+            osal_timer_init(&test, (10 * 8 * pec->hw.mtu_size) * 1.5);  
+            if (osal_timer_cmp(&test, &pec->hw.next_cylce_start, <)) {
+                if (hw_tx_low(&pec->hw) != EC_OK) {
+                    ec_log(1, "MASTER_TRANSCEIVE", "hw_tx_low failed!\n");
+                } 
             }
         }
 
@@ -1316,8 +1355,8 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         // send frame immediately if in sync mode
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
                 (pec->master_state != EC_STATE_OP)  ) {
-            if (hw_tx(&pec->hw) != EC_OK) {
-                ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "hw_tx failed!\n");
+            if (hw_tx_low(&pec->hw) != EC_OK) {
+                ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "hw_tx_low failed!\n");
             }
         }
     }
@@ -1346,7 +1385,8 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
 
     wkc = ec_datagram_wkc(p_dg);
     if (pd->pd != NULL) {
-        if (pd->use_lrw != 0) {
+        if ((pd->use_lrw != 0) || (pd->lrw_overlapping)) {
+            // use this if lrw overlapping or lrd command
             (void)memcpy(&pd->pd[pd->pdout_len], ec_datagram_payload(p_dg), pd->pdin_len);
         } else {
             (void)memcpy(&pd->pd[pd->pdout_len], &ec_datagram_payload(p_dg)[pd->pdout_len], pd->pdin_len);
@@ -1374,21 +1414,61 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     } else {
         wkc_mismatch_cnt = 0;
     }
+}
 
-    for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
-        ec_slave_ptr(slv, pec, slave);
-        if (slv->assigned_pd_group != pd->group) { continue; }
+//! datagram callack for receiving mbx_state answer
+static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
+    assert(pec != NULL);
+    assert(p_entry != NULL);
+    assert(p_dg != NULL);
 
-        if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
-            if ((*slv->mbx.sm_state & 0x08u) != 0u) {
+    osal_uint16_t wkc = 0u;
+    osal_uint8_t *buf = NULL;
+    ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
+
+    static int wkc_mismatch_cnt_mbx_state = 0;
+
 #ifdef LIBETHERCAT_DEBUG
-                ec_log(100, "MASTER_RECV_PD_GROUP", "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
+    ec_log(100, "MASTER_RECV_MBX_STATE", "slave %2d: received mbx state\n", p_entry->user_arg);
 #endif
-                ec_mbx_sched_read(pec, slave);
+
+    osal_mutex_lock(&pd->cdg_lrd_mbx_state.lock);
+
+    wkc = ec_datagram_wkc(p_dg);
+    if (wkc == pd->wkc_expected_mbx_state) {
+        buf = (osal_uint8_t *)ec_datagram_payload(p_dg);	
+    
+        for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+            ec_slave_ptr(slv, pec, slave);
+            if (slv->assigned_pd_group != pd->group) { continue; }
+
+            if ((slv->eeprom.mbx_supported != 0u) && (slv->mbx.sm_state != NULL)) {
+                *slv->mbx.sm_state = (buf[slv->mbx.sm_state_bitno/8] & (slv->mbx.sm_state_bitno % 8)) ? 0x08u : 0u;
+
+                if ((*slv->mbx.sm_state & 0x08u) != 0u) {
+#ifdef LIBETHERCAT_DEBUG
+                    ec_log(100, "MASTER_RECV_MBX_STATE", "slave %2d: sm_state %X\n", slave, *slv->mbx.sm_state);
+#endif
+                    ec_mbx_sched_read(pec, slave);
+                }
             }
         }
+
+        wkc_mismatch_cnt_mbx_state = 0;
+    } else {
+        if ((wkc_mismatch_cnt_mbx_state++%1000) == 0) {
+            ec_log(1, "MASTER_RECV_MBX_STATE", 
+                    "group %2d: working counter mismatch got %u, "
+                    "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
+                    pd->group, wkc, pd->wkc_expected_mbx_state, 
+                    pec->slave_cnt, wkc_mismatch_cnt_mbx_state);
+        }
     }
+
+
+    osal_mutex_unlock(&pd->cdg_lrd_mbx_state.lock);
 }
+
 
 //! send process data for specific group with logical commands
 /*!
@@ -1408,30 +1488,30 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
     ec_log(100, "MASTER_SEND_PD_GROUP", "group %2d: sending process data\n", group);
 #endif
 
-    osal_mutex_lock(&pd->cdg.lock);
+    if (pd->use_lrw == OSAL_TRUE) {
+        osal_mutex_lock(&pd->cdg.lock);
 
-    if (pd->cdg.p_idx == NULL) {
-        if (ec_index_get(&pec->idx_q, &pd->cdg.p_idx) != EC_OK) {
-            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
-            ret = EC_ERROR_OUT_OF_INDICES;
+        if (pd->cdg.p_idx == NULL) {
+            if (ec_index_get(&pec->idx_q, &pd->cdg.p_idx) != EC_OK) {
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
+                ret = EC_ERROR_OUT_OF_INDICES;
+            }
         }
-    }
 
-    if ((ret == EC_OK) && (pd->cdg.p_entry == NULL)) {
-        if (pool_get(&pec->pool, &pd->cdg.p_entry, NULL) != EC_OK) {
-            ec_index_put(&pec->idx_q, pd->cdg.p_idx);
-            pd->cdg.p_idx = NULL;
-            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
-            ret = EC_ERROR_OUT_OF_DATAGRAMS;
-        } else {
-            pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
-            pd->cdg.p_entry->user_cb = cb_process_data_group;
-            pd->cdg.p_entry->user_arg = pd->group;
+        if ((ret == EC_OK) && (pd->cdg.p_entry == NULL)) {
+            if (pool_get(&pec->pool, &pd->cdg.p_entry, NULL) != EC_OK) {
+                ec_index_put(&pec->idx_q, pd->cdg.p_idx);
+                pd->cdg.p_idx = NULL;
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
+                ret = EC_ERROR_OUT_OF_DATAGRAMS;
+            } else {
+                pd->cdg.p_entry->p_idx = pd->cdg.p_idx;
+                pd->cdg.p_entry->user_cb = cb_process_data_group;
+                pd->cdg.p_entry->user_arg = pd->group;
+            }
         }
-    }
 
-    if (ret == EC_OK) {
-        if (pd->use_lrw == OSAL_TRUE) {
+        if (ret == EC_OK) {
             if (pd->log_len > 0u) {
                 p_dg = ec_datagram_cast(pd->cdg.p_entry->data);
 
@@ -1448,12 +1528,131 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 // queue frame and trigger tx
                 pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
             }
-        } else { // use_lrw == OSAL_FALSE
-            ec_log(1, "MASTER_SEND_PD_GROUP", "LRD/LWR not implemented!\n");
+        }
+
+        osal_mutex_unlock(&pd->cdg.lock);
+    } else { // use_lrw == OSAL_FALSE
+        osal_mutex_lock(&pd->cdg_lwr.lock);
+
+        if (pd->cdg_lwr.p_idx == NULL) {
+            if (ec_index_get(&pec->idx_q, &pd->cdg_lwr.p_idx) != EC_OK) {
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
+                ret = EC_ERROR_OUT_OF_INDICES;
+            }
+        }
+
+        if ((ret == EC_OK) && (pd->cdg_lwr.p_entry == NULL)) {
+            if (pool_get(&pec->pool, &pd->cdg_lwr.p_entry, NULL) != EC_OK) {
+                ec_index_put(&pec->idx_q, pd->cdg_lwr.p_idx);
+                pd->cdg_lwr.p_idx = NULL;
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
+                ret = EC_ERROR_OUT_OF_DATAGRAMS;
+            } else {
+                pd->cdg_lwr.p_entry->p_idx = pd->cdg_lwr.p_idx;
+                pd->cdg_lwr.p_entry->user_cb = NULL;
+                pd->cdg_lwr.p_entry->user_arg = 0;
+            }
+        }
+
+        if (ret == EC_OK) {
+            if (pd->log_len > 0u) {
+                p_dg = ec_datagram_cast(pd->cdg_lwr.p_entry->data);
+
+                (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd->log_len + 2u);
+                p_dg->cmd = EC_CMD_LWR;
+                p_dg->idx = pd->cdg_lwr.p_idx->idx;
+                p_dg->adr = pd->log;
+                p_dg->len = pd->pdout_len;
+
+                if (pd->pd != NULL) {
+                    (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
+                }
+
+                // queue frame and trigger tx
+                pool_put(&pec->hw.tx_high, pd->cdg_lwr.p_entry);
+            }
+        }
+
+        osal_mutex_unlock(&pd->cdg_lwr.lock);
+        
+        osal_mutex_lock(&pd->cdg_lrd.lock);
+
+        if (pd->cdg_lrd.p_idx == NULL) {
+            if (ec_index_get(&pec->idx_q, &pd->cdg_lrd.p_idx) != EC_OK) {
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
+                ret = EC_ERROR_OUT_OF_INDICES;
+            }
+        }
+
+        if ((ret == EC_OK) && (pd->cdg_lrd.p_entry == NULL)) {
+            if (pool_get(&pec->pool, &pd->cdg_lrd.p_entry, NULL) != EC_OK) {
+                ec_index_put(&pec->idx_q, pd->cdg_lrd.p_idx);
+                pd->cdg_lrd.p_idx = NULL;
+                ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
+                ret = EC_ERROR_OUT_OF_DATAGRAMS;
+            } else {
+                pd->cdg_lrd.p_entry->p_idx = pd->cdg_lrd.p_idx;
+                pd->cdg_lrd.p_entry->user_cb = cb_process_data_group;
+                pd->cdg_lrd.p_entry->user_arg = pd->group;
+            }
+        }
+
+        if (ret == EC_OK) {
+            if (pd->log_len > 0u) {
+                p_dg = ec_datagram_cast(pd->cdg_lrd.p_entry->data);
+
+                (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd->log_len + 2u);
+                p_dg->cmd = EC_CMD_LRD;
+                p_dg->idx = pd->cdg_lrd.p_idx->idx;
+                p_dg->adr = pd->log + pd->pdout_len;
+                p_dg->len = pd->pdin_len;
+
+                // queue frame and trigger tx
+                pool_put(&pec->hw.tx_high, pd->cdg_lrd.p_entry);
+            }
+        }
+
+        osal_mutex_unlock(&pd->cdg_lrd.lock);
+    }
+        
+    osal_mutex_lock(&pd->cdg_lrd_mbx_state.lock);
+
+    if (pd->cdg_lrd_mbx_state.p_idx == NULL) {
+        if (ec_index_get(&pec->idx_q, &pd->cdg_lrd_mbx_state.p_idx) != EC_OK) {
+            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting ethercat index\n");
+            ret = EC_ERROR_OUT_OF_INDICES;
         }
     }
 
-    osal_mutex_unlock(&pd->cdg.lock);
+    if ((ret == EC_OK) && (pd->cdg_lrd_mbx_state.p_entry == NULL)) {
+        if (pool_get(&pec->pool, &pd->cdg_lrd_mbx_state.p_entry, NULL) != EC_OK) {
+            ec_index_put(&pec->idx_q, pd->cdg_lrd_mbx_state.p_idx);
+            pd->cdg_lrd_mbx_state.p_idx = NULL;
+            ec_log(1, "MASTER_SEND_PD_GROUP", "error getting datagram from pool\n");
+            ret = EC_ERROR_OUT_OF_DATAGRAMS;
+        } else {
+            pd->cdg_lrd_mbx_state.p_entry->p_idx = pd->cdg_lrd_mbx_state.p_idx;
+            pd->cdg_lrd_mbx_state.p_entry->user_cb = cb_lrd_mbx_state;
+            pd->cdg_lrd_mbx_state.p_entry->user_arg = pd->group;
+        }
+    }
+
+    if (ret == EC_OK) {
+        if (pd->log_mbx_state_len > 0u) {
+            p_dg = ec_datagram_cast(pd->cdg_lrd_mbx_state.p_entry->data);
+
+            (void)memset(p_dg, 0, sizeof(ec_datagram_t) + pd->log_mbx_state_len + 2u);
+            p_dg->cmd = EC_CMD_LRD;
+            p_dg->idx = pd->cdg_lrd_mbx_state.p_idx->idx;
+            p_dg->adr = pd->log_mbx_state;
+            p_dg->len = pd->log_mbx_state_len;
+
+            // queue frame and trigger tx
+            pool_put(&pec->hw.tx_high, pd->cdg_lrd_mbx_state.p_entry);
+        }
+    }
+    
+    osal_mutex_unlock(&pd->cdg_lrd_mbx_state.lock);
 
     return ret;
 }
@@ -1567,7 +1766,7 @@ static int ec_send_mbx_state(ec_t *pec, int slave) {
  * \param[in] group     Group number.
  * \return 0 on success
  */
-static int ec_send_mbx_state_group(ec_t *pec, int group) {
+/*static */int ec_send_mbx_state_group(ec_t *pec, int group) {
     assert(pec != NULL);
 
     int ret = EC_OK;
@@ -1601,7 +1800,6 @@ int ec_send_process_data(ec_t *pec) {
             // reset divisor cnt and queue datagram
             pd->divisor_cnt = 0;
             ret = ec_send_process_data_group(pec, i);
-            (void)ec_send_mbx_state_group(pec, i);
         }
 
         if (ret != EC_OK) {
@@ -1633,9 +1831,9 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
 
         // get clock difference
-        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time) % pec->dc.timer_override; 
-        if (pec->dc.act_diff > (pec->dc.timer_override/2)) { pec->dc.act_diff -= pec->dc.timer_override; }
-        else if (pec->dc.act_diff < (-1. * (pec->dc.timer_override / 2))) { pec->dc.act_diff += pec->dc.timer_override; }
+        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time) % pec->main_cycle_interval; 
+        if (pec->dc.act_diff > (pec->main_cycle_interval/2)) { pec->dc.act_diff -= pec->main_cycle_interval; }
+        else if (pec->dc.act_diff < (-1. * (pec->main_cycle_interval / 2))) { pec->dc.act_diff += pec->main_cycle_interval; }
         else {}
 
         if (pec->dc.mode == dc_mode_ref_clock) {
@@ -1753,8 +1951,8 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
             osal_uint64_t act_rtc_time = osal_timer_gettime_nsec();
 
             if (pec->dc.mode == dc_mode_ref_clock) {
-                if (pec->dc.timer_override > 0) {
-                    pec->dc.rtc_time += (osal_uint64_t)(pec->dc.timer_override);
+                if (pec->main_cycle_interval > 0) {
+                    pec->dc.rtc_time += (osal_uint64_t)(pec->main_cycle_interval);
                 }   
             } else {
                 pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
@@ -1903,7 +2101,7 @@ void ec_configure_dc(ec_t *pec, osal_uint64_t timer, ec_dc_mode_t mode,
 {
     assert(pec != NULL);
 
-    pec->dc.timer_override = timer;
+    pec->main_cycle_interval = timer;
     pec->dc.mode = mode;
     pec->dc.cdg.user_cb = user_cb;
     pec->dc.cdg.user_cb_arg = user_cb_arg;

@@ -1,9 +1,17 @@
+//! ethercat example with distributed clocks
+/*!
+ * author: Robert Burger
+ *
+ * $Id$
+ */
+
 #include <libethercat/config.h>
 #include <libethercat/ec.h>
 #include <libethercat/error_codes.h>
 
 #include <stdio.h>
 #include <math.h>
+#include <inttypes.h>
 
 #if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
@@ -32,6 +40,7 @@ int usage(int argc, char **argv) {
     printf("  -v|--verbose      Set libethercat to print verbose output.\n");
     printf("  -p|--prio         Set base priority for cyclic and rx thread.\n");
     printf("  -a|--affinity     Set CPU affinity for cyclic and rx thread.\n");
+    printf("  -c|--clock        Distributed clock master (master/ref).\n");
     return 0;
 }
 
@@ -51,6 +60,7 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 
 static ec_t ec;
 static osal_uint64_t cycle_rate = 1000000;
+static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
 static osal_binary_semaphore_t duration_tx_sync;
 #define DURATION_TX_COUNT   1000
@@ -79,8 +89,8 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         start_tx_in_ns[duration_tx_pos] = time_start;
 
         // execute one EtherCAT cycle
-        ec_send_process_data(pec);
         ec_send_distributed_clocks_sync(pec);
+        ec_send_process_data(pec);
         ec_send_brd_ec_state(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
@@ -103,6 +113,8 @@ int main(int argc, char **argv) {
     long reg = 0, val = 0;
     int base_prio = 60;
     int base_affinity = 0x8;
+    double dc_kp = 0.1;
+    double dc_ki = 0.01;
 
     for (i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "-i") == 0) ||
@@ -123,6 +135,27 @@ int main(int argc, char **argv) {
                     base_affinity = strtoul(argv[i], NULL, 16);
                 else
                     base_affinity = strtoul(argv[i], NULL, 10);
+            }
+        } else if ((strcmp(argv[i], "-c") == 0) ||
+                (strcmp(argv[i], "--clock") == 0)) {
+            if (++i < argc) {
+                if (strcmp(argv[i], "master") == 0) {
+                    dc_mode = dc_mode_master_as_ref_clock;
+                } else {
+                    dc_mode = dc_mode_ref_clock;
+
+                    if ((i+1) < argc) {
+                        if (argv[i+1][0] != '-') {
+                            i++;
+                            dc_kp = strtod(argv[i], NULL);
+
+                            if (argv[i+1][0] != '-') {
+                                i++;
+                                dc_ki = strtod(argv[i], NULL);
+                            }
+                        }
+                    }
+                }
             }
         } else {
             // interpret as reg:value
@@ -146,6 +179,11 @@ int main(int argc, char **argv) {
     ec_log_func = &no_verbose_log;
             
     ret = ec_open(&ec, intf, base_prio - 1, base_affinity, 1);
+    if (ret != EC_OK) {
+        goto exit;
+    }
+
+    ec.threaded_startup = 0;
     
     ec_set_state(&ec, EC_STATE_INIT);
 
@@ -160,7 +198,7 @@ int main(int argc, char **argv) {
     
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
-        if (ec_mbx_check(&ec, slave, EC_EEPROM_MBX_EOE) == EC_OK) {
+        if (ec_mbx_check(&ec, i, EC_EEPROM_MBX_EOE) == EC_OK) {
             ec_slave_set_eoe_settings(&ec, i, mac, ip_address, subnet, gateway, dns, NULL);
             mac[0]++;
             ip_address[0]++;
@@ -169,10 +207,19 @@ int main(int argc, char **argv) {
 
     ec_set_state(&ec, EC_STATE_PREOP);
 
-    ec_configure_dc(&ec, cycle_rate, dc_mode_master_as_ref_clock, ({
+    ec.dc.control.kp = dc_kp;
+    ec.dc.control.ki = dc_ki;
+    ec_configure_dc(&ec, cycle_rate, dc_mode, ({
                 void anon_cb(void *arg, int num) { 
+                    if (dc_mode == dc_mode_ref_clock) {
+                        cycle_rate += ec.dc.timer_correction;
+                    }
+
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
                     osal_uint64_t time_start = duration_tx_pos == 0 ? start_tx_in_ns[DURATION_TX_COUNT-1] : start_tx_in_ns[duration_tx_pos-1];
+                    if ((time_end - time_start) > cycle_rate) {
+                        time_start = start_tx_in_ns[duration_tx_pos];
+                    }
 
                     duration_round_trip_in_ns[duration_round_trip_pos++] = time_end - time_start;
                     if (duration_round_trip_pos >= DURATION_TX_COUNT) {
@@ -189,12 +236,20 @@ int main(int argc, char **argv) {
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
         ec.slaves[i].assigned_pd_group = 0;
-        ec_slave_set_dc_config(&ec, i, 1, 0, 1000000, 0, 0);
+        if (i == 7) {
+            ec_slave_set_dc_config(&ec, i, 1, 1, 250000, 900000, 150000);
+        } else {
+            ec_slave_set_dc_config(&ec, i, 1, 0, 1000000, 0, 0);
+        }
+
+        if ((ec.slaves[i].eeprom.vendor_id = 0x9A) && (ec.slaves[i].eeprom.product_code == 0x01100002)) {
+            ec.slaves[i].mbx.map_mbx_state = OSAL_FALSE;
+        }
     }
 
     osal_binary_semaphore_init(&duration_tx_sync, NULL);
     cyclic_task_running = OSAL_TRUE;
-    osal_task_attr_t cyclic_task_attr = { "cyclic_task", 0, base_prio, base_affinity };
+    osal_task_attr_t cyclic_task_attr = { "cyclic_task", OSAL_SCHED_POLICY_FIFO, base_prio, base_affinity };
     osal_task_t cyclic_task_hdl;
     osal_task_create(&cyclic_task_hdl, &cyclic_task_attr, cyclic_task, &ec);
 
@@ -283,9 +338,10 @@ int main(int argc, char **argv) {
         
 #define to_us(x)    ((double)(x)/1000.)
         no_verbose_log(0, NULL, 
-                "Timer %+9.3fus (jitter avg %+7.3fus, max %+7.3fus), "
-                "Duration %+7.3fus (jitter avg %+7.3fus, max %+7.3fus), "
-                "Round trip %+7.3fus (jitter avg %+7.3fus, max %+7.3fus)\n", 
+                "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
+                ec.hw.bytes_last_sent, (10 * 8 * ec.hw.bytes_last_sent) / 1000.,
                 to_us(timer_tx_med), 
                 to_us(timer_tx_avg_jit), 
                 to_us(timer_tx_max_jit), 
@@ -301,6 +357,7 @@ int main(int argc, char **argv) {
 
     int j, fd;
 
+exit:
     ec_close(&ec);
 
     return 0;

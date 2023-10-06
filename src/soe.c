@@ -13,19 +13,29 @@
 /*
  * This file is part of libethercat.
  *
- * libethercat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * libethercat is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * libethercat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ * Floor, Boston, MA  02110-1301, USA.
+ * 
+ * Please note that the use of the EtherCAT technology, the EtherCAT 
+ * brand name and the EtherCAT logo is only permitted if the property 
+ * rights of Beckhoff Automation GmbH are observed. For further 
+ * information please contact Beckhoff Automation GmbH & Co. KG, 
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ * Germany (ETG, www.ethercat.org).
  *
- * libethercat is distributed in the hope that 
- * it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with libethercat
- * If not, see <www.gnu.org/licenses/>.
  */
 
 #include <libethercat/config.h>
@@ -231,6 +241,7 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
     assert(len != NULL);
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
     
@@ -244,9 +255,12 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
         // cppcheck-suppress misra-c2012-11.3
         ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
+        (void)ec_mbx_next_counter(pec, slave, &counter);
+
         // mailbox header
         write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
         write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
+        write_buf->mbx_hdr.counter  = counter;
         // soe header
         write_buf->soe_hdr.op_code    = EC_SOE_READ_REQ;
         write_buf->soe_hdr.atn        = atn;
@@ -321,6 +335,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
     assert(buf != NULL);
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
+    int counter;
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry;
 
@@ -358,9 +373,12 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                 // cppcheck-suppress misra-c2012-11.3
                 ec_soe_request_t *write_buf = (ec_soe_request_t *)(p_entry->data);
 
+                (void)ec_mbx_next_counter(pec, slave, &counter);
+
                 // mailbox header
                 write_buf->mbx_hdr.length   = sizeof(ec_soe_header_t);
                 write_buf->mbx_hdr.mbxtype  = EC_MBX_SOE;
+                write_buf->mbx_hdr.counter  = counter;
                 // soe header
                 write_buf->soe_hdr.op_code    = EC_SOE_WRITE_REQ;
                 write_buf->soe_hdr.atn        = atn;

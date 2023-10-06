@@ -1,7 +1,6 @@
-[![Build Status](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/release%2F0.4.0/badge/icon)](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/release%2F0.4.0/)
+# libethercat [![Build Status](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/badge/icon)](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/)
 
-# libethercat
-EtherCAT master library  
+EtherCAT-master library  
 
 This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface. 
 
@@ -23,6 +22,7 @@ This library provides all functionality to communicate with EtherCAT slaves atta
 
 
 # Tools
+Tools
 
 libethercat also provides some small helper programs for the EtherCAT bus.
 
@@ -50,4 +50,14 @@ If no filename if specified, eepromtool will read from stdin.
 
     cat eeprom.bin | eepromtool -i eth1 -s 0 -w
 
+### example_with_dc
 
+This is a more complex example on how to use libethercat in realtime/control systems. 
+
+It tries to do the following:
+
+* Scan the EtherCAT network.
+* Try to do a default configuration of the found slaves
+* Configures distributed clocks of all slaves (if supported)
+* Create a periodic realtime task which does cyclic data (process data) exchange.
+* Do some jitter logging.
