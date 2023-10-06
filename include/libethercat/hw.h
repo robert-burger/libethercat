@@ -48,7 +48,7 @@
 #include <libethercat/pool.h>
 #include <libethercat/datagram.h>
 
-#if LIBETHERCAT_BUILD_PIKEOS == 1
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
 #include <vm_file_types.h>
 #include <drv/sbuf_hdr.h>
 #endif
@@ -154,7 +154,7 @@ typedef struct hw {
     off_t rx_ring_offset;           //!< \brief Offset in RX ring.
     off_t tx_ring_offset;           //!< \brief Offset in TX ring.
 
-#if LIBETHERCAT_BUILD_PIKEOS == 1
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
     vm_file_desc_t fd;                      //!< \brief Driver file descriptor.
     drv_sbuf_desc_t sbuf;                   //!< \brief Driver SBUF descriptor.
 #endif
