@@ -28,7 +28,7 @@ libethercat_la_SOURCES	= coe.c coe_master.c slave.c datagram.c pool.c async_loop
 						  hw.c soe.c foe.c mbx.c eeprom.c dc.c idx.c mii.c eoe.c
 
 if BUILD_DEVICE_SOCK_RAW_LEGACY
-libethercat_la_SOURCES += hw_sock_raw.c
+libethercat_la_SOURCES += hw_sock_raw.c hw_sock_raw_mmaped.c hw_file.c
 endif
 
 if BUILD_DEVICE_SOCK_RAW_MMAPED

@@ -39,6 +39,9 @@
 
 #include <libethercat/config.h>
 #include <libethercat/hw.h>
+#include <libethercat/hw_file.h>
+#include <libethercat/hw_sock_raw.h>
+#include <libethercat/hw_sock_raw_mmaped.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
 #include <libethercat/error_codes.h>
@@ -91,7 +94,31 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
 
     osal_mutex_init(&phw->hw_lock, NULL);
 
-    ret = hw_device_open(phw, devname);
+    const osal_char_t *ifname = devname;
+
+    if ((ifname[0] == '/') || (strncmp(ifname, "file:", 5) == 0)) {
+        // assume char device -> hw_file
+        if (strncmp(ifname, "file:", 5) == 0) {
+            ifname = &ifname[5];
+        }
+
+        ec_log(10, "HW_OPEN", "Opening interface as device file: %s\n", ifname);
+        ret = hw_device_file_open(phw, ifname);
+    } else {
+        if (strncmp(ifname, "sock-raw-mmaped:", 16) == 0) {
+            ifname = &ifname[16];
+
+            ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", ifname);
+            ret = hw_device_sock_raw_mmaped_open(phw, ifname);
+        } else {
+            if (strncmp(ifname, "sock-raw:", 9) == 0) {
+                ifname = &ifname[9];
+            }
+
+            ec_log(10, "HW_OPEN", "Opening interface as SOCK_RAW: %s\n", ifname);
+            ret = hw_device_sock_raw_open(phw, ifname);
+        }
+    }
 
     if (ret == EC_OK) {
         phw->rxthreadrunning = 1;
@@ -174,7 +201,7 @@ void *hw_rx_thread(void *arg) {
     ec_log(10, "HW_RX", "receive thread running (prio %d)\n", rx_prio);
 
     while (phw->rxthreadrunning != 0) {
-        if (hw_device_recv(phw) != EC_OK) {
+        if (phw->recv(phw) != EC_OK) {
             break;
         }
     }
@@ -191,7 +218,7 @@ static void hw_tx_pool(hw_t *phw, pool_t *pool) {
     osal_bool_t sent = OSAL_FALSE;
     ec_frame_t *pframe = NULL;
 
-    (void)hw_device_get_tx_buffer(phw, &pframe);
+    (void)phw->get_tx_buffer(phw, &pframe);
 
     ec_datagram_t *pdg = ec_datagram_first(pframe);
     ec_datagram_t *pdg_prev = NULL;
@@ -211,9 +238,9 @@ static void hw_tx_pool(hw_t *phw, pool_t *pool) {
 
         if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len != sizeof(ec_frame_t)) {
-                (void)hw_device_send(phw, pframe);
+                (void)phw->send(phw, pframe);
                 sent = OSAL_TRUE;
-                (void)hw_device_get_tx_buffer(phw, &pframe);
+                (void)phw->get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
             }
         }
@@ -236,7 +263,7 @@ static void hw_tx_pool(hw_t *phw, pool_t *pool) {
     } while (len > 0);
     
     if (sent == OSAL_TRUE) {
-        hw_device_send_finished(phw);
+        phw->send_finished(phw);
     }
 }
 

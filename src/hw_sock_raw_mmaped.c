@@ -1,5 +1,5 @@
 /**
- * \file hw_sock_raw.c
+ * \file hw_sock_raw_mmaped_mmaped.c
  *
  * \author Robert Burger <robert.burger@dlr.de>
  *
@@ -65,10 +65,10 @@
 #include <errno.h>
 
 // forward declarations
-int hw_device_sock_raw_send(hw_t *phw, ec_frame_t *pframe);
-int hw_device_sock_raw_recv(hw_t *phw);
-void hw_device_sock_raw_send_finished(hw_t *phw);
-int hw_device_sock_raw_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
+int hw_device_sock_raw_mmaped_send(hw_t *phw, ec_frame_t *pframe);
+int hw_device_sock_raw_mmaped_recv(hw_t *phw);
+void hw_device_sock_raw_mmaped_send_finished(hw_t *phw);
+int hw_device_sock_raw_mmaped_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
 
 // this need the grant_cap_net_raw kernel module 
 // see https://gitlab.com/fastflo/open_ethercat
@@ -105,7 +105,7 @@ static int try_grant_cap_net_raw_init(void) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_open(hw_t *phw, const osal_char_t *devname) {
+int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
     struct ifreq ifr;
     int ifindex;
@@ -115,16 +115,47 @@ int hw_device_sock_raw_open(hw_t *phw, const osal_char_t *devname) {
                 "not allowed to open a raw socket\n");
     }
     
-    phw->send = hw_device_sock_raw_send;
-    phw->recv = hw_device_sock_raw_recv;
-    phw->send_finished = hw_device_sock_raw_send_finished;
-    phw->get_tx_buffer = hw_device_sock_raw_get_tx_buffer;
+    phw->send = hw_device_sock_raw_mmaped_send;
+    phw->recv = hw_device_sock_raw_mmaped_recv;
+    phw->send_finished = hw_device_sock_raw_mmaped_send_finished;
+    phw->get_tx_buffer = hw_device_sock_raw_mmaped_get_tx_buffer;
 
     // create raw socket connection
     phw->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
     if (phw->sockfd <= 0) {
         ec_log(1, "HW_OPEN", "socket error on opening SOCK_RAW: %s\n", strerror(errno));
         ret = EC_ERROR_UNAVAILABLE;
+    }
+
+    phw->mmap_packets = 100;
+
+    if (ret == EC_OK) {
+        int pagesize = getpagesize();
+        ec_log(10, "HW_OPEN", "got page size %d bytes\n", pagesize);
+
+        struct tpacket_req tp;
+
+        // tell kernel to export data through mmap()ped ring
+        tp.tp_block_size = phw->mmap_packets * pagesize;
+        tp.tp_block_nr   = 1;
+        tp.tp_frame_size = pagesize;
+        tp.tp_frame_nr   = phw->mmap_packets;
+        if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_RX_RING, (void*)&tp, sizeof(tp)) != 0) {
+            ec_log(1, "HW_OPEN", "setsockopt() rx ring: %s\n", strerror(errno));
+            ret = EC_ERROR_UNAVAILABLE;
+        } else if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_TX_RING, (void*)&tp, sizeof(tp)) != 0) {
+            ec_log(1, "HW_OPEN", "setsockopt() tx ring: %s\n", strerror(errno));
+            ret = EC_ERROR_UNAVAILABLE;
+        } else {}
+
+        if (ret == EC_OK) {
+            // TODO unmap anywhere
+            phw->rx_ring = mmap(0, phw->mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, MAP_SHARED, phw->sockfd, 0);
+            phw->tx_ring = &phw->rx_ring[(phw->mmap_packets * pagesize)];
+
+            phw->rx_ring_offset = 0;
+            phw->tx_ring_offset = 0;
+        }
     }
 
     if (ret == EC_OK) { 
@@ -212,18 +243,64 @@ int hw_device_sock_raw_open(hw_t *phw, const osal_char_t *devname) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_recv(hw_t *phw) {
-    // cppcheck-suppress misra-c2012-11.3
-    ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
+int hw_device_sock_raw_mmaped_recv(hw_t *phw) {
+    // using kernel mapped receive buffers
+    // wait for received, non-processed packet
+    struct pollfd pollset;
+    pollset.fd = phw->sockfd;
+    pollset.events = POLLIN;
+    pollset.revents = 0;
+    int ret = poll(&pollset, 1, 1);
+    if (ret > 0) {
+        int pagesize = getpagesize();
 
-    // using tradional recv function
-    osal_ssize_t bytesrx = recv(phw->sockfd, pframe, ETH_FRAME_LEN, 0);
+        struct tpacket_hdr *header;
+        for (
+                // cppcheck-suppress misra-c2012-11.3
+                header = (struct tpacket_hdr *)(&phw->rx_ring[(phw->rx_ring_offset * pagesize)]);
+                header->tp_status & TP_STATUS_USER; 
+                // cppcheck-suppress misra-c2012-11.3
+                header = (struct tpacket_hdr *)(&phw->rx_ring[(phw->rx_ring_offset * pagesize)])) 
+        {
+            // cppcheck-suppress misra-c2012-11.3
+            ec_frame_t *real_frame = (ec_frame_t *)(&((osal_char_t *)header)[header->tp_mac]);
+            hw_process_rx_frame(phw, real_frame);
 
-    if (bytesrx > 0) {
-        hw_process_rx_frame(phw, pframe);
+            header->tp_status = 0;
+            phw->rx_ring_offset = (phw->rx_ring_offset + 1) % phw->mmap_packets;
+        }           
     }
 
     return EC_OK;
+}
+
+static struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
+    struct tpacket_hdr *header;
+    struct pollfd pollset;
+
+    assert(phw != NULL);
+
+    // cppcheck-suppress misra-c2012-11.3
+    header = (struct tpacket_hdr *)(&phw->tx_ring[(phw->tx_ring_offset * getpagesize())]);
+
+    while (header->tp_status != TP_STATUS_AVAILABLE) {
+        // notify kernel
+        if (send(phw->sockfd, NULL, 0, 0) < 0) {
+            ec_log(1, "HW_TX", "error on send: %s\n", strerror(errno));
+        }
+
+        // buffer not available, wait here...
+        pollset.fd = phw->sockfd;
+        pollset.events = POLLOUT;
+        pollset.revents = 0;
+        int ret = poll(&pollset, 1, 1000);
+        if (ret < 0) {
+            ec_log(1, "HW_TX", "error on poll: %s\n", strerror(errno));
+            continue;
+        }
+    }
+
+    return header;
 }
 
 //! Get a free tx buffer from underlying hw device.
@@ -233,7 +310,7 @@ int hw_device_sock_raw_recv(hw_t *phw) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
+int hw_device_sock_raw_mmaped_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     assert(phw != NULL);
     assert(ppframe != NULL);
 
@@ -243,8 +320,10 @@ int hw_device_sock_raw_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     static const osal_uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
+    struct tpacket_hdr *header = NULL;
+    header = hw_get_next_tx_buffer(phw);
     // cppcheck-suppress misra-c2012-11.3
-    pframe = (ec_frame_t *)phw->send_frame;
+    pframe = (ec_frame_t *)(&((osal_char_t *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
 
     // reset length to send new frame
     (void)memcpy(pframe->mac_dest, mac_dest, 6);
@@ -265,25 +344,26 @@ int hw_device_sock_raw_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_send(hw_t *phw, ec_frame_t *pframe) {
+int hw_device_sock_raw_mmaped_send(hw_t *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
 
     int ret = EC_OK;
 
-    // no more datagrams need to be sent or no more space in frame
-    osal_ssize_t bytestx = send(phw->sockfd, pframe, pframe->len, 0);
+    // fill header
+    struct tpacket_hdr *header = NULL;
+    header = (struct tpacket_hdr *)(((osal_char_t *)pframe) - sizeof(struct tpacket_hdr));
+    header->tp_len = pframe->len;
+    header->tp_status = TP_STATUS_SEND_REQUEST;
 
-    if ((osal_ssize_t)pframe->len != bytestx) {
-        ec_log(1, "HW_TX", "got only %ld bytes out of %d bytes "
-                "through.\n", bytestx, pframe->len);
-
-        if (bytestx == -1) {
-            ec_log(1, "HW_TX", "error: %s\n", strerror(errno));
-        }
-
+    // notify kernel
+    if (send(phw->sockfd, NULL, 0, 0) < 0) {
+        ec_log(1, "HW_TX", "error on sendto: %s\n", strerror(errno));
         ret = EC_ERROR_HW_SEND;
     }
+
+    // increase consumer ring pointer
+    phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
 
     return ret;
 }
@@ -292,22 +372,7 @@ int hw_device_sock_raw_send(hw_t *phw, ec_frame_t *pframe) {
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-void hw_device_sock_raw_send_finished(hw_t *phw) {
+void hw_device_sock_raw_mmaped_send_finished(hw_t *phw) {
 }
 
-//! Get SOCK_RAW hw device.
-/*!
- * \param[in,out]   dev     Pointer to hw device struct.
- *
- * \return N/A
- */
-void hw_device_sock_raw_get(hw_device_t *dev) {
-    assert(dev != NULL);
-
-    dev->open = hw_device_sock_raw_open;
-    dev->send = hw_device_sock_raw_send;
-    dev->recv = hw_device_sock_raw_recv;
-    dev->send_finished = hw_device_sock_raw_send_finished;
-    dev->get_tx_buffer = hw_device_sock_raw_get_tx_buffer;
-}
 
