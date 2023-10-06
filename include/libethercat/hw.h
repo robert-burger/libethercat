@@ -147,12 +147,14 @@ typedef struct hw {
     osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
     osal_bool_t polling_mode;               //!< \brief Special interrupt-less polling-mode flag.
     
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED
     int mmap_packets;               //!< \brief Doing mmap packets.
     osal_char_t *rx_ring;           //!< kernel mmap receive buffers
     osal_char_t *tx_ring;           //!< kernel mmap send buffers
 
     off_t rx_ring_offset;           //!< \brief Offset in RX ring.
     off_t tx_ring_offset;           //!< \brief Offset in TX ring.
+#endif
 
 #if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
     vm_file_desc_t fd;                      //!< \brief Driver file descriptor.
