@@ -30,7 +30,11 @@ class MainProject(ConanFile):
         "max_ds402_subdevs": "ANY",
         "max_coe_emergencies": "ANY",
         "max_coe_emergency_msg_len": "ANY",
-        "ecat_device": "ANY"
+        "hw_device_file": [ True, False ],
+        "hw_device_sock_raw": [ True, False ],
+        "hw_device_sock_raw_mmaped": [ True, False ],
+        "hw_device_bpf": [ True, False ],
+        "hw_device_pikeos": [ True, False ],
     }
     default_options = {
         "shared": True, 
@@ -53,7 +57,11 @@ class MainProject(ConanFile):
         "max_ds402_subdevs": 4,
         "max_coe_emergencies": 10,
         "max_coe_emergency_msg_len": 32,
-        "ecat_device": "sock_raw",
+        "hw_device_file": True,
+        "hw_device_sock_raw": True,
+        "hw_device_sock_raw_mmaped": True,
+        "hw_device_bpf": False,
+        "hw_device_pikeos": False,
     }
 
     generators = "pkg_config", "cmake_find_package"
@@ -93,7 +101,16 @@ class MainProject(ConanFile):
             args.append("--disable-shared")
             args.append("--enable-static")
 
-        args.append("--enable-device=%s" % (self.options.ecat_device))
+        if self.options.hw_device_file:
+            args.append("--enable-device-file")
+        if self.options.hw_device_sock_raw:
+            args.append("--enable-device-sock-raw")
+        if self.options.hw_device_sock_raw_mmaped:
+            args.append("--enable-device-sock-raw-mmaped")
+        if self.options.hw_device_bpf:
+            args.append("--enable-device-bpf")
+        if self.options.hw_device_pikeos:
+            args.append("--enable-device-pikeos")
 
         args.append("--with-max-slaves=%d" % (self.options.max_slaves))
         args.append("--with-max-groups=%d" % (self.options.max_groups))

@@ -39,9 +39,27 @@
 
 #include <libethercat/config.h>
 #include <libethercat/hw.h>
+
+#if LIBETHERCAT_BUILD_DEVICE_FILE == 1
 #include <libethercat/hw_file.h>
+#endif
+
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
 #include <libethercat/hw_sock_raw.h>
+#endif
+
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
 #include <libethercat/hw_sock_raw_mmaped.h>
+#endif
+
+#if LIBETHERCAT_BUILD_DEVICE_BPF == 1
+#include <libethercat/hw_bpf.h>
+#endif
+
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
+#include <libethercat/hw_pikeos.h>
+#endif
+
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
 #include <libethercat/error_codes.h>
@@ -84,7 +102,7 @@ void *hw_rx_thread(void *arg);
 int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpumask) {
     assert(phw != NULL);
 
-    int ret;
+    int ret = EC_ERROR_HW_NOT_SUPPORTED;
 
     phw->pec = pec;
     phw->bytes_last_sent = 0;
@@ -96,6 +114,7 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
 
     const osal_char_t *ifname = devname;
 
+#if LIBETHERCAT_BUILD_DEVICE_FILE == 1
     if ((ifname[0] == '/') || (strncmp(ifname, "file:", 5) == 0)) {
         // assume char device -> hw_file
         if (strncmp(ifname, "file:", 5) == 0) {
@@ -104,19 +123,42 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
 
         ec_log(10, "HW_OPEN", "Opening interface as device file: %s\n", ifname);
         ret = hw_device_file_open(phw, ifname);
-    } else {
+    } else 
+#endif
+    {
+#if LIBETHERCAT_BUILD_DEVICE_BPF == 1
+        if (strncmp(ifname, "bpf:", 4) == 0) {
+            ifname = &ifname[4];
+
+            ec_log(10, "HW_OPEN", "Opening interface as BPF: %s\n", ifname);
+            ret = hw_device_bpf_open(phw, ifname);
+        } else 
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
+        if (strncmp(ifname, "pikeos:", 4) == 0) {
+            ifname = &ifname[4];
+
+            ec_log(10, "HW_OPEN", "Opening interface as pikeos: %s\n", ifname);
+            ret = hw_device_pikeos_open(phw, ifname);
+        } else 
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
         if (strncmp(ifname, "sock-raw-mmaped:", 16) == 0) {
             ifname = &ifname[16];
 
             ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", ifname);
             ret = hw_device_sock_raw_mmaped_open(phw, ifname);
-        } else {
+        } else 
+#endif
+        {
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
             if (strncmp(ifname, "sock-raw:", 9) == 0) {
                 ifname = &ifname[9];
             }
 
             ec_log(10, "HW_OPEN", "Opening interface as SOCK_RAW: %s\n", ifname);
             ret = hw_device_sock_raw_open(phw, ifname);
+#endif
         }
     }
 

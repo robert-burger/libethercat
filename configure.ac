@@ -86,52 +86,37 @@ AC_ARG_WITH([max-ds402-subdevs],
 AC_ARG_WITH([max-coe-emergencies],
               AS_HELP_STRING([--with-max-coe-emergencies=MAX_COE_EMERGENCIES], [Set maximum number of coe-emergencies supported.]), 
               AC_DEFINE_UNQUOTED([MAX_COE_EMERGENCIES], [${withval}], [Maximum number of coe-emergencies supported.]), [])
-        
-AC_ARG_ENABLE([device],
-              AS_HELP_STRING([--enable-device=LAYER], [Enable device layer. LAYER can be one of 'sock_raw', 'sock_raw_mmaped', 'file', 'bpf', 'pikeos']))
-AS_IF([test "x$enable_device" = "xsock_raw" || test "x$enable_device" = "x" ], [
-       BUILD_DEVICE_SOCK_RAW_LEGACY=true
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [1], [Use SOCK_RAW device layer])
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
-       AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
-       AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
-       AC_DEFINE([BUILD_DEVICE_PIKEOS],          [0], [Use pikeos device layer])
-       AC_MSG_RESULT(using SOCK_RAW legacy device layer)
-], AS_IF([test "x$enable_device" = "xsock_raw_mmaped"], [
-       BUILD_DEVICE_SOCK_RAW_MMAPED=true
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [1], [Use SOCK_RAW mmaped device layer])
-       AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
-       AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
-       AC_DEFINE([BUILD_DEVICE_PIKEOS],          [0], [Use pikeos device layer])
-       AC_MSG_RESULT(using SOCK_RAW mmaped device layer)
-], AS_IF([test "x$enable_device" = "xfile"], [
-       BUILD_DEVICE_FILE=true
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
-       AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
-       AC_DEFINE([BUILD_DEVICE_FILE],            [1], [Use file device layer])
-       AC_DEFINE([BUILD_DEVICE_PIKEOS],          [0], [Use pikeos device layer])
-       AC_MSG_RESULT(using file device layer)
-], AS_IF([test "x$enable_device" = "xbpf"], [
-       BUILD_DEVICE_BPF=true
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
-       AC_DEFINE([BUILD_DEVICE_BPF],             [1], [Use BPF device layer])
-       AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
-       AC_DEFINE([BUILD_DEVICE_PIKEOS],          [0], [Use pikeos device layer])
-       AC_MSG_RESULT(using BPF device layer)
-], AS_IF([test "x$enable_device" = "xpikeos"], [
-       BUILD_DEVICE_PIKEOS=true
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Use SOCK_RAW device layer])
-       AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Use SOCK_RAW mmaped device layer])
-       AC_DEFINE([BUILD_DEVICE_BPF],             [0], [Use BPF device layer])
-       AC_DEFINE([BUILD_DEVICE_FILE],            [0], [Use file device layer])
-       AC_DEFINE([BUILD_DEVICE_PIKEOS],          [1], [Use pikeos device layer])
-       AC_MSG_RESULT(using BPF device layer)
-], 
-       AC_MSG_ERROR(unknown device layer: $enable_device)
-)))))
+
+AC_ARG_ENABLE([device-file], AS_HELP_STRING([--enable-device-file], [Enable file hw device layer.]),
+              [
+               BUILD_DEVICE_FILE=true
+               AC_DEFINE([BUILD_DEVICE_FILE], [1], [Build with file hw device layer.])
+              ],
+              AC_DEFINE([BUILD_DEVICE_FILE], [0], [Build with file hw device layer.]))
+AC_ARG_ENABLE([device-sock-raw], AS_HELP_STRING([--enable-device-sock-raw], [Enable sock-raw hw device layer.]),
+              [
+               BUILD_DEVICE_SOCK_RAW_LEGACY=true
+               AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [1], [Build with sock-raw hw device layer.])
+              ],
+              AC_DEFINE([BUILD_DEVICE_SOCK_RAW_LEGACY], [0], [Build with sock-raw hw device layer.]))
+AC_ARG_ENABLE([device-sock-raw-mmaped], AS_HELP_STRING([--enable-device-sock-raw-mmaped], [Enable sock-raw mmaped hw device layer.]),
+              [
+               BUILD_DEVICE_SOCK_RAW_MMAPED=true
+               AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [1], [Build with sock-raw mmaped hw device layer.])
+              ],
+              AC_DEFINE([BUILD_DEVICE_SOCK_RAW_MMAPED], [0], [Build with sock-raw mmaped hw device layer.]))
+AC_ARG_ENABLE([device-bpf], AS_HELP_STRING([--enable-device-bpf], [Enable bpf hw device layer.]),
+              [
+               BUILD_DEVICE_BPF=true
+               AC_DEFINE([BUILD_DEVICE_BPF], [1], [Build with bpf hw device layer.])
+              ],
+              AC_DEFINE([BUILD_DEVICE_BPF], [0], [Build with bpf hw device layer.]))
+AC_ARG_ENABLE([device-pikeos], AS_HELP_STRING([--enable-device-pikeos], [Enable pikeos hw device layer.]),
+              [
+               BUILD_DEVICE_PIKEOS=true
+               AC_DEFINE([BUILD_DEVICE_PIKEOS], [1], [Build with pikeos hw device layer.])
+              ],
+              AC_DEFINE([BUILD_DEVICE_PIKEOS], [0], [Build with pikeos hw device layer.]))
 
 case $target_os in
     linux*)

@@ -61,6 +61,12 @@ static struct bpf_insn insns[] = {
     BPF_STMT(BPF_RET + BPF_K, 0),
 };
 
+// forward declarations
+int hw_device_bpf_send(hw_t *phw, ec_frame_t *pframe);
+int hw_device_bpf_recv(hw_t *phw);
+void hw_device_bpf_send_finished(hw_t *phw);
+int hw_device_bpf_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -68,7 +74,7 @@ static struct bpf_insn insns[] = {
  *
  * \return 0 or negative error code
  */
-int hw_device_open(hw_t *phw, const osal_char_t *devname) {
+int hw_device_bpf_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
     const unsigned int btrue = 1;
     const unsigned int bfalse = 0;
@@ -78,6 +84,11 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     const osal_char_t bpf_devname[] = (char[]){ "/dev/bpf" };
 
     (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
+    
+    phw->send = hw_device_bpf_send;
+    phw->recv = hw_device_bpf_recv;
+    phw->send_finished = hw_device_bpf_send_finished;
+    phw->get_tx_buffer = hw_device_bpf_get_tx_buffer;
 
     // open bpf device
     phw->sockfd = open(bpf_devname, O_RDWR, 0);
@@ -169,7 +180,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
  *
  * \return 0 or negative error code
  */
-int hw_device_recv(hw_t *phw, ec_frame_t *pframe) {
+int hw_device_bpf_recv(hw_t *phw, ec_frame_t *pframe) {
     osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
     int local_errno = errno;
 
@@ -210,7 +221,7 @@ int hw_device_recv(hw_t *phw, ec_frame_t *pframe) {
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-void hw_device_send_finished(hw_t *phw) {
+void hw_device_bpf_send_finished(hw_t *phw) {
 }
 
 

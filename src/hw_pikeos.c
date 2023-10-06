@@ -58,6 +58,12 @@
 #include <drv/app_sbuf_svc.h>
 #include <drv/sbuf_common_svc.h>
 
+// forward declarations
+int hw_device_pikeos_send(hw_t *phw, ec_frame_t *pframe);
+int hw_device_pikeos_recv(hw_t *phw);
+void hw_device_pikeos_send_finished(hw_t *phw);
+int hw_device_pikeos_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -65,7 +71,7 @@
  *
  * \return 0 or negative error code
  */
-int hw_device_open(hw_t *phw, const osal_char_t *devname) {
+int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
     assert(phw != NULL);
     assert(devname != NULL);
 
@@ -74,6 +80,11 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     vm_partition_stat_t pinfo;
     P4_e_t local_retval;
     P4_address_t vaddr;
+
+    phw->send = hw_device_pikeos_send;
+    phw->recv = hw_device_pikeos_recv;
+    phw->send_finished = hw_device_pikeos_send_finished;
+    phw->get_tx_buffer = hw_device_pikeos_get_tx_buffer;
 
     local_retval = vm_part_pstat(VM_RESPART_MYSELF, &pinfo);
     if (local_retval != P4_E_OK) {
@@ -136,7 +147,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
  *
  * \return 0 or negative error code
  */
-int hw_device_recv(hw_t *phw) {
+int hw_device_pikeos_recv(hw_t *phw) {
     assert(phw != NULL);
 
     int ret = EC_OK;
@@ -176,7 +187,7 @@ int hw_device_recv(hw_t *phw) {
  *
  * \return 0 or negative error code
  */
-int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
+int hw_device_pikeos_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     assert(phw != NULL);
     assert(ppframe != NULL);
 
@@ -208,7 +219,7 @@ int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
  *
  * \return 0 or negative error code
  */
-int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
+int hw_device_pikeos_send(hw_t *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
 
@@ -241,7 +252,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-void hw_device_send_finished(hw_t *phw) {
+void hw_device_pikeos_send_finished(hw_t *phw) {
     (void)phw;
 }
 
