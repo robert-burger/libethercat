@@ -1506,17 +1506,7 @@ case $os in
 		os=-dicos
 		;;
 	-pikeos*)
-		# Until real need of OS specific support for
-		# particular features comes up, bare metal
-		# configurations are quite functional.
-		case $basic_machine in
-		    arm*)
-			os=-eabi
-			;;
-		    *)
-			os=-elf
-			;;
-		esac
+        os=-pikeos
 		;;
 	-nacl*)
 		;;
