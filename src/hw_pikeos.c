@@ -42,6 +42,7 @@
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
 #include <libethercat/error_codes.h>
+#include <libethercat/hw_pikeos.h>
 
 #include <libosal/io.h>
 
