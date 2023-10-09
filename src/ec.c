@@ -1112,7 +1112,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         pec->eeprom_log         = eeprom_log;
 
         (void)memset(&pec->dg_entries[0], 0, sizeof(pool_entry_t) * (osal_size_t)LEC_MAX_DATAGRAMS);
-        ret = pool_open(&pec->pool, 100, &pec->dg_entries[0]);
+        ret = pool_open(&pec->pool, LEC_MAX_DATAGRAMS, &pec->dg_entries[0]);
     }
 
     (void)pool_open(&pec->mbx_message_pool_recv_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_recv_free_entries[0]);
