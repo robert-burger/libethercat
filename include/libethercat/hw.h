@@ -66,15 +66,6 @@
 struct ec;
 struct hw;
 
-//! Opens EtherCAT hw device.
-/*!
- * \param[in]   phw         Pointer to hw handle. 
- * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
- *
- * \return 0 or negative error code
- */
-typedef int (*hw_device_open_t)(struct hw *phw, const osal_char_t *devname);
-
 //! Receive a frame from an EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -107,14 +98,6 @@ typedef void (*hw_device_send_finished_t)(struct hw *phw);
  */
 typedef int (*hw_device_get_tx_buffer_t)(struct hw *phw, ec_frame_t **ppframe);
 
-typedef struct hw_device {
-    hw_device_open_t open;
-    hw_device_recv_t recv;
-    hw_device_send_t send;
-    hw_device_send_finished_t send_finished;
-    hw_device_get_tx_buffer_t get_tx_buffer;
-} hw_device_t;
-
 //! hardware structure
 typedef struct hw {
     struct ec *pec;                 //!< Pointer to EtherCAT master structure.
@@ -137,10 +120,10 @@ typedef struct hw {
     osal_size_t bytes_last_sent;    //!< \brief Bytes last sent.
     osal_timer_t next_cylce_start;  //!< \brief Next cycle start time.
 
-    hw_device_recv_t recv;
-    hw_device_send_t send;
-    hw_device_send_finished_t send_finished;
-    hw_device_get_tx_buffer_t get_tx_buffer;
+    hw_device_recv_t recv;                      //!< \biref Function to receive frame from device.
+    hw_device_send_t send;                      //!< \brief Function to send frames via device.
+    hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
+    hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
 
 #define ETH_FRAME_LEN   0x1518
     osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.

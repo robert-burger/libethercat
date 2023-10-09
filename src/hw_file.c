@@ -234,19 +234,3 @@ void hw_device_file_send_finished(hw_t *phw) {
     }
 }
 
-//! Get file hw device.
-/*!
- * \param[in,out]   dev     Pointer to hw device struct.
- *
- * \return N/A
- */
-void hw_device_file_get(hw_device_t *dev) {
-    assert(dev != NULL);
-
-    dev->open = hw_device_file_open;
-    dev->send = hw_device_file_send;
-    dev->recv = hw_device_file_recv;
-    dev->send_finished = hw_device_file_send_finished;
-    dev->get_tx_buffer = hw_device_file_get_tx_buffer;
-}
-

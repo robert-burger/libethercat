@@ -295,19 +295,4 @@ int hw_device_sock_raw_send(hw_t *phw, ec_frame_t *pframe) {
 void hw_device_sock_raw_send_finished(hw_t *phw) {
 }
 
-//! Get SOCK_RAW hw device.
-/*!
- * \param[in,out]   dev     Pointer to hw device struct.
- *
- * \return N/A
- */
-void hw_device_sock_raw_get(hw_device_t *dev) {
-    assert(dev != NULL);
-
-    dev->open = hw_device_sock_raw_open;
-    dev->send = hw_device_sock_raw_send;
-    dev->recv = hw_device_sock_raw_recv;
-    dev->send_finished = hw_device_sock_raw_send_finished;
-    dev->get_tx_buffer = hw_device_sock_raw_get_tx_buffer;
-}
 
