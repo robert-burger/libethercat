@@ -1146,7 +1146,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     ec_log(10, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
-    ec_log(10, "MASTER_OPEN", "Master struct needs %" PRId64 " bytes\n", sizeof(ec_t));
+    ec_log(10, "MASTER_OPEN", "Master struct needs %" PRIu64 " bytes\n", (osal_uint64_t)sizeof(ec_t));
 
     if (ret != EC_OK) {
         if (pec != NULL) {
