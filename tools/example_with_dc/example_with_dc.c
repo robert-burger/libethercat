@@ -45,6 +45,7 @@ int usage(int argc, char **argv) {
     printf("  -c|--clock            Distributed clock master (master/ref).\n");
     printf("  -e|--eoe              Enable EoE for slave network comm.\n");
     printf("  -f|--cycle-frequency  Specify cycle frequency in [Hz].\n");
+    printf("  -b|--busy-wait        Don't sleep, do busy-wait instead.\n");
     printf("  --disable-overlapping Disable LRW data overlapping.\n");
     printf("  --disable-lrw         Disable LRW and use LRD/LWR instead (implies --disable-overlapping).\n");
     return 0;
@@ -68,6 +69,8 @@ static ec_t ec;
 static osal_uint64_t cycle_rate = 1000000;
 static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
+osal_retval_t (*wait_time)(osal_uint64_t) = osal_sleep_until_nsec;
+
 osal_trace_t *tx_start;
 osal_trace_t *tx_duration;
 osal_trace_t *roundtrip_duration;
@@ -80,14 +83,12 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     osal_uint64_t time_start = 0u;
     osal_uint64_t time_end = 0u;
 
-    no_verbose_log(0, NULL, "cyclic_task: running endless loop\n");
+    no_verbose_log(0, NULL, "cyclic_task: running endless loop, cycle rate is %lu\n", cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
         abs_timeout += cycle_rate;
-        osal_sleep_until_nsec(abs_timeout);
-
-        time_start = osal_timer_gettime_nsec();
-        osal_trace_time(tx_start, time_start);
+        (void)wait_time(abs_timeout);
+        time_start = osal_trace_point(tx_start);
 
         // execute one EtherCAT cycle
         ec_send_distributed_clocks_sync(pec);
@@ -125,6 +126,9 @@ int main(int argc, char **argv) {
         } else if ((strcmp(argv[i], "-e") == 0) || 
                 (strcmp(argv[i], "--eoe") == 0)) {
             eoe = 1;
+        } else if ((strcmp(argv[i], "-b") == 0) || 
+                (strcmp(argv[i], "--busy-wait") == 0)) {
+            wait_time = osal_busy_wait_until_nsec;
         } else if (strcmp(argv[i], "--disable-overlapping") == 0) {
             disable_overlapping = 1;
         } else if (strcmp(argv[i], "--disable-lrw") == 0) {
@@ -249,11 +253,7 @@ int main(int argc, char **argv) {
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
         ec.slaves[i].assigned_pd_group = 0;
-        if (i == 7) {
-            ec_slave_set_dc_config(&ec, i, 1, 1, 250000, 900000, 150000);
-        } else {
-            ec_slave_set_dc_config(&ec, i, 1, 0, 1000000, 0, 0);
-        }
+        ec_slave_set_dc_config(&ec, i, 1, 0, cycle_rate, 0, 0);
     }
 
     cyclic_task_running = OSAL_TRUE;
