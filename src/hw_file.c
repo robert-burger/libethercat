@@ -72,6 +72,12 @@
 #define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
 #define ETHERCAT_DEVICE_GET_POLLING       _IOR (ETHERCAT_DEVICE_MAGIC, 2, unsigned int)
 
+// forward declarations
+int hw_device_file_send(hw_t *phw, ec_frame_t *pframe);
+int hw_device_file_recv(hw_t *phw);
+void hw_device_file_send_finished(hw_t *phw);
+int hw_device_file_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -79,11 +85,16 @@
  *
  * \return 0 or negative error code
  */
-int hw_device_open(hw_t *phw, const osal_char_t *devname) {
+int hw_device_file_open(hw_t *phw, const osal_char_t *devname) {
     int ret = EC_OK;
     ec_frame_t *pframe = NULL;
     static const osal_uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
+
+    phw->send = hw_device_file_send;
+    phw->recv = hw_device_file_recv;
+    phw->send_finished = hw_device_file_send_finished;
+    phw->get_tx_buffer = hw_device_file_get_tx_buffer;
 
     /* we use file link layer device driver */
     // cppcheck-suppress misra-c2012-7.1
@@ -117,7 +128,7 @@ int hw_device_open(hw_t *phw, const osal_char_t *devname) {
     return ret;
 }
 
-static void hw_device_recv_internal(hw_t *phw) {
+static void hw_device_file_recv_internal(hw_t *phw) {
     // cppcheck-suppress misra-c2012-11.3
     ec_frame_t *pframe = (ec_frame_t *) &phw->recv_frame;
 
@@ -136,12 +147,12 @@ static void hw_device_recv_internal(hw_t *phw) {
  *
  * \return 0 or negative error code
  */
-int hw_device_recv(hw_t *phw) {
+int hw_device_file_recv(hw_t *phw) {
     if (phw->polling_mode == OSAL_TRUE) {
         return EC_ERROR_HW_NOT_SUPPORTED;
     } 
 
-    hw_device_recv_internal(phw);
+    hw_device_file_recv_internal(phw);
 
     return EC_OK;
 }
@@ -153,7 +164,7 @@ int hw_device_recv(hw_t *phw) {
  *
  * \return 0 or negative error code
  */
-int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
+int hw_device_file_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     assert(phw != NULL);
     assert(ppframe != NULL);
 
@@ -180,7 +191,7 @@ int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
  *
  * \return 0 or negative error code
  */
-int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
+int hw_device_file_send(hw_t *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
 
@@ -209,7 +220,7 @@ int hw_device_send(hw_t *phw, ec_frame_t *pframe) {
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-void hw_device_send_finished(hw_t *phw) {
+void hw_device_file_send_finished(hw_t *phw) {
     // in case of polling do receive now
     if (phw->polling_mode == OSAL_TRUE) {
         // sleep a little bit (at least packet-on-wire-duration)
@@ -219,6 +230,7 @@ void hw_device_send_finished(hw_t *phw) {
         phw->bytes_last_sent = phw->bytes_sent;
         phw->bytes_sent = 0;
 
-        hw_device_recv_internal(phw);
+        hw_device_file_recv_internal(phw);
     }
 }
+

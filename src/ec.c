@@ -1112,7 +1112,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         pec->eeprom_log         = eeprom_log;
 
         (void)memset(&pec->dg_entries[0], 0, sizeof(pool_entry_t) * (osal_size_t)LEC_MAX_DATAGRAMS);
-        ret = pool_open(&pec->pool, 100, &pec->dg_entries[0]);
+        ret = pool_open(&pec->pool, LEC_MAX_DATAGRAMS, &pec->dg_entries[0]);
     }
 
     (void)pool_open(&pec->mbx_message_pool_recv_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_recv_free_entries[0]);
@@ -1146,6 +1146,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     ec_log(10, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
+    ec_log(10, "MASTER_OPEN", "Master struct needs %" PRIu64 " bytes\n", (osal_uint64_t)sizeof(ec_t));
 
     if (ret != EC_OK) {
         if (pec != NULL) {

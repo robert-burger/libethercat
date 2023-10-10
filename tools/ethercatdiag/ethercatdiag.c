@@ -132,8 +132,9 @@ enum tool_mode {
     mode_test
 };
 
+ec_t ec;
+
 int main(int argc, char **argv) {
-    ec_t ec;
     int ret, slave, i, phy = 0;
 
     char *intf = NULL, *fn = NULL;

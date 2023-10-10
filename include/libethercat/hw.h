@@ -48,7 +48,7 @@
 #include <libethercat/pool.h>
 #include <libethercat/datagram.h>
 
-#if LIBETHERCAT_BUILD_PIKEOS == 1
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
 #include <vm_file_types.h>
 #include <drv/sbuf_hdr.h>
 #endif
@@ -64,6 +64,39 @@
 
 // forward decl
 struct ec;
+struct hw;
+
+//! Receive a frame from an EtherCAT hw device.
+/*!
+ * \param[in]   phw         Pointer to hw handle. 
+ *
+ * \return 0 or negative error code
+ */
+typedef int (*hw_device_recv_t)(struct hw *phw);
+
+//! Send a frame from an EtherCAT hw device.
+/*!
+ * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   pframe      Pointer to frame buffer.
+ *
+ * \return 0 or negative error code
+ */
+typedef int (*hw_device_send_t)(struct hw *phw, ec_frame_t *pframe);
+
+//! Doing internal stuff when finished sending frames
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ */
+typedef void (*hw_device_send_finished_t)(struct hw *phw);
+
+//! Get a free tx buffer from underlying hw device.
+/*!
+ * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   ppframe     Pointer to return frame buffer pointer.
+ *
+ * \return 0 or negative error code
+ */
+typedef int (*hw_device_get_tx_buffer_t)(struct hw *phw, ec_frame_t **ppframe);
 
 //! hardware structure
 typedef struct hw {
@@ -86,30 +119,29 @@ typedef struct hw {
     osal_size_t bytes_sent;         //!< \brief Bytes currently sent.
     osal_size_t bytes_last_sent;    //!< \brief Bytes last sent.
     osal_timer_t next_cylce_start;  //!< \brief Next cycle start time.
-#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
+
+    hw_device_recv_t recv;                      //!< \biref Function to receive frame from device.
+    hw_device_send_t send;                      //!< \brief Function to send frames via device.
+    hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
+    hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
+
+#define ETH_FRAME_LEN   0x1518
+    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    osal_bool_t polling_mode;               //!< \brief Special interrupt-less polling-mode flag.
+    
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED
     int mmap_packets;               //!< \brief Doing mmap packets.
     osal_char_t *rx_ring;           //!< kernel mmap receive buffers
     osal_char_t *tx_ring;           //!< kernel mmap send buffers
 
     off_t rx_ring_offset;           //!< \brief Offset in RX ring.
     off_t tx_ring_offset;           //!< \brief Offset in TX ring.
-#define ETH_FRAME_LEN   0x1518
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
-#elif LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
-#define ETH_FRAME_LEN   0x1518
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
-#elif LIBETHERCAT_BUILD_DEVICE_FILE == 1
-#define ETH_FRAME_LEN   0x1518
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
-    osal_bool_t polling_mode;               //!< \brief Special interrupt-less polling-mode flag.
-#elif LIBETHERCAT_BUILD_PIKEOS == 1
+#endif
+
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
     vm_file_desc_t fd;                      //!< \brief Driver file descriptor.
     drv_sbuf_desc_t sbuf;                   //!< \brief Driver SBUF descriptor.
-#define ETH_FRAME_LEN   0x1518
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
 #endif
 } hw_t;                 //!< \brief Hardware struct type. 
 
@@ -154,47 +186,6 @@ int hw_tx(hw_t *phw);
  * \param[in]   pframe  Pointer to received EtherCAT frame.
  */
 void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe);
-
-//! Opens EtherCAT hw device.
-/*!
- * \param[in]   phw         Pointer to hw handle. 
- * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
- *
- * \return 0 or negative error code
- */
-int hw_device_open(hw_t *phw, const osal_char_t *devname);
-
-//! Receive a frame from an EtherCAT hw device.
-/*!
- * \param[in]   phw         Pointer to hw handle. 
- *
- * \return 0 or negative error code
- */
-int hw_device_recv(hw_t *phw);
-
-//! Send a frame from an EtherCAT hw device.
-/*!
- * \param[in]   phw         Pointer to hw handle. 
- * \param[in]   pframe      Pointer to frame buffer.
- *
- * \return 0 or negative error code
- */
-int hw_device_send(hw_t *phw, ec_frame_t *pframe);
-
-//! Doing internal stuff when finished sending frames
-/*!
- * \param[in]   phw         Pointer to hw handle.
- */
-void hw_device_send_finished(hw_t *phw);
-
-//! Get a free tx buffer from underlying hw device.
-/*!
- * \param[in]   phw         Pointer to hw handle. 
- * \param[in]   ppframe     Pointer to return frame buffer pointer.
- *
- * \return 0 or negative error code
- */
-int hw_device_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
 
 #ifdef __cplusplus
 }

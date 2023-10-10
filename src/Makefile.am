@@ -32,7 +32,7 @@ libethercat_la_SOURCES += hw_sock_raw.c
 endif
 
 if BUILD_DEVICE_SOCK_RAW_MMAPED
-libethercat_la_SOURCES += hw_sock_raw.c
+libethercat_la_SOURCES += hw_sock_raw_mmaped.c
 endif
 
 if BUILD_DEVICE_FILE

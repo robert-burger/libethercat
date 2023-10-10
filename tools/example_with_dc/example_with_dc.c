@@ -188,6 +188,7 @@ int main(int argc, char **argv) {
         return usage(argc, argv);
 
     int num_samples = 1. / (cycle_rate * 1E-9);
+    printf("NUM_SAMPLES: %d\n", num_samples);
     osal_trace_alloc(&tx_start, num_samples);
     osal_trace_alloc(&tx_duration, num_samples);
     osal_trace_alloc(&roundtrip_duration, num_samples);
@@ -244,7 +245,13 @@ int main(int argc, char **argv) {
     // -----------------------------------------------------------
     // creating process data groups
     ec_create_pd_groups(&ec, 1);
-    ec_configure_pd_group(&ec, 0, 1, NULL, NULL);
+    ec_configure_pd_group(&ec, 0, 1, ({
+                void anon_cb(void *arg, int num) { 
+                    osal_uint64_t time_end = osal_timer_gettime_nsec();
+                    osal_uint64_t time_start = osal_trace_get_last_time(tx_start);
+
+                    osal_trace_time(roundtrip_duration, time_end - time_start);
+                } &anon_cb; }), NULL);
         
     ec.pd_groups[0].use_lrw = disable_lrw == 0 ? 1 : 0;
     ec.pd_groups[0].overlapping = disable_overlapping == 0 ? 1 : 0;

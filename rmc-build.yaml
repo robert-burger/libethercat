@@ -1,12 +1,22 @@
 context: conan
 configurations:
-- any:
-    ecat_device: { sock_raw, sock_raw_mmaped, file }
 - imports:
   - linux_defaults
 - pikeos4.2-armv7hf-gcc5:
-    ecat_device: { pikeos }
+    hw_device_file: False
+    hw_device_sock_raw: False
+    hw_device_sock_raw_mmaped: False
+    hw_device_bpf: False
+    hw_device_pikeos: True
 - pikeos5.1-armv8hf-gcc7:
-    ecat_device: { pikeos }
+    hw_device_file: False
+    hw_device_sock_raw: False
+    hw_device_sock_raw_mmaped: False
+    hw_device_bpf: False
+    hw_device_pikeos: True
 - win64-x86_64-mingw:
-    ecat_device: { file }
+    hw_device_file: True
+    hw_device_sock_raw: False
+    hw_device_sock_raw_mmaped: False
+    hw_device_bpf: False
+    hw_device_pikeos: False
