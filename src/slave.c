@@ -1163,6 +1163,13 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                 // get number of sync managers
                 ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
+                if (slv->sm_ch > LEC_MAX_SLAVE_SM) {
+                    ec_log(10, get_transition_string(transition), "slave %2d got %d sync manager, but can only use %ld\n",
+                            slave, slv->sm_ch, LEC_MAX_SLAVE_SM);
+
+                    slv->sm_ch = LEC_MAX_SLAVE_SM;
+                }
+
                 if (slv->sm_ch != 0u) {
                     for (osal_uint32_t i = 0u; i < slv->sm_ch; ++i) {
                         (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
@@ -1175,6 +1182,13 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                 // get number of fmmus
                 ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
+                if (slv->fmmu_ch > LEC_MAX_SLAVE_FMMU) {
+                    ec_log(10, get_transition_string(transition), "slave %2d got %d fmmus, but can only use %ld\n",
+                            slave, slv->fmmu_ch, LEC_MAX_SLAVE_FMMU);
+
+                    slv->fmmu_ch = LEC_MAX_SLAVE_FMMU;
+                }
+
                 if (slv->fmmu_ch != 0u) {
                     for (osal_uint32_t i = 0; i < slv->fmmu_ch; ++i) {
                         (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
