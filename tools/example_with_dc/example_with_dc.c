@@ -39,6 +39,7 @@ void no_log(int lvl, void *user, const char *format, ...)
 
 int usage(int argc, char **argv) {
     printf("%s -i|--interface <intf> [-v|--verbose] [-p|--prio] [-a|--affinity]\n", argv[0]);
+    printf("  -h|--help             Display this help page.\n");
     printf("  -v|--verbose          Set libethercat to print verbose output.\n");
     printf("  -p|--prio             Set base priority for cyclic and rx thread.\n");
     printf("  -a|--affinity         Set CPU affinity for cyclic and rx thread.\n");
@@ -116,7 +117,9 @@ int main(int argc, char **argv) {
     double dc_ki = 0.01;
 
     for (i = 1; i < argc; ++i) {
-        if ((strcmp(argv[i], "-i") == 0) ||
+        if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0)) {
+            return usage(argc, argv);
+        } else if ((strcmp(argv[i], "-i") == 0) ||
                 (strcmp(argv[i], "--interface") == 0)) {
             if (++i < argc)
                 intf = argv[i];
