@@ -110,6 +110,8 @@ static char debug_buf[DBG_BUF_SIZE];
  * Nothing to open here.
  */
 static int ethercat_monitor_open(struct net_device *dev) {
+    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
+    ecat_dev->monitor_enabled = true;
     return 0;
 }
 
@@ -118,6 +120,8 @@ static int ethercat_monitor_open(struct net_device *dev) {
  * Nothing to close here.
  */
 static int ethercat_monitor_stop(struct net_device *dev) {
+    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
+    ecat_dev->monitor_enabled = false;
     return 0;
 }
 
@@ -126,19 +130,18 @@ static int ethercat_monitor_stop(struct net_device *dev) {
  * Drop all frame someone wants to send to the monitor device from outside.
  */
 static int ethercat_monitor_tx(struct sk_buff *skb, struct net_device *dev) {
-    struct ethercat_device *ecat_dev = (struct ethercat_device *)netdev_priv(dev);
+    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
     dev_kfree_skb(skb);
     ecat_dev->monitor_stats.tx_dropped++;
     return 0;
 }
 
 //! Get statistics callback
-/*
- * \return current device statistics.
- */
-static struct net_device_stats *ethercat_monitor_stats(struct net_device *dev) {
-    struct ethercat_device *ecat_dev = (struct ethercat_device *)netdev_priv(dev);
-    return &ecat_dev->monitor_stats;
+static void ethercat_monitor_get_stats64(struct net_device *dev,
+			    struct rtnl_link_stats64 *stats) 
+{
+    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
+    ecat_dev->net_dev->netdev_ops->ndo_get_stats64(ecat_dev->net_dev, stats);
 }
 
 //! Network device ops.
@@ -146,7 +149,7 @@ static const struct net_device_ops ethercat_monitor_netdev_ops = {
     .ndo_open = ethercat_monitor_open,
     .ndo_stop = ethercat_monitor_stop,
     .ndo_start_xmit = ethercat_monitor_tx,
-    .ndo_get_stats = ethercat_monitor_stats,
+    .ndo_get_stats64 = ethercat_monitor_get_stats64,
 };
 
 //! Creates an EtherCAT monitor device
@@ -157,6 +160,8 @@ static const struct net_device_ops ethercat_monitor_netdev_ops = {
 static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
     int ret = 0;
     char monitor_name[64];
+
+    ecat_dev->monitor_enabled = false; 
 
     snprintf(&monitor_name[0], 64, "%s_monitor", ecat_dev->net_dev->name);
     if (!(ecat_dev->monitor_dev = alloc_netdev(sizeof(struct ethercat_device *), 
@@ -174,8 +179,6 @@ static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
             ret = -1;
         }
     }
-
-    ecat_dev->monitor_enabled = false; 
 
     return ret;
 }
@@ -218,6 +221,7 @@ static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8
     ecat_dev->monitor_stats.rx_packets++;
 
     skb->dev = ecat_dev->monitor_dev;
+    skb->pkt_type = PACKET_LOOPBACK;
     skb->protocol = eth_type_trans(skb, ecat_dev->monitor_dev);
     skb->ip_summed = CHECKSUM_UNNECESSARY;
 
@@ -652,20 +656,6 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
     ecat_dev = user->ecat_dev;
 
     switch (num) {
-        case ETHERCAT_DEVICE_MONITOR_ENABLE: {
-            int monitor_enable = 0;
-            if (__copy_from_user(&monitor_enable, (void *)arg, sizeof(monitor_enable))) {
-                return -EFAULT;
-            }
-
-            if (monitor_enable != 0) {
-                ecat_dev->monitor_enabled = true;
-            } else {
-                ecat_dev->monitor_enabled = false;
-            }
-
-            break;
-        }
         case ETHERCAT_DEVICE_GET_POLLING: {
             unsigned int val = ecat_dev->ethercat_polling == false ? 0 : 1;
             if (__copy_to_user((void *)arg, &val, sizeof(unsigned int))) {
