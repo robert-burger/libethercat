@@ -546,7 +546,7 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
             wkc = 0u;
 
             (void)ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc);
-            (void)ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &act_state, sizeof(act_state), &wkc);
+            (void)ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTAT, &act_state, sizeof(act_state), &wkc);
 
             if ((wkc != 0u) && !(act_state & EC_STATE_ERROR)) {
                 ec_log(1, get_transition_string(transition), "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
