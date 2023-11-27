@@ -407,6 +407,9 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
         pdout = &pdout[max(slv->pdin.len, slv->pdout.len)];
         log_base = max(log_base_in, log_base_out);
         pd->wkc_expected_lrw += wkc_expected_lrw;
+    
+        ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: expected working counter %d\n",
+                group, pd->wkc_expected_lrw);
     }
 
     pd->log_mbx_state_len = (log_base_mbx_state_bitlen + 7u) / 8u;
