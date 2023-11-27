@@ -56,6 +56,8 @@
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
 
+#define ONE_SEC     ((osal_uint64_t)1000000000u)
+
 // mesaure packet duration (important in case of master_as_ref_clock !)
 static inline osal_uint64_t get_packet_duration(ec_t *pec) {
     assert(pec != NULL);
@@ -197,6 +199,7 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         tmp_time = ((dc_time - (osal_int64_t)pec->dc.rtc_time) / (osal_int64_t)pec->main_cycle_interval) + 100;
         if (tmp_time < 0) tmp_time = 100;
         dc_start = (osal_int64_t)pec->dc.rtc_time + (tmp_time * (osal_int64_t)pec->main_cycle_interval) + cycle_shift;
+        dc_start = (osal_int64_t)pec->dc.rtc_time + cycle_shift + ONE_SEC;
 
         // program first trigger time and cycle time
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
@@ -208,8 +211,11 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
         if (dc_active != 0u) {
-            ec_log(10, "DC_SYNC", "slave %2d: dc_systime %" PRIu64 ", dc_start "
-                    "%" PRId64 ", slv dc_time %" PRId64 "\n", slave, pec->dc.rtc_time, dc_start, dc_time);
+            ec_log(10, "DC_SYNC", "slave %2d: dc_systime %" PRIu64 ".%" PRIu64 " s, dc_start "
+                    "%" PRId64 ".%" PRIu64 " s, slv dc_time %" PRId64 ".%" PRIu64 " s\n", slave, 
+                    pec->dc.rtc_time/1000000000, pec->dc.rtc_time%1000000000, 
+                    dc_start/1000000000, dc_start%1000000000, 
+                    dc_time/1000000000, dc_time%1000000000);
             ec_log(10, "DC_SYNC", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
                     "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
         } else {
