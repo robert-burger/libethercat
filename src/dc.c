@@ -185,7 +185,6 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         osal_int64_t dc_start = 0;
         osal_int64_t dc_time = 0;
         osal_int64_t tmp_time = 0;
-        osal_uint16_t speed_counter_start = 0u;
 
         // deactivate DC generation, enable write access of dc's, read local time
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
@@ -204,10 +203,6 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE0, &cycle_time_0, sizeof(cycle_time_0), &wkc);    
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCYCLE1, &cycle_time_1, sizeof(cycle_time_1), &wkc);
 
-        // resetting the time control loop (ET1100, Section 1, 9.1.4)
-        check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSPEEDCNT, &speed_counter_start, sizeof(speed_counter_start), &wkc);
-        check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSPEEDCNT, &speed_counter_start, sizeof(speed_counter_start), &wkc);
-        
         // activate distributed clock on slave
         dc_active = active;
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
@@ -254,6 +249,14 @@ int ec_dc_config(struct ec *pec) {
     osal_int32_t dc_time0 = 0;
     check_ec_bwr(pec, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
     int prev = -1;
+
+    // Reset some DC registers
+    osal_uint64_t dcsof = 0u;
+    check_ec_bwr(pec, EC_REG_DCSOF, &dcsof, sizeof(dcsof), &wkc);
+    dcsof = 0u;
+    check_ec_bwr(pec, EC_REG_DCSYSOFFSET, &dcsof, sizeof(dcsof), &wkc);
+    osal_uint64_t dcsysdelay = 0u;
+    check_ec_bwr(pec, EC_REG_DCSYSDELAY, &dcsysdelay, sizeof(dcsysdelay), &wkc);
 
     osal_uint64_t packet_duration = get_packet_duration(pec);
     ec_log(100, "DC_CONFIG", "master packet duration %" PRIu64 "\n", packet_duration);
@@ -325,6 +328,11 @@ int ec_dc_config(struct ec *pec) {
         ec_log(100, "DC_CONFIG", "slave %2d: available_ports 0x%X, entry_port %d\n", slave, slv->dc.available_ports, slv->entry_port);
         slv->dc.available_ports &= (osal_uint8_t)~(1u << (osal_uint32_t)slv->entry_port);
 
+        // resetting the time control loop (ET1100, Section 1, 9.1.4)
+        osal_uint16_t speed_counter_start = 1000u;
+        check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSPEEDCNT, &speed_counter_start, sizeof(speed_counter_start), &wkc);
+        check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSPEEDCNT, &speed_counter_start, sizeof(speed_counter_start), &wkc);
+        
         // read out distributed clock receive time ECAT Processing Unit and use 
         // it as negative offset to set slave's local time to 0. (Our reference clock
         // is also set to 0). (See ET1100, Section 1, 9.1.8)
