@@ -342,7 +342,7 @@ int ec_dc_config(struct ec *pec) {
         // read out distributed clock receive time ECAT Processing Unit and use 
         // it as negative offset to set slave's local time to 0. (Our reference clock
         // is also set to 0). (See ET1100, Section 1, 9.1.8)
-        osal_int64_t dcsof = 0;
+        dcsof = 0;
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSOF, &dcsof, sizeof(dcsof), &wkc);
         dcsof *= -1;
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSOFFSET, &dcsof, sizeof(dcsof), &wkc);
