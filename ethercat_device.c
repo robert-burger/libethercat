@@ -180,6 +180,8 @@ static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
         }
     }
 
+    memset(&ecat_dev->monitor_stats, 0, sizeof(struct net_device_stats));
+
     return ret;
 }
 
@@ -209,13 +211,15 @@ static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8
         return;
     }
 
-    skb = dev_alloc_skb(datalen);
+    skb = netdev_alloc_skb(ecat_dev->monitor_dev, ETH_FRAME_LEN);
     if (skb == NULL) {
         ecat_dev->monitor_stats.rx_dropped++;
         return;
     }
 
-    memcpy(skb_put(skb, datalen), data, datalen);
+    unsigned char *tmp = skb_put(skb, datalen);
+
+    memcpy(tmp, data, datalen);
 
     ecat_dev->monitor_stats.rx_bytes += datalen;
     ecat_dev->monitor_stats.rx_packets++;
@@ -602,6 +606,9 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
         } else {
             netdev_tx_t local_ret = 0;
             debug_print_frame("libethercat char dev driver: sending", skb->data, skb->len);
+            
+            ethercat_monitor_frame(ecat_dev, skb->data, len);
+
             local_ret = skb->dev->netdev_ops->ndo_start_xmit(skb, skb->dev);
             if (local_ret == NETDEV_TX_OK) {
                 ret = len;
@@ -610,8 +617,6 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
             }
         }
     }
-    
-    ethercat_monitor_frame(ecat_dev, buff, len);
 
     return ret;
 }
