@@ -188,7 +188,7 @@ int hw_device_sock_raw_open(hw_t *phw, const osal_char_t *devname) {
         ec_log(10, "HW_OPEN", "binding raw socket to %s\n", devname);
 
         (void)memset(&ifr, 0, sizeof(ifr));
-        (void)strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
+        (void)strncpy(ifr.ifr_name, devname, IFNAMSIZ);
         ioctl(phw->sockfd, SIOCGIFMTU, &ifr);
         phw->mtu_size = ifr.ifr_mtu;
         ec_log(10, "hw_open", "got mtu size %d\n", phw->mtu_size);

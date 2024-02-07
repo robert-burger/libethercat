@@ -1219,7 +1219,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                         "slave %2d: sm%u length bits %d, bytes %d\n", 
                         slave, sm_idx, bit_len, (bit_len + 7u) / 8u);
 
-                if (slv->sm && (slv->sm_ch > sm_idx)) {
+                if (slv->sm_ch > sm_idx) {
                     slv->sm[sm_idx].len = (bit_len + 7u) / 8u;
 
                     // only set a new address if not previously set by

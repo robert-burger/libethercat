@@ -671,9 +671,7 @@ static void ec_eoe_tun_handler(ec_t *pec) {
                             continue;
                         }
 
-                        if (
-                                is_broadcast || 
-                                (slv->eoe.mac && (memcmp(slv->eoe.mac, dst_mac, 6) == 0))   ) {
+                        if (is_broadcast || (memcmp(slv->eoe.mac, dst_mac, 6) == 0)) {
                             ec_log(100, "EOE_TUN_HANDLER", "slave %2d: sending eoe frame\n", slave);
                             (void)ec_eoe_send_frame(pec, slave, tmp_frame.frame_data, rd);
 

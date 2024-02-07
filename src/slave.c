@@ -813,6 +813,19 @@ void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
     osal_mutex_destroy(&slv->transition_mutex);
 }
 
+static osal_bool_t check_null(osal_uint8_t *ptr, osal_size_t len) {
+    osal_bool_t ret = OSAL_TRUE;
+
+    for (unsigned i = 0; i < len; ++i) {
+        if (ptr[i] != 0) {
+            ret = OSAL_FALSE;
+            break;
+        }
+    }
+
+    return ret;
+}
+
 // state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     osal_uint16_t wkc;
@@ -959,37 +972,38 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 if ((ret == EC_OK) && (slv->eoe.use_eoe != 0)) {
                     ec_log(10, get_transition_string(transition), 
                             "slave %2d: applying EoE settings\n", slave);
-                    if (slv->eoe.mac != NULL) {
+
+                    if (check_null(slv->eoe.mac, LEC_EOE_MAC_LEN) != OSAL_TRUE) {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d:         MAC %02X:%02X:%02X:%02X:%02X:%02X\n",
                                 slave, slv->eoe.mac[0], slv->eoe.mac[1], slv->eoe.mac[2],
                                 slv->eoe.mac[3], slv->eoe.mac[4], slv->eoe.mac[5]);
                     }
-                    if (slv->eoe.ip_address != NULL) {
+                    if (check_null(slv->eoe.ip_address, LEC_EOE_IP_ADDRESS_LEN) != OSAL_TRUE) {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d:         IP     %d.%d.%d.%d\n",
                                 slave, slv->eoe.ip_address[3], slv->eoe.ip_address[2], 
                                 slv->eoe.ip_address[1], slv->eoe.ip_address[0]);
                     }
-                    if (slv->eoe.subnet != NULL) {
+                    if (check_null(slv->eoe.subnet, LEC_EOE_SUBNET_LEN) != OSAL_TRUE) {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d:         Subnet  %d.%d.%d.%d\n",
                                 slave, slv->eoe.subnet[3], slv->eoe.subnet[2], 
                                 slv->eoe.subnet[1], slv->eoe.subnet[0]);
                     }
-                    if (slv->eoe.gateway != NULL) {
+                    if (check_null(slv->eoe.gateway, LEC_EOE_GATEWAY_LEN) != OSAL_TRUE) {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d:         Gateway %d.%d.%d.%d\n",
                                 slave, slv->eoe.gateway[3], slv->eoe.gateway[2], 
                                 slv->eoe.gateway[1], slv->eoe.gateway[0]);
                     }                        
-                    if (slv->eoe.dns != NULL) {
+                    if (check_null(slv->eoe.dns, LEC_EOE_DNS_NAME_LEN) != OSAL_TRUE) {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d:         DNS     %d.%d.%d.%d\n",
                                 slave, slv->eoe.dns[3], slv->eoe.dns[2], 
                                 slv->eoe.dns[1], slv->eoe.dns[0]);
                     }
-                    if (slv->eoe.dns_name != NULL) {
+                    if (slv->eoe.dns_name[0] != '\0') {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d:         DNSname %s\n",
                                 slave, slv->eoe.dns_name);

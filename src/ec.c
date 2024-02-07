@@ -717,17 +717,15 @@ static void ec_scan(ec_t *pec) {
     ec_state_t init_state = EC_STATE_INIT | EC_STATE_RESET;
     (void)ec_bwr(pec, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
 
-    if (pec->slaves != NULL) {
-        osal_uint16_t cnt = pec->slave_cnt;
+    osal_uint16_t cnt = pec->slave_cnt;
 
-        // free resources
-        for (i = 0; i < cnt; ++i) {
-            ec_slave_free(pec, i);
-        }
-
-        pec->slave_cnt = 0;
+    // free resources
+    for (i = 0; i < cnt; ++i) {
+        ec_slave_free(pec, i);
     }
-    
+
+    pec->slave_cnt = 0;
+
     // allocating slave structures
     int ret = ec_brd(pec, EC_REG_TYPE, (osal_uint8_t *)&val, sizeof(val), &wkc); 
     if (ret != EC_OK) {
@@ -1196,17 +1194,15 @@ int ec_close(ec_t *pec) {
     (void)ec_destroy_pd_groups(pec);
 
     ec_log(10, "MASTER_CLOSE", "destroying slaves\n");
-    if (pec->slaves != NULL) {
-        int slave;
-        int cnt = pec->slave_cnt;
+    int slave;
+    int cnt = pec->slave_cnt;
 
-        for (slave = 0; slave < cnt; ++slave) {
-            ec_slave_free(pec, slave);
-        }
-
-        pec->slave_cnt = 0;
+    for (slave = 0; slave < cnt; ++slave) {
+        ec_slave_free(pec, slave);
     }
-        
+
+    pec->slave_cnt = 0;
+
     (void)pool_close(&pec->mbx_message_pool_recv_free);
     (void)pool_close(&pec->mbx_message_pool_send_free);
         
@@ -1440,7 +1436,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     pd->recv_missed_lrw = 0;
 
     wkc = ec_datagram_wkc(p_dg);
-    if (pd->pd != NULL) {
+    if (pd->pdin_len > 0) {
         if ((pd->use_lrw != 0) || (pd->overlapping)) {
             // use this if lrw overlapping or lrd command
             (void)memcpy(&pd->pd[pd->pdout_len], ec_datagram_payload(p_dg), pd->pdin_len);
@@ -1579,7 +1575,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 p_dg->adr = pd->log;
                 p_dg->len = pd->log_len;
 
-                if (pd->pd != NULL) {
+                if (pd->pdout_len > 0) {
                     (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
                 }
 
@@ -1622,7 +1618,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 p_dg->adr = pd->log;
                 p_dg->len = pd->pdout_len;
 
-                if (pd->pd != NULL) {
+                if (pd->pdout_len > 0) {
                     (void)memcpy(ec_datagram_payload(p_dg), pd->pd, pd->pdout_len);
                 }
 
