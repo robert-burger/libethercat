@@ -1,4 +1,5 @@
-from conans import ConanFile, AutoToolsBuildEnvironment
+from conan import ConanFile
+from conan.tools.gnu import Autotools, AutotoolsToolchain
 import re
 
 class MainProject(ConanFile):
@@ -8,7 +9,7 @@ class MainProject(ConanFile):
     url = f"https://rmc-github.robotic.dlr.de/common/{name}"
     description = "This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface"
     settings = "os", "compiler", "build_type", "arch"
-    exports_sources = "src/*", "include/*", "README.md", "project.properties", "libethercat.pc.in", "Makefile.am", "m4/*", "configure.ac", "LICENSE", "aminclude.am", "acinclude.m4", "tools/*", "doxygen.cfg", "config.sub"
+    exports_sources = ["*", "!.gitignore", "!bindings"]
     options = {
         "shared": [True, False],
         "max_slaves": "ANY",
@@ -64,8 +65,13 @@ class MainProject(ConanFile):
         "hw_device_pikeos": False,
     }
 
-    generators = "pkg_config", "cmake_find_package"
-    requires = [ "libosal/[>=0.0.3]@common/unstable", ]
+    requires = [ "libosal/[>=0.0.3]@common/stable", ]
+    generators = "PkgConfigDeps"
+
+    def generate(self):
+        tc = AutotoolsToolchain(self)
+        tc.autoreconf_args = [ "--install" ]
+        tc.generate()
 
     def source(self):
         filedata = None
@@ -77,8 +83,7 @@ class MainProject(ConanFile):
 
     def build(self):
         print("os %s, compiler %s, build_type %s, arch %s" % (self.settings.os, self.settings.compiler, self.settings.build_type, self.settings.arch))
-        self.run("autoreconf -i")
-        autotools = AutoToolsBuildEnvironment(self)
+        autotools = Autotools(self)
         autotools.libs=[]
         autotools.include_paths=[]
         autotools.library_paths=[]
@@ -133,11 +138,12 @@ class MainProject(ConanFile):
 
         args.append("--disable-silent-rules")
 
-        autotools.configure(configure_dir=".", args=args)
+        autotools.autoreconf()
+        autotools.configure(args=args)
         autotools.make()
 
     def package(self):
-        autotools = AutoToolsBuildEnvironment(self)
+        autotools = Autotools(self)
         autotools.install()
 
     def package_info(self):

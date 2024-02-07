@@ -1,7 +1,7 @@
 context: conan
 configurations:
 - imports:
-  - linux_defaults
+  - linux_defaults_build_profile
 - pikeos4.2-armv7hf-gcc5:
     hw_device_file: False
     hw_device_sock_raw: False
