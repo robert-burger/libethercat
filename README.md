@@ -30,16 +30,38 @@ Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the
 EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
 Germany (ETG, www.ethercat.org).
 
-# Tools
-Tools
+## Usage 
+
+See INTRODUCTION.md or gh-pages for reference.
+
+## Build from source
+
+`libethercat` uses autotools as build system. 
+
+### Prerequisites
+
+Ensure that `libosal` is installed in your system. You can get `libosal` from here https://github.com/robert-wm/libosal.git . To build `libethercat` from source execute something like:
+
+```
+git clone https://github.com/robert-wm/libethercat.git
+cd libethercat
+autoreconf -is
+./configure
+make
+sudo make install
+```
+
+This will build and install a static as well as a dynamic library. For use in other project you can you the generated pkg-config file to retreave cflags and linker flags.
+
+## Tools
 
 libethercat also provides some small helper programs for the EtherCAT bus.
 
-## eepromtool
+### eepromtool
 
 With eepromtool you can read and write EtherCAT slave's eeprom. 
 
-### read eeprom
+#### read eeprom
 
 To do a read operation simply run:
 
@@ -49,7 +71,7 @@ If no filename if specified, eepromtool will print the contents to stdout, which
 
     eepromtool -i eth1 -s 0 -r | hexdump -v -C | less -S
 
-### write
+#### write
 
 To do a write operation simply run:
 
@@ -59,7 +81,7 @@ If no filename if specified, eepromtool will read from stdin.
 
     cat eeprom.bin | eepromtool -i eth1 -s 0 -w
 
-### example_with_dc
+#### example_with_dc
 
 This is a more complex example on how to use libethercat in realtime/control systems. 
 
