@@ -20,6 +20,15 @@ This library provides all functionality to communicate with EtherCAT slaves atta
 * a SAFEOP-to-OP transition additionally sends command to the attached slaves in every group cycle.
 * efficient frame scheduling: EtherCAT datagrams are only queued in state SAFEOP and OP. They will be put in one ore many Ethernet frames and sent all cyclically with one call to hw_tx()
 
+# Legal notices
+
+Please note that the use of the EtherCAT technology, the EtherCAT 
+brand name and the EtherCAT logo is only permitted if the property 
+rights of Beckhoff Automation GmbH are observed. For further 
+information please contact Beckhoff Automation GmbH & Co. KG, 
+Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
+EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+Germany (ETG, www.ethercat.org).
 
 # Tools
 Tools
