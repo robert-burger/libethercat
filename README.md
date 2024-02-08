@@ -1,4 +1,4 @@
-# libethercat [![Build Status](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/badge/icon)](https://rmc-jenkins.robotic.dlr.de/jenkins/job/common/job/libethercat/job/master/)
+# libethercat 
 
 EtherCAT-master library  
 
@@ -22,6 +22,8 @@ This library provides all functionality to communicate with EtherCAT slaves atta
 
 # Legal notices
 
+This software was developed and made available to the public by the [Institute of Robotics and Mechatronics of the German Aerospace Center (DLR)](https://www.dlr.de/rm).
+
 Please note that the use of the EtherCAT technology, the EtherCAT 
 brand name and the EtherCAT logo is only permitted if the property 
 rights of Beckhoff Automation GmbH are observed. For further 
@@ -40,10 +42,10 @@ See INTRODUCTION.md or gh-pages for reference.
 
 ### Prerequisites
 
-Ensure that `libosal` is installed in your system. You can get `libosal` from here https://github.com/robert-wm/libosal.git . To build `libethercat` from source execute something like:
+Ensure that `libosal` is installed in your system. You can get `libosal` from here https://github.com/robert-burger/libosal.git . To build `libethercat` from source execute something like:
 
 ```
-git clone https://github.com/robert-wm/libethercat.git
+git clone https://github.com/robert-burger/libethercat.git
 cd libethercat
 autoreconf -is
 ./configure
