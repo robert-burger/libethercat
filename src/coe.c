@@ -1143,8 +1143,18 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
             buf = (osal_uint8_t *)&entry_cnt;
             ret = ec_coe_sdo_read(pec, slave, idx, 0, 0, buf, &entry_cnt_size, &abort_code);
             if (ret != 0) {
-                ec_log(5, "COE_MAPPING", "slave %2d: sm%u reading "
-                        "0x%04X/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
+                if (abort_code == 0x06020000) { // object does not exist in the object dictionary
+                    if (slv->sm_ch > sm_idx) {
+                        slv->sm[sm_idx].len = 0u;
+                        slv->sm[sm_idx].flags = 0u;
+                    }
+
+                    ret = 0u;
+                } else {
+                    ec_log(5, "COE_MAPPING", "slave %2d: sm%u reading "
+                            "0x%04X/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
+                }
+
                 continue;
             }
 
