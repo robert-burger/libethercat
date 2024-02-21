@@ -6408,7 +6408,7 @@ static int igb_tx_map(struct igb_ring *tx_ring,
 		writel(i, tx_ring->tail);
 		wmb();
 	} else {
-		if (netif_xmit_stopped(txring_txq(tx_ring)) || !skb->xmit_more) {
+		if (netif_xmit_stopped(txring_txq(tx_ring)) || !netdev_xmit_more()) {
 			writel(i, tx_ring->tail);
 		}
 	}
