@@ -1,1 +1,1 @@
-obj-libethercat += intel/igb
+obj-m += intel/
