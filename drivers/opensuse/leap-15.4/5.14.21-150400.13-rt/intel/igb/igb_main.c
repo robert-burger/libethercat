@@ -1433,9 +1433,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
-        if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-            goto request_done;
-        }
+		if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+			goto request_done;
+		}
 
 		err = igb_request_msix(adapter);
 		if (!err)
@@ -1456,9 +1456,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 
 	igb_assign_vector(adapter->q_vector[0], 0);
 
-    if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-        goto request_done;
-    }
+	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+		goto request_done;
+	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSI) {
 		err = request_irq(pdev->irq, igb_intr_msi, irq_flags,
