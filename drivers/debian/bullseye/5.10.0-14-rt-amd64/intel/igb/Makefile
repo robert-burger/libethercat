@@ -10,5 +10,5 @@ igb-libethercat-objs := igb_main.o igb_ethtool.o e1000_82575.o \
 	    e1000_mac.o e1000_nvm.o e1000_phy.o e1000_mbx.o \
 	    e1000_i210.o igb_ptp.o igb_hwmon.o 
 
-#EXTRA_CFLAGS += -I$(src)/../../ethercat_device
-KBUILD_EXTRA_SYMBOLS=$(src)/../../ethercat_device/Module.symvers
+EXTRA_CFLAGS=-I$(ETHERCAT_DEVICE_BASE)
+KBUILD_EXTRA_SYMBOLS=$(ETHERCAT_DEVICE_BASE)/Module.symvers
