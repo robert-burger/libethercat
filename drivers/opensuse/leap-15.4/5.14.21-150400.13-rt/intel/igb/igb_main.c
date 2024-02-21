@@ -1488,9 +1488,9 @@ request_done:
 
 static void igb_free_irq(struct igb_adapter *adapter)
 {
-    if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-        return;
-    }
+	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+		return;
+	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
 		int vector = 0, i;
@@ -5583,9 +5583,9 @@ static void igb_watchdog_task(struct work_struct *work)
 	link = igb_has_link(adapter);
 
 	if (likely(adapter->is_ecat)) {
-        if (adapter->ecat_dev) {
-		    ethercat_device_set_link(adapter->ecat_dev, link);
-        }
+		if (adapter->ecat_dev) {
+			ethercat_device_set_link(adapter->ecat_dev, link);
+		}
 	
 		if (!test_bit(__IGB_DOWN, &adapter->state)) {
 			mod_timer(&adapter->watchdog_timer, round_jiffies(jiffies + HZ));
@@ -8526,7 +8526,7 @@ static struct sk_buff *igb_construct_skb(struct igb_ring *rx_ring,
 
 	/* allocate a skb to store the frags */
 	if (likely(rx_ring->q_vector->adapter->is_ecat)) {
-        skb = dev_alloc_skb(IGB_RX_HDR_LEN);
+		skb = dev_alloc_skb(IGB_RX_HDR_LEN);
 	} else {
 		skb = napi_alloc_skb(&rx_ring->q_vector->napi, IGB_RX_HDR_LEN);
 	}
@@ -9212,45 +9212,45 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return igb_ptp_get_ts_config(netdev, ifr);
 	case SIOCSHWTSTAMP:
 		return igb_ptp_set_ts_config(netdev, ifr);
-    case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
-	    struct igb_adapter *adapter = netdev_priv(netdev);
-        struct igb_q_vector *q_vector = adapter->q_vector[0];
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		struct igb_q_vector *q_vector = adapter->q_vector[0];
 
-        int budget = 64;
-        bool clean_complete = true;
+		int budget = 64;
+		bool clean_complete = true;
 
-        if (!adapter->is_ecat) {
-            return -EOPNOTSUPP;
-        }
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
+		}
 
-        if (q_vector->tx.ring) {
-            clean_complete = igb_clean_tx_irq(q_vector, budget);
-        }
+		if (q_vector->tx.ring) {
+			clean_complete = igb_clean_tx_irq(q_vector, budget);
+		}
 
-        if (q_vector->rx.ring) {
-            int cleaned = igb_clean_rx_irq(q_vector, budget);
-            
-            if (cleaned >= budget) 
-                clean_complete = false;
-        }
+		if (q_vector->rx.ring) {
+			int cleaned = igb_clean_rx_irq(q_vector, budget);
 
-        if (!clean_complete) 
-            return 1;
+			if (cleaned >= budget) 
+				clean_complete = false;
+		}
 
-        return 0;
-    }
-    case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
-	    struct igb_adapter *adapter = netdev_priv(netdev);
-        if (!adapter->is_ecat) {
-            return -EOPNOTSUPP;
-        }
+		if (!clean_complete) 
+			return 1;
 
-        if (ethercat_polling == 0) {
-            return 0;
-        } 
+		return 0;
+	}
+	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
+		}
 
-        return 1;
-    }
+		if (ethercat_polling == 0) {
+			return 0;
+		} 
+
+		return 1;
+	}
 	default:
 		return -EOPNOTSUPP;
 	}
