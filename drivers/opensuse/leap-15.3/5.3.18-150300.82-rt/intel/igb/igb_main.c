@@ -1057,7 +1057,7 @@ static void igb_reset_q_vector(struct igb_adapter *adapter, int v_idx)
 		adapter->rx_ring[q_vector->rx.ring->queue_index] = NULL;
 
 	if (unlikely(!adapter->is_ecat)) {
-	netif_napi_del(&q_vector->napi);
+		netif_napi_del(&q_vector->napi);
 
 	}
 }
@@ -1239,9 +1239,9 @@ static int igb_alloc_q_vector(struct igb_adapter *adapter,
 		return -ENOMEM;
 
 	if (unlikely(!adapter->is_ecat)) {
-	/* initialize NAPI */
-	netif_napi_add(adapter->netdev, &q_vector->napi,
-		       igb_poll, 64);
+		/* initialize NAPI */
+		netif_napi_add(adapter->netdev, &q_vector->napi,
+				igb_poll, 64);
 	}
 
 	/* tie q_vector and adapter together */
@@ -1445,9 +1445,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
-        if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-            goto request_done;
-        }
+		if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+			goto request_done;
+		}
 		err = igb_request_msix(adapter);
 		if (!err)
 			goto request_done;
@@ -1466,9 +1466,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 	}
 
 	igb_assign_vector(adapter->q_vector[0], 0);
-    if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-        goto request_done;
-    }
+	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+		goto request_done;
+	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSI) {
 		err = request_irq(pdev->irq, igb_intr_msi, irq_flags,
@@ -3300,6 +3300,8 @@ static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	adapter = netdev_priv(netdev);
 	adapter->netdev = netdev;
 	adapter->pdev = pdev;
+	adapter->is_ecat = false;
+	adapter->ecat_dev = NULL;
 	hw = &adapter->hw;
 	hw->back = adapter;
 	adapter->msg_enable = netif_msg_init(debug, DEFAULT_MSG_ENABLE);
