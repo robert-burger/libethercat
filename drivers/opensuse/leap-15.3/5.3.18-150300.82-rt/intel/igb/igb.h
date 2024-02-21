@@ -21,6 +21,7 @@
 
 #include <net/xdp.h>
 
+#include "ethercat_device.h"
 struct igb_adapter;
 
 #define E1000_PCS_CFG_IGN_SD	1
@@ -526,13 +527,6 @@ struct igb_mac_addr {
 	u8 state; /* bitmask */
 };
 
-struct ethercat_device;
-
-extern struct ethercat_device *ethercat_device_create(struct net_device *net_dev);
-extern int ethercat_device_destroy(struct ethercat_device *ecat_dev);
-extern void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data, size_t size);
-extern void ethercat_device_set_link(struct ethercat_device *ecat_dev, bool link);
-
 #define IGB_MAC_STATE_DEFAULT	0x1
 #define IGB_MAC_STATE_IN_USE	0x2
 #define IGB_MAC_STATE_SRC_ADDR	0x4
@@ -672,6 +666,7 @@ struct igb_adapter {
 	struct vf_mac_filter vf_macs;
 	struct vf_mac_filter *vf_mac_list;
 
+	bool is_ecat;
 	struct ethercat_device *ecat_dev;
 };
 
