@@ -8946,9 +8946,8 @@ static int igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
 
 		if (likely(adapter->is_ecat)) {
 			if (size > 0) {
-				unsigned char *va = page_address(rx_buffer->page) + rx_buffer->page_offset;
-				prefetch(va);
-				ethercat_device_receive(adapter->ecat_dev, va, size);
+				prefetch(pktbuf);
+				ethercat_device_receive(adapter->ecat_dev, pktbuf, size);
 			}
 			igb_reuse_rx_page(rx_ring, rx_buffer);
 		} else {
