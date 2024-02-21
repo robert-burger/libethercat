@@ -206,6 +206,7 @@ static void ethercat_monitor_destroy(struct ethercat_device *ecat_dev) {
  */
 static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8_t *data, size_t datalen) {
     struct sk_buff *skb = NULL;
+    unsigned char *tmp = NULL;
 
     if (!ecat_dev->monitor_enabled) {
         return;
@@ -217,8 +218,7 @@ static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8
         return;
     }
 
-    unsigned char *tmp = skb_put(skb, datalen);
-
+    tmp = skb_put(skb, datalen);
     memcpy(tmp, data, datalen);
 
     ecat_dev->monitor_stats.rx_bytes += datalen;
