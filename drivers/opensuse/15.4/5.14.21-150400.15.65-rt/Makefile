@@ -1,2 +1,1 @@
-obj-libethercat += intel/igb
-obj-libethercat += realtek
+obj-m += intel/
