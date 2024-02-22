@@ -1,3 +1,4 @@
+KERNEL_VERSION=$(shell uname -r)
 DRIVER_PATH=drivers/$(shell bash guess_dist_kernel.sh)
 
 all:
