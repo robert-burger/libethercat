@@ -3134,6 +3134,8 @@ struct tg3_firmware_hdr {
 };
 #define TG3_FW_HDR_LEN         (sizeof(struct tg3_firmware_hdr))
 
+#include "ethercat_device.h"
+
 struct tg3 {
 	/* begin "general, frequently-used members" cacheline section */
 
@@ -3430,6 +3432,10 @@ struct tg3 {
 	u32                             ape_hb;
 	unsigned long                   ape_hb_interval;
 	unsigned long                   ape_hb_jiffies;
+
+	bool				is_ecat;
+	int                             ecat_dev_init;
+	struct ethercat_device		*ecat_dev;
 };
 
 /* Accessor macros for chip and asic attributes

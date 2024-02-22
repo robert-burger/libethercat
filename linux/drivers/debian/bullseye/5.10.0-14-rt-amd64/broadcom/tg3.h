@@ -3132,12 +3132,7 @@ struct tg3_firmware_hdr {
 };
 #define TG3_FW_HDR_LEN         (sizeof(struct tg3_firmware_hdr))
 
-struct ethercat_device;
-
-extern struct ethercat_device *ethercat_device_create(struct net_device *net_dev);
-extern int ethercat_device_destroy(struct ethercat_device *ecat_dev);
-extern void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data, size_t size);
-extern void ethercat_device_set_link(struct ethercat_device *ecat_dev, bool link);
+#include "ethercat_device.h"
 
 struct tg3 {
 	/* begin "general, frequently-used members" cacheline section */
@@ -3438,7 +3433,8 @@ struct tg3 {
 	unsigned long                   ape_hb_interval;
 	unsigned long                   ape_hb_jiffies;
 
-    int                          ecat_dev_init;
+	bool				is_ecat;
+	int                             ecat_dev_init;
 	struct ethercat_device		*ecat_dev;
 };
 

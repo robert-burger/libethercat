@@ -95,7 +95,7 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
 #define tg3_flag_clear(tp, flag)			\
 	_tg3_flag_clear(TG3_FLAG_##flag, (tp)->tg3_flags)
 
-#define DRV_MODULE_NAME		"tg3"
+#define DRV_MODULE_NAME		"tg3-libethercat"
 /* DO NOT UPDATE TG3_*_NUM defines */
 #define TG3_MAJ_NUM			3
 #define TG3_MIN_NUM			137
@@ -221,16 +221,23 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
 #define FIRMWARE_TG3TSO5	"tigon/tg3_tso5.bin"
 
 MODULE_AUTHOR("David S. Miller (davem@redhat.com) and Jeff Garzik (jgarzik@pobox.com)");
-MODULE_DESCRIPTION("Broadcom Tigon3 ethernet driver");
+MODULE_DESCRIPTION("Broadcom Tigon3 ethernet driver (EtherCAT enabled)");
 MODULE_LICENSE("GPL");
 MODULE_FIRMWARE(FIRMWARE_TG3);
 MODULE_FIRMWARE(FIRMWARE_TG357766);
 MODULE_FIRMWARE(FIRMWARE_TG3TSO);
 MODULE_FIRMWARE(FIRMWARE_TG3TSO5);
+MODULE_SOFTDEP("pre: libethercat");
 
 static int tg3_debug = -1;	/* -1 == use TG3_DEF_MSG_ENABLE as value */
 module_param(tg3_debug, int, 0);
 MODULE_PARM_DESC(tg3_debug, "Tigon3 bitmapped debugging message enable value");
+
+#define ETHERCAT_MAC_ADDR_SIZE 10
+static char * ethercat_mac_addr[ETHERCAT_MAC_ADDR_SIZE];
+static int ethercat_mac_addr_count;
+module_param_array(ethercat_mac_addr, charp, &ethercat_mac_addr_count,  0660);
+MODULE_PARM_DESC(ethercat_mac_addr, "List of MAC addresses to use as EtherCAT device");
 
 #define TG3_DRV_DATA_FLAG_10_100_ONLY	0x0001
 #define TG3_DRV_DATA_FLAG_5705_10_100	0x0002
@@ -6549,7 +6556,9 @@ static void tg3_tx(struct tg3_napi *tnapi)
 	if (tg3_flag(tp, ENABLE_TSS))
 		index--;
 
-	txq = netdev_get_tx_queue(tp->dev, index);
+	if (unlikely(!tp->is_ecat)) {
+		txq = netdev_get_tx_queue(tp->dev, index);
+	}
 
 	while (sw_idx != hw_idx) {
 		struct tg3_tx_ring_info *ri = &tnapi->tx_buffers[sw_idx];
@@ -6608,7 +6617,9 @@ static void tg3_tx(struct tg3_napi *tnapi)
 		pkts_compl++;
 		bytes_compl += skb->len;
 
-		dev_consume_skb_any(skb);
+		if (!tp->is_ecat) {
+			dev_consume_skb_any(skb);
+		}
 
 		if (unlikely(tx_bug)) {
 			tg3_tx_recover(tp);
@@ -6616,7 +6627,9 @@ static void tg3_tx(struct tg3_napi *tnapi)
 		}
 	}
 
-	netdev_tx_completed_queue(txq, pkts_compl, bytes_compl);
+	if (unlikely(!tp->is_ecat)) {
+		netdev_tx_completed_queue(txq, pkts_compl, bytes_compl);
+	}
 
 	tnapi->tx_cons = sw_idx;
 
@@ -6627,13 +6640,15 @@ static void tg3_tx(struct tg3_napi *tnapi)
 	 */
 	smp_mb();
 
-	if (unlikely(netif_tx_queue_stopped(txq) &&
-		     (tg3_tx_avail(tnapi) > TG3_TX_WAKEUP_THRESH(tnapi)))) {
-		__netif_tx_lock(txq, smp_processor_id());
-		if (netif_tx_queue_stopped(txq) &&
-		    (tg3_tx_avail(tnapi) > TG3_TX_WAKEUP_THRESH(tnapi)))
-			netif_tx_wake_queue(txq);
-		__netif_tx_unlock(txq);
+	if (unlikely(!tp->is_ecat)) {
+		if (unlikely(netif_tx_queue_stopped(txq) &&
+					(tg3_tx_avail(tnapi) > TG3_TX_WAKEUP_THRESH(tnapi)))) {
+			__netif_tx_lock(txq, smp_processor_id());
+			if (netif_tx_queue_stopped(txq) &&
+					(tg3_tx_avail(tnapi) > TG3_TX_WAKEUP_THRESH(tnapi)))
+				netif_tx_wake_queue(txq);
+			__netif_tx_unlock(txq);
+		}
 	}
 }
 
@@ -6871,6 +6886,16 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
 		prefetch(data + TG3_RX_OFFSET(tp));
 		len = ((desc->idx_len & RXD_LEN_MASK) >> RXD_LEN_SHIFT) -
 		      ETH_FCS_LEN;
+
+		if (tp->is_ecat) {
+			ethercat_device_receive(tp->ecat_dev, data + TG3_RX_OFFSET(tp), len);
+			
+			tg3_recycle_rx(tnapi, tpr, opaque_key,
+				       desc_idx, *post_ptr);
+			received++;
+			budget--;
+			goto next_pkt;
+		}
 
 		if ((desc->type_flags & RXD_FLAG_PTPSTAT_MASK) ==
 		     RXD_FLAG_PTPSTAT_PTPV1 ||
@@ -7848,7 +7873,10 @@ static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
 		}
 	}
 
-	dev_consume_skb_any(skb);
+	if (!tp->is_ecat) {
+		dev_consume_skb_any(skb);
+	}
+
 	*pskb = new_skb;
 	return ret;
 }
@@ -7901,7 +7929,10 @@ static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
 	}
 
 tg3_tso_bug_end:
-	dev_consume_skb_any(skb);
+
+	if (!tp->is_ecat) {
+		dev_consume_skb_any(skb);
+	}
 
 	return NETDEV_TX_OK;
 }
@@ -8150,7 +8181,10 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			netif_tx_wake_queue(txq);
 	}
 
-	if (!netdev_xmit_more() || netif_xmit_stopped(txq)) {
+	if (tp->is_ecat) {
+		/* Packets are ready, update Tx producer idx on card. */
+		tw32_tx_mbox(tnapi->prodmbox, entry);
+	} else if (!netdev_xmit_more() || netif_xmit_stopped(txq)) {
 		/* Packets are ready, update Tx producer idx on card. */
 		tw32_tx_mbox(tnapi->prodmbox, entry);
 	}
@@ -8161,7 +8195,9 @@ dma_error:
 	tg3_tx_skb_unmap(tnapi, tnapi->tx_prod, --i);
 	tnapi->tx_buffers[tnapi->tx_prod].skb = NULL;
 drop:
-	dev_kfree_skb_any(skb);
+	if (!tp->is_ecat) {
+		dev_kfree_skb_any(skb);
+	}
 drop_nofree:
 	tnapi->tx_dropped++;
 	return NETDEV_TX_OK;
@@ -9387,7 +9423,7 @@ static int tg3_set_mac_addr(struct net_device *dev, void *p)
 
 	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
 
-	if (!netif_running(dev))
+	if (!tp->is_ecat && !netif_running(dev))
 		return 0;
 
 	if (tg3_flag(tp, ENABLE_ASF)) {
@@ -11195,7 +11231,7 @@ static void tg3_reset_task(struct work_struct *work)
 	rtnl_lock();
 	tg3_full_lock(tp, 0);
 
-	if (tp->pcierr_recovery || !netif_running(tp->dev)) {
+	if (!tp->is_ecat && (tp->pcierr_recovery || !netif_running(tp->dev))) {
 		tg3_flag_clear(tp, RESET_TASK_PENDING);
 		tg3_full_unlock(tp);
 		rtnl_unlock();
@@ -11291,7 +11327,7 @@ static int tg3_test_interrupt(struct tg3 *tp)
 	int err, i, intr_ok = 0;
 	u32 val;
 
-	if (!netif_running(dev))
+	if (!tp->ecat_dev_init && !tp->is_ecat && !netif_running(dev))
 		return -ENODEV;
 
 	tg3_disable_ints(tp);
@@ -11660,7 +11696,9 @@ static int tg3_start(struct tg3 *tp, bool reset_phy, bool test_irq,
 
 	tg3_full_unlock(tp);
 
-	netif_tx_start_all_queues(dev);
+	if (!tp->is_ecat) {
+		netif_tx_start_all_queues(dev);
+	}
 
 	/*
 	 * Reset loopback feature if it was turned on while the device was down
@@ -11756,7 +11794,11 @@ static int tg3_open(struct net_device *dev)
 		}
 	}
 
-	tg3_carrier_off(tp);
+	if (tp->is_ecat) {
+		ethercat_device_set_link(tp->is_ecat, 0);
+	} else {
+		tg3_carrier_off(tp);
+	}
 
 	err = tg3_power_up(tp);
 	if (err)
@@ -12333,7 +12375,7 @@ static int tg3_set_link_ksettings(struct net_device *dev,
 
 	tg3_warn_mgmt_link_flap(tp);
 
-	if (netif_running(dev))
+	if (tp->is_ecat || netif_running(dev))
 		tg3_setup_phy(tp, true);
 
 	tg3_full_unlock(tp);
@@ -12402,7 +12444,7 @@ static int tg3_nway_reset(struct net_device *dev)
 	struct tg3 *tp = netdev_priv(dev);
 	int r;
 
-	if (!netif_running(dev))
+	if (!tp->is_ecat && !netif_running(dev))
 		return -EAGAIN;
 
 	if (tp->phy_flags & TG3_PHYFLG_PHY_SERDES)
@@ -12468,7 +12510,7 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
 	     (ering->tx_pending <= (MAX_SKB_FRAGS * 3))))
 		return -EINVAL;
 
-	if (netif_running(dev)) {
+	if (tp->is_ecat || netif_running(dev)) {
 		tg3_phy_stop(tp);
 		tg3_netif_stop(tp);
 		irq_sync = 1;
@@ -12488,7 +12530,7 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
 	for (i = 0; i < tp->irq_max; i++)
 		tp->napi[i].tx_pending = ering->tx_pending;
 
-	if (netif_running(dev)) {
+	if (tp->is_ecat || netif_running(dev)) {
 		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
 		/* Reset PHY to avoid PHY lock up */
 		if (tg3_asic_rev(tp) == ASIC_REV_5717 ||
@@ -12578,7 +12620,7 @@ static int tg3_set_pauseparam(struct net_device *dev, struct ethtool_pauseparam 
 	} else {
 		int irq_sync = 0;
 
-		if (netif_running(dev)) {
+		if (tp->is_ecat || netif_running(dev)) {
 			tg3_netif_stop(tp);
 			irq_sync = 1;
 		}
@@ -12598,7 +12640,7 @@ static int tg3_set_pauseparam(struct net_device *dev, struct ethtool_pauseparam 
 		else
 			tp->link_config.flowctrl &= ~FLOW_CTRL_TX;
 
-		if (netif_running(dev)) {
+		if (tp->is_ecat || netif_running(dev)) {
 			tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
 			/* Reset PHY to avoid PHY lock up */
 			if (tg3_asic_rev(tp) == ASIC_REV_5717 ||
@@ -12641,7 +12683,7 @@ static int tg3_get_rxnfc(struct net_device *dev, struct ethtool_rxnfc *info,
 
 	switch (info->cmd) {
 	case ETHTOOL_GRXRINGS:
-		if (netif_running(tp->dev))
+		if (tp->is_ecat || netif_running(tp->dev))
 			info->data = tp->rxq_cnt;
 		else {
 			info->data = num_online_cpus();
@@ -12702,7 +12744,7 @@ static int tg3_set_rxfh(struct net_device *dev, const u32 *indir, const u8 *key,
 	for (i = 0; i < TG3_RSS_INDIR_TBL_SIZE; i++)
 		tp->rss_ind_tbl[i] = indir[i];
 
-	if (!netif_running(dev) || !tg3_flag(tp, ENABLE_RSS))
+	if (!tp->is_ecat && (!netif_running(dev) || !tg3_flag(tp, ENABLE_RSS)))
 		return 0;
 
 	/* It is legal to write the indirection
@@ -12724,7 +12766,7 @@ static void tg3_get_channels(struct net_device *dev,
 	channel->max_rx = tp->rxq_max;
 	channel->max_tx = tp->txq_max;
 
-	if (netif_running(dev)) {
+	if (tp->is_ecat || netif_running(dev)) {
 		channel->rx_count = tp->rxq_cnt;
 		channel->tx_count = tp->txq_cnt;
 	} else {
@@ -12755,7 +12797,7 @@ static int tg3_set_channels(struct net_device *dev,
 	tp->rxq_req = channel->rx_count;
 	tp->txq_req = channel->tx_count;
 
-	if (!netif_running(dev))
+	if (!tp->is_ecat && !netif_running(dev))
 		return 0;
 
 	tg3_stop(tp);
@@ -13097,7 +13139,7 @@ static int tg3_test_link(struct tg3 *tp)
 {
 	int i, max;
 
-	if (!netif_running(tp->dev))
+	if (!tp->is_ecat && !netif_running(tp->dev))
 		return -ENODEV;
 
 	if (tp->phy_flags & TG3_PHYFLG_ANY_SERDES)
@@ -13677,7 +13719,7 @@ static int tg3_test_loopback(struct tg3 *tp, u64 *data, bool do_extlpbk)
 	eee_cap = tp->phy_flags & TG3_PHYFLG_EEE_CAP;
 	tp->phy_flags &= ~TG3_PHYFLG_EEE_CAP;
 
-	if (!netif_running(tp->dev)) {
+	if (!tp->is_ecat && !netif_running(tp->dev)) {
 		data[TG3_MAC_LOOPB_TEST] = TG3_LOOPBACK_FAILED;
 		data[TG3_PHY_LOOPB_TEST] = TG3_LOOPBACK_FAILED;
 		if (do_extlpbk)
@@ -14042,7 +14084,7 @@ static int tg3_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		if (tp->phy_flags & TG3_PHYFLG_PHY_SERDES)
 			break;			/* We have no PHY */
 
-		if (!netif_running(dev))
+		if (!tp->is_ecat && !netif_running(dev))
 			return -EAGAIN;
 
 		spin_lock_bh(&tp->lock);
@@ -14059,7 +14101,7 @@ static int tg3_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		if (tp->phy_flags & TG3_PHYFLG_PHY_SERDES)
 			break;			/* We have no PHY */
 
-		if (!netif_running(dev))
+		if (!tp->is_ecat && !netif_running(dev))
 			return -EAGAIN;
 
 		spin_lock_bh(&tp->lock);
@@ -14128,7 +14170,7 @@ static int tg3_set_coalesce(struct net_device *dev, struct ethtool_coalesce *ec)
 	tp->coal.tx_max_coalesced_frames_irq = ec->tx_max_coalesced_frames_irq;
 	tp->coal.stats_block_coalesce_usecs = ec->stats_block_coalesce_usecs;
 
-	if (netif_running(dev)) {
+	if (tp->is_ecat || netif_running(dev)) {
 		tg3_full_lock(tp, 0);
 		__tg3_set_coalesce(tp, &tp->coal);
 		tg3_full_unlock(tp);
@@ -14163,7 +14205,7 @@ static int tg3_set_eee(struct net_device *dev, struct ethtool_eee *edata)
 	tp->phy_flags |= TG3_PHYFLG_USER_CONFIGURED;
 	tg3_warn_mgmt_link_flap(tp);
 
-	if (netif_running(tp->dev)) {
+	if (tp->is_ecat || netif_running(tp->dev)) {
 		tg3_full_lock(tp, 0);
 		tg3_setup_eee(tp);
 		tg3_phy_reset(tp);
@@ -14249,7 +14291,7 @@ static void tg3_set_rx_mode(struct net_device *dev)
 {
 	struct tg3 *tp = netdev_priv(dev);
 
-	if (!netif_running(dev))
+	if (!tp->is_ecat && !netif_running(dev))
 		return;
 
 	tg3_full_lock(tp, 0);
@@ -17647,12 +17689,41 @@ static void tg3_init_coal(struct tg3 *tp)
 	}
 }
 
+static int parse_macaddr(const char *macstr, char *dev_addr)
+{
+	int i, h, l;
+
+	for (i = 0; i < 6; i++) {
+		h = hex_to_bin(*macstr);
+		if (h == -1)
+			goto err;
+		macstr++;
+
+		l = hex_to_bin(*macstr);
+		if (l == -1)
+			goto err;
+		macstr++;
+
+		if (i != 5) {
+			if (*macstr != ':')
+				goto err;
+			macstr++;
+		}
+		dev_addr[i] = (h << 4) + l;
+	}
+	if (is_valid_ether_addr(dev_addr))
+		return 0;
+
+err:
+	return -EINVAL;
+}
+
 static int tg3_init_one(struct pci_dev *pdev,
 				  const struct pci_device_id *ent)
 {
 	struct net_device *dev;
 	struct tg3 *tp;
-	int i, err;
+	int i, err, cnt = 0;
 	u32 sndmbx, rcvmbx, intmbx;
 	char str[40];
 	u64 dma_mask, persist_dma_mask;
@@ -17961,11 +18032,60 @@ static int tg3_init_one(struct pci_dev *pdev,
 	tg3_timer_init(tp);
 
 	tg3_carrier_off(tp);
+	/* check if we should use this one as EtherCAT device 
+	*/ 
+	tp->is_ecat = false;
+	tp->ecat_dev_init = 0;
+	tp->ecat_dev = NULL;
 
-	err = register_netdev(dev);
-	if (err) {
-		dev_err(&pdev->dev, "Cannot register net device, aborting\n");
-		goto err_out_apeunmap;
+	if (ethercat_mac_addr_count > 0) {
+		for (cnt = 0; cnt < ethercat_mac_addr_count; ++cnt) {
+			char ethercat_dev_addr[6];
+			parse_macaddr(ethercat_mac_addr[cnt], ethercat_dev_addr);
+
+			if (ether_addr_equal(dev->dev_addr, ethercat_dev_addr)) {
+				//int i = 0;
+
+				dev_info(&pdev->dev, "attaching as EtherCAT interface\n");
+				tp->is_ecat = true;
+				tp->ecat_dev_init = 1;
+				tp->ecat_dev = ethercat_device_create(dev);
+				tp->ecat_dev_init = 0;
+
+				// TODO check this, taken from igb
+#if 0
+				/* set low ITR values */
+				adapter->rx_itr_setting = 0;
+				adapter->tx_itr_setting = 0;
+
+				/* If ITR is disabled, disable DMAC */
+				if (adapter->flags & IGB_FLAG_DMAC)
+					adapter->flags &= ~IGB_FLAG_DMAC;
+
+				for (i = 0; i < adapter->num_q_vectors; i++) {
+					struct igb_q_vector *q_vector = adapter->q_vector[i];
+					q_vector->tx.work_limit = adapter->tx_work_limit;
+					if (q_vector->rx.ring)
+						q_vector->itr_val = adapter->rx_itr_setting;
+					else
+						q_vector->itr_val = adapter->tx_itr_setting;
+
+					/* configure q_vector to set itr on next interrupt */
+					q_vector->set_itr = 1;
+				}
+#endif
+				// end TODO
+				break;
+			}
+		}
+	}
+
+	if (!tp->is_ecat) {
+		err = register_netdev(dev);
+		if (err) {
+			dev_err(&pdev->dev, "Cannot register net device, aborting\n");
+			goto err_out_apeunmap;
+		}
 	}
 
 	if (tg3_flag(tp, PTP_CAPABLE)) {
@@ -18056,7 +18176,14 @@ static void tg3_remove_one(struct pci_dev *pdev)
 			tg3_mdio_fini(tp);
 		}
 
-		unregister_netdev(dev);
+		if (!tp->is_ecat) {
+			unregister_netdev(dev);
+		} else {
+			ethercat_device_destroy(tp->ecat_dev);
+			tp->ecat_dev = NULL;
+		}
+
+
 		if (tp->aperegs) {
 			iounmap(tp->aperegs);
 			tp->aperegs = NULL;
@@ -18080,7 +18207,7 @@ static int tg3_suspend(struct device *device)
 
 	rtnl_lock();
 
-	if (!netif_running(dev))
+	if (!tp->is_ecat && !netif_running(dev))
 		goto unlock;
 
 	tg3_reset_task_cancel(tp);
@@ -18093,7 +18220,9 @@ static int tg3_suspend(struct device *device)
 	tg3_disable_ints(tp);
 	tg3_full_unlock(tp);
 
-	netif_device_detach(dev);
+	if (!tp->is_ecat) {
+		netif_device_detach(dev);
+	}
 
 	tg3_full_lock(tp, 0);
 	tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
@@ -18136,10 +18265,12 @@ static int tg3_resume(struct device *device)
 
 	rtnl_lock();
 
-	if (!netif_running(dev))
+	if (!tp->is_ecat && !netif_running(dev))
 		goto unlock;
 
-	netif_device_attach(dev);
+	if (!tp->is_ecat) {
+		netif_device_attach(dev);
+	}
 
 	tg3_full_lock(tp, 0);
 
@@ -18180,7 +18311,7 @@ static void tg3_shutdown(struct pci_dev *pdev)
 
 	netif_device_detach(dev);
 
-	if (netif_running(dev))
+	if (tp->is_ecat || netif_running(dev))
 		dev_close(dev);
 
 	if (system_state == SYSTEM_POWER_OFF)
