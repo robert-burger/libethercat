@@ -9,5 +9,5 @@ obj-$(CONFIG_ATP) += atp.o
 r8169-libethercat-objs += r8169_main.o r8169_firmware.o r8169_phy_config.o
 obj-$(CONFIG_R8169) += r8169-libethercat.o
 
-EXTRA_CFLAGS=-I$(src)/../ethercat_device/
-KBUILD_EXTRA_SYMBOLS=$(src)/../ethercat_device/Module.symvers
+EXTRA_CFLAGS=-I$(src)/../../../../../
+KBUILD_EXTRA_SYMBOLS=$(src)/../../../../../Module.symvers
