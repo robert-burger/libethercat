@@ -45,3 +45,14 @@ libethercat.pc
 libethercat.pt
 /build/
 cmake-build-*
+
+*.cmd
+*.o.cmd
+*.o.d
+*.o
+*.mod
+*.mod.o
+*.mod.c
+*.ko
+Module.symvers
+modules.order
