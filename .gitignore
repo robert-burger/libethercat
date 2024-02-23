@@ -22,7 +22,8 @@ Makefile.in
 *.lo
 *.la
 COPYING
-Makefile
+src/Makefile
+tools/*/Makefile
 config.h
 config.guess
 config.log
