@@ -11809,7 +11809,7 @@ static int tg3_open(struct net_device *dev)
 	}
 
 	if (tp->is_ecat) {
-		ethercat_device_set_link(tp->is_ecat, 0);
+		ethercat_device_set_link(tp->ecat_dev, 0);
 	} else {
 		tg3_carrier_off(tp);
 	}
@@ -14132,11 +14132,10 @@ static int tg3_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		return tg3_hwtstamp_get(dev, ifr);
 	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
 		int budget = 64;
-		return tg3_poll(&tg->napi[0], budget);
+		return tg3_poll(&tp->napi[0].napi, budget);
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
-		struct igb_adapter *adapter = netdev_priv(netdev);
-		if (!adapter->is_ecat) {
+		if (!tp->is_ecat) {
 			return -EOPNOTSUPP;
 		}
 
