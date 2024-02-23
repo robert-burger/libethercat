@@ -20,6 +20,13 @@ This library provides all functionality to communicate with EtherCAT slaves atta
 * a SAFEOP-to-OP transition additionally sends command to the attached slaves in every group cycle.
 * efficient frame scheduling: EtherCAT datagrams are only queued in state SAFEOP and OP. They will be put in one ore many Ethernet frames and sent all cyclically with one call to hw_tx()
 
+# Network device access
+
+- **raw socket** » The most common way sending ethernet frames in Linux is opening a raw network socket (`SOCK_RAW`). Therefor the program must either be run as root or with the capability flag `CAP_NET_RAW`. 
+- **raw_socket_mmaped** » Like above but don't use read/write to provide frame buffers to kernel and use mmaped buffers directly from kernel.
+- **file** » Most performant/determinstic interface to send/receive frames with network hardware. Requires hacked linux network driver. Can also be used without interrupts to avoid context switches. For how to compile and use such a driver head over to [drivers readme](linux/README.md).
+- **pikeos** » Special pikeos hardware access.
+
 # Legal notices
 
 This software was developed and made available to the public by the [Institute of Robotics and Mechatronics of the German Aerospace Center (DLR)](https://www.dlr.de/rm).
