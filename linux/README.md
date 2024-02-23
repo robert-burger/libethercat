@@ -1,5 +1,5 @@
 # linux network drivers
-The subdirectory 'linux' contains hacked linux network drivers to directly communicate with the nic instead of using raw socket of the network stack.
+The subdirectory 'linux' contains hacked linux network drivers to directly communicate with the nic instead of using raw socket of the network stack. These  drivers are inspired by [IGH's EtherCAT master drivers](https://gitlab.com/etherlab.org/ethercat). Contrary to this here we provide an interface to user-level processes.
 
 ## Build
 
