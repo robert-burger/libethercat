@@ -239,6 +239,10 @@ static int ethercat_mac_addr_count;
 module_param_array(ethercat_mac_addr, charp, &ethercat_mac_addr_count,  0660);
 MODULE_PARM_DESC(ethercat_mac_addr, "List of MAC addresses to use as EtherCAT device");
 
+static unsigned int ethercat_polling;
+module_param(ethercat_polling, uint, 0);
+MODULE_PARM_DESC(ethercat_polling, "Set interface to polling mode (no interrupt) for EtherCAT case");
+
 #define TG3_DRV_DATA_FLAG_10_100_ONLY	0x0001
 #define TG3_DRV_DATA_FLAG_5705_10_100	0x0002
 
@@ -11286,6 +11290,10 @@ static int tg3_request_irq(struct tg3 *tp, int irq_num)
 	char *name;
 	struct tg3_napi *tnapi = &tp->napi[irq_num];
 
+	if (tp->is_ecat && ethercat_polling) {
+		return 0;
+	}
+
 	if (tp->irq_cnt == 1)
 		name = tp->dev->name;
 	else {
@@ -11310,6 +11318,9 @@ static int tg3_request_irq(struct tg3 *tp, int irq_num)
 		if (tg3_flag(tp, 1SHOT_MSI))
 			fn = tg3_msi_1shot;
 		flags = 0;
+
+        if (tp->is_ecat && ethercat_polling)
+            flags = IRQF_NO_THREAD;
 	} else {
 		fn = tg3_interrupt;
 		if (tg3_flag(tp, TAGGED_STATUS))
@@ -11640,7 +11651,8 @@ static int tg3_start(struct tg3 *tp, bool reset_phy, bool test_irq,
 			for (i--; i >= 0; i--) {
 				struct tg3_napi *tnapi = &tp->napi[i];
 
-				free_irq(tnapi->irq_vec, tnapi);
+                if (!tp->is_ecat || !ethercat_polling) 
+					free_irq(tnapi->irq_vec, tnapi);
 			}
 			goto out_napi_fini;
 		}
@@ -11710,9 +11722,11 @@ static int tg3_start(struct tg3 *tp, bool reset_phy, bool test_irq,
 	return 0;
 
 out_free_irq:
-	for (i = tp->irq_cnt - 1; i >= 0; i--) {
-		struct tg3_napi *tnapi = &tp->napi[i];
-		free_irq(tnapi->irq_vec, tnapi);
+	if (!tp->is_ecat || !ethercat_polling) {
+		for (i = tp->irq_cnt - 1; i >= 0; i--) {
+			struct tg3_napi *tnapi = &tp->napi[i];
+			free_irq(tnapi->irq_vec, tnapi);
+		}
 	}
 
 out_napi_fini:
@@ -14116,7 +14130,22 @@ static int tg3_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 
 	case SIOCGHWTSTAMP:
 		return tg3_hwtstamp_get(dev, ifr);
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
+		int budget = 64;
+		return tg3_poll(&tg->napi[0], budget);
+	}
+	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
+		}
 
+		if (ethercat_polling == 0) {
+			return 0;
+		} 
+
+		return 1;
+	}
 	default:
 		/* do nothing */
 		break;
