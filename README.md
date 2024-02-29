@@ -41,7 +41,7 @@ Germany (ETG, www.ethercat.org).
 
 ## Usage 
 
-See INTRODUCTION.md or gh-pages for reference.
+See INTRODUCTION.md or [gh-pages](https://robert-burger.github.io/libethercat/) for reference.
 
 ## Build from source
 
