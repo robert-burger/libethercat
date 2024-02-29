@@ -1,0 +1,411 @@
+libethercat (0.5.1) stable; urgency=medium
+
+  * printing some coe messages
+  * CHANGE: creating mailbox handler thread
+  * CHANGE: making pool more generic
+  * CHANGE: implemented first version of mbx send queue
+  * ADD: queueing mailbox messages, handled in threads for each slave
+  * CHANGE: some cleanup
+  * CLEANUP: moved some vars, checking sm_state in receive group
+  * CLEANUP: moved some vars, checking sm_state in receive group
+  * FIX: some improvements, should not busy-lock in waiting for coe answer now
+  * WORK: EoE implementation with tap device
+  * FIX: header include for old osl42 systems
+  * FIX: FoE handling with new mailbox queues
+  * FIX: set EoE ip request id
+  * ADD: set ip address of tun device directly from source
+  * FIX: CoE return value in read
+  * CHANGE: mailbox and EoE handling
+  * CHANGE: some doc and cleanup
+  * FIX: double free
+  * FIX: uninitialzed value
+  * FIX: uninitialzed value
+  * ADD: field with actual slave state
+  * MOVED: i
+  * ADD: eoe sync sem
+  * ADD: eoe lock
+  * FIX: pool wait
+  * CHANGE: working on mbx handler thread
+  * FIX: typo
+  * ADD: eoe_debug_print
+  * FIX: resetting pool user_cb, user_arg
+  * FIX: coe answer message checks
+  * ADD: EoE response pool to distinguish between requests and frames/fragments
+  * FIX: pool_get and added pool_put_head routine
+  * FIX: mbx handler thread
+  * ADD: check pool macro for CoE
+  * CLEANUP: mailbox queueing stuff
+  * ADD: checks getting free mailbox buffer
+  * CHANGE: state switch log message
+  * FXI: log message format
+  * CHANGE: new doxygen version
+  * CHANGE: working on doxygen documentation
+  * REM: unused functions
+  * ADD: some doc
+  * FIX: printing out EoE settings
+  * CHANGE: seperate pool's for send and recv mailbox
+  * FIX: strict aliasing rule
+  * CHANGE: better error handling on sdo info reads
+  * ADD: timeout to select on tun device
+  * ADD: timeout to select on tun device
+  * FIX: latest changes for mbx send/recv buffers
+  * CHANGE: increased log level to not scatter output to much
+  * FIX: check for null, reading input mailbox not in OP
+  * CHANGE: max consecutive missed frames added
+  * CHANGE: added a lot of assertions
+  * DEL: uneeded include
+  * FIX: shut down on too much frame miss
+  * ADD: setting pointer p_entry to NULL
+  * ADD: sanity check for mailbox support
+  * FIX: changed some mailbox log levels
+  * FIX: small changes
+  * CHANGE: mailbox pool sizes
+  * CLEANUP: some unused code, some reorganization
+  * FIX: member rename
+  * FIX: distributed clocks init
+  * FIX: issue #1 opening non-existent network interface
+  * FIX: fixed #4, setting max loglevel on state switch error
+  * FIX: service field in coe header when putting a coe mailbox message
+  * FIX: soe function
+  * FIX: soe init commands will be sent now
+  * CHANGE: doing linux_default builds now
+  * CHANGE: printing notifications and unexpected read response
+  * FIX: fragmented soe_write now working
+  * FIX: breaking on init command processing
+  * change: timeout decrease of socket
+  * changes: a lot of misra fixes
+  * changes: misra for message_pool
+  * change: included missing error_codes header
+  * change: more misra fixes
+  * change: more misra fixes
+  * add: missing header include
+  * change: reworked error codes for index queue
+  * change: more misra-c
+  * change: more misra
+  * change: more misra
+  * change: more misra
+  * change: more misra
+  * change: more misra
+  * change: return value of mii funcs depend on return of fprd commands
+  * change: suppress false cppcheck error
+  * change: some pool improvements
+  * change: cleaned up tun device setup
+  * change: cleaned up timer funcs return values
+  * fix: small fixes in calling get_state
+  * fixes and work on dc sync
+  * add: missing memory impl
+  * change: removed rtc_sto from dc time calculation, now directly subtracted from timer_prev
+  * change: dc frame retourne routine rework
+  * cleanup: cleaned up dc calculations
+  * fix: comment indent
+  * fix: start sync manager on mapping calculatioN
+  * fix: coe write transfer
+  * fix: return value of ec_mbx_receive
+  * fix: cleanup and fixed all dc modes
+  * fix: return value of mbx funcs
+  * change: libosal partial
+  * change: latest rt changes
+  * change: using timer timeout
+  * change: removed own timer funcs and use them from libosal
+  * change: osal data typs
+  * change: using libosal semaphores now
+  * change: add trywait to binary_semaphore
+  * change: using spinlock instead of mutex here
+  * add: missing mutex include
+  * change: removde pthread incldue
+  * change: removed prio changing in thread func, done by osal
+  * style: format fix
+  * change: setting libosal task names
+  * rename async loop
+  * change: using mutexes instead of spinlocks
+  * passing correct timeout datatype to osal_timer_init
+  * fix: using timeout directly
+  * change: using libosal from common
+  * change: doing index alloc static way
+  * change: more removing malloc stuff
+  * fix: include headers
+  * change: index is static now
+  * fix: wkc double definition, brackets
+  * fix: static eeprom pdo entries
+  * fix: using retval of osal_semaphore_timedwait
+  * fix: config.h defines!
+  * test: using global mailbox buffers
+  * better log output on timeout of first ecat packet
+  * change: removed more dynamic allocs
+  * add: a lot of config defines
+  * fix: removed all allocation/free routines
+  * add: more conanfile options
+  * change: splitted hw device layer
+  * fix: misra compliance
+  * fix: undefined value
+  * add: conanfile options
+  * fix: libosal changed to unstable
+  * fix: creation and destroying of async_loop
+  * changed: device enabling behaviour
+  * fix: reduced scope of pframe in receive func
+  * change: set mmap poll timeout to 1 ms
+  * change: build device choose option
+  * fix: file device mode
+  * add: device mode builds
+  * fix: bpf build, does not compile
+  * fix: CoE emergency message length and lock
+  * add: CoE emergency get function
+  * fix: made static dc_lock to struct member
+  * fix: printf format argument matching
+  * fix: another printf fix
+  * change: lot of printf format fixes, some include fixes
+  * add: pikeos hardware layer over shared memory buffers, lot of pikeos fixes
+  * add pikeos build
+  * fix: build target syntax
+  * include cleanup
+  * change: libosal switched to unstable
+  * integrated divisor and timeouts for groups/dcs/states
+  * fix: checking return value of binary sem timedwait
+  * fix: checking brd of al status
+  * add: log messages for start/stop of rx thread
+  * add: log message on pikeos device open
+  * change: pikeos mtu size
+  * fix: sending first dc frame
+  * change: --with-x options instead of compiler defines
+  * add: printing all config variables
+  * change: printing rx thread prio
+  * add: async check all slaves on state mismatch
+  * option to disable mapping of mbx sync manager status
+  * add: dc auto activation
+  * reordered dc sync activatioN
+  * fix: pointer dereference
+  * fix: next try fixing type-punned pointer deref
+  * fix: eepcftsta is 2 bytes
+  * fix: segfault when setting eoe
+  * change: reading mbx state if not mapped
+  * fix: parameter shadowing
+  * fix: sm_state fprd command when not mapped
+  * fix: read mbx use cyclic sm_state
+  * fix: misra compliance
+  * fix: better slave al err reset
+  * fix: indent
+  * fix: switching initially to init from other state
+  * slave state machine lock
+  * fix: read mailbox flag
+  * add: printing slave features
+  * only set master state if state switch was a success
+  * change: reset only on non-stupid slave where al_status_code is not 0
+  * change: doing more stuff in rx-thread, do not wait on cyclic frames
+  * add: debug option to configure
+  * chagne: some doc
+  * del: removed debug message
+  * change: some doc
+  * cleanup: callback stuff for cyclic datagrams
+  * removed: had_timeout flag from cyclic_datagram, not used
+  * change: some docs
+  * misra: some fixes
+  * doc: dc doxygen fixes
+  * fix: compilation with mingw
+  * fix: linker
+  * change: datagrams are reused and not returned to pool for cyclic stuff
+  * cleanup: removed uneeded check
+  * fix: some changes for misra compliance
+  * fix: receive mbx_state non-blocking callback now
+  * fix: force re-initialization of lrw/lrd/lwr datagrams if mapping is (re-)created
+  * fix: clearing last indicator of datagrams
+  * change: better reinit of lrw/lwr/lrd datagrams
+  * change: do not release libtool la file
+  * change: control tx_sync via libethercat state machine
+  * dc test added
+  * change: added ec_configure_dc function
+  * change: added configure pd group function
+  * add: log messages for async_loop thread
+  * change: reworked async_loop timeout management
+  * change: do always initialize datagram headers
+  * change: pikeos hw layer blocking
+  * change: waiting if interface was down to switch to runing state
+  * fix: get error code in sdo entry description
+  * change: mailbox check timeouts in INIT/PREOP and SAFEOP/OP
+  * change: removed tx_sync, not needed any more
+  * change: added packet duration for dc datagram
+  * change: added first version of MDP 1100 master profile
+  * change: moved coe master stuff to separate file
+  * fix: datatypes of master objects, address lists
+  * add: link status of master object 0x8000
+  * dc cleanup
+  * fix: anti-windup default value
+  * change: sending high prio ethernet frame (cyclic data) and optionally a second low prio frame (mbx...)
+  * fix: odlist longer than given buffer
+  * add: coe master objects
+  * add: reading entries of std master objects
+  * add: example program
+  * working on example
+  * fix: add prio and affinity as option
+  * change: reduce memcpy
+  * misra: fixes
+  * change: code cleanup
+  * change: mutex priority inheritance
+  * cleanup: removed unused code part
+  * change: added eoe for supported slaves
+  * fix: parameter shadowing
+  * fix: print format data types
+  * fix: print format data types
+  * fix: print format data types
+  * cleanup: removed unused/unneeded code
+  * change: to stable libosal 0.0.1
+  * fix: async check of slaves and groups
+  * cleanup: log messages
+  * change: init of macs in file case
+  * cleanup: removed old commented code
+  * change: added some array initializer brackets
+  * change: building coe_object dict of master
+  * change: doing things in coe master dict more generic
+  * change: added some static
+  * add: cyclic group config to master dict
+  * add: master dict - cyclic group assignment
+  * fix: cycle_shift datatype
+  * fix: disable dc if not supported
+  * fix: master dict - passing index to callbacks
+  * fix: cycle_shift datatype
+  * fix: disable dc if not supported
+  * fix: receive times are unsigned
+  * fix: topology calculation
+  * fix: master dict - received times datatypes
+  * fix: receive times are unsigned
+  * fix: topology calculation
+  * cleanup: small dc cleanup
+  * Added a function to calculate length of objects
+  * fix: returning NULL if coe_object was not found in dictionary
+  * Added documentation to master dict get length
+  * change: add some verbose prints
+  * add: slave number to master object 0x3nnn
+  * fix: parameter shadowing
+  * fix: debug build with assertions
+  * changes to make coe master dict more misra compliant
+  * showing frame len in example_with_dc
+  * added polling mode impl
+  * using polling mode
+  * avoid busy waiting when in polling mode
+  * fix last sent byte count initialization
+  * fixed missing hw_device_send_finished
+  * fixed bytes last sent
+  * sending low prio frames in cyclic gap
+  * moved timer_override, now main_cycle_interval
+  * moved timer_override, now main_cycle_interval
+  * cleaned up tx routine
+  * removed extern func decl
+  * added foe download example
+  * simplification of hw_tx
+  * coe mailbox poll more often on wait
+  * returning error in hw_file if file does not exists
+  * quit when error on ec_open
+  * added missing define EC_ERROR_HW_NO_INTERFACE
+  * added doc header
+  * added define for bits of features register
+  * working on lrw supported/not supported
+  * removed mutex attr protocol inherit
+  * added lwr/lrd implementation if lrw is not supported by all slaves from group
+  * increased low prio wait threshold
+  * reset sent frame pointer to NULL
+  * hw_file made internal recv function static
+  * fixed calculation of roundtrip in example
+  * EoE scheduling read more often
+  * removed const qualifier
+  * include sys/ioctl.h only if existing
+  * skip ioctl's if we do not have ioctl's
+  * implemented mailbox sequence counter
+  * fixed FoE write loop
+  * elmo platinum hack
+  * added warning when port 0 is not the upstream port
+  * dont warn a eeprom checksum error on write
+  * fixed eepromtool and doing a ESC reset on successfull write
+  * reworked forward and backward port search
+  * removed debug log message
+  * fixed func call
+  * Update README.md
+  * storing ethercat slave type
+  * removed port tests
+  * dc config cleanup
+  * removed dc_test stuff
+  * fixed pikeos parameter shadowing error
+  * cleaned up dc stuff
+  * added dc_mode_ref_clock option
+  * moved dc_active
+  * switched license to LGPL-V3 with the permission of the other contributors Jan Cremer, Florian Schmidt and Klaus Kunze
+  * further dc cleanup
+  * added kp and ki factor command line option
+  * fixed cmake build
+  * Update LICENSE
+  * trying some doxygen
+  * added progress on file write
+  * file download pretty progress output
+  * added log message on file read
+  * added command line parameters for read and write
+  * changed foe_download to foe_tool
+  * Updated doxygen
+  * added doxygen generation on gh-pages
+  * updated index
+  * doing some doc
+  * more doc
+  * removed @page
+  * fixed datatypes of common defines
+  * fixed printf with common datatypes
+  * fixed return value of write not ignored
+  * fixed minor printf format warnings
+  * fix: debian description
+  * switched to stable libosal
+  * removed unneeded  closing comment.
+  * using second lrd datagram to read mailbox state bits
+  * fix: mapping mailbox status bit
+  * fix: processing answer of lrw command to read mailbox status bits
+  * fix: only check wkc in safeop/op of mbx status bits
+  * fix: slave with no fmmu left for sm_state are dooing mailbox polling in short interval!
+  * changed loglevel when coe abort code occured
+  * better reset on al status error
+  * cleaned up with lrw/lrd/lwr and overlapping group mappings
+  * fix: shadowing act_state
+  * fix: working counter in lwr case
+  * fix: lrw size when not overlapping
+  * add: EoE function doc
+  * add: SEoE function doc
+  * cleanup: removed no longer used manually retreave mbx_state funcs
+  * change: 'const static' to 'static const'
+  * fixes some compiler warnings and pikeos-4.2 mods
+  * add pikeos-4.2 builds
+  * fix: rmc-build.yaml syntax
+  * fix: target_os detection
+  * reworked example with osal_trace
+  * fix: relative trace analyze
+  * add: cycle frequency command line option
+  * removed pikeos4.2-armv7hf-gcc5.5, it's only a link to pikeos4.2-armv7hf-gcc5
+  * fixed: ethercatdiag
+  * switched to develop
+  * change: try to integrate all supported hw_devices of OS in builds
+  * change: more hw device changes
+  * fix: device pikeos define
+  * fix: device sock-raw-mmaped data
+  * config sub for pikeos
+  * fix: pikeos header include
+  * fix: datagram initialization count
+  * add: master struct size info
+  * clean up: remove ec_device_t
+  * fix: windows printf
+  * fix: windows printf
+  * add: busy wait loop
+  * add: -h option to show help page
+  * fix: limits of elements that can be stored in master struct
+  * fix: string format
+  * fix: re-reading al status after error reset
+  * add: printing calculated working counter for groups
+  * fix: reset some dc registers and time control loop on dc_config
+  * fix: dc start value calculation
+  * fix: parameter shadowing of dcsof
+  * Update README.md
+  * update to conan2 syntax
+  * fix for pikeos build on jenkins
+  * fix: devices for pikeos
+  * changed off_t to osal_off_t
+  * updated README
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 07 Feb 2024 14:49:32 +0100
+
+libethercat (0.2.6) testing; urgency=medium
+
+  * Initial Release.
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 31 Mar 2021 10:47:14 +0200

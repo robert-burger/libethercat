@@ -1,0 +1,6 @@
+Authors of libethercat
+See also the files THANKS and ChangeLog
+
+Robert Burger designed and implemented libethercat
+Robert Burger:
+  entire files coe.c, datagram.c, datagram_pool.c, dc.c, ec.c, eeprom.c, foe.c, hw.c, main.c, mbx.c, message_pool.c, slave.c, soe.c, timer.c

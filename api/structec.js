@@ -1,0 +1,28 @@
+var structec =
+[
+    [ "async_loop", "structec.html#ab54102ead49e2e356d4b4fea4950c175", null ],
+    [ "cdg_state", "structec.html#a34e7a844f255822ba0155d7c9488548f", null ],
+    [ "consecutive_max_miss", "structec.html#a3e64471442d0a393c711d615ed236686", null ],
+    [ "dc", "structec.html#a3542b6b4892386fdc14a7c248028988d", null ],
+    [ "dg_entries", "structec.html#aa6db1522fd0130c785cdd02715f72b70", null ],
+    [ "eeprom_log", "structec.html#ae91d314e7723e67cbf09868646223dae", null ],
+    [ "hw", "structec.html#a4a8146e6c8aad0472d8afab883f00b23", null ],
+    [ "idx_q", "structec.html#a8de902dd15e6d78550f94931c2266977", null ],
+    [ "main_cycle_interval", "structec.html#a9369057b9d52db712bac3b11d1746631", null ],
+    [ "master_state", "structec.html#a336517d3ced9fcad4f5e289803793348", null ],
+    [ "mbx_message_pool_recv_free", "structec.html#a0db80a75cd0c248dbc8378176fa81cb7", null ],
+    [ "mbx_message_pool_send_free", "structec.html#aa2fbf45e5094a75e81c381dae6309287", null ],
+    [ "mbx_mp_recv_free_entries", "structec.html#a999a20774b03dd14adf6ff6401ff0e9a", null ],
+    [ "mbx_mp_send_free_entries", "structec.html#aeb95470d10156b17d6b41e75efeb5562", null ],
+    [ "pd_group_cnt", "structec.html#a2ffbe751fd84c022adfdf3f74bb72e4d", null ],
+    [ "pd_groups", "structec.html#afb474a9ba4d4ac147fbc88bf2c060e42", null ],
+    [ "pool", "structec.html#ae91bbcc9f8513674346aa0041a745a85", null ],
+    [ "slave_cnt", "structec.html#a30c04e2ec77c340a95b3b80d9f5c9bf6", null ],
+    [ "slaves", "structec.html#abfc45793844751f76d7bf295be1029bc", null ],
+    [ "state_transition_pending", "structec.html#a662647bc92e6b4e4c2c5d4fa26ebd0ec", null ],
+    [ "threaded_startup", "structec.html#a8d866b2722ef9afe607e52e2ca2611e3", null ],
+    [ "tun_fd", "structec.html#a26c74ff58cae637056984756f8ef4f7d", null ],
+    [ "tun_ip", "structec.html#a2be3518205eb969a6333479ffcb9a0f2", null ],
+    [ "tun_running", "structec.html#a351114c32c62cd6ffcc801c16b84e7a4", null ],
+    [ "tun_tid", "structec.html#a75841e22bc0c8dafc91d71ea19ac2c43", null ]
+];
