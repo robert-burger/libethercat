@@ -448,7 +448,7 @@ var searchData=
   ['eth_5fframes_5frecv_5fpool_541',['eth_frames_recv_pool',['../group__eoe__group.html#gab66a107d17bb966a7e8bf439564413d1',1,'ec_eoe']]],
   ['eth_5fp_5fecat_542',['ETH_P_ECAT',['../group__hardware__group.html#ga761d05e4fcf5ee3f4c9e1f4516924869',1,'hw.h']]],
   ['ethernet_543',['ethernet',['../structec__eeprom__cat__general.html#a666a2da6c91fb1e9329dbd494e2d012a',1,'ec_eeprom_cat_general']]],
-  ['ethernet_20over_20ethercat_20_28coe_29_544',['Ethernet over Ethercat (CoE)',['../group__eoe__group.html',1,'']]],
+  ['ethernet_20over_20ethercat_20_28eoe_29_544',['Ethernet over Ethercat (EoE)',['../group__eoe__group.html',1,'']]],
   ['ethertype_545',['ethertype',['../structec__frame.html#a93e0a476a56654207cbd791e261f2c5e',1,'ec_frame']]],
   ['evafactor_546',['evafactor',['../structec__soe__idn__attribute.html#a927b8dea255f821c37b5c811a39567f3',1,'ec_soe_idn_attribute']]],
   ['exec_547',['exec',['../structec__async__loop.html#ac8d5c3bee1195d917ad3e22cc1da23c2',1,'ec_async_loop']]],
