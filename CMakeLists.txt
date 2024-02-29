@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
-project(libethercat VERSION 0.4.0)
+file(READ "project.properties" PROJECT_PROPERTIES)
+string(REGEX MATCH "VERSION = ([0-9]*.[0-9]*.[0-9]*)" _ ${PROJECT_PROPERTIES})
+set(PROJECT_VERSION ${CMAKE_MATCH_1})
+project(libethercat VERSION ${PROJECT_VERSION})
 
 set(ECAT_DEVICE "sock_raw" CACHE STRING "EtherCAT device layer")
 
