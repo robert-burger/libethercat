@@ -27,7 +27,7 @@ jobs:
           make -f Makefile.doc doc/html BUILDCMD=doxygen
       - name: Moving Files
         run: |
-          mv ./doc/html ./api
+          mv ./libethercat/doc/html ./api
 
       # Deploy to GitHub Pages
       - name: Deploy
