@@ -22,7 +22,7 @@ This library provides all functionality to communicate with EtherCAT slaves atta
 
 # Network device access
 
-- **raw socket** » The most common way sending ethernet frames in Linux is opening a raw network socket (`SOCK_RAW`). Therefor the program must either be run as root or with the capability flag `CAP_NET_RAW`. 
+- **raw socket** » The most common way sending ethernet frames in Linux is opening a raw network socket (`SOCK_RAW`). Therefor the program must either be run as root or with the capability flag `CAP_NET_RAW`. Either do sth like: `sudo setcap cap_net_raw=ep .libs/example_with_dc` or checkout grant_cap_net_raw kernel module from Flo Schmidt (https://gitlab.com/fastflo/open_ethercat).
 - **raw_socket_mmaped** » Like above but don't use read/write to provide frame buffers to kernel and use mmaped buffers directly from kernel.
 - **file** » Most performant/determinstic interface to send/receive frames with network hardware. Requires hacked linux network driver. Can also be used without interrupts to avoid context switches. For how to compile and use such a driver head over to [drivers readme](linux/README.md).
 - **pikeos** » Special pikeos hardware access.
