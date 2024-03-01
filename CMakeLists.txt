@@ -10,6 +10,7 @@ include(CheckIncludeFiles)
 include(CheckSymbolExists)
 include(CheckLibraryExists)
 include(ExternalProject)
+include(CMakePackageConfigHelpers)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
@@ -115,3 +116,34 @@ target_link_libraries (ethercatdiag ethercat ${libosal_LIBS})
 add_executable(example_with_dc tools/example_with_dc/example_with_dc.c)
 target_link_libraries (example_with_dc ethercat ${libosal_LIBS} m)
 
+# Install 
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/libethercatConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+set(INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+set(ETHERCAT_LIB_NAME ethercat)
+
+configure_package_config_file(
+    ${PROJECT_SOURCE_DIR}/cmake/libethercatConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/libethercatConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/libethercat
+    PATH_VARS ETHERCAT_LIB_NAME INSTALL_DIR
+)
+
+install(TARGETS ethercat EXPORT libethercatTargets)
+install(
+    EXPORT libethercatTargets 
+    FILE libethercatTargets.cmake
+    DESTINATION lib/cmake/libethercat
+)
+install(DIRECTORY include/libethercat/ DESTINATION include/libethercat 
+	FILES_MATCHING PATTERN "*.h"
+)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libethercatConfig.cmake" 
+    "${CMAKE_CURRENT_BINARY_DIR}/libethercatConfigVersion.cmake"
+    DESTINATION lib/cmake/libethercat
+)
