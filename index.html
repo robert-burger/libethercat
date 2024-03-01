@@ -111,7 +111,7 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 <h1><a class="anchor" id="autotoc_md1"></a>
 Network device access</h1>
 <ul>
-<li><b>raw socket</b> » The most common way sending ethernet frames in Linux is opening a raw network socket (<code>SOCK_RAW</code>). Therefor the program must either be run as root or with the capability flag <code>CAP_NET_RAW</code>.</li>
+<li><b>raw socket</b> » The most common way sending ethernet frames in Linux is opening a raw network socket (<code>SOCK_RAW</code>). Therefor the program must either be run as root or with the capability flag <code>CAP_NET_RAW</code>. Either do sth like: <code>sudo setcap cap_net_raw=ep .libs/example_with_dc</code> or checkout grant_cap_net_raw kernel module from Flo Schmidt (<a href="https://gitlab.com/fastflo/open_ethercat">https://gitlab.com/fastflo/open_ethercat</a>).</li>
 <li><b>raw_socket_mmaped</b> » Like above but don't use read/write to provide frame buffers to kernel and use mmaped buffers directly from kernel.</li>
 <li><b>file</b> » Most performant/determinstic interface to send/receive frames with network hardware. Requires hacked linux network driver. Can also be used without interrupts to avoid context switches. For how to compile and use such a driver head over to drivers readme.</li>
 <li><b>pikeos</b> » Special pikeos hardware access.</li>
