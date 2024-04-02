@@ -47,6 +47,7 @@
 #include <libosal/io.h>
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -86,6 +87,30 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
     phw->recv = hw_device_pikeos_recv;
     phw->send_finished = hw_device_pikeos_send_finished;
     phw->get_tx_buffer = hw_device_pikeos_get_tx_buffer;
+    phw->use_sbuf = OSAL_TRUE;
+
+    char *tmp;
+    if ((tmp = strchr(devname, '/')) != NULL) {
+        *tmp = 0;
+        tmp++;
+
+        char *token;
+        while ((token = strchr(tmp, ':')) != NULL) {
+            char *act = tmp;
+            *token = '0';
+            tmp = token + 1;
+
+            char *value;
+            if ((value = strchr(act, '=')) != NULL) {
+                *value = 0;
+                value++; 
+
+                if (strcmp(act, "use_sbuf") == 0) {
+                    phw->use_sbuf = atoi(value) == 0 ? OSAL_FALSE : OSAL_TRUE;
+                }
+            }
+        }
+    }
 
     local_retval = vm_part_pstat(VM_RESPART_MYSELF, &pinfo);
     if (local_retval != P4_E_OK) {
@@ -112,28 +137,34 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
         }
     }
 
-    if (ret == EC_OK) {
-        local_retval = vm_io_sbuf_init(&phw->fd, &vsize);
-        if (local_retval != P4_E_OK) {
-            ec_log(1, "HW_OPEN", "vm_io_sbuf_init failed\n");
-            ret = EC_ERROR_UNAVAILABLE;
-        }
-    }
+    if (phw->use_sbuf) {
+        ec_log(10, "HW_OPEN", "using sbuf\n");
 
-    if (ret == EC_OK) {
-        vaddr = p4ext_vmem_alloc(vsize);
-        if (vaddr == 0) {
-            ec_log(1, "HW_OPEN", "p4ext_vmem_alloc failed\n");
-            ret = EC_ERROR_UNAVAILABLE;
+        if (ret == EC_OK) {
+            local_retval = vm_io_sbuf_init(&phw->fd, &vsize);
+            if (local_retval != P4_E_OK) {
+                ec_log(1, "HW_OPEN", "vm_io_sbuf_init failed\n");
+                ret = EC_ERROR_UNAVAILABLE;
+            }
         }
-    }
 
-    if (ret == EC_OK) {
-        local_retval = vm_io_sbuf_map(&phw->fd, vaddr, &phw->sbuf);
-        if (local_retval != P4_E_OK) {
-            ec_log(1, "HW_OPEN", "vm_io_sbuf_map failed\n");
-            ret = EC_ERROR_UNAVAILABLE;
+        if (ret == EC_OK) {
+            vaddr = p4ext_vmem_alloc(vsize);
+            if (vaddr == 0) {
+                ec_log(1, "HW_OPEN", "p4ext_vmem_alloc failed\n");
+                ret = EC_ERROR_UNAVAILABLE;
+            }
         }
+
+        if (ret == EC_OK) {
+            local_retval = vm_io_sbuf_map(&phw->fd, vaddr, &phw->sbuf);
+            if (local_retval != P4_E_OK) {
+                ec_log(1, "HW_OPEN", "vm_io_sbuf_map failed\n");
+                ret = EC_ERROR_UNAVAILABLE;
+            }
+        }
+    } else {
+        ec_log(10, "HW_OPEN", "using vmread/vmwrite\n");
     }
 
     phw->mtu_size = 1480;
@@ -154,28 +185,42 @@ int hw_device_pikeos_recv(hw_t *phw) {
     int ret = EC_OK;
     ec_frame_t *pframe = NULL;
 
-    // get a full rxbuffer from RX ring (dontwait=0 -> WAITING)
-    vm_io_buf_id_t rxbuf = vm_io_sbuf_rx_get(&phw->sbuf, 0);
-    if (rxbuf == VM_IO_BUF_ID_INVALID) {
-        p4_sleep(P4_NSEC(1000000));
-        ret = EC_ERROR_UNAVAILABLE;
-    }
-
-    if (ret == EC_OK) {
-        pframe = (ec_frame_t *)vm_io_sbuf_rx_buf_addr(&phw->sbuf, rxbuf);
-
-        if (pframe == NULL) {
+    if (phw->use_sbuf == OSAL_TRUE) {
+        // get a full rxbuffer from RX ring (dontwait=0 -> WAITING)
+        vm_io_buf_id_t rxbuf = vm_io_sbuf_rx_get(&phw->sbuf, 0);
+        if (rxbuf == VM_IO_BUF_ID_INVALID) {
+            p4_sleep(P4_NSEC(1000000));
             ret = EC_ERROR_UNAVAILABLE;
         }
-    }
 
-    if (ret == EC_OK) {
-        int32_t bytesrx = vm_io_sbuf_rx_buf_size(&phw->sbuf, rxbuf);
-        if (bytesrx > 0) {
-            hw_process_rx_frame(phw, pframe);
+        if (ret == EC_OK) {
+            pframe = (ec_frame_t *)vm_io_sbuf_rx_buf_addr(&phw->sbuf, rxbuf);
+
+            if (pframe == NULL) {
+                ret = EC_ERROR_UNAVAILABLE;
+            }
         }
-    
-        vm_io_sbuf_rx_free(&phw->sbuf, rxbuf);
+
+        if (ret == EC_OK) {
+            int32_t bytesrx = vm_io_sbuf_rx_buf_size(&phw->sbuf, rxbuf);
+            if (bytesrx > 0) {
+                hw_process_rx_frame(phw, pframe);
+            }
+
+            vm_io_sbuf_rx_free(&phw->sbuf, rxbuf);
+        }
+    } else { /* use_sbuf == OSAL_FALSE */
+        pframe = (ec_frame_t *)&phw->recv_frame[0];
+        P4_size_t read_size;
+        P4_e_t localret = vm_read(&phw->fd, pframe, ETH_FRAME_LEN, &read_size);
+
+        if (localret != P4_E_OK) {
+            ret = EC_ERROR_UNAVAILABLE;
+        } else {
+            if (read_size > 0) {
+                hw_process_rx_frame(phw, pframe);
+            }
+        }
     }
 
     return ret;
@@ -227,23 +272,33 @@ int hw_device_pikeos_send(hw_t *phw, ec_frame_t *pframe) {
     int ret = EC_OK;
     void* txbuf = NULL;
 
-    // get an empty tx buffer from TX ring (dontwait)
-    vm_io_buf_id_t sbuftx = vm_io_sbuf_tx_alloc(&phw->sbuf, 1);
-    if (sbuftx == VM_IO_BUF_ID_INVALID) {
-        ret = EC_ERROR_UNAVAILABLE;
-    }
-    
-    if (ret == EC_OK) {
-        txbuf = (void*)vm_io_sbuf_tx_buf_addr(&phw->sbuf, sbuftx);
-        
-        if (txbuf == NULL) {
+    if (phw->use_sbuf == OSAL_TRUE) {
+        // get an empty tx buffer from TX ring (dontwait)
+        vm_io_buf_id_t sbuftx = vm_io_sbuf_tx_alloc(&phw->sbuf, 1);
+        if (sbuftx == VM_IO_BUF_ID_INVALID) {
             ret = EC_ERROR_UNAVAILABLE;
         }
-    }
 
-    if (ret == EC_OK) {
-        (void)memcpy(txbuf, pframe, pframe->len);
-        vm_io_sbuf_tx_ready(&phw->sbuf, sbuftx, pframe->len);
+        if (ret == EC_OK) {
+            txbuf = (void*)vm_io_sbuf_tx_buf_addr(&phw->sbuf, sbuftx);
+
+            if (txbuf == NULL) {
+                ret = EC_ERROR_UNAVAILABLE;
+            }
+        }
+
+        if (ret == EC_OK) {
+            (void)memcpy(txbuf, pframe, pframe->len);
+            vm_io_sbuf_tx_ready(&phw->sbuf, sbuftx, pframe->len);
+        }
+    } else { /* use_sbuf == OSAL_FALSE */
+        P4_size_t written_size;
+        P4_e_t localret = vm_write(&phw->fd, pframe, pframe->len, &written_size);
+
+        if (localret != P4_E_OK) {
+            ret = EC_ERROR_UNAVAILABLE;
+        }
+
     }
 
     return ret;
