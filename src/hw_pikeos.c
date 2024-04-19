@@ -94,11 +94,10 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
         *tmp = 0;
         tmp++;
 
-        char *token;
-        while ((token = strchr(tmp, ':')) != NULL) {
-            char *act = tmp;
-            *token = '0';
-            tmp = token + 1;
+        char *act = tmp;
+        do {
+            char *next = strchr(tmp, ':');
+            if (next != NULL) { *next = '0'; next++; }
 
             char *value;
             if ((value = strchr(act, '=')) != NULL) {
@@ -109,7 +108,9 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
                     phw->use_sbuf = atoi(value) == 0 ? OSAL_FALSE : OSAL_TRUE;
                 }
             }
-        }
+
+            if ((next != NULL) && (*next != '0')) { act = next; } else { break; }
+        } while (1);
     }
 
     local_retval = vm_part_pstat(VM_RESPART_MYSELF, &pinfo);
@@ -128,9 +129,11 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
 #endif
 
     if (ret == EC_OK) {
-        local_retval = vm_open(devname, VM_O_RD_WR | VM_O_MAP, &phw->fd);
+        vm_file_access_mode_t flags = VM_O_RD_WR;
+        if (phw->use_sbuf) { flags |= VM_O_MAP; }
+        local_retval = vm_open(devname, flags, &phw->fd);
         if (local_retval != P4_E_OK) {
-            ec_log(1, "HW_OPEN", "vm_open on %s failed\n", devname);
+            ec_log(1, "HW_OPEN", "vm_open on %s failed: %d\n", devname, local_retval);
             ret = EC_ERROR_UNAVAILABLE;
         } else {
             ec_log(10, "HW_OPEN", "opened %s\n", devname);
