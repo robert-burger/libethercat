@@ -22,7 +22,7 @@ This library provides all functionality to communicate with EtherCAT slaves atta
 
 # Network device access
 
-- **raw socket** » The most common way sending ethernet frames in Linux is opening a raw network socket (`SOCK_RAW`). Therefor the program must either be run as root or with the capability flag `CAP_NET_RAW`. 
+- **raw socket** » The most common way sending ethernet frames in Linux is opening a raw network socket (`SOCK_RAW`). Therefor the program must either be run as root or with the capability flag `CAP_NET_RAW`. Either do sth like: `sudo setcap cap_net_raw=ep .libs/example_with_dc` or checkout grant_cap_net_raw kernel module from Flo Schmidt (https://gitlab.com/fastflo/open_ethercat).
 - **raw_socket_mmaped** » Like above but don't use read/write to provide frame buffers to kernel and use mmaped buffers directly from kernel.
 - **file** » Most performant/determinstic interface to send/receive frames with network hardware. Requires hacked linux network driver. Can also be used without interrupts to avoid context switches. For how to compile and use such a driver head over to [drivers readme](linux/README.md).
 - **pikeos** » Special pikeos hardware access.
@@ -41,7 +41,7 @@ Germany (ETG, www.ethercat.org).
 
 ## Usage 
 
-See INTRODUCTION.md or gh-pages for reference.
+See INTRODUCTION.md or [gh-pages](https://robert-burger.github.io/libethercat/) for reference.
 
 ## Build from source
 
@@ -61,6 +61,16 @@ sudo make install
 ```
 
 This will build and install a static as well as a dynamic library. For use in other project you can use the generated pkg-config file to retreave cflags and linker flags.
+
+### CMake
+
+```bash
+mkdir build
+cd build
+# Please change the path to the install dir. If you chose a global install you can omit the CMAKE_PREFIX_PATH option
+cmake .. -DCMAKE_PREFIX_PATH=<installdir of libosal>
+cmake --build . 
+```
 
 ## Tools
 

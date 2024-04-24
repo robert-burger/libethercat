@@ -361,7 +361,8 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
  * \param[in] state         New ethercat state.
- * \return 0 on success
+ *
+ * \return Reached master state.
  */
 int ec_set_state(ec_t *pec, ec_state_t state);
 

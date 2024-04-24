@@ -57,3 +57,5 @@ cmake-build-*
 *.ko
 Module.symvers
 modules.order
+
+build

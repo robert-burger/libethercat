@@ -46,7 +46,7 @@
 
 #include "libethercat/common.h"
 
-/** \defgroup eoe_group Ethernet over Ethercat (CoE)
+/** \defgroup eoe_group Ethernet over Ethercat (EoE)
  *
  * This modules contains functions on how to communicate via Ethernet over EtherCAT mailbox.
  *

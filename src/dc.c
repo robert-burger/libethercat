@@ -58,6 +58,12 @@
 
 #define ONE_SEC     ((osal_uint64_t)1000000000u)
 
+static void anon_cb(struct ec *cb_pec, pool_entry_t *cb_p_entry, ec_datagram_t *cb_p_dg) {      
+    (void)cb_pec;
+    (void)cb_p_dg;
+    osal_binary_semaphore_post(&cb_p_entry->p_idx->waiter);
+};
+
 // mesaure packet duration (important in case of master_as_ref_clock !)
 static inline osal_uint64_t get_packet_duration(ec_t *pec) {
     assert(pec != NULL);
@@ -86,12 +92,7 @@ static inline osal_uint64_t get_packet_duration(ec_t *pec) {
         p_dg->irq = 0;
 
         p_entry->p_idx = p_idx;
-        p_entry->user_cb = ({
-                void anon_cb(struct ec *cb_pec, pool_entry_t *cb_p_entry, ec_datagram_t *cb_p_dg) {      
-                    (void)cb_pec;
-                    (void)cb_p_dg;
-                    osal_binary_semaphore_post(&cb_p_entry->p_idx->waiter);
-                } &anon_cb; });
+        p_entry->user_cb = anon_cb;
 
         // queue frame and trigger tx
         pool_put(&pec->hw.tx_high, p_entry);

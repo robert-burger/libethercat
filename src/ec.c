@@ -861,7 +861,8 @@ static void ec_scan(ec_t *pec) {
 /*! 
  * \param pec ethercat master pointer
  * \param state new ethercat state
- * \return 0 on success
+ *
+ * \return Reached master state.
  */
 int ec_set_state(ec_t *pec, ec_state_t state) {
     assert(pec != NULL);
