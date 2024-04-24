@@ -301,9 +301,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">ec_slave_add_init_cmd</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint16_t slave, <a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *cmd)</td></tr>
 <tr class="memdesc:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add master init command.  <a href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">More...</a><br /></td></tr>
 <tr class="separator:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5871ae98b33352fd2962bf5e1bb2932d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga5871ae98b33352fd2962bf5e1bb2932d">ec_slave_set_dc_config</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, int use_dc, int type, osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_uint32_t cycle_shift)</td></tr>
-<tr class="memdesc:ga5871ae98b33352fd2962bf5e1bb2932d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set Distributed Clocks config to slave.  <a href="group__slave__group.html#ga5871ae98b33352fd2962bf5e1bb2932d">More...</a><br /></td></tr>
-<tr class="separator:ga5871ae98b33352fd2962bf5e1bb2932d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga625acf0f390c93a7d76a111632dc7e94"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">ec_slave_set_dc_config</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, int use_dc, int type, osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift)</td></tr>
+<tr class="memdesc:ga625acf0f390c93a7d76a111632dc7e94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set Distributed Clocks config to slave.  <a href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">More...</a><br /></td></tr>
+<tr class="separator:ga625acf0f390c93a7d76a111632dc7e94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407">ec_slave_set_eoe_settings</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, osal_uint8_t *dns, osal_char_t *dns_name)</td></tr>
 <tr class="memdesc:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds master EoE settings.  <a href="group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407">More...</a><br /></td></tr>
 <tr class="separator:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -768,8 +768,8 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 
 </div>
 </div>
-<a id="ga5871ae98b33352fd2962bf5e1bb2932d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5871ae98b33352fd2962bf5e1bb2932d">&#9670;&nbsp;</a></span>ec_slave_set_dc_config()</h2>
+<a id="ga625acf0f390c93a7d76a111632dc7e94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga625acf0f390c93a7d76a111632dc7e94">&#9670;&nbsp;</a></span>ec_slave_set_dc_config()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -813,7 +813,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">osal_uint32_t&#160;</td>
+          <td class="paramtype">osal_int32_t&#160;</td>
           <td class="paramname"><em>cycle_shift</em>&#160;</td>
         </tr>
         <tr>

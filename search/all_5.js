@@ -376,7 +376,7 @@ var searchData=
   ['ec_5fslave_5fmailbox_5fcoe_5finit_5fcmd_5finit_469',['ec_slave_mailbox_coe_init_cmd_init',['../group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0',1,'slave.h']]],
   ['ec_5fslave_5fmailbox_5fsoe_5finit_5fcmd_5finit_470',['ec_slave_mailbox_soe_init_cmd_init',['../group__slave__group.html#gaee42d5626e8d010646bb4926f080b0ae',1,'slave.h']]],
   ['ec_5fslave_5fprepare_5fstate_5ftransition_471',['ec_slave_prepare_state_transition',['../group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57',1,'slave.h']]],
-  ['ec_5fslave_5fset_5fdc_5fconfig_472',['ec_slave_set_dc_config',['../group__slave__group.html#ga5871ae98b33352fd2962bf5e1bb2932d',1,'slave.h']]],
+  ['ec_5fslave_5fset_5fdc_5fconfig_472',['ec_slave_set_dc_config',['../group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94',1,'slave.h']]],
   ['ec_5fslave_5fset_5feoe_5fsettings_473',['ec_slave_set_eoe_settings',['../group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407',1,'slave.h']]],
   ['ec_5fslave_5fset_5fstate_474',['ec_slave_set_state',['../group__slave__group.html#gade31717a7d8d528f538806c4e248a504',1,'slave.h']]],
   ['ec_5fslave_5fsm_475',['ec_slave_sm',['../structec__slave__sm.html',1,'']]],
