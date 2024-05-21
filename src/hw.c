@@ -135,7 +135,7 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
         } else 
 #endif
 #if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
-        if (strncmp(ifname, "pikeos:", 4) == 0) {
+        if (strncmp(ifname, "pikeos:", 7) == 0) {
             ifname = &ifname[7];
 
             ec_log(10, "HW_OPEN", "Opening interface as pikeos: %s\n", ifname);
