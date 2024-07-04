@@ -176,6 +176,9 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([clock_gettime memset socket strdup strerror strndup]) #pthread_setaffinity_np])
 
+AC_CHECK_LIB(m, sqrt, MATH_LIBS="-lm")
+AC_SUBST(MATH_LIBS)
+
 AC_CONFIG_FILES([Makefile src/Makefile tools/ethercatdiag/Makefile tools/eepromtool/Makefile tools/example_with_dc/Makefile tools/foe_tool/Makefile libethercat.pc])
 AC_OUTPUT
 

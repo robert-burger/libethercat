@@ -140,6 +140,8 @@ typedef struct hw {
 #endif
 
 #if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
+    osal_bool_t use_sbuf;
+
     vm_file_desc_t fd;                      //!< \brief Driver file descriptor.
     drv_sbuf_desc_t sbuf;                   //!< \brief Driver SBUF descriptor.
 #endif

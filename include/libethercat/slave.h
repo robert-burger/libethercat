@@ -529,7 +529,7 @@ void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd);
  */
 void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, 
         int use_dc, int type, osal_uint32_t cycle_time_0, 
-        osal_uint32_t cycle_time_1, osal_uint32_t cycle_shift);
+        osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
 
 //! Adds master EoE settings.
 /*!

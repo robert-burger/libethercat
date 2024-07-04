@@ -232,6 +232,9 @@ case $os in
 	-psos*)
 		os=-psos
 		;;
+    -pikeos*) 
+        basic_machine=`echo "$1" | sed -e 's/armv7.*/armv7/'`
+        ;;
 	-mint | -mint[0-9]*)
 		basic_machine=m68k-atari
 		os=-mint
