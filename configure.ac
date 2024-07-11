@@ -152,6 +152,28 @@ AM_CONDITIONAL([BUILD_DEVICE_BPF],             [ test x$BUILD_DEVICE_BPF = xtrue
 AM_CONDITIONAL([BUILD_DEVICE_FILE],            [ test x$BUILD_DEVICE_FILE = xtrue]) 
 AM_CONDITIONAL([BUILD_DEVICE_PIKEOS],          [ test x$BUILD_DEVICE_PIKEOS = xtrue]) 
 
+AC_ARG_ENABLE([mbx-support-eoe], AS_HELP_STRING([--disable-mbx-support-eoe], [Disable Mailbox EoE support.]),
+[
+    AC_DEFINE([MBX_SUPPORT_EOE], [0], [Disable Mailbox EoE support.])
+],
+[
+    MBX_SUPPORT_EOE=true
+    AC_DEFINE([MBX_SUPPORT_EOE], [1], [Enable Mailbox EoE support.])
+])
+
+AM_CONDITIONAL([MBX_SUPPORT_EOE], [ test x$MBX_SUPPORT_EOE == xtrue ])
+
+AC_ARG_ENABLE([mbx-support-soe], AS_HELP_STRING([--disable-mbx-support-soe], [Disable Mailbox SoE support.]),
+[
+    AC_DEFINE([MBX_SUPPORT_SOE], [0], [Enable Mailbox SoE support.])
+],
+[
+    MBX_SUPPORT_SOE=true
+    AC_DEFINE([MBX_SUPPORT_SOE], [1], [Enable Mailbox SoE support.])
+])
+
+AM_CONDITIONAL([MBX_SUPPORT_SOE], [ test x$MBX_SUPPORT_SOE == xtrue ])
+
 # Checks for libraries.
 PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
 

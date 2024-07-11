@@ -36,6 +36,8 @@ class MainProject(ConanFile):
         "hw_device_sock_raw_mmaped": [ True, False ],
         "hw_device_bpf": [ True, False ],
         "hw_device_pikeos": [ True, False ],
+        "mbx_support_eoe" : [ True, False ],
+        "mbx_support_soe" : [ True, False ],
     }
     default_options = {
         "shared": True, 
@@ -63,6 +65,8 @@ class MainProject(ConanFile):
         "hw_device_sock_raw_mmaped": True,
         "hw_device_bpf": False,
         "hw_device_pikeos": False,
+        "mbx_support_eoe": True,
+        "mbx_support_soe": True,
     }
 
     requires = [ "libosal/[>=0.0.3]@common/stable", ]
@@ -127,6 +131,10 @@ class MainProject(ConanFile):
             args.append("--enable-device-bpf")
         if self.options.hw_device_pikeos:
             args.append("--enable-device-pikeos")
+        if not self.options.mbx_support_eoe:
+            args.append("--disable-mbx-support-eoe")
+        if not self.options.mbx_support_soe:
+            args.append("--disable-mbx-support-soe")
 
         args.append("--with-max-slaves=%d" % (self.options.max_slaves))
         args.append("--with-max-groups=%d" % (self.options.max_groups))
