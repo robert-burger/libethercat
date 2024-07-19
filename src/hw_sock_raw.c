@@ -63,6 +63,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 // forward declarations
 int hw_device_sock_raw_send(hw_t *phw, ec_frame_t *pframe);
@@ -275,7 +276,7 @@ int hw_device_sock_raw_send(hw_t *phw, ec_frame_t *pframe) {
     osal_ssize_t bytestx = send(phw->sockfd, pframe, pframe->len, 0);
 
     if ((osal_ssize_t)pframe->len != bytestx) {
-        ec_log(1, "HW_TX", "got only %ld bytes out of %d bytes "
+        ec_log(1, "HW_TX", "got only %" PRId64 " bytes out of %d bytes "
                 "through.\n", bytestx, pframe->len);
 
         if (bytestx == -1) {
