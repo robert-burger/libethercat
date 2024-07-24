@@ -52,16 +52,23 @@ typedef struct hw_pikeos {
     
     osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
     osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    
+    // receiver thread 
+    osal_task_t rxthread;                   //!< receiver thread handle
+    int rxthreadrunning;                    //!< receiver thread running flag
 } hw_pikeos_t;
 
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
  * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
+ * \param[in]   prio        Priority for receiver thread.
+ * \param[in]   cpu_mask    CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname);
+int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname,
+        int prio, int cpumask);
 
 #endif // LIBETHERCAT_HW_PIKEOS_H
 

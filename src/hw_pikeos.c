@@ -66,14 +66,18 @@ int hw_device_pikeos_recv(struct hw_common *phw);
 void hw_device_pikeos_send_finished(struct hw_common *phw);
 int hw_device_pikeos_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 
+void *hw_device_pikeos_rx_thread(void *arg);
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
  * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
+ * \param[in]   prio        Priority for receiver thread.
+ * \param[in]   cpu_mask    CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname) {
+int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname, int prio, int cpumask) {
     assert(phw != NULL);
     assert(devname != NULL);
 
@@ -171,7 +175,40 @@ int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname) {
         ec_log(10, "HW_OPEN", "using vmread/vmwrite\n");
     }
 
+    if (ret == EC_OK) {
+        phw->rxthreadrunning = 1;
+        osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_FIFO;
+        attr.priority = prio;
+        attr.affinity = cpumask;
+        (void)strcpy(&attr.task_name[0], "ecat.rx");
+        osal_task_create(&phw->rxthread, &attr, hw_device_pikeos_rx_thread, phw);
+    }
+
     return ret;
+}
+
+//! receiver thread
+void *hw_device_pikeos_rx_thread(void *arg) {
+    // cppcheck-suppress misra-c2012-11.5
+    struct hw_pikeos *phw_pikeos = (struct hw_pikeos *) arg;
+
+    assert(phw_pikeos != NULL);
+    
+    osal_task_sched_priority_t rx_prio;
+    if (osal_task_get_priority(&phw_pikeos->rxthread, &rx_prio) != OSAL_OK) {
+        rx_prio = 0;
+    }
+
+    ec_log(10, "HW_PIKEOS_RX", "receive thread running (prio %d)\n", rx_prio);
+
+    while (phw_pikeos->rxthreadrunning != 0) {
+        hw_device_pikeos_recv(&phw_pikeos->common);
+    }
+    
+    ec_log(10, "HW_PIKEOS_RX", "receive thread stopped\n");
+    
+    return NULL;
 }
 
 

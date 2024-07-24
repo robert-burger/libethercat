@@ -52,8 +52,8 @@ typedef struct hw_file {
     osal_bool_t polling_mode;               //!< \brief Special interrupt-less polling-mode flag.
     
     // receiver thread settings in non-polling mode
-    osal_task_t rxthread;           //!< receiver thread handle
-    int rxthreadrunning;            //!< receiver thread running flag
+    osal_task_t rxthread;                   //!< receiver thread handle
+    int rxthreadrunning;                    //!< receiver thread running flag
 } hw_file_t;
 
 //! Opens EtherCAT hw device.
