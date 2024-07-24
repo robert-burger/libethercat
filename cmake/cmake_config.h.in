@@ -38,6 +38,9 @@
 /* Define to 1 if you have the <net/if.h> header file. */
 #cmakedefine LIBETHERCAT_HAVE_NET_IF_H ${LIBETHERCAT_HAVE_NET_IF_H}
 
+/* Define to 1 if you have the <netinet/in.h> header file. */
+#cmakedefine LIBETHERCAT_HAVE_NETINET_IN_H ${LIBETHERCAT_HAVE_NETINET_IN_H}
+
 /* Define if you have POSIX threads libraries and header files. */
 #cmakedefine LIBETHERCAT_HAVE_PTHREAD ${LIBETHERCAT_HAVE_PTHREAD}
 
