@@ -54,7 +54,7 @@
 #endif
 
 #define container_of(ptr, type, member) ({ \
-        const __typeof__( ((type *)0)->member ) *__mptr = (void *)(ptr); \
+        __typeof__( ((type *)0)->member ) *__mptr = (void *)(ptr); \
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
 /** \defgroup hardware_group HW
@@ -124,13 +124,6 @@ typedef struct hw_common {
     hw_device_send_t send;                      //!< \brief Function to send frames via device.
     hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
     hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
-
-#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
-    osal_bool_t use_sbuf;
-
-    vm_file_desc_t fd;                      //!< \brief Driver file descriptor.
-    drv_sbuf_desc_t sbuf;                   //!< \brief Driver SBUF descriptor.
-#endif
 } hw_common_t;                 //!< \brief Hardware struct type. 
 
 #ifdef __cplusplus

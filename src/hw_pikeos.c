@@ -61,10 +61,10 @@
 #include <drv/sbuf_common_svc.h>
 
 // forward declarations
-int hw_device_pikeos_send(hw_t *phw, ec_frame_t *pframe);
-int hw_device_pikeos_recv(hw_t *phw);
-void hw_device_pikeos_send_finished(hw_t *phw);
-int hw_device_pikeos_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
+int hw_device_pikeos_send(struct hw_common *phw, ec_frame_t *pframe);
+int hw_device_pikeos_recv(struct hw_common *phw);
+void hw_device_pikeos_send_finished(struct hw_common *phw);
+int hw_device_pikeos_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 
 //! Opens EtherCAT hw device.
 /*!
@@ -73,7 +73,7 @@ int hw_device_pikeos_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
+int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname) {
     assert(phw != NULL);
     assert(devname != NULL);
 
@@ -83,11 +83,12 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
     P4_e_t local_retval;
     P4_address_t vaddr;
 
-    phw->send = hw_device_pikeos_send;
-    phw->recv = hw_device_pikeos_recv;
-    phw->send_finished = hw_device_pikeos_send_finished;
-    phw->get_tx_buffer = hw_device_pikeos_get_tx_buffer;
-    phw->use_sbuf = OSAL_TRUE;
+    phw->common.send            = hw_device_pikeos_send;
+    phw->common.recv            = hw_device_pikeos_recv;
+    phw->common.send_finished   = hw_device_pikeos_send_finished;
+    phw->common.get_tx_buffer   = hw_device_pikeos_get_tx_buffer;
+    phw->common.mtu_size        = 1480;
+    phw->use_sbuf               = OSAL_TRUE;
 
     char *tmp;
     if ((tmp = strchr(devname, '/')) != NULL) {
@@ -170,8 +171,6 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
         ec_log(10, "HW_OPEN", "using vmread/vmwrite\n");
     }
 
-    phw->mtu_size = 1480;
-
     return ret;
 }
 
@@ -182,22 +181,24 @@ int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname) {
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_recv(hw_t *phw) {
+int hw_device_pikeos_recv(struct hw_common *phw) {
     assert(phw != NULL);
+    
+    struct hw_pikeos *phw_pikeos = container_of(phw, struct hw_pikeos, common);
 
     int ret = EC_OK;
     ec_frame_t *pframe = NULL;
 
-    if (phw->use_sbuf == OSAL_TRUE) {
+    if (phw_pikeos->use_sbuf == OSAL_TRUE) {
         // get a full rxbuffer from RX ring (dontwait=0 -> WAITING)
-        vm_io_buf_id_t rxbuf = vm_io_sbuf_rx_get(&phw->sbuf, 0);
+        vm_io_buf_id_t rxbuf = vm_io_sbuf_rx_get(&phw_pikeos->sbuf, 0);
         if (rxbuf == VM_IO_BUF_ID_INVALID) {
             p4_sleep(P4_NSEC(1000000));
             ret = EC_ERROR_UNAVAILABLE;
         }
 
         if (ret == EC_OK) {
-            pframe = (ec_frame_t *)vm_io_sbuf_rx_buf_addr(&phw->sbuf, rxbuf);
+            pframe = (ec_frame_t *)vm_io_sbuf_rx_buf_addr(&phw_pikeos->sbuf, rxbuf);
 
             if (pframe == NULL) {
                 ret = EC_ERROR_UNAVAILABLE;
@@ -205,17 +206,17 @@ int hw_device_pikeos_recv(hw_t *phw) {
         }
 
         if (ret == EC_OK) {
-            int32_t bytesrx = vm_io_sbuf_rx_buf_size(&phw->sbuf, rxbuf);
+            int32_t bytesrx = vm_io_sbuf_rx_buf_size(&phw_pikeos->sbuf, rxbuf);
             if (bytesrx > 0) {
                 hw_process_rx_frame(phw, pframe);
             }
 
-            vm_io_sbuf_rx_free(&phw->sbuf, rxbuf);
+            vm_io_sbuf_rx_free(&phw_pikeos->sbuf, rxbuf);
         }
     } else { /* use_sbuf == OSAL_FALSE */
-        pframe = (ec_frame_t *)&phw->recv_frame[0];
+        pframe = (ec_frame_t *)&phw_pikeos->recv_frame[0];
         P4_size_t read_size;
-        P4_e_t localret = vm_read(&phw->fd, pframe, ETH_FRAME_LEN, &read_size);
+        P4_e_t localret = vm_read(&phw_pikeos->fd, pframe, ETH_FRAME_LEN, &read_size);
 
         if (localret != P4_E_OK) {
             ret = EC_ERROR_UNAVAILABLE;
@@ -236,9 +237,11 @@ int hw_device_pikeos_recv(hw_t *phw) {
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
+int hw_device_pikeos_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) {
     assert(phw != NULL);
     assert(ppframe != NULL);
+
+    struct hw_pikeos *phw_pikeos = container_of(phw, struct hw_pikeos, common);
 
     int ret = EC_ERROR_UNAVAILABLE;
     ec_frame_t *pframe = NULL;
@@ -247,7 +250,7 @@ int hw_device_pikeos_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
     static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
     // cppcheck-suppress misra-c2012-11.3
-    pframe = (ec_frame_t *)phw->send_frame;
+    pframe = (ec_frame_t *)phw_pikeos->send_frame;
 
     // reset length to send new frame
     (void)memcpy(pframe->mac_dest, mac_dest, 6);
@@ -268,22 +271,24 @@ int hw_device_pikeos_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_send(hw_t *phw, ec_frame_t *pframe) {
+int hw_device_pikeos_send(struct hw_common *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
+
+    struct hw_pikeos *phw_pikeos = container_of(phw, struct hw_pikeos, common);
 
     int ret = EC_OK;
     void* txbuf = NULL;
 
-    if (phw->use_sbuf == OSAL_TRUE) {
+    if (phw_pikeos->use_sbuf == OSAL_TRUE) {
         // get an empty tx buffer from TX ring (dontwait)
-        vm_io_buf_id_t sbuftx = vm_io_sbuf_tx_alloc(&phw->sbuf, 1);
+        vm_io_buf_id_t sbuftx = vm_io_sbuf_tx_alloc(&phw_pikeos->sbuf, 1);
         if (sbuftx == VM_IO_BUF_ID_INVALID) {
             ret = EC_ERROR_UNAVAILABLE;
         }
 
         if (ret == EC_OK) {
-            txbuf = (void*)vm_io_sbuf_tx_buf_addr(&phw->sbuf, sbuftx);
+            txbuf = (void*)vm_io_sbuf_tx_buf_addr(&phw_pikeos->sbuf, sbuftx);
 
             if (txbuf == NULL) {
                 ret = EC_ERROR_UNAVAILABLE;
@@ -292,11 +297,11 @@ int hw_device_pikeos_send(hw_t *phw, ec_frame_t *pframe) {
 
         if (ret == EC_OK) {
             (void)memcpy(txbuf, pframe, pframe->len);
-            vm_io_sbuf_tx_ready(&phw->sbuf, sbuftx, pframe->len);
+            vm_io_sbuf_tx_ready(&phw_pikeos->sbuf, sbuftx, pframe->len);
         }
     } else { /* use_sbuf == OSAL_FALSE */
         P4_size_t written_size;
-        P4_e_t localret = vm_write(&phw->fd, pframe, pframe->len, &written_size);
+        P4_e_t localret = vm_write(&phw_pikeos->fd, pframe, pframe->len, &written_size);
 
         if (localret != P4_E_OK) {
             ret = EC_ERROR_UNAVAILABLE;
@@ -311,7 +316,7 @@ int hw_device_pikeos_send(hw_t *phw, ec_frame_t *pframe) {
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-void hw_device_pikeos_send_finished(hw_t *phw) {
+void hw_device_pikeos_send_finished(struct hw_common *phw) {
     (void)phw;
 }
 

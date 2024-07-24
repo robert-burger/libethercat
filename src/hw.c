@@ -133,7 +133,7 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
                     (*entry->user_cb)(phw->pec, entry, d);
                 }
             }
-                
+
             d = ec_datagram_next(d);
         }
     }
