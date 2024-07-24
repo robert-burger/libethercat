@@ -141,7 +141,8 @@ CMake</h3>
 <div class="fragment"><div class="line">mkdir build</div>
 <div class="line">cd build</div>
 <div class="line"># Please change the path to the install dir. If you chose a global install you can omit the CMAKE_PREFIX_PATH option</div>
-<div class="line">cmake .. -DCMAKE_PREFIX_PATH=&lt;installdir of libosal&gt;</div>
+<div class="line"># You can specify which EtherCAT devices should be included into the build with -DECAT_DEVICE=&quot;sock_raw;sock_raw_mmaped;...&quot;</div>
+<div class="line">cmake .. -DCMAKE_PREFIX_PATH=&lt;installdir of libosal&gt; -DECAT_DEVICE=&quot;sock_raw;sock_raw_mmaped&quot;</div>
 <div class="line">cmake --build . </div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md7"></a>
 Tools</h2>
