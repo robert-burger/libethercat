@@ -123,44 +123,41 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
 
         ec_log(10, "HW_OPEN", "Opening interface as device file: %s\n", ifname);
         ret = hw_device_file_open(phw, ifname);
-    } else 
+    }
 #endif
-    {
 #if LIBETHERCAT_BUILD_DEVICE_BPF == 1
-        if (strncmp(ifname, "bpf:", 4) == 0) {
-            ifname = &ifname[4];
+    if (strncmp(ifname, "bpf:", 4) == 0) {
+        ifname = &ifname[4];
 
-            ec_log(10, "HW_OPEN", "Opening interface as BPF: %s\n", ifname);
-            ret = hw_device_bpf_open(phw, ifname);
-        } else 
+        ec_log(10, "HW_OPEN", "Opening interface as BPF: %s\n", ifname);
+        ret = hw_device_bpf_open(phw, ifname);
+    }
 #endif
 #if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
-        if (strncmp(ifname, "pikeos:", 4) == 0) {
-            ifname = &ifname[7];
+    if (strncmp(ifname, "pikeos:", 4) == 0) {
+        ifname = &ifname[4];
 
-            ec_log(10, "HW_OPEN", "Opening interface as pikeos: %s\n", ifname);
-            ret = hw_device_pikeos_open(phw, ifname);
-        } else 
+        ec_log(10, "HW_OPEN", "Opening interface as pikeos: %s\n", ifname);
+        ret = hw_device_pikeos_open(phw, ifname);
+    }
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
+    if (strncmp(ifname, "sock-raw:", 9) == 0) {
+        ifname = &ifname[9];
+        
+        ec_log(10, "HW_OPEN", "Opening interface as SOCK_RAW: %s\n", ifname);
+        ret = hw_device_sock_raw_open(phw, ifname);
+    }
 #endif
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
-        if (strncmp(ifname, "sock-raw-mmaped:", 16) == 0) {
-            ifname = &ifname[16];
+    if (strncmp(ifname, "sock-raw-mmaped:", 16) == 0) {
+        ifname = &ifname[16];
 
-            ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", ifname);
-            ret = hw_device_sock_raw_mmaped_open(phw, ifname);
-        } else 
-#endif
-        {
-#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
-            if (strncmp(ifname, "sock-raw:", 9) == 0) {
-                ifname = &ifname[9];
-            }
-
-            ec_log(10, "HW_OPEN", "Opening interface as SOCK_RAW: %s\n", ifname);
-            ret = hw_device_sock_raw_open(phw, ifname);
-#endif
-        }
+        ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", ifname);
+        ret = hw_device_sock_raw_mmaped_open(phw, ifname);
     }
+#endif
+
 
     if (ret == EC_OK) {
         phw->rxthreadrunning = 1;
