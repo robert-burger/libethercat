@@ -19,6 +19,7 @@
 
 #include <stdarg.h>
 
+#include "libethercat/hw_file.h"
 #include "libethercat/ec.h"
 #include "libethercat/mii.h"
 
@@ -133,10 +134,12 @@ enum tool_mode {
 };
 
 ec_t ec;
+struct hw_file hw_file;
 
 int main(int argc, char **argv) {
     int ret, slave, i, phy = 0;
 
+    struct hw_common *phw;
     char *intf = NULL, *fn = NULL;
     int show_propagation_delays = 0;
     
@@ -194,8 +197,9 @@ int main(int argc, char **argv) {
     ec_log_func_user = NULL;
     ec_log_func = &no_verbose_log;
             
-
-    ret = ec_open(&ec, intf, 90, 1, 1);
+    hw_device_file_open(&hw_file, &ec, intf, 90, 1);    
+    phw = &hw_file.common;
+    ret = ec_open(&ec, phw, 1);
 
 
     if (show_propagation_delays)

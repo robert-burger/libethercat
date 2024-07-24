@@ -10,6 +10,7 @@
 #include <libethercat/config.h>
 #include <libethercat/ec.h>
 #include <libethercat/error_codes.h>
+#include <libethercat/hw_file.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -67,6 +68,7 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 };
 
 static ec_t ec;
+static struct hw_file hw_file;
 static osal_uint64_t cycle_rate = 1000000;
 static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
@@ -96,7 +98,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         ec_send_process_data(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
-        hw_tx(&pec->hw);
+        hw_tx(pec->phw);
 
         osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
     }
@@ -200,7 +202,9 @@ int main(int argc, char **argv) {
     ec_log_func_user = NULL;
     ec_log_func = &no_verbose_log;
             
-    ret = ec_open(&ec, intf, base_prio - 1, base_affinity, 1);
+    hw_device_file_open(&hw_file, &ec, intf, base_prio - 1, base_affinity);
+    struct hw_common *phw = &hw_file.common;
+    ret = ec_open(&ec, phw, 1);
     if (ret != EC_OK) {
         goto exit;
     }
@@ -292,7 +296,7 @@ int main(int argc, char **argv) {
                 "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
-                ec.hw.bytes_last_sent, (10 * 8 * ec.hw.bytes_last_sent) / 1000.,
+                ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
                 to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
                 to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
                 to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));

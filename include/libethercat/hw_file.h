@@ -42,14 +42,30 @@
 
 #include <libethercat/hw.h>
 
+typedef struct hw_file {
+    struct hw_common common;
+    
+    int fd;                                 //!< \brief file descriptor
+
+    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    osal_bool_t polling_mode;               //!< \brief Special interrupt-less polling-mode flag.
+    
+    // receiver thread settings in non-polling mode
+    osal_task_t rxthread;           //!< receiver thread handle
+    int rxthreadrunning;            //!< receiver thread running flag
+} hw_file_t;
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
  * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
+ * \param[in]   prio        Priority for receiver thread.
+ * \param[in]   cpu_mask    CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_file_open(hw_t *phw, const osal_char_t *devname);
+int hw_device_file_open(struct hw_file *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpu_mask);
 
 #endif // LIBETHERCAT_HW_FILE_H
 

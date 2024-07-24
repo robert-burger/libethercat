@@ -177,7 +177,7 @@ typedef struct ec_pd_group {
 
 //! ethercat master structure
 typedef struct ec {
-    hw_t hw;                        //!< pointer to hardware interface
+    struct hw_common *phw;          //!< pointer to hardware interface
 
     pool_entry_t dg_entries[LEC_MAX_DATAGRAMS]; //!< static datagrams for datagram pool.
     pool_t pool;                    //!< datagram pool
@@ -266,13 +266,11 @@ void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) __a
  * a initial scan of the bus.
  *
  * \param[out] pec          Ethercat master instance pointer.
- * \param[in]  ifname       Ethercat master interface name.
- * \param[in]  prio         Receive thread priority.
- * \param[in]  cpumask      Receive thread cpumask.
+ * \param[in]  phw          Ethercat master network device access.
  * \param[in]  eeprom_log   Log eeprom to stdout.
  * \return 0 on succes, otherwise error code
  */
-int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eeprom_log);
+int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log);
 
 //! \brief Closes ethercat master.
 /*!

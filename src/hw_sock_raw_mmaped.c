@@ -38,7 +38,7 @@
  */
 
 #include <libethercat/config.h>
-#include <libethercat/hw.h>
+#include <libethercat/hw_sock_raw_mmaped.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
 #include <libethercat/error_codes.h>
@@ -65,10 +65,10 @@
 #include <errno.h>
 
 // forward declarations
-int hw_device_sock_raw_mmaped_send(hw_t *phw, ec_frame_t *pframe);
-int hw_device_sock_raw_mmaped_recv(hw_t *phw);
-void hw_device_sock_raw_mmaped_send_finished(hw_t *phw);
-int hw_device_sock_raw_mmaped_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
+int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe);
+int hw_device_sock_raw_mmaped_recv(struct hw_common *phw);
+void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw);
+int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 
 // this need the grant_cap_net_raw kernel module 
 // see https://gitlab.com/fastflo/open_ethercat
@@ -105,7 +105,7 @@ static int try_grant_cap_net_raw_init(void) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
+int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname) {
     int ret = EC_OK;
     struct ifreq ifr;
     int ifindex;
@@ -115,19 +115,19 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
                 "not allowed to open a raw socket\n");
     }
     
-    phw->send = hw_device_sock_raw_mmaped_send;
-    phw->recv = hw_device_sock_raw_mmaped_recv;
-    phw->send_finished = hw_device_sock_raw_mmaped_send_finished;
-    phw->get_tx_buffer = hw_device_sock_raw_mmaped_get_tx_buffer;
+    phw_sock_raw_mmaped->common.send = hw_device_sock_raw_mmaped_send;
+    phw_sock_raw_mmaped->common.recv = hw_device_sock_raw_mmaped_recv;
+    phw_sock_raw_mmaped->common.send_finished = hw_device_sock_raw_mmaped_send_finished;
+    phw_sock_raw_mmaped->common.get_tx_buffer = hw_device_sock_raw_mmaped_get_tx_buffer;
 
     // create raw socket connection
-    phw->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
-    if (phw->sockfd <= 0) {
+    phw_sock_raw_mmaped->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
+    if (phw_sock_raw_mmaped->sockfd <= 0) {
         ec_log(1, "HW_OPEN", "socket error on opening SOCK_RAW: %s\n", strerror(errno));
         ret = EC_ERROR_UNAVAILABLE;
     }
 
-    phw->mmap_packets = 100;
+    phw_sock_raw_mmaped->mmap_packets = 100;
 
     if (ret == EC_OK) {
         int pagesize = getpagesize();
@@ -136,25 +136,25 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
         struct tpacket_req tp;
 
         // tell kernel to export data through mmap()ped ring
-        tp.tp_block_size = phw->mmap_packets * pagesize;
+        tp.tp_block_size = phw_sock_raw_mmaped->mmap_packets * pagesize;
         tp.tp_block_nr   = 1;
         tp.tp_frame_size = pagesize;
-        tp.tp_frame_nr   = phw->mmap_packets;
-        if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_RX_RING, (void*)&tp, sizeof(tp)) != 0) {
+        tp.tp_frame_nr   = phw_sock_raw_mmaped->mmap_packets;
+        if (setsockopt(phw_sock_raw_mmaped->sockfd, SOL_PACKET, PACKET_RX_RING, (void*)&tp, sizeof(tp)) != 0) {
             ec_log(1, "HW_OPEN", "setsockopt() rx ring: %s\n", strerror(errno));
             ret = EC_ERROR_UNAVAILABLE;
-        } else if (setsockopt(phw->sockfd, SOL_PACKET, PACKET_TX_RING, (void*)&tp, sizeof(tp)) != 0) {
+        } else if (setsockopt(phw_sock_raw_mmaped->sockfd, SOL_PACKET, PACKET_TX_RING, (void*)&tp, sizeof(tp)) != 0) {
             ec_log(1, "HW_OPEN", "setsockopt() tx ring: %s\n", strerror(errno));
             ret = EC_ERROR_UNAVAILABLE;
         } else {}
 
         if (ret == EC_OK) {
             // TODO unmap anywhere
-            phw->rx_ring = mmap(0, phw->mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, MAP_SHARED, phw->sockfd, 0);
-            phw->tx_ring = &phw->rx_ring[(phw->mmap_packets * pagesize)];
+            phw_sock_raw_mmaped->rx_ring = mmap(0, phw_sock_raw_mmaped->mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, MAP_SHARED, phw_sock_raw_mmaped->sockfd, 0);
+            phw_sock_raw_mmaped->tx_ring = &phw_sock_raw_mmaped->rx_ring[(phw_sock_raw_mmaped->mmap_packets * pagesize)];
 
-            phw->rx_ring_offset = 0;
-            phw->tx_ring_offset = 0;
+            phw_sock_raw_mmaped->rx_ring_offset = 0;
+            phw_sock_raw_mmaped->tx_ring_offset = 0;
         }
     }
 
@@ -165,24 +165,24 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
         struct timeval timeout;
         timeout.tv_sec = 0;
         timeout.tv_usec = 1;
-        setsockopt(phw->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-        setsockopt(phw->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+        setsockopt(phw_sock_raw_mmaped->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        setsockopt(phw_sock_raw_mmaped->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 
         // do not route our frames
         i = 1;
-        setsockopt(phw->sockfd, SOL_SOCKET, SO_DONTROUTE, &i, sizeof(i));
+        setsockopt(phw_sock_raw_mmaped->sockfd, SOL_SOCKET, SO_DONTROUTE, &i, sizeof(i));
 
         // attach to out network interface
         (void)strcpy(ifr.ifr_name, devname);
-        ioctl(phw->sockfd, SIOCGIFINDEX, &ifr);
+        ioctl(phw_sock_raw_mmaped->sockfd, SIOCGIFINDEX, &ifr);
         ifindex = ifr.ifr_ifindex;
         (void)strcpy(ifr.ifr_name, devname);
         ifr.ifr_flags = 0;
-        ioctl(phw->sockfd, SIOCGIFFLAGS, &ifr);
+        ioctl(phw_sock_raw_mmaped->sockfd, SIOCGIFFLAGS, &ifr);
 
         osal_bool_t iff_running = (ifr.ifr_flags & IFF_RUNNING) == 0 ? OSAL_FALSE : OSAL_TRUE;
         ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
-        /*int ret =*/ ioctl(phw->sockfd, SIOCSIFFLAGS, &ifr);
+        /*int ret =*/ ioctl(phw_sock_raw_mmaped->sockfd, SIOCSIFFLAGS, &ifr);
         //    if (ret != 0) {
         //        ec_log(1, "HW_OPEN", "error setting interface %s: %s\n", devname, strerror(errno));
         //        goto error_exit;
@@ -191,7 +191,7 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
         osal_timer_t up_timeout;
         osal_timer_init(&up_timeout, 10000000000);
         while (iff_running == OSAL_FALSE) {
-            ioctl(phw->sockfd, SIOCGIFFLAGS, &ifr);
+            ioctl(phw_sock_raw_mmaped->sockfd, SIOCGIFFLAGS, &ifr);
             iff_running = (ifr.ifr_flags & IFF_RUNNING) == 0 ? OSAL_FALSE : OSAL_TRUE;
             if (iff_running == OSAL_TRUE) {
                 ec_log(10, "HW_OPEN", "interface %s is RUNNING now, wait additional 2 sec for link to be established!\n", devname);
@@ -210,8 +210,8 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
         if (iff_running == OSAL_FALSE) {
             ec_log(1, "HW_OPEN", "unable to bring interface %s UP!\n", devname);
             ret = EC_ERROR_UNAVAILABLE;
-            close(phw->sockfd);
-            phw->sockfd = 0;
+            close(phw_sock_raw_mmaped->sockfd);
+            phw_sock_raw_mmaped->sockfd = 0;
         }
     }
 
@@ -220,9 +220,9 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
 
         (void)memset(&ifr, 0, sizeof(ifr));
         (void)strncpy(ifr.ifr_name, devname, IFNAMSIZ);
-        ioctl(phw->sockfd, SIOCGIFMTU, &ifr);
-        phw->mtu_size = ifr.ifr_mtu;
-        ec_log(10, "hw_open", "got mtu size %d\n", phw->mtu_size);
+        ioctl(phw_sock_raw_mmaped->sockfd, SIOCGIFMTU, &ifr);
+        phw_sock_raw_mmaped->common.mtu_size = ifr.ifr_mtu;
+        ec_log(10, "hw_open", "got mtu size %d\n", phw_sock_raw_mmaped->common.mtu_size);
 
         // bind socket to protocol, in this case RAW EtherCAT */
         struct sockaddr_ll sll;
@@ -230,7 +230,7 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
         sll.sll_family = AF_PACKET;
         sll.sll_ifindex = ifindex;
         sll.sll_protocol = htons(ETH_P_ECAT);
-        bind(phw->sockfd, (struct sockaddr *) &sll, sizeof(sll));
+        bind(phw_sock_raw_mmaped->sockfd, (struct sockaddr *) &sll, sizeof(sll));
     }
 
     return ret;
@@ -243,11 +243,15 @@ int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_recv(hw_t *phw) {
+int hw_device_sock_raw_mmaped_recv(struct hw_common *phw) {
+    assert(phw != NULL);
+
+    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
+
     // using kernel mapped receive buffers
     // wait for received, non-processed packet
     struct pollfd pollset;
-    pollset.fd = phw->sockfd;
+    pollset.fd = phw_sock_raw_mmaped->sockfd;
     pollset.events = POLLIN;
     pollset.revents = 0;
     int ret = poll(&pollset, 1, 1);
@@ -257,40 +261,42 @@ int hw_device_sock_raw_mmaped_recv(hw_t *phw) {
         struct tpacket_hdr *header;
         for (
                 // cppcheck-suppress misra-c2012-11.3
-                header = (struct tpacket_hdr *)(&phw->rx_ring[(phw->rx_ring_offset * pagesize)]);
+                header = (struct tpacket_hdr *)(&phw_sock_raw_mmaped->rx_ring[(phw_sock_raw_mmaped->rx_ring_offset * pagesize)]);
                 header->tp_status & TP_STATUS_USER; 
                 // cppcheck-suppress misra-c2012-11.3
-                header = (struct tpacket_hdr *)(&phw->rx_ring[(phw->rx_ring_offset * pagesize)])) 
+                header = (struct tpacket_hdr *)(&phw_sock_raw_mmaped->rx_ring[(phw_sock_raw_mmaped->rx_ring_offset * pagesize)])) 
         {
             // cppcheck-suppress misra-c2012-11.3
             ec_frame_t *real_frame = (ec_frame_t *)(&((osal_char_t *)header)[header->tp_mac]);
             hw_process_rx_frame(phw, real_frame);
 
             header->tp_status = 0;
-            phw->rx_ring_offset = (phw->rx_ring_offset + 1) % phw->mmap_packets;
+            phw_sock_raw_mmaped->rx_ring_offset = (phw_sock_raw_mmaped->rx_ring_offset + 1) % phw_sock_raw_mmaped->mmap_packets;
         }           
     }
 
     return EC_OK;
 }
 
-static struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
+static struct tpacket_hdr *hw_get_next_tx_buffer(struct hw_common *phw) {
     struct tpacket_hdr *header;
     struct pollfd pollset;
 
     assert(phw != NULL);
+    
+    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
 
     // cppcheck-suppress misra-c2012-11.3
-    header = (struct tpacket_hdr *)(&phw->tx_ring[(phw->tx_ring_offset * getpagesize())]);
+    header = (struct tpacket_hdr *)(&phw_sock_raw_mmaped->tx_ring[(phw_sock_raw_mmaped->tx_ring_offset * getpagesize())]);
 
     while (header->tp_status != TP_STATUS_AVAILABLE) {
         // notify kernel
-        if (send(phw->sockfd, NULL, 0, 0) < 0) {
+        if (send(phw_sock_raw_mmaped->sockfd, NULL, 0, 0) < 0) {
             ec_log(1, "HW_TX", "error on send: %s\n", strerror(errno));
         }
 
         // buffer not available, wait here...
-        pollset.fd = phw->sockfd;
+        pollset.fd = phw_sock_raw_mmaped->sockfd;
         pollset.events = POLLOUT;
         pollset.revents = 0;
         int ret = poll(&pollset, 1, 1000);
@@ -310,7 +316,7 @@ static struct tpacket_hdr *hw_get_next_tx_buffer(hw_t *phw) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
+int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) {
     assert(phw != NULL);
     assert(ppframe != NULL);
 
@@ -344,11 +350,12 @@ int hw_device_sock_raw_mmaped_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_send(hw_t *phw, ec_frame_t *pframe) {
+int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
 
     int ret = EC_OK;
+    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
 
     // fill header
     struct tpacket_hdr *header = NULL;
@@ -357,13 +364,13 @@ int hw_device_sock_raw_mmaped_send(hw_t *phw, ec_frame_t *pframe) {
     header->tp_status = TP_STATUS_SEND_REQUEST;
 
     // notify kernel
-    if (send(phw->sockfd, NULL, 0, 0) < 0) {
+    if (send(phw_sock_raw_mmaped->sockfd, NULL, 0, 0) < 0) {
         ec_log(1, "HW_TX", "error on sendto: %s\n", strerror(errno));
         ret = EC_ERROR_HW_SEND;
     }
 
     // increase consumer ring pointer
-    phw->tx_ring_offset = (phw->tx_ring_offset + 1) % phw->mmap_packets;
+    phw_sock_raw_mmaped->tx_ring_offset = (phw_sock_raw_mmaped->tx_ring_offset + 1) % phw_sock_raw_mmaped->mmap_packets;
 
     return ret;
 }
@@ -372,7 +379,7 @@ int hw_device_sock_raw_mmaped_send(hw_t *phw, ec_frame_t *pframe) {
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-void hw_device_sock_raw_mmaped_send_finished(hw_t *phw) {
+void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw) {
 }
 
 

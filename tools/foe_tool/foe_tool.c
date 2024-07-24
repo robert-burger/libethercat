@@ -22,6 +22,7 @@
 
 #include "libethercat/ec.h"
 #include "libethercat/mii.h"
+#include "libethercat/hw_file.h"
 
 void no_log(int lvl, void *user, const char *format, ...) 
 {};
@@ -75,6 +76,7 @@ enum tool_mode {
     mode_write, 
 };
     
+struct hw_file hw_file;
 ec_t ec;
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,8 +131,9 @@ int main(int argc, char **argv) {
     ec_log_func_user = NULL;
     ec_log_func = &no_verbose_log;
             
-
-    ret = ec_open(&ec, intf, 90, 1, 1);
+    hw_device_file_open(&hw_file, &ec, intf, 90, 1);
+    struct hw_common *phw = &hw_file.common;
+    ret = ec_open(&ec, phw, 1);
 
     ec_set_state(&ec, EC_STATE_INIT);
     ec_set_state(&ec, EC_STATE_BOOT);

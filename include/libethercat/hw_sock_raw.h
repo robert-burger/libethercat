@@ -41,15 +41,33 @@
 #define LIBETHERCAT_HW_SOCK_RAW_H
 
 #include <libethercat/hw.h>
+#include <libethercat/ec.h>
+#include <libosal/task.h>
+
+typedef struct hw_sock_raw {
+    struct hw_common common;
+
+    int sockfd;                     //!< raw socket file descriptor
+    
+    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+
+    // receiver thread settings
+    osal_task_t rxthread;           //!< receiver thread handle
+    int rxthreadrunning;            //!< receiver thread running flag
+} hw_sock_raw_t;
 
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   pec                 Pointer to master structure.
  * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
+ * \param[in]   prio        Priority for receiver thread.
+ * \param[in]   cpu_mask    CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_open(hw_t *phw, const osal_char_t *devname);
+int hw_device_sock_raw_open(struct hw_sock_raw *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpu_mask);
 
 #endif // LIBETHERCAT_HW_SOCK_RAW_H
 

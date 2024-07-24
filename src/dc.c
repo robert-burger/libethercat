@@ -94,10 +94,10 @@ static inline osal_uint64_t get_packet_duration(ec_t *pec) {
                 } &anon_cb; });
 
         // queue frame and trigger tx
-        pool_put(&pec->hw.tx_high, p_entry);
+        pool_put(&pec->phw->tx_high, p_entry);
 
         osal_uint64_t start = osal_timer_gettime_nsec();
-        hw_tx(&pec->hw);
+        hw_tx(pec->phw);
         
         // wait for completion
         osal_timer_t to;
