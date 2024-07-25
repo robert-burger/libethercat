@@ -4,7 +4,8 @@ string(REGEX MATCH "VERSION = ([0-9]*.[0-9]*.[0-9]*)" _ ${PROJECT_PROPERTIES})
 set(PROJECT_VERSION ${CMAKE_MATCH_1})
 project(libethercat VERSION ${PROJECT_VERSION})
 
-set(ECAT_DEVICE "sock_raw" CACHE STRING "EtherCAT device layer as `;` separated list")
+set(ECAT_DEVICE "sock_raw" CACHE STRING "EtherCAT device layer as `+` separated list")
+string(REPLACE "+" ";" ECAT_DEVICE ${ECAT_DEVICE})
 
 include(CheckIncludeFiles)
 include(CheckSymbolExists)
