@@ -150,12 +150,17 @@ int main(int argc, char **argv) {
         ec_foe_read(&ec, slave, password, first_fn, &string, &fsize, &err);
 
         if (string != NULL) {        
-            if (strcmp(second_fn, ".") == 0) { second_fn = first_fn; }
-            FILE *f = fopen(second_fn, "wb");
-            fwrite(string, fsize, 1, f);
-            fclose(f);
+            if (second_fn == NULL) {
+                write(1, string, fsize);
+                write(1, "\n", 1);
+            } else {
+                if (strcmp(second_fn, ".") == 0) { second_fn = first_fn; }
+                FILE *f = fopen(second_fn, "wb");
+                fwrite(string, fsize, 1, f);
+                fclose(f);
 
-            free(string);
+                free(string);
+            }
         } else {
             printf("file read was not successfull: data %p, fsize %" PRIu64 ", err %s\n", string, fsize, err);
         }
