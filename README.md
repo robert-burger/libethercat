@@ -68,7 +68,8 @@ This will build and install a static as well as a dynamic library. For use in ot
 mkdir build
 cd build
 # Please change the path to the install dir. If you chose a global install you can omit the CMAKE_PREFIX_PATH option
-cmake .. -DCMAKE_PREFIX_PATH=<installdir of libosal>
+# You can specify which EtherCAT devices should be included into the build with -DECAT_DEVICE="sock_raw;sock_raw_mmaped;..."
+cmake .. -DCMAKE_PREFIX_PATH=<installdir of libosal> -DECAT_DEVICE="sock_raw;sock_raw_mmaped"
 cmake --build . 
 ```
 
