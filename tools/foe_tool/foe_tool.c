@@ -115,6 +115,9 @@ int main(int argc, char **argv) {
         } else if ((strcmp(argv[i], "-v") == 0) || 
                 (strcmp(argv[i], "--verbose") == 0)) {
             max_print_level = 100;
+        } else if ((strcmp(argv[i], "-q") == 0) || 
+                (strcmp(argv[i], "--quiet") == 0)) {
+            max_print_level = 1;
         } else if ((argv[i][0] != '-') && (first_fn == NULL)) {
             first_fn = argv[i];
         } else if ((argv[i][0] != '-') && (second_fn == NULL)) {
