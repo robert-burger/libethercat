@@ -1,5 +1,6 @@
 var NAVTREEINDEX5 =
 {
+"structec__mbx.html#a3d804026f2cb51d4816b546c0f90737f":[1,8,2,14],
 "structec__mbx.html#a3f0dae6b4fce4e3cedfc011e88ad0e4b":[1,8,2,15],
 "structec__mbx.html#a44e68fedeccc3e4eaa3fda20210b975a":[1,8,2,7],
 "structec__mbx.html#a45bef8969295cca85c1c48065499ffde":[1,8,2,6],

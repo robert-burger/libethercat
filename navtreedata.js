@@ -31,13 +31,15 @@ var NAVTREE =
         [ "Usage", "index.html#autotoc_md3", null ],
         [ "Build from source", "index.html#autotoc_md4", [
           [ "Prerequisites", "index.html#autotoc_md5", null ],
-          [ "CMake", "index.html#autotoc_md6", null ]
+          [ "CMake", "index.html#autotoc_md6", [
+            [ "Configuration parameters", "index.html#autotoc_md7", null ]
+          ] ]
         ] ],
-        [ "Tools", "index.html#autotoc_md7", [
-          [ "eepromtool", "index.html#autotoc_md8", [
-            [ "read eeprom", "index.html#autotoc_md9", null ],
-            [ "write", "index.html#autotoc_md10", null ],
-            [ "example_with_dc", "index.html#autotoc_md11", null ]
+        [ "Tools", "index.html#autotoc_md8", [
+          [ "eepromtool", "index.html#autotoc_md9", [
+            [ "read eeprom", "index.html#autotoc_md10", null ],
+            [ "write", "index.html#autotoc_md11", null ],
+            [ "example_with_dc", "index.html#autotoc_md12", null ]
           ] ]
         ] ]
       ] ]
@@ -73,7 +75,7 @@ var NAVTREEINDEX =
 "group__eoe__group.html#gabe65f70df3152e78d9c8d01da1e47be2",
 "group__mailbox__group.html#gga0411cd49bb5b71852cecd93bcbf0ca2da65431b914da28c4715ecf76cdd17c032",
 "group__soe__group.html#gga513359a2f3fcda3cd0ed19a2f2afea18ab303a5c12d40c306cc8c82bc5ef6be9a",
-"structec__mbx.html#a3f0dae6b4fce4e3cedfc011e88ad0e4b"
+"structec__mbx.html#a3d804026f2cb51d4816b546c0f90737f"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
