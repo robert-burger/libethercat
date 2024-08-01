@@ -218,6 +218,11 @@ int main(int argc, char **argv) {
         }
     }
 #endif
+
+    if (!phw) {
+        printf("Error opening hw device \"%s\"\n", intf);
+        return -1;
+    }
             
     ret = ec_open(&ec, phw, 1);
 
