@@ -107,11 +107,11 @@ typedef struct ec_dc_info {
         double kp;
         double ki;
 
-        double settling_time;               //!< \brief Settling time in [ns]
-        double settling_threshold;          //!< \brief Settling threshold in [ns]
-        double settling_threshold_cycles;   //!< \brief Settling cycles below threshold.
-        double settling_threshold_cnt;      //!< \brief Current cycles below threshold.
-        osal_bool_t settling_done;          //!< \brief Settling done.
+        double settling_time;                   //!< \brief Settling time in [ns]
+        double settling_threshold;              //!< \brief Settling threshold in [ns]
+        osal_uint32_t settling_threshold_cycles;//!< \brief Settling cycles below threshold.
+        osal_uint32_t settling_threshold_cnt;   //!< \brief Current cycles below threshold.
+        osal_bool_t settling_done;              //!< \brief Settling done.
 
         enum {
             settling_mode_none,     //!< \brief No settling mode, keep kp active
