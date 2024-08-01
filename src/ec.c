@@ -1099,6 +1099,12 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
         pec->dc.control.diffsum_limit = 10.;
         pec->dc.control.kp      = 1;
         pec->dc.control.ki      = 0.1;
+        pec->dc.control.settling_time               = 1000000000; // 1 sec 
+        pec->dc.control.settling_threshold          = 10000; // 10 usec
+        pec->dc.control.settling_threshold_cycles   = 100;
+        pec->dc.control.settling_threshold_cnt      = 0;
+        pec->dc.control.settling_done               = OSAL_FALSE;
+        pec->dc.control.settling_mode               = settling_mode_none;
         pec->dc.control.v_part_old = 0.0;
 
         pec->tun_fd             = 0;
@@ -1765,6 +1771,39 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
             double p_part = pec->dc.control.kp * pec->dc.act_diff;
             pec->dc.control.v_part_old = p_part;
 
+            switch (pec->dc.control.settling_mode) {
+                case settling_mode_none:
+                    break;
+                case settling_mode_time:
+                    if (    (pec->dc.control.settling_done == OSAL_FALSE) &&
+                            (pec->dc.control.settling_time > pec->dc.dc_time)   ) 
+                    {
+                        pec->dc.control.settling_done = OSAL_TRUE;
+                    }
+
+                    if (pec->dc.control.settling_done == OSAL_TRUE) {
+                        p_part = 0;
+                    }
+                    break;
+                case settling_mode_threshold:
+                    if (pec->dc.control.settling_done == OSAL_FALSE) {
+                        if (pec->dc.act_diff < pec->dc.control.settling_threshold) {
+                            pec->dc.control.settling_threshold_cnt++;
+                        } else {
+                            pec->dc.control.settling_threshold_cnt = 0;
+                        }
+
+                        if (pec->dc.control.settling_threshold_cnt >= pec->dc.control.settling_threshold_cycles) {
+                            pec->dc.control.settling_done = OSAL_TRUE;
+                        }
+                    }
+
+                    if (pec->dc.control.settling_done == OSAL_TRUE) {
+                        p_part = 0;
+                    }
+                    break;
+            }
+
             // sum it up for integral part
             pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff;
 
@@ -2029,6 +2068,35 @@ void ec_configure_dc(ec_t *pec, osal_uint64_t timer, ec_dc_mode_t mode,
     pec->dc.mode = mode;
     pec->dc.cdg.user_cb = user_cb;
     pec->dc.cdg.user_cb_arg = user_cb_arg;
+}
+
+//! \brief Configures distributed clocks settling to time mode in 
+//         dc ref_clock mode. In other modes this setting has no effect.
+/*!
+ * \param[in] pec           Pointer to EtherCAT master structure.
+ * \param[in] settling_time Settling time to be set.
+ */
+void ec_configure_dc_settling_time(ec_t *pec, double settling_time) {
+    assert(pec != NULL);
+
+    pec->dc.control.settling_mode = settling_mode_time;
+    pec->dc.control.settling_time = settling_time;
+}
+
+//! \brief Configures distributed clocks settling to threshold mode in 
+//         dc ref_clock mode. In other modes this setting has no effect.
+/*!
+ * \param[in] pec           Pointer to EtherCAT master structure.
+ * \param[in] threshold     Settling threshold to be set in [ns].
+ * \param[in] cycles        Cycles below threshold.
+ */
+void ec_configure_dc_settling_threshold(ec_t *pec, double threshold, osal_uint32_t cycles) {
+    assert(pec != NULL);
+
+    pec->dc.control.settling_mode = settling_mode_threshold;
+    pec->dc.control.settling_threshold = threshold;
+    pec->dc.control.settling_threshold_cycles = cycles;
+    pec->dc.control.settling_threshold_cnt = 0;
 }
 
 //! \brief Return current slave count.
