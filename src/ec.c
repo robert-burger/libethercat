@@ -1101,6 +1101,12 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         pec->dc.control.diffsum_limit = 10.;
         pec->dc.control.kp      = 1;
         pec->dc.control.ki      = 0.1;
+        pec->dc.control.settling_time               = 1000000000; // 1 sec 
+        pec->dc.control.settling_threshold          = 10000; // 10 usec
+        pec->dc.control.settling_threshold_cycles   = 100;
+        pec->dc.control.settling_threshold_cnt      = 0;
+        pec->dc.control.settling_done               = OSAL_FALSE;
+        pec->dc.control.settling_mode               = settling_mode_none;
         pec->dc.control.v_part_old = 0.0;
 
         pec->tun_fd             = 0;
@@ -1768,6 +1774,39 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
             // calc proportional part
             double p_part = pec->dc.control.kp * pec->dc.act_diff;
             pec->dc.control.v_part_old = p_part;
+
+            switch (pec->dc.control.settling_mode) {
+                case settling_mode_none:
+                    break;
+                case settling_mode_time:
+                    if (    (pec->dc.control.settling_done == OSAL_FALSE) &&
+                            (pec->dc.control.settling_time > pec->dc.dc_time)   ) 
+                    {
+                        pec->dc.control.settling_done = OSAL_TRUE;
+                    }
+
+                    if (pec->dc.control.settling_done == OSAL_TRUE) {
+                        p_part = 0;
+                    }
+                    break;
+                case settling_mode_threshold:
+                    if (pec->dc.control.settling_done == OSAL_FALSE) {
+                        if (pec->dc.act_diff < pec->dc.control.settling_threshold) {
+                            pec->dc.control.settling_threshold_cnt++;
+                        } else {
+                            pec->dc.control.settling_threshold_cnt = 0;
+                        }
+
+                        if (pec->dc.control.settling_threshold_cnt >= pec->dc.control.settling_threshold_cycles) {
+                            pec->dc.control.settling_done = OSAL_TRUE;
+                        }
+                    }
+
+                    if (pec->dc.control.settling_done == OSAL_TRUE) {
+                        p_part = 0;
+                    }
+                    break;
+            }
 
             // sum it up for integral part
             pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff;
