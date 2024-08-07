@@ -124,6 +124,21 @@
 /* Define to the version of this package. */
 #cmakedefine LIBETHERCAT_VERSION "@LIBETHERCAT_VERSION@"
 
+/* Define to build DEVICE_SOCK_RAW_LEGACY. */
+#cmakedefine LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY ${LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY}
+
+/* Define to build DEVICE_SOCK_RAW_MMAPED. */
+#cmakedefine LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED ${LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED}
+
+/* Define to build DEVICE_FILE. */
+#cmakedefine LIBETHERCAT_BUILD_DEVICE_FILE ${LIBETHERCAT_BUILD_DEVICE_FILE}
+
+/* Define to build BUILD_DEVICE_PIKEOS. */
+#cmakedefine LIBETHERCAT_BUILD_DEVICE_PIKEOS ${LIBETHERCAT_BUILD_DEVICE_PIKEOS}
+
+/* Define to build BUILD_DEVICE_BPD. */
+#cmakedefine LIBETHERCAT_BUILD_DEVICE_BPF ${LIBETHERCAT_BUILD_DEVICE_BPF}
+
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 #undef PTHREAD_CREATE_JOINABLE

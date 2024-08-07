@@ -66,9 +66,6 @@ find_package (Threads REQUIRED)
 include_directories(${libosal_INCLUDE_DIRS} include)
 link_directories(${libosal_LIB_DIR})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/config.h)
-
-
 set(SRC_ETHERCAT 
     src/async_loop.c
     src/coe.c
@@ -96,28 +93,30 @@ list(FIND ECAT_DEVICE "bpf" HAS_SOCK_BPF)
 if (${HAS_SOCK_RAW} GREATER -1)
     message("Include device sock_raw")
     list(APPEND SRC_HW_LAYER src/hw_sock_raw.c)
-    add_compile_definitions(LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY)
+    set(LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY 1)
 endif()
 if (${HAS_SOCK_RAW_MMAPED} GREATER -1)
     message("Include device sock_raw_mmaped")
     list(APPEND SRC_HW_LAYER src/hw_sock_raw_mmaped.c)
-    add_compile_definitions(LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED)
+    set(LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED 1)
 endif()
 if (${HAS_SOCK_FILE} GREATER -1)
     message("Include device file")
     list(APPEND SRC_HW_LAYER src/hw_file.c)
-    add_compile_definitions(LIBETHERCAT_BUILD_DEVICE_FILE)
+    set(LIBETHERCAT_BUILD_DEVICE_FILE 1)
 endif()
 if (${HAS_SOCK_PIKEOS} GREATER -1)
     message("Include device pikeos")
     list(APPEND SRC_HW_LAYER src/hw_pikeos.c)
-    add_compile_definitions(LIBETHERCAT_BUILD_DEVICE_PIKEOS)
+    set(LIBETHERCAT_BUILD_DEVICE_PIKEOS 1)
 endif()
 if (${HAS_SOCK_BPF} GREATER -1)
     message("Include device bpf")
     list(APPEND SRC_HW_LAYER src/hw_bpf.c)
-    add_compile_definitions(LIBETHERCAT_BUILD_DEVICE_BPD)
+    set(LIBETHERCAT_BUILD_DEVICE_BPF 1)
 endif()
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/config.h)
 
 # LIBS
 add_library(ethercat ${SRC_ETHERCAT} ${SRC_HW_LAYER})
