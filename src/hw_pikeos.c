@@ -200,7 +200,7 @@ int hw_device_pikeos_close(struct hw_common *phw) {
     int ret = 0;
 
     struct hw_pikeos *phw_pikeos = container_of(phw, struct hw_pikeos, common);
-    vm_close(phw_pikeos->fd);
+    vm_close(&phw_pikeos->fd);
 
     // TODO some more close of sbuf things???
 
