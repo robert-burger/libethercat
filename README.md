@@ -64,14 +64,23 @@ This will build and install a static as well as a dynamic library. For use in ot
 
 ### CMake
 
+Steps to build:
 ```bash
 mkdir build
 cd build
 # Please change the path to the install dir. If you chose a global install you can omit the CMAKE_PREFIX_PATH option
-# You can specify which EtherCAT devices should be included into the build with -DECAT_DEVICE="sock_raw;sock_raw_mmaped;..."
-cmake .. -DCMAKE_PREFIX_PATH=<installdir of libosal> -DECAT_DEVICE="sock_raw;sock_raw_mmaped"
+# You can specify which EtherCAT devices should be included into the build with -DECAT_DEVICE="sock_raw+sock_raw_mmaped+..."
+cmake -DCMAKE_PREFIX_PATH=<installdir of libosal> -DECAT_DEVICE="sock_raw+sock_raw_mmaped" ..
 cmake --build . 
 ```
+
+#### Configuration parameters
+
+| Parameter         | Default  | Description                                                                                               |
+|-------------------|----------|-----------------------------------------------------------------------------------------------------------|
+| CMAKE_PREFIX_PATH |          | Install directory of the libosal                                                                          |
+| ECAT_DEVICE       | sock_raw | List of EtherCAT devices as `+` separated list. Possible values: sock_raw+sock_raw_mmaped+file+pikeos+bpf |
+| BUILD_SHARED_LIBS | OFF      | Flag to build shared libraries instead of static ones.                                                    |
 
 ## Tools
 
