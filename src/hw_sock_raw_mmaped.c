@@ -69,6 +69,7 @@ int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe);
 int hw_device_sock_raw_mmaped_recv(struct hw_common *phw);
 void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw);
 int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
+int hw_device_sock_raw_mmaped_close(struct hw_common *phw);
 
 // this need the grant_cap_net_raw kernel module 
 // see https://gitlab.com/fastflo/open_ethercat
@@ -119,6 +120,7 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
     phw_sock_raw_mmaped->common.recv = hw_device_sock_raw_mmaped_recv;
     phw_sock_raw_mmaped->common.send_finished = hw_device_sock_raw_mmaped_send_finished;
     phw_sock_raw_mmaped->common.get_tx_buffer = hw_device_sock_raw_mmaped_get_tx_buffer;
+    phw_sock_raw_mmaped->common.close = hw_device_sock_raw_mmaped_close;
 
     // create raw socket connection
     phw_sock_raw_mmaped->sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ECAT));
@@ -236,6 +238,22 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
     return ret;
 }
 
+//! Close hardware layer
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ *
+ * \return 0 or negative error code
+ */
+int hw_device_sock_raw_mmaped_close(struct hw_common *phw) {
+    int ret = 0;
+
+    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
+    close(phw_sock_raw_mmaped->sockfd);
+
+    // TODO some more close of sbuf things???
+
+    return ret;
+}
 
 //! Receive a frame from an EtherCAT hw device.
 /*!

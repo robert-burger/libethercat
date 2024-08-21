@@ -66,6 +66,7 @@ int hw_device_bpf_send(hw_t *phw, ec_frame_t *pframe);
 int hw_device_bpf_recv(hw_t *phw);
 void hw_device_bpf_send_finished(hw_t *phw);
 int hw_device_bpf_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);
+int hw_device_bpf_close(hw_common_t *phw);
 
 //! Opens EtherCAT hw device.
 /*!
@@ -89,6 +90,7 @@ int hw_device_bpf_open(hw_t *phw, const osal_char_t *devname) {
     phw->recv = hw_device_bpf_recv;
     phw->send_finished = hw_device_bpf_send_finished;
     phw->get_tx_buffer = hw_device_bpf_get_tx_buffer;
+    phw->close = hw_device_bpf_close;
 
     // open bpf device
     phw->sockfd = open(bpf_devname, O_RDWR, 0);
@@ -172,6 +174,22 @@ int hw_device_bpf_open(hw_t *phw, const osal_char_t *devname) {
 
     return ret;
 }
+
+//! Close hardware layer
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ *
+ * \return 0 or negative error code
+ */
+int hw_device_bpf_close(struct hw_common *phw) {
+    int ret = 0;
+
+    struct hw_bpf *phw_bpf = container_of(phw, struct hw_bpf, common);
+    close(phw_bpf->sockfd);
+
+    return ret;
+}
+
 
 //! Receive a frame from an EtherCAT hw device.
 /*!

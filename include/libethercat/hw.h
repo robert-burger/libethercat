@@ -102,6 +102,14 @@ typedef void (*hw_device_send_finished_t)(struct hw_common *phw);
  */
 typedef int (*hw_device_get_tx_buffer_t)(struct hw_common *phw, ec_frame_t **ppframe);
 
+//! Close hardware layer
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ *
+ * \return 0 or negative error code
+ */
+typedef int (*hw_device_close_t)(struct hw_common *phw);
+
 #define ETH_FRAME_LEN   0x1518
 
 //! hardware structure
@@ -124,6 +132,7 @@ typedef struct hw_common {
     hw_device_send_t send;                      //!< \brief Function to send frames via device.
     hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
     hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
+    hw_device_close_t close;                    //!< \brief Function to close hw layer.
 } hw_common_t;                 //!< \brief Hardware struct type. 
 
 #ifdef __cplusplus

@@ -77,6 +77,7 @@ int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe);
 int hw_device_file_recv(struct hw_common *phw);
 void hw_device_file_send_finished(struct hw_common *phw);
 int hw_device_file_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
+int hw_device_file_close(struct hw_common *phw);
 
 static void hw_device_file_recv_internal(struct hw_file *phw_file);
 static void *hw_device_file_rx_thread(void *arg);
@@ -102,6 +103,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     phw_file->common.recv = hw_device_file_recv;
     phw_file->common.send_finished = hw_device_file_send_finished;
     phw_file->common.get_tx_buffer = hw_device_file_get_tx_buffer;
+    phw_file->common.close = hw_device_file_close;
 
     /* we use file link layer device driver */
     // cppcheck-suppress misra-c2012-7.1
@@ -143,6 +145,25 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
             osal_task_create(&phw_file->rxthread, &attr, hw_device_file_rx_thread, phw_file);
         }
     }
+
+    return ret;
+}
+
+//! Close hardware layer
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ *
+ * \return 0 or negative error code
+ */
+int hw_device_file_close(struct hw_common *phw) {
+    int ret = 0;
+
+    struct hw_file *phw_file = container_of(phw, struct hw_file, common);
+
+    phw_file->rxthreadrunning = 0;
+    osal_task_join(&phw_file->rxthread, NULL);
+
+    (void)close(phw_file->fd);
 
     return ret;
 }

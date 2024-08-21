@@ -98,6 +98,10 @@ int hw_open(struct hw_common *phw, struct ec *pec) {
 int hw_close(struct hw_common *phw) {
     assert(phw != NULL);
 
+    if (phw->close) {
+        phw->close(phw);
+    }
+
     osal_mutex_lock(&phw->hw_lock);
     (void)pool_close(&phw->tx_high);
     (void)pool_close(&phw->tx_low);

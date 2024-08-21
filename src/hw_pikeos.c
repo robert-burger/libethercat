@@ -65,6 +65,7 @@ int hw_device_pikeos_send(struct hw_common *phw, ec_frame_t *pframe);
 int hw_device_pikeos_recv(struct hw_common *phw);
 void hw_device_pikeos_send_finished(struct hw_common *phw);
 int hw_device_pikeos_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
+int hw_device_pikeos_close(struct hw_common *phw);
 
 void *hw_device_pikeos_rx_thread(void *arg);
 
@@ -91,6 +92,7 @@ int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname, int
     phw->common.recv            = hw_device_pikeos_recv;
     phw->common.send_finished   = hw_device_pikeos_send_finished;
     phw->common.get_tx_buffer   = hw_device_pikeos_get_tx_buffer;
+    phw->common.close           = hw_device_pikeos_close;
     phw->common.mtu_size        = 1480;
     phw->use_sbuf               = OSAL_TRUE;
 
@@ -184,6 +186,23 @@ int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname, int
         (void)strcpy(&attr.task_name[0], "ecat.rx");
         osal_task_create(&phw->rxthread, &attr, hw_device_pikeos_rx_thread, phw);
     }
+
+    return ret;
+}
+
+//! Close hardware layer
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ *
+ * \return 0 or negative error code
+ */
+int hw_device_pikeos_close(struct hw_common *phw) {
+    int ret = 0;
+
+    struct hw_pikeos *phw_pikeos = container_of(phw, struct hw_pikeos, common);
+    vm_close(phw_pikeos->fd);
+
+    // TODO some more close of sbuf things???
 
     return ret;
 }
