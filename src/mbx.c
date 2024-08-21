@@ -97,9 +97,11 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         osal_binary_semaphore_init(&slv->mbx.sync_sem, NULL);
         osal_mutex_init(&slv->mbx.lock, NULL);
 
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
             ec_coe_init(pec, slave);
         }
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {
@@ -153,9 +155,11 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
         slv->mbx.handler_running = 0;
         osal_task_join(&slv->mbx.handler_tid, NULL);
 
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_COE) == EC_OK) {
             ec_coe_deinit(pec, slave);
         }
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_SOE) == EC_OK) {
@@ -518,6 +522,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                 ec_log(200, "MAILBOX_HANDLE", "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
 
                 switch (hdr->mbxtype) {
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
                     case EC_MBX_COE:
                         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
                             ec_coe_enqueue(pec, slave, p_entry);
@@ -526,6 +531,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_log(1, "MAILBOX_HANDLE", "slave %2d: got CoE frame, but slave has no support!\n", slave);
                         }
                         break;
+#endif
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
                     case EC_MBX_SOE:
                         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {

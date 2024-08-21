@@ -41,13 +41,19 @@
 
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 #include "libethercat/soe.h"
 #endif
 
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 #include "libethercat/foe.h"
+#endif
+
 #include "libethercat/mbx.h"
 #include "libethercat/dc.h"
 #include "libethercat/error_codes.h"
@@ -658,15 +664,17 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
         // we're already done
     } else {
         // check sm settings
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
         if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) != 0u) {
             ret = ec_coe_generate_mapping(pec, slave);
-        } 
-#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
-        else if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
-            ret = ec_soe_generate_mapping(pec, slave);
-        } 
+        } else 
 #endif
-        else {
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
+        if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
+            ret = ec_soe_generate_mapping(pec, slave);
+        } else
+#endif
+        {
             // try eeprom
             for (osal_uint8_t sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
                 int txpdos_cnt = 0;
@@ -754,6 +762,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                     switch (cmd->type) {
                         default:
                             break;
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
                         case EC_MBX_COE: {
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending CoE init cmd 0x%04X:%d, "
@@ -772,7 +781,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                             } 
                             break;
                         }
-
+#endif
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
                         case EC_MBX_SOE: {
                             ec_log(10, get_transition_string(transition), 

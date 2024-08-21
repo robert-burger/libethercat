@@ -163,6 +163,17 @@ AC_ARG_ENABLE([mbx-support-eoe], AS_HELP_STRING([--disable-mbx-support-eoe], [Di
 
 AM_CONDITIONAL([MBX_SUPPORT_EOE], [ test x$MBX_SUPPORT_EOE == xtrue ])
 
+AC_ARG_ENABLE([mbx-support-coe], AS_HELP_STRING([--disable-mbx-support-coe], [Disable Mailbox CoE support.]),
+[
+    AC_DEFINE([MBX_SUPPORT_COE], [0], [Disable Mailbox CoE support.])
+],
+[
+    MBX_SUPPORT_COE=true
+    AC_DEFINE([MBX_SUPPORT_COE], [1], [Enable Mailbox CoE support.])
+])
+
+AM_CONDITIONAL([MBX_SUPPORT_COE], [ test x$MBX_SUPPORT_COE == xtrue ])
+
 AC_ARG_ENABLE([mbx-support-foe], AS_HELP_STRING([--disable-mbx-support-foe], [Disable Mailbox FoE support.]),
 [
     AC_DEFINE([MBX_SUPPORT_FOE], [0], [Disable Mailbox FoE support.])

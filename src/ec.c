@@ -54,7 +54,11 @@
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"
 #include "libethercat/mbx.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
+
 #include "libethercat/dc.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/error_codes.h"

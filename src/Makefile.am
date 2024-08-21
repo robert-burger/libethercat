@@ -4,8 +4,7 @@ includedir = $(prefix)/include/libethercat
 
 lib_LTLIBRARIES = libethercat.la
 
-include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
-				  $(top_srcdir)/include/libethercat/common.h \
+include_HEADERS = $(top_srcdir)/include/libethercat/common.h \
 				  $(top_srcdir)/include/libethercat/config.h \
 				  $(top_srcdir)/include/libethercat/datagram.h \
 				  $(top_srcdir)/include/libethercat/pool.h \
@@ -21,12 +20,18 @@ include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
 				  $(top_srcdir)/include/libethercat/mii.h
 
-libethercat_la_SOURCES	= coe.c coe_master.c slave.c datagram.c pool.c async_loop.c ec.c \
+libethercat_la_SOURCES	= slave.c datagram.c pool.c async_loop.c ec.c \
 						  hw.c mbx.c eeprom.c dc.c idx.c mii.c
 
 if MBX_SUPPORT_EOE
 include_HEADERS += $(top_srcdir)/include/libethercat/eoe.h
 libethercat_la_SOURCES += eoe.c
+endif
+
+if MBX_SUPPORT_COE
+include_HEADERS += $(top_srcdir)/include/libethercat/coe.h
+libethercat_la_SOURCES += coe.c
+libethercat_la_SOURCES += coe_master.c
 endif
 
 if MBX_SUPPORT_FOE

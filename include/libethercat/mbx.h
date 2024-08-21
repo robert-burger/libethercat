@@ -44,7 +44,10 @@
 #include <libosal/osal.h>
 
 #include "libethercat/common.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 #include "libethercat/soe.h"
@@ -140,7 +143,9 @@ typedef struct ec_mbx {
 
     pool_t message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
     ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
     ec_soe_t soe;               //!< \brief Structure for Servodrive over EtherCAT mailbox.
