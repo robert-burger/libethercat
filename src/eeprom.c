@@ -513,7 +513,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                         do_eeprom_log(10, "EEPROM_STRINGS", "slave %2d: stored strings %d\n", slave, slv->eeprom.strings_cnt);
                         if (slv->eeprom.strings_cnt > LEC_MAX_EEPROM_CAT_STRINGS) {
-                            do_eeprom_log(10, "EEPROM_STRINGS", "        : warning: can only store %ld strings\n", LEC_MAX_EEPROM_CAT_STRINGS);
+                            do_eeprom_log(10, "EEPROM_STRINGS", "        : warning: can only store %" PRIu64 " strings\n", LEC_MAX_EEPROM_CAT_STRINGS);
                         }
 
                         if (!slv->eeprom.strings_cnt) {
