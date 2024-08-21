@@ -405,7 +405,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>This adds an EtherCAT slave init command.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cmd</td><td>Init command to add. </td></tr>
   </table>
@@ -441,7 +441,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
   </table>
   </dd>
@@ -479,7 +479,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>This tries to generate a mapping for the process data and figures out the settings for the sync managers. Therefor it either tries to use an available mailbox protocol or the information stored in the EEPROM.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached).</td></tr>
   </table>
   </dd>
@@ -530,7 +530,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>This call tries to read the EtherCAT slave state. If successfull a working counter of 1 will be returned.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">state</td><td>Returns current EtherCAT state. </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">alstatcode</td><td>Return current AL StatusCode of specified EtherCAT slave. (maybe NULL if you are not interested in)</td></tr>
@@ -568,7 +568,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
   </table>
   </dd>
@@ -758,7 +758,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>While prepare a state transition the master sends the init commands to the slaves. These are usually settings for the process data mapping (e.g. PDOs, ...) or some slave specific settings.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">state</td><td>Prepare the EtherCAT slave for a switch to the specified EtherCAT state.</td></tr>
   </table>
@@ -827,7 +827,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>Set Distributed Clocks config to slave. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">use_dc</td><td>Whether to en-/disable dc on slave. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">type</td><td>DC type, 0 = sync0, 1 = sync01. </td></tr>
@@ -905,7 +905,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>Adds master EoE settings. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">mac</td><td>Pointer to 6 byte MAC address (mandatory). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">ip_address</td><td>Pointer to 4 byte IP address (optional maybe NULL). </td></tr>
@@ -955,7 +955,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>This call tries to set the EtherCAT slave to the requested state. If successfull a working counter of 1 will be returned.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">state</td><td>New EtherCAT state which will be set on specified slave.</td></tr>
   </table>
@@ -1001,7 +1001,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 <p>This actually performs the state transition.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">state</td><td>Switch the EtherCAT slave to the specified EtherCAT state.</td></tr>
   </table>

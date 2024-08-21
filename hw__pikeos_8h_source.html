@@ -121,15 +121,39 @@ $(document).ready(function(){initNavTree('hw__pikeos_8h_source.html',''); initRe
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="hw_8h.html">libethercat/hw.h</a>&gt;</span></div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="hw__pikeos_8h.html#a91aea05c2e0ff508eab992dceebdde76">   52</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="hw__pikeos_8h.html#a91aea05c2e0ff508eab992dceebdde76">hw_device_pikeos_open</a>(<a class="code" href="structhw.html">hw_t</a> *phw, <span class="keyword">const</span> osal_char_t *devname);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_HW_PIKEOS_H</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="structhw__pikeos.html">   45</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="structhw__pikeos.html">hw_pikeos</a> {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">struct </span><a class="code" href="structhw__common.html">hw_common</a> common;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    osal_bool_t use_sbuf;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="structhw__pikeos.html#ab7024ac4852ce688e36eecdcabb42eb5">   50</a></span>&#160;    vm_file_desc_t <a class="code" href="structhw__pikeos.html#ab7024ac4852ce688e36eecdcabb42eb5">fd</a>;                      </div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="structhw__pikeos.html#a35dd61f05741d9013dda4f1948906f65">   51</a></span>&#160;    drv_sbuf_desc_t <a class="code" href="structhw__pikeos.html#a35dd61f05741d9013dda4f1948906f65">sbuf</a>;                   </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    </div>
+<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="structhw__pikeos.html#a64a0d150cafa75fb8cb3b8f29e084f81">   53</a></span>&#160;    osal_uint8_t <a class="code" href="structhw__pikeos.html#a64a0d150cafa75fb8cb3b8f29e084f81">send_frame</a>[ETH_FRAME_LEN]; </div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="structhw__pikeos.html#af78e8ec438823d066cf2caee13d29d1a">   54</a></span>&#160;    osal_uint8_t <a class="code" href="structhw__pikeos.html#af78e8ec438823d066cf2caee13d29d1a">recv_frame</a>[ETH_FRAME_LEN]; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="comment">// receiver thread </span></div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="structhw__pikeos.html#af5cc1d9e89d29b028b49f9f5c9f66b98">   57</a></span>&#160;    osal_task_t <a class="code" href="structhw__pikeos.html#af5cc1d9e89d29b028b49f9f5c9f66b98">rxthread</a>;                   </div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="structhw__pikeos.html#a8a45b168ce19b7c492cebd37b0a14694">   58</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="structhw__pikeos.html#a8a45b168ce19b7c492cebd37b0a14694">rxthreadrunning</a>;                    </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;} <a class="code" href="structhw__pikeos.html">hw_pikeos_t</a>;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="hw__pikeos_8h.html#a82b2788055d8271c4680161200f9fa96">   70</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="hw__pikeos_8h.html#a82b2788055d8271c4680161200f9fa96">hw_device_pikeos_open</a>(<span class="keyword">struct</span> <a class="code" href="structhw__pikeos.html">hw_pikeos</a> *phw, <span class="keyword">const</span> osal_char_t *devname,</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordtype">int</span> prio, <span class="keywordtype">int</span> cpumask);</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_HW_PIKEOS_H</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
 <div class="ttc" id="ahw_8h_html"><div class="ttname"><a href="hw_8h.html">hw.h</a></div><div class="ttdoc">hardware access functions</div></div>
-<div class="ttc" id="ahw__pikeos_8h_html_a91aea05c2e0ff508eab992dceebdde76"><div class="ttname"><a href="hw__pikeos_8h.html#a91aea05c2e0ff508eab992dceebdde76">hw_device_pikeos_open</a></div><div class="ttdeci">int hw_device_pikeos_open(hw_t *phw, const osal_char_t *devname)</div><div class="ttdoc">Opens EtherCAT hw device.</div></div>
-<div class="ttc" id="astructhw_html"><div class="ttname"><a href="structhw.html">hw</a></div><div class="ttdoc">hardware structure</div><div class="ttdef"><b>Definition:</b> hw.h:102</div></div>
+<div class="ttc" id="ahw__pikeos_8h_html_a82b2788055d8271c4680161200f9fa96"><div class="ttname"><a href="hw__pikeos_8h.html#a82b2788055d8271c4680161200f9fa96">hw_device_pikeos_open</a></div><div class="ttdeci">int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname, int prio, int cpumask)</div><div class="ttdoc">Opens EtherCAT hw device.</div></div>
+<div class="ttc" id="astructhw__common_html"><div class="ttname"><a href="structhw__common.html">hw_common</a></div><div class="ttdoc">hardware structure</div><div class="ttdef"><b>Definition:</b> hw.h:116</div></div>
+<div class="ttc" id="astructhw__pikeos_html"><div class="ttname"><a href="structhw__pikeos.html">hw_pikeos</a></div><div class="ttdef"><b>Definition:</b> hw_pikeos.h:45</div></div>
+<div class="ttc" id="astructhw__pikeos_html_a35dd61f05741d9013dda4f1948906f65"><div class="ttname"><a href="structhw__pikeos.html#a35dd61f05741d9013dda4f1948906f65">hw_pikeos::sbuf</a></div><div class="ttdeci">drv_sbuf_desc_t sbuf</div><div class="ttdoc">Driver SBUF descriptor.</div><div class="ttdef"><b>Definition:</b> hw_pikeos.h:51</div></div>
+<div class="ttc" id="astructhw__pikeos_html_a64a0d150cafa75fb8cb3b8f29e084f81"><div class="ttname"><a href="structhw__pikeos.html#a64a0d150cafa75fb8cb3b8f29e084f81">hw_pikeos::send_frame</a></div><div class="ttdeci">osal_uint8_t send_frame[ETH_FRAME_LEN]</div><div class="ttdoc">Static send frame.</div><div class="ttdef"><b>Definition:</b> hw_pikeos.h:53</div></div>
+<div class="ttc" id="astructhw__pikeos_html_a8a45b168ce19b7c492cebd37b0a14694"><div class="ttname"><a href="structhw__pikeos.html#a8a45b168ce19b7c492cebd37b0a14694">hw_pikeos::rxthreadrunning</a></div><div class="ttdeci">int rxthreadrunning</div><div class="ttdoc">receiver thread running flag</div><div class="ttdef"><b>Definition:</b> hw_pikeos.h:58</div></div>
+<div class="ttc" id="astructhw__pikeos_html_ab7024ac4852ce688e36eecdcabb42eb5"><div class="ttname"><a href="structhw__pikeos.html#ab7024ac4852ce688e36eecdcabb42eb5">hw_pikeos::fd</a></div><div class="ttdeci">vm_file_desc_t fd</div><div class="ttdoc">Driver file descriptor.</div><div class="ttdef"><b>Definition:</b> hw_pikeos.h:50</div></div>
+<div class="ttc" id="astructhw__pikeos_html_af5cc1d9e89d29b028b49f9f5c9f66b98"><div class="ttname"><a href="structhw__pikeos.html#af5cc1d9e89d29b028b49f9f5c9f66b98">hw_pikeos::rxthread</a></div><div class="ttdeci">osal_task_t rxthread</div><div class="ttdoc">receiver thread handle</div><div class="ttdef"><b>Definition:</b> hw_pikeos.h:57</div></div>
+<div class="ttc" id="astructhw__pikeos_html_af78e8ec438823d066cf2caee13d29d1a"><div class="ttname"><a href="structhw__pikeos.html#af78e8ec438823d066cf2caee13d29d1a">hw_pikeos::recv_frame</a></div><div class="ttdeci">osal_uint8_t recv_frame[ETH_FRAME_LEN]</div><div class="ttdoc">Static receive frame.</div><div class="ttdef"><b>Definition:</b> hw_pikeos.h:54</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

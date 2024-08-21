@@ -84,6 +84,8 @@ $(document).ready(function(){initNavTree('hw__pikeos_8h.html',''); initResizable
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">hw_pikeos.h File Reference</div>  </div>
@@ -96,19 +98,30 @@ $(document).ready(function(){initNavTree('hw__pikeos_8h.html',''); initResizable
 </div>
 <p><a href="hw__pikeos_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structhw__pikeos.html">hw_pikeos</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:a658a57141b45ff271b71d1d229128b21"><td class="memItemLeft" align="right" valign="top"><a id="a658a57141b45ff271b71d1d229128b21"></a>
+typedef struct <a class="el" href="structhw__pikeos.html">hw_pikeos</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hw_pikeos_t</b></td></tr>
+<tr class="separator:a658a57141b45ff271b71d1d229128b21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a91aea05c2e0ff508eab992dceebdde76"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__pikeos_8h.html#a91aea05c2e0ff508eab992dceebdde76">hw_device_pikeos_open</a> (<a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *phw, const osal_char_t *devname)</td></tr>
-<tr class="memdesc:a91aea05c2e0ff508eab992dceebdde76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__pikeos_8h.html#a91aea05c2e0ff508eab992dceebdde76">More...</a><br /></td></tr>
-<tr class="separator:a91aea05c2e0ff508eab992dceebdde76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82b2788055d8271c4680161200f9fa96"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__pikeos_8h.html#a82b2788055d8271c4680161200f9fa96">hw_device_pikeos_open</a> (struct <a class="el" href="structhw__pikeos.html">hw_pikeos</a> *phw, const osal_char_t *devname, int prio, int cpumask)</td></tr>
+<tr class="memdesc:a82b2788055d8271c4680161200f9fa96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__pikeos_8h.html#a82b2788055d8271c4680161200f9fa96">More...</a><br /></td></tr>
+<tr class="separator:a82b2788055d8271c4680161200f9fa96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>PIKEOS device hardware access functions. </p>
 <dl class="section author"><dt>Author</dt><dd>Robert Burger <a href="#" onclick="location.href='mai'+'lto:'+'rob'+'er'+'t.b'+'ur'+'ger'+'@d'+'lr.'+'de'; return false;">rober<span style="display: none;">.nosp@m.</span>t.bu<span style="display: none;">.nosp@m.</span>rger@<span style="display: none;">.nosp@m.</span>dlr.<span style="display: none;">.nosp@m.</span>de</a></dd></dl>
 <dl class="section date"><dt>Date</dt><dd>24 Nov 2016 </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a91aea05c2e0ff508eab992dceebdde76"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91aea05c2e0ff508eab992dceebdde76">&#9670;&nbsp;</a></span>hw_device_pikeos_open()</h2>
+<a id="a82b2788055d8271c4680161200f9fa96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82b2788055d8271c4680161200f9fa96">&#9670;&nbsp;</a></span>hw_device_pikeos_open()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -116,14 +129,26 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int hw_device_pikeos_open </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *&#160;</td>
+          <td class="paramtype">struct <a class="el" href="structhw__pikeos.html">hw_pikeos</a> *&#160;</td>
           <td class="paramname"><em>phw</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const osal_char_t *&#160;</td>
-          <td class="paramname"><em>devname</em>&#160;</td>
+          <td class="paramname"><em>devname</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>prio</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>cpumask</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -137,7 +162,9 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">phw</td><td>Pointer to hw handle. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">devname</td><td>Null-terminated string to EtherCAT hw device name.</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">devname</td><td>Null-terminated string to EtherCAT hw device name. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">prio</td><td>Priority for receiver thread. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">cpu_mask</td><td>CPU mask for receiver thread.</td></tr>
   </table>
   </dd>
 </dl>

@@ -95,8 +95,8 @@ $(document).ready(function(){initNavTree('group__hardware__group.html',''); init
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structhw.html">hw</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">hardware structure  <a href="structhw.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structhw__common.html">hw_common</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">hardware structure  <a href="structhw__common.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
@@ -105,54 +105,100 @@ Macros</h2></td></tr>
 #define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga761d05e4fcf5ee3f4c9e1f4516924869">ETH_P_ECAT</a>&#160;&#160;&#160;(0x88A4)</td></tr>
 <tr class="memdesc:ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ethertype for EtherCAT. <br /></td></tr>
 <tr class="separator:ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8151df877b5f1b60ed7e6dbb8fe0ea95"><td class="memItemLeft" align="right" valign="top"><a id="ga8151df877b5f1b60ed7e6dbb8fe0ea95"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>ETH_FRAME_LEN</b>&#160;&#160;&#160;0x1518</td></tr>
+<tr class="separator:ga8151df877b5f1b60ed7e6dbb8fe0ea95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ga91c716de43a2b13a22533aafadc3f6c6"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga91c716de43a2b13a22533aafadc3f6c6">hw_device_recv_t</a>) (struct <a class="el" href="structhw.html">hw</a> *phw)</td></tr>
-<tr class="memdesc:ga91c716de43a2b13a22533aafadc3f6c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive a frame from an EtherCAT hw device.  <a href="group__hardware__group.html#ga91c716de43a2b13a22533aafadc3f6c6">More...</a><br /></td></tr>
-<tr class="separator:ga91c716de43a2b13a22533aafadc3f6c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad2f0bdebaa647dfadc04b1fcf31f4ca8"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gad2f0bdebaa647dfadc04b1fcf31f4ca8">hw_device_send_t</a>) (struct <a class="el" href="structhw.html">hw</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
-<tr class="memdesc:gad2f0bdebaa647dfadc04b1fcf31f4ca8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a frame from an EtherCAT hw device.  <a href="group__hardware__group.html#gad2f0bdebaa647dfadc04b1fcf31f4ca8">More...</a><br /></td></tr>
-<tr class="separator:gad2f0bdebaa647dfadc04b1fcf31f4ca8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8009b9c034d3c8a592d65d0a26f7e00f"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga8009b9c034d3c8a592d65d0a26f7e00f">hw_device_send_finished_t</a>) (struct <a class="el" href="structhw.html">hw</a> *phw)</td></tr>
-<tr class="memdesc:ga8009b9c034d3c8a592d65d0a26f7e00f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Doing internal stuff when finished sending frames.  <a href="group__hardware__group.html#ga8009b9c034d3c8a592d65d0a26f7e00f">More...</a><br /></td></tr>
-<tr class="separator:ga8009b9c034d3c8a592d65d0a26f7e00f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac5c7c294ce6160c86b5a8723a07c1141"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gac5c7c294ce6160c86b5a8723a07c1141">hw_device_get_tx_buffer_t</a>) (struct <a class="el" href="structhw.html">hw</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> **ppframe)</td></tr>
-<tr class="memdesc:gac5c7c294ce6160c86b5a8723a07c1141"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a free tx buffer from underlying hw device.  <a href="group__hardware__group.html#gac5c7c294ce6160c86b5a8723a07c1141">More...</a><br /></td></tr>
-<tr class="separator:gac5c7c294ce6160c86b5a8723a07c1141"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga04760c8ee3530317f670893675e11d79"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structhw.html">hw</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a></td></tr>
-<tr class="memdesc:ga04760c8ee3530317f670893675e11d79"><td class="mdescLeft">&#160;</td><td class="mdescRight">hardware structure  <a href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">More...</a><br /></td></tr>
-<tr class="separator:ga04760c8ee3530317f670893675e11d79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaed7debe264ae67664ccf62196c477ef9"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gaed7debe264ae67664ccf62196c477ef9">hw_device_recv_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:gaed7debe264ae67664ccf62196c477ef9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive a frame from an EtherCAT hw device.  <a href="group__hardware__group.html#gaed7debe264ae67664ccf62196c477ef9">More...</a><br /></td></tr>
+<tr class="separator:gaed7debe264ae67664ccf62196c477ef9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf7b32af799b17b9a2757edf9715f0a9b"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gaf7b32af799b17b9a2757edf9715f0a9b">hw_device_send_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
+<tr class="memdesc:gaf7b32af799b17b9a2757edf9715f0a9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a frame from an EtherCAT hw device.  <a href="group__hardware__group.html#gaf7b32af799b17b9a2757edf9715f0a9b">More...</a><br /></td></tr>
+<tr class="separator:gaf7b32af799b17b9a2757edf9715f0a9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac97f1d9eb2db1a7d95f3f6cf9825c5d8"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gac97f1d9eb2db1a7d95f3f6cf9825c5d8">hw_device_send_finished_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:gac97f1d9eb2db1a7d95f3f6cf9825c5d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Doing internal stuff when finished sending frames.  <a href="group__hardware__group.html#gac97f1d9eb2db1a7d95f3f6cf9825c5d8">More...</a><br /></td></tr>
+<tr class="separator:gac97f1d9eb2db1a7d95f3f6cf9825c5d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2a4be9e287350c554de5e6464bb8e299"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga2a4be9e287350c554de5e6464bb8e299">hw_device_get_tx_buffer_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> **ppframe)</td></tr>
+<tr class="memdesc:ga2a4be9e287350c554de5e6464bb8e299"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a free tx buffer from underlying hw device.  <a href="group__hardware__group.html#ga2a4be9e287350c554de5e6464bb8e299">More...</a><br /></td></tr>
+<tr class="separator:ga2a4be9e287350c554de5e6464bb8e299"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9c1d085e7d4b665f7c90156ae9add79b"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga9c1d085e7d4b665f7c90156ae9add79b">hw_device_close_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:ga9c1d085e7d4b665f7c90156ae9add79b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close hardware layer.  <a href="group__hardware__group.html#ga9c1d085e7d4b665f7c90156ae9add79b">More...</a><br /></td></tr>
+<tr class="separator:ga9c1d085e7d4b665f7c90156ae9add79b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaecb659d11c6edf688c5ad1583f36eee7"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structhw__common.html">hw_common</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gaecb659d11c6edf688c5ad1583f36eee7">hw_common_t</a></td></tr>
+<tr class="memdesc:gaecb659d11c6edf688c5ad1583f36eee7"><td class="mdescLeft">&#160;</td><td class="mdescRight">hardware structure  <a href="group__hardware__group.html#gaecb659d11c6edf688c5ad1583f36eee7">More...</a><br /></td></tr>
+<tr class="separator:gaecb659d11c6edf688c5ad1583f36eee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga3619da658ece6d4c4ebd8213c8577f1e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga3619da658ece6d4c4ebd8213c8577f1e">hw_open</a> (<a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *phw, struct <a class="el" href="structec.html">ec</a> *pec, const osal_char_t *devname, int prio, int cpumask)</td></tr>
-<tr class="memdesc:ga3619da658ece6d4c4ebd8213c8577f1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">open a new hw  <a href="group__hardware__group.html#ga3619da658ece6d4c4ebd8213c8577f1e">More...</a><br /></td></tr>
-<tr class="separator:ga3619da658ece6d4c4ebd8213c8577f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5bca2e676fff4011fa5ba2cfb6c1546c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga5bca2e676fff4011fa5ba2cfb6c1546c">hw_close</a> (<a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *phw)</td></tr>
-<tr class="memdesc:ga5bca2e676fff4011fa5ba2cfb6c1546c"><td class="mdescLeft">&#160;</td><td class="mdescRight">destroys a hw  <a href="group__hardware__group.html#ga5bca2e676fff4011fa5ba2cfb6c1546c">More...</a><br /></td></tr>
-<tr class="separator:ga5bca2e676fff4011fa5ba2cfb6c1546c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad7f9a56562fab071c3b0e84fb4e1f403"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gad7f9a56562fab071c3b0e84fb4e1f403">hw_tx_low</a> (<a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *phw)</td></tr>
-<tr class="memdesc:gad7f9a56562fab071c3b0e84fb4e1f403"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <a href="group__hardware__group.html#gad7f9a56562fab071c3b0e84fb4e1f403">More...</a><br /></td></tr>
-<tr class="separator:gad7f9a56562fab071c3b0e84fb4e1f403"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab83b1a447a7ca13cb161ac0887cd12c4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gab83b1a447a7ca13cb161ac0887cd12c4">hw_tx</a> (<a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *phw)</td></tr>
-<tr class="memdesc:gab83b1a447a7ca13cb161ac0887cd12c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <a href="group__hardware__group.html#gab83b1a447a7ca13cb161ac0887cd12c4">More...</a><br /></td></tr>
-<tr class="separator:gab83b1a447a7ca13cb161ac0887cd12c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga53485cea12b037e6adfd50847f22f5e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga53485cea12b037e6adfd50847f22f5e9">hw_process_rx_frame</a> (<a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
-<tr class="memdesc:ga53485cea12b037e6adfd50847f22f5e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a received EtherCAT frame.  <a href="group__hardware__group.html#ga53485cea12b037e6adfd50847f22f5e9">More...</a><br /></td></tr>
-<tr class="separator:ga53485cea12b037e6adfd50847f22f5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae894f118c5550dd2385f99c91db3e6e6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gae894f118c5550dd2385f99c91db3e6e6">hw_open</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, struct <a class="el" href="structec.html">ec</a> *pec)</td></tr>
+<tr class="memdesc:gae894f118c5550dd2385f99c91db3e6e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">open a new hw  <a href="group__hardware__group.html#gae894f118c5550dd2385f99c91db3e6e6">More...</a><br /></td></tr>
+<tr class="separator:gae894f118c5550dd2385f99c91db3e6e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5707126ae8da08fc1bf0f7b4b2ec1da7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga5707126ae8da08fc1bf0f7b4b2ec1da7">hw_close</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:ga5707126ae8da08fc1bf0f7b4b2ec1da7"><td class="mdescLeft">&#160;</td><td class="mdescRight">destroys a hw  <a href="group__hardware__group.html#ga5707126ae8da08fc1bf0f7b4b2ec1da7">More...</a><br /></td></tr>
+<tr class="separator:ga5707126ae8da08fc1bf0f7b4b2ec1da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3f23caf928bb7736403250c3a710bcff"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff">hw_tx_low</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:ga3f23caf928bb7736403250c3a710bcff"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <a href="group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff">More...</a><br /></td></tr>
+<tr class="separator:ga3f23caf928bb7736403250c3a710bcff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga317d72c3f8cb8460308f42eec6381383"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383">hw_tx</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:ga317d72c3f8cb8460308f42eec6381383"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <a href="group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383">More...</a><br /></td></tr>
+<tr class="separator:ga317d72c3f8cb8460308f42eec6381383"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga021a653eb2aec38d25fba4d3fbdd32d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga021a653eb2aec38d25fba4d3fbdd32d1">hw_process_rx_frame</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
+<tr class="memdesc:ga021a653eb2aec38d25fba4d3fbdd32d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a received EtherCAT frame.  <a href="group__hardware__group.html#ga021a653eb2aec38d25fba4d3fbdd32d1">More...</a><br /></td></tr>
+<tr class="separator:ga021a653eb2aec38d25fba4d3fbdd32d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>This modules contains main EtherCAT hardware functions. </p>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="gac5c7c294ce6160c86b5a8723a07c1141"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac5c7c294ce6160c86b5a8723a07c1141">&#9670;&nbsp;</a></span>hw_device_get_tx_buffer_t</h2>
+<a id="gaecb659d11c6edf688c5ad1583f36eee7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaecb659d11c6edf688c5ad1583f36eee7">&#9670;&nbsp;</a></span>hw_common_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef int(* hw_device_get_tx_buffer_t) (struct <a class="el" href="structhw.html">hw</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> **ppframe)</td>
+          <td class="memname">typedef struct <a class="el" href="structhw__common.html">hw_common</a> <a class="el" href="group__hardware__group.html#gaecb659d11c6edf688c5ad1583f36eee7">hw_common_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>hardware structure </p>
+<p>Hardware struct type. </p>
+
+</div>
+</div>
+<a id="ga9c1d085e7d4b665f7c90156ae9add79b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9c1d085e7d4b665f7c90156ae9add79b">&#9670;&nbsp;</a></span>hw_device_close_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef int(* hw_device_close_t) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Close hardware layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">phw</td><td>Pointer to hw handle.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 or negative error code </dd></dl>
+
+</div>
+</div>
+<a id="ga2a4be9e287350c554de5e6464bb8e299"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2a4be9e287350c554de5e6464bb8e299">&#9670;&nbsp;</a></span>hw_device_get_tx_buffer_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef int(* hw_device_get_tx_buffer_t) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> **ppframe)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -169,14 +215,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga91c716de43a2b13a22533aafadc3f6c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga91c716de43a2b13a22533aafadc3f6c6">&#9670;&nbsp;</a></span>hw_device_recv_t</h2>
+<a id="gaed7debe264ae67664ccf62196c477ef9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaed7debe264ae67664ccf62196c477ef9">&#9670;&nbsp;</a></span>hw_device_recv_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef int(* hw_device_recv_t) (struct <a class="el" href="structhw.html">hw</a> *phw)</td>
+          <td class="memname">typedef int(* hw_device_recv_t) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -192,14 +238,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga8009b9c034d3c8a592d65d0a26f7e00f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8009b9c034d3c8a592d65d0a26f7e00f">&#9670;&nbsp;</a></span>hw_device_send_finished_t</h2>
+<a id="gac97f1d9eb2db1a7d95f3f6cf9825c5d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac97f1d9eb2db1a7d95f3f6cf9825c5d8">&#9670;&nbsp;</a></span>hw_device_send_finished_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* hw_device_send_finished_t) (struct <a class="el" href="structhw.html">hw</a> *phw)</td>
+          <td class="memname">typedef void(* hw_device_send_finished_t) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -214,14 +260,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gad2f0bdebaa647dfadc04b1fcf31f4ca8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad2f0bdebaa647dfadc04b1fcf31f4ca8">&#9670;&nbsp;</a></span>hw_device_send_t</h2>
+<a id="gaf7b32af799b17b9a2757edf9715f0a9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf7b32af799b17b9a2757edf9715f0a9b">&#9670;&nbsp;</a></span>hw_device_send_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef int(* hw_device_send_t) (struct <a class="el" href="structhw.html">hw</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td>
+          <td class="memname">typedef int(* hw_device_send_t) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -238,26 +284,9 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga04760c8ee3530317f670893675e11d79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga04760c8ee3530317f670893675e11d79">&#9670;&nbsp;</a></span>hw_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="structhw.html">hw</a> <a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>hardware structure </p>
-<p>Hardware struct type. </p>
-
-</div>
-</div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga5bca2e676fff4011fa5ba2cfb6c1546c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5bca2e676fff4011fa5ba2cfb6c1546c">&#9670;&nbsp;</a></span>hw_close()</h2>
+<a id="ga5707126ae8da08fc1bf0f7b4b2ec1da7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5707126ae8da08fc1bf0f7b4b2ec1da7">&#9670;&nbsp;</a></span>hw_close()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -265,7 +294,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int hw_close </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *&#160;</td>
+          <td class="paramtype">struct <a class="el" href="structhw__common.html">hw_common</a> *&#160;</td>
           <td class="paramname"><em>phw</em></td><td>)</td>
           <td></td>
         </tr>
@@ -283,8 +312,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga3619da658ece6d4c4ebd8213c8577f1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3619da658ece6d4c4ebd8213c8577f1e">&#9670;&nbsp;</a></span>hw_open()</h2>
+<a id="gae894f118c5550dd2385f99c91db3e6e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae894f118c5550dd2385f99c91db3e6e6">&#9670;&nbsp;</a></span>hw_open()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -292,32 +321,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int hw_open </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *&#160;</td>
+          <td class="paramtype">struct <a class="el" href="structhw__common.html">hw_common</a> *&#160;</td>
           <td class="paramname"><em>phw</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">struct <a class="el" href="structec.html">ec</a> *&#160;</td>
-          <td class="paramname"><em>pec</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const osal_char_t *&#160;</td>
-          <td class="paramname"><em>devname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>prio</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>cpumask</em>&#160;</td>
+          <td class="paramname"><em>pec</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -330,10 +341,8 @@ Functions</h2></td></tr>
 <p>open a new hw </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">phw</td><td>return hw </td></tr>
-    <tr><td class="paramname">devname</td><td>ethernet device name </td></tr>
-    <tr><td class="paramname">prio</td><td>receive thread prio </td></tr>
-    <tr><td class="paramname">cpumask</td><td>receive thread cpumask </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">phw</td><td>Pointer to hw structure. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to master structure.</td></tr>
   </table>
   </dd>
 </dl>
@@ -341,8 +350,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga53485cea12b037e6adfd50847f22f5e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga53485cea12b037e6adfd50847f22f5e9">&#9670;&nbsp;</a></span>hw_process_rx_frame()</h2>
+<a id="ga021a653eb2aec38d25fba4d3fbdd32d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga021a653eb2aec38d25fba4d3fbdd32d1">&#9670;&nbsp;</a></span>hw_process_rx_frame()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -350,7 +359,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void hw_process_rx_frame </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *&#160;</td>
+          <td class="paramtype">struct <a class="el" href="structhw__common.html">hw_common</a> *&#160;</td>
           <td class="paramname"><em>phw</em>, </td>
         </tr>
         <tr>
@@ -378,8 +387,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gab83b1a447a7ca13cb161ac0887cd12c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab83b1a447a7ca13cb161ac0887cd12c4">&#9670;&nbsp;</a></span>hw_tx()</h2>
+<a id="ga317d72c3f8cb8460308f42eec6381383"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga317d72c3f8cb8460308f42eec6381383">&#9670;&nbsp;</a></span>hw_tx()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -387,7 +396,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int hw_tx </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *&#160;</td>
+          <td class="paramtype">struct <a class="el" href="structhw__common.html">hw_common</a> *&#160;</td>
           <td class="paramname"><em>phw</em></td><td>)</td>
           <td></td>
         </tr>
@@ -405,8 +414,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gad7f9a56562fab071c3b0e84fb4e1f403"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad7f9a56562fab071c3b0e84fb4e1f403">&#9670;&nbsp;</a></span>hw_tx_low()</h2>
+<a id="ga3f23caf928bb7736403250c3a710bcff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3f23caf928bb7736403250c3a710bcff">&#9670;&nbsp;</a></span>hw_tx_low()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -414,7 +423,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int hw_tx_low </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *&#160;</td>
+          <td class="paramtype">struct <a class="el" href="structhw__common.html">hw_common</a> *&#160;</td>
           <td class="paramname"><em>phw</em></td><td>)</td>
           <td></td>
         </tr>

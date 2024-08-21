@@ -38,7 +38,7 @@ var ec_8h =
     [ "ec_destroy_pd_groups", "group__ec__group.html#ga509683e6a8bab096be23af7d086aad29", null ],
     [ "ec_get_slave_count", "group__ec__group.html#gaf7a827d9da875d1481113f3291391142", null ],
     [ "ec_log", "group__ec__group.html#gab0d37bdf3490b4b5dd7c4d7286886298", null ],
-    [ "ec_open", "group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961", null ],
+    [ "ec_open", "group__ec__group.html#ga57814183337779bfc29a8c1170269c37", null ],
     [ "ec_send_brd_ec_state", "group__ec__group.html#gaa5b7131d203697a73bc51b885e457199", null ],
     [ "ec_send_distributed_clocks_sync", "group__ec__group.html#ga6bacf70aeef0c0e65083785617b5f25d", null ],
     [ "ec_send_process_data", "group__ec__group.html#ga0858169a1d7af160964d7b2264eca4aa", null ],

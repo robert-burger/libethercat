@@ -84,6 +84,8 @@ $(document).ready(function(){initNavTree('hw__file_8h.html',''); initResizable()
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">hw_file.h File Reference</div>  </div>
@@ -96,19 +98,30 @@ $(document).ready(function(){initNavTree('hw__file_8h.html',''); initResizable()
 </div>
 <p><a href="hw__file_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structhw__file.html">hw_file</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:a50dde639bf2b520380d499cd8bd17442"><td class="memItemLeft" align="right" valign="top"><a id="a50dde639bf2b520380d499cd8bd17442"></a>
+typedef struct <a class="el" href="structhw__file.html">hw_file</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hw_file_t</b></td></tr>
+<tr class="separator:a50dde639bf2b520380d499cd8bd17442"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9a90936e671c86bf4d1895588b4559a5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__file_8h.html#a9a90936e671c86bf4d1895588b4559a5">hw_device_file_open</a> (<a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *phw, const osal_char_t *devname)</td></tr>
-<tr class="memdesc:a9a90936e671c86bf4d1895588b4559a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__file_8h.html#a9a90936e671c86bf4d1895588b4559a5">More...</a><br /></td></tr>
-<tr class="separator:a9a90936e671c86bf4d1895588b4559a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac925ed7852acbcb2970f4070fdea6314"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__file_8h.html#ac925ed7852acbcb2970f4070fdea6314">hw_device_file_open</a> (struct <a class="el" href="structhw__file.html">hw_file</a> *phw, struct <a class="el" href="structec.html">ec</a> *pec, const osal_char_t *devname, int prio, int cpu_mask)</td></tr>
+<tr class="memdesc:ac925ed7852acbcb2970f4070fdea6314"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__file_8h.html#ac925ed7852acbcb2970f4070fdea6314">More...</a><br /></td></tr>
+<tr class="separator:ac925ed7852acbcb2970f4070fdea6314"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>file/char device hardware access functions </p>
 <dl class="section author"><dt>Author</dt><dd>Robert Burger <a href="#" onclick="location.href='mai'+'lto:'+'rob'+'er'+'t.b'+'ur'+'ger'+'@d'+'lr.'+'de'; return false;">rober<span style="display: none;">.nosp@m.</span>t.bu<span style="display: none;">.nosp@m.</span>rger@<span style="display: none;">.nosp@m.</span>dlr.<span style="display: none;">.nosp@m.</span>de</a></dd></dl>
 <dl class="section date"><dt>Date</dt><dd>24 Nov 2016 </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a9a90936e671c86bf4d1895588b4559a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a90936e671c86bf4d1895588b4559a5">&#9670;&nbsp;</a></span>hw_device_file_open()</h2>
+<a id="ac925ed7852acbcb2970f4070fdea6314"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac925ed7852acbcb2970f4070fdea6314">&#9670;&nbsp;</a></span>hw_device_file_open()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -116,14 +129,32 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int hw_device_file_open </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__hardware__group.html#ga04760c8ee3530317f670893675e11d79">hw_t</a> *&#160;</td>
+          <td class="paramtype">struct <a class="el" href="structhw__file.html">hw_file</a> *&#160;</td>
           <td class="paramname"><em>phw</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">struct <a class="el" href="structec.html">ec</a> *&#160;</td>
+          <td class="paramname"><em>pec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">const osal_char_t *&#160;</td>
-          <td class="paramname"><em>devname</em>&#160;</td>
+          <td class="paramname"><em>devname</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>prio</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>cpu_mask</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -137,7 +168,9 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">phw</td><td>Pointer to hw handle. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">devname</td><td>Null-terminated string to EtherCAT hw device name.</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">devname</td><td>Null-terminated string to EtherCAT hw device name. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">prio</td><td>Priority for receiver thread. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">cpu_mask</td><td>CPU mask for receiver thread.</td></tr>
   </table>
   </dd>
 </dl>

@@ -11,6 +11,6 @@ var searchData=
   ['boot_5fmbx_5freceive_5fsize_34',['boot_mbx_receive_size',['../structeeprom__info.html#aa85bfd33dd310cd7b584ef310359ad87',1,'eeprom_info']]],
   ['boot_5fmbx_5fsend_5foffset_35',['boot_mbx_send_offset',['../structeeprom__info.html#a764bdc9dbd06e687471a2b8bc4cf8c02',1,'eeprom_info']]],
   ['boot_5fmbx_5fsend_5fsize_36',['boot_mbx_send_size',['../structeeprom__info.html#a133537bf4b5900cfb634d6d4427c8834',1,'eeprom_info']]],
-  ['bytes_5flast_5fsent_37',['bytes_last_sent',['../structhw.html#a3198530e7c5fa7d557f0d6212ef04240',1,'hw']]],
-  ['bytes_5fsent_38',['bytes_sent',['../structhw.html#acce0e7dc0be3873d67237b4b574b4120',1,'hw']]]
+  ['bytes_5flast_5fsent_37',['bytes_last_sent',['../structhw__common.html#a6d51d74971a98a31137656672e85877f',1,'hw_common']]],
+  ['bytes_5fsent_38',['bytes_sent',['../structhw__common.html#ace32e6f96af423e60473c277ed526d35',1,'hw_common']]]
 ];

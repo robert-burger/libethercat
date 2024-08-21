@@ -556,7 +556,7 @@ Functions</h2></td></tr>
 <p>deinitialize CoE structure </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
   </table>
   </dd>
@@ -688,7 +688,7 @@ Functions</h2></td></tr>
 <p>Enqueue CoE message received from slave. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">p_entry</td><td>Pointer to pool entry containing received mailbox message from slave.</td></tr>
   </table>
@@ -733,7 +733,7 @@ Functions</h2></td></tr>
 <p>generate sync manager process data mapping via coe </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached).</td></tr>
   </table>
   </dd>
@@ -782,7 +782,7 @@ Functions</h2></td></tr>
 <p>Initialize CoE structure. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
   </table>
   </dd>
@@ -825,7 +825,7 @@ Functions</h2></td></tr>
 <p>Read CoE object dictionary list of master. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">buf</td><td>Pointer to a preallocated buffer. </td></tr>
     <tr><td class="paramdir">[in,out]</td><td class="paramname">len</td><td>Length of buffer, outputs read length.</td></tr>
   </table>
@@ -884,7 +884,7 @@ Functions</h2></td></tr>
 <p>Read CoE SDO description of master. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">desc</td><td>Returns CoE SDO description. </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">error_code</td><td>Returns the error code if we got one.</td></tr>
@@ -955,7 +955,7 @@ Functions</h2></td></tr>
 <p>Read CoE SDO entry description of master. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sub_index</td><td>CoE SDO sub index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">value_info</td><td>Bitset which description values you want to get </td></tr>
@@ -1034,7 +1034,7 @@ Functions</h2></td></tr>
 <p>Read CoE service data object (SDO) of master. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sub_index</td><td>CoE SDO sub index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">complete</td><td>SDO Complete access (only if <code>sub_index</code> == 0) </td></tr>
@@ -1114,7 +1114,7 @@ Functions</h2></td></tr>
 <p>Write CoE service data object (SDO) of master. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sub_index</td><td>CoE SDO sub index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">complete</td><td>SDO Complete access (only if <code>sub_index</code> == 0) </td></tr>
@@ -1176,7 +1176,7 @@ Functions</h2></td></tr>
 <p>Read CoE object dictionary list. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">buf</td><td>Pointer to a preallocated buffer. </td></tr>
     <tr><td class="paramdir">[in,out]</td><td class="paramname">len</td><td>Length of buffer, outputs read length.</td></tr>
@@ -1244,7 +1244,7 @@ Functions</h2></td></tr>
 <p>Read CoE SDO description. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">desc</td><td>Returns CoE SDO description. </td></tr>
@@ -1325,7 +1325,7 @@ Functions</h2></td></tr>
 <p>Read CoE SDO entry description. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sub_index</td><td>CoE SDO sub index number. </td></tr>
@@ -1414,7 +1414,7 @@ Functions</h2></td></tr>
 <p>Read CoE service data object (SDO) </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sub_index</td><td>CoE SDO sub index number. </td></tr>
@@ -1506,7 +1506,7 @@ Functions</h2></td></tr>
 <p>Write CoE service data object (SDO) </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#gac8e469d21117ad798bea9b637d9f3961">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>CoE SDO index number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sub_index</td><td>CoE SDO sub index number. </td></tr>
