@@ -41,15 +41,36 @@
 #define LIBETHERCAT_HW_SOCK_RAW_MMAPED_H
 
 #include <libethercat/hw.h>
+#include <libosal/task.h>
+
+typedef struct hw_sock_raw_mmaped {
+    struct hw_common common;
+
+    int sockfd;                     //!< raw socket file descriptor
+
+    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    
+    int mmap_packets;               //!< \brief Doing mmap packets.
+    osal_char_t *rx_ring;           //!< kernel mmap receive buffers
+    osal_char_t *tx_ring;           //!< kernel mmap send buffers
+
+    osal_off_t rx_ring_offset;      //!< \brief Offset in RX ring.
+    osal_off_t tx_ring_offset;      //!< \brief Offset in TX ring.
+
+    // receiver thread settings
+    osal_task_t rxthread;           //!< receiver thread handle
+    int rxthreadrunning;            //!< receiver thread running flag
+} hw_sock_raw_mmaped_t;
 
 //! Opens EtherCAT hw device.
 /*!
- * \param[in]   phw         Pointer to hw handle. 
- * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
+ * \param[in]   phw_sock_raw_mmaped     Pointer to sock_raw_mmmaped hw handle. 
+ * \param[in]   devname                 Null-terminated string to EtherCAT hw device name.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_open(hw_t *phw, const osal_char_t *devname);
+int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname);
 
 #endif // LIBETHERCAT_HW_SOCK_RAW_MMAPED_H
 

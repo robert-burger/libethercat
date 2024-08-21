@@ -32,6 +32,26 @@
 
 #include <stdarg.h>
 
+#if LIBETHERCAT_BUILD_DEVICE_FILE == 1
+#include <libethercat/hw_file.h>
+static struct hw_file hw_file;
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_BPF == 1
+#include <libethercat/hw_bpf.h>
+static struct hw_bpf hw_bpf;
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
+#include <libethercat/hw_pikeos.h>
+static struct hw_pikeos hw_pikeos;
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
+#include <libethercat/hw_sock_raw.h>
+static struct hw_sock_raw hw_sock_raw;
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
+#include <libethercat/hw_sock_raw_mmaped.h>
+static struct hw_sock_raw_mmaped hw_sock_raw_mmaped;
+#endif
 
 void no_log(int lvl, void *user, const char *format, ...) 
 {};
@@ -96,7 +116,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         ec_send_process_data(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
-        hw_tx(&pec->hw);
+        hw_tx(pec->phw);
 
         osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
     }
@@ -199,8 +219,78 @@ int main(int argc, char **argv) {
     // use our log function
     ec_log_func_user = NULL;
     ec_log_func = &no_verbose_log;
+    struct hw_common *phw = NULL;
             
-    ret = ec_open(&ec, intf, base_prio - 1, base_affinity, 1);
+#if LIBETHERCAT_BUILD_DEVICE_FILE == 1
+    if ((intf[0] == '/') || (strncmp(intf, "file:", 5) == 0)) {
+        // assume char device -> hw_file
+        if (strncmp(intf, "file:", 5) == 0) {
+            intf = &intf[5];
+        }
+
+        ec_log(10, "HW_OPEN", "Opening interface as device file: %s\n", intf);
+        ret = hw_device_file_open(&hw_file, &ec, intf, base_prio - 1, base_affinity);
+
+        if (ret == 0) {
+            phw = &hw_file.common;
+        }
+    }
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_BPF == 1
+    if (strncmp(intf, "bpf:", 4) == 0) {
+        intf = &intf[4];
+
+        ec_log(10, "HW_OPEN", "Opening interface as BPF: %s\n", intf);
+        ret = hw_device_bpf_open(&hw_bpf, intf);
+
+        if (ret == 0) {
+            phw = &hw_bpf.common;
+        }
+    }
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
+    if (strncmp(intf, "pikeos:", 7) == 0) {
+        intf = &intf[7];
+
+        ec_log(10, "HW_OPEN", "Opening interface as pikeos: %s\n", intf);
+        ret = hw_device_pikeos_open(&hw_pikeos, intf, base_prio - 1, base_affinity);
+
+        if (ret == 0) {
+            phw = &hw_pikeos.common;
+        }
+    }
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
+    if (strncmp(intf, "sock-raw:", 9) == 0) {
+        intf = &intf[9];
+        
+        ec_log(10, "HW_OPEN", "Opening interface as SOCK_RAW: %s\n", intf);
+        ret = hw_device_sock_raw_open(&hw_sock_raw, &ec, intf, base_prio - 1, base_affinity);
+
+        if (ret == 0) {
+            phw = &hw_sock_raw.common;
+        }
+    }
+#endif
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
+    if (strncmp(intf, "sock-raw-mmaped:", 16) == 0) {
+        intf = &intf[16];
+
+        ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", intf);
+        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf);
+
+        if (ret == 0) {
+            phw = &hw_sock_raw_mmaped.common;
+        }
+    }
+#endif
+
+    if (phw == NULL) {
+        ec_log(10, "HW_OPEN", "Hardware device layer failure!\n");
+        goto exit;
+    }
+
+    ret = ec_open(&ec, phw, 1);
     if (ret != EC_OK) {
         goto exit;
     }
@@ -292,7 +382,7 @@ int main(int argc, char **argv) {
                 "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
-                ec.hw.bytes_last_sent, (10 * 8 * ec.hw.bytes_last_sent) / 1000.,
+                ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
                 to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
                 to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
                 to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));

@@ -39,27 +39,6 @@
 
 #include <libethercat/config.h>
 #include <libethercat/hw.h>
-
-#if LIBETHERCAT_BUILD_DEVICE_FILE == 1
-#include <libethercat/hw_file.h>
-#endif
-
-#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
-#include <libethercat/hw_sock_raw.h>
-#endif
-
-#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
-#include <libethercat/hw_sock_raw_mmaped.h>
-#endif
-
-#if LIBETHERCAT_BUILD_DEVICE_BPF == 1
-#include <libethercat/hw_bpf.h>
-#endif
-
-#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
-#include <libethercat/hw_pikeos.h>
-#endif
-
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
 #include <libethercat/error_codes.h>
@@ -88,21 +67,17 @@
 #include <net/util/inet.h>
 #endif
 
-//! receiver thread forward declaration
-void *hw_rx_thread(void *arg);
-
 //! open a new hw
 /*!
- * \param pphw return hw 
- * \param devname ethernet device name
- * \param prio receive thread prio
- * \param cpumask receive thread cpumask
+ * \param[in]   phw         Pointer to hw structure.
+ * \param[in]   pec         Pointer to master structure.
+ *
  * \return 0 or negative error code
  */
-int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpumask) {
+int hw_open(struct hw_common *phw, struct ec *pec) {
     assert(phw != NULL);
 
-    int ret = EC_ERROR_HW_NOT_SUPPORTED;
+    int ret = EC_OK;
 
     phw->pec = pec;
     phw->bytes_last_sent = 0;
@@ -112,63 +87,6 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
 
     osal_mutex_init(&phw->hw_lock, NULL);
 
-    const osal_char_t *ifname = devname;
-
-#if LIBETHERCAT_BUILD_DEVICE_FILE == 1
-    if ((ifname[0] == '/') || (strncmp(ifname, "file:", 5) == 0)) {
-        // assume char device -> hw_file
-        if (strncmp(ifname, "file:", 5) == 0) {
-            ifname = &ifname[5];
-        }
-
-        ec_log(10, "HW_OPEN", "Opening interface as device file: %s\n", ifname);
-        ret = hw_device_file_open(phw, ifname);
-    }
-#endif
-#if LIBETHERCAT_BUILD_DEVICE_BPF == 1
-    if (strncmp(ifname, "bpf:", 4) == 0) {
-        ifname = &ifname[4];
-
-        ec_log(10, "HW_OPEN", "Opening interface as BPF: %s\n", ifname);
-        ret = hw_device_bpf_open(phw, ifname);
-    }
-#endif
-#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
-    if (strncmp(ifname, "pikeos:", 7) == 0) {
-        ifname = &ifname[7];
-
-        ec_log(10, "HW_OPEN", "Opening interface as pikeos: %s\n", ifname);
-        ret = hw_device_pikeos_open(phw, ifname);
-    }
-#endif
-#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
-    if (strncmp(ifname, "sock-raw:", 9) == 0) {
-        ifname = &ifname[9];
-        
-        ec_log(10, "HW_OPEN", "Opening interface as SOCK_RAW: %s\n", ifname);
-        ret = hw_device_sock_raw_open(phw, ifname);
-    }
-#endif
-#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
-    if (strncmp(ifname, "sock-raw-mmaped:", 16) == 0) {
-        ifname = &ifname[16];
-
-        ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", ifname);
-        ret = hw_device_sock_raw_mmaped_open(phw, ifname);
-    }
-#endif
-
-
-    if (ret == EC_OK) {
-        phw->rxthreadrunning = 1;
-        osal_task_attr_t attr;
-        attr.policy = OSAL_SCHED_POLICY_FIFO;
-        attr.priority = prio;
-        attr.affinity = cpumask;
-        (void)strcpy(&attr.task_name[0], "ecat.rx");
-        osal_task_create(&phw->rxthread, &attr, hw_rx_thread, phw);
-    }
-
     return ret;
 }
 
@@ -177,12 +95,8 @@ int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int
  * \param phw hw handle
  * \return 0 or negative error code
  */
-int hw_close(hw_t *phw) {
+int hw_close(struct hw_common *phw) {
     assert(phw != NULL);
-
-    // stop receiver thread
-    phw->rxthreadrunning = 0;
-    osal_task_join(&phw->rxthread, NULL);
 
     osal_mutex_lock(&phw->hw_lock);
     (void)pool_close(&phw->tx_high);
@@ -199,7 +113,7 @@ int hw_close(hw_t *phw) {
  * \param[in]   phw     Pointer to hw handle.
  * \param[in]   pframe  Pointer to received EtherCAT frame.
  */
-void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
+void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
 
@@ -219,39 +133,14 @@ void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe) {
                     (*entry->user_cb)(phw->pec, entry, d);
                 }
             }
-                
+
             d = ec_datagram_next(d);
         }
     }
 }
 
-//! receiver thread
-void *hw_rx_thread(void *arg) {
-    // cppcheck-suppress misra-c2012-11.5
-    hw_t *phw = (hw_t *) arg;
-
-    assert(phw != NULL);
-    
-    osal_task_sched_priority_t rx_prio;
-    if (osal_task_get_priority(&phw->rxthread, &rx_prio) != OSAL_OK) {
-        rx_prio = 0;
-    }
-
-    ec_log(10, "HW_RX", "receive thread running (prio %d)\n", rx_prio);
-
-    while (phw->rxthreadrunning != 0) {
-        if (phw->recv(phw) != EC_OK) {
-            break;
-        }
-    }
-    
-    ec_log(10, "HW_RX", "receive thread stopped\n");
-    
-    return NULL;
-}
-
 //! internal tx func
-static void hw_tx_pool(hw_t *phw, pool_t *pool) {
+static void hw_tx_pool(struct hw_common *phw, pool_t *pool) {
     assert(phw != NULL);
 
     osal_bool_t sent = OSAL_FALSE;
@@ -311,7 +200,7 @@ static void hw_tx_pool(hw_t *phw, pool_t *pool) {
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx_low(hw_t *phw) {
+int hw_tx_low(struct hw_common *phw) {
     assert(phw != NULL);
 
     int ret = EC_OK;
@@ -328,7 +217,7 @@ int hw_tx_low(hw_t *phw) {
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx(hw_t *phw) {
+int hw_tx(struct hw_common *phw) {
     assert(phw != NULL);
 
     int ret = EC_OK;
