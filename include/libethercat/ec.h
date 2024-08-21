@@ -299,23 +299,6 @@ void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]);
 void ec_configure_dc(ec_t *pec, osal_uint64_t timer, ec_dc_mode_t mode, 
     void (*user_cb)(void *arg, int num), void *user_cb_arg);
 
-//! \brief Configures distributed clocks settling to time mode in 
-//         dc ref_clock mode. In other modes this setting has no effect.
-/*!
- * \param[in] pec           Pointer to EtherCAT master structure.
- * \param[in] settling_time Settling time to be set.
- */
-void ec_configure_dc_settling_time(ec_t *pec, double settling_time);
-
-//! \brief Configures distributed clocks settling to threshold mode in 
-//         dc ref_clock mode. In other modes this setting has no effect.
-/*!
- * \param[in] pec           Pointer to EtherCAT master structure.
- * \param[in] threshold     Settling threshold to be set in [ns].
- * \param[in] cycles        Cycles below threshold.
- */
-void ec_configure_dc_settling_threshold(ec_t *pec, double threshold, osal_uint32_t cycles);
-
 //! \brief Create process data groups.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
