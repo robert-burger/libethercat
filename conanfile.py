@@ -37,6 +37,7 @@ class MainProject(ConanFile):
         "hw_device_bpf": [ True, False ],
         "hw_device_pikeos": [ True, False ],
         "mbx_support_eoe" : [ True, False ],
+        "mbx_support_foe" : [ True, False ],
         "mbx_support_soe" : [ True, False ],
     }
     default_options = {
@@ -66,6 +67,7 @@ class MainProject(ConanFile):
         "hw_device_bpf": False,
         "hw_device_pikeos": False,
         "mbx_support_eoe": True,
+        "mbx_support_foe": True,
         "mbx_support_soe": True,
     }
 
@@ -133,6 +135,8 @@ class MainProject(ConanFile):
             args.append("--enable-device-pikeos")
         if not self.options.mbx_support_eoe:
             args.append("--disable-mbx-support-eoe")
+        if not self.options.mbx_support_foe:
+            args.append("--disable-mbx-support-foe")
         if not self.options.mbx_support_soe:
             args.append("--disable-mbx-support-soe")
 

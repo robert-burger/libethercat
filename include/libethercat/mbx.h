@@ -50,7 +50,9 @@
 #include "libethercat/soe.h"
 #endif
 
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 #include "libethercat/foe.h"
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 #include "libethercat/eoe.h"
@@ -144,7 +146,9 @@ typedef struct ec_mbx {
     ec_soe_t soe;               //!< \brief Structure for Servodrive over EtherCAT mailbox.
 #endif
 
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
     ec_foe_t foe;               //!< \brief Structure for File over EtherCAT mailbox.
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     ec_eoe_t eoe;               //!< \brief Strucutre for Ethernet over EtherCAT mailbox.

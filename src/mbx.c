@@ -107,9 +107,11 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         }
 #endif
 
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
             ec_foe_init(pec, slave);
         }
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {
@@ -161,9 +163,11 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
         }
 #endif
 
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) == EC_OK) {
             ec_foe_deinit(pec, slave);
         }
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
         if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_EOE) == EC_OK) {
@@ -532,6 +536,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                         }
                         break;
 #endif
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
                     case EC_MBX_FOE:
                         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
                             ec_foe_enqueue(pec, slave, p_entry);
@@ -540,6 +545,7 @@ static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_log(1, "MAILBOX_HANDLE", "slave %2d: got FoE frame, but slave has no support!\n", slave);
                         }
                         break;
+#endif
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
                     case EC_MBX_EOE:
                         if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {

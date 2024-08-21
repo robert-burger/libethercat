@@ -13,25 +13,29 @@ include_HEADERS = $(top_srcdir)/include/libethercat/coe.h \
 				  $(top_srcdir)/include/libethercat/ec.h \
 				  $(top_srcdir)/include/libethercat/eeprom.h \
 				  $(top_srcdir)/include/libethercat/error_codes.h \
-				  $(top_srcdir)/include/libethercat/foe.h \
-				  $(top_srcdir)/include/libethercat/eoe.h \
 				  $(top_srcdir)/include/libethercat/hw.h \
 				  $(top_srcdir)/include/libethercat/mbx.h \
 				  $(top_srcdir)/include/libethercat/async_loop.h \
 				  $(top_srcdir)/include/libethercat/regs.h \
 				  $(top_srcdir)/include/libethercat/slave.h \
-				  $(top_srcdir)/include/libethercat/soe.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
 				  $(top_srcdir)/include/libethercat/mii.h
 
 libethercat_la_SOURCES	= coe.c coe_master.c slave.c datagram.c pool.c async_loop.c ec.c \
-						  hw.c foe.c mbx.c eeprom.c dc.c idx.c mii.c
+						  hw.c mbx.c eeprom.c dc.c idx.c mii.c
 
 if MBX_SUPPORT_EOE
+include_HEADERS += $(top_srcdir)/include/libethercat/eoe.h
 libethercat_la_SOURCES += eoe.c
 endif
 
+if MBX_SUPPORT_FOE
+include_HEADERS += $(top_srcdir)/include/libethercat/foe.h
+libethercat_la_SOURCES += foe.c
+endif
+
 if MBX_SUPPORT_SOE
+include_HEADERS += $(top_srcdir)/include/libethercat/soe.h
 libethercat_la_SOURCES += soe.c
 endif
 
