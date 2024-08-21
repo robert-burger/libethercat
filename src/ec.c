@@ -993,7 +993,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
                 ec_pd_group_t *pd = &pec->pd_groups[i];
 
                 if (pd->cdg.p_idx != NULL) {
-                    pec->hw.tx_send[pd->cdg.p_idx->idx] = NULL;
+                    pec->phw->tx_send[pd->cdg.p_idx->idx] = NULL;
                     ec_index_put(&pec->idx_q, pd->cdg.p_idx);
                     pd->cdg.p_idx = NULL;
                 }
@@ -1006,7 +1006,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 
             // return distributed clocks datagram
             if (pec->dc.cdg.p_idx != NULL) {
-                pec->hw.tx_send[pec->dc.cdg.p_idx->idx] = NULL;
+                pec->phw->tx_send[pec->dc.cdg.p_idx->idx] = NULL;
                 ec_index_put(&pec->idx_q, pec->dc.cdg.p_idx);
                 pec->dc.cdg.p_idx = NULL;
             }
@@ -1018,7 +1018,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 
             // return broadcast state datagram
             if (pec->cdg_state.p_idx != NULL) {
-                pec->hw.tx_send[pec->cdg_state.p_idx->idx] = NULL;
+                pec->phw->tx_send[pec->cdg_state.p_idx->idx] = NULL;
                 ec_index_put(&pec->idx_q, pec->cdg_state.p_idx);
                 pec->cdg_state.p_idx = NULL;
             }
@@ -1065,15 +1065,13 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 //! open ethercat master
 /*!
  * \param ppec return value for ethercat master pointer
- * \param ifname ethercat master interface name
- * \param prio receive thread priority
- * \param cpumask receive thread cpumask
+ * \param phw  ethercat master network device access
  * \param eeprom_log log eeprom to stdout
  * \return 0 on succes, otherwise error code
  */
-int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eeprom_log) {
+int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     assert(pec != NULL);
-    assert(ifname != NULL);
+    assert(phw != NULL);
 
     // reset data structure
     (void)memset(pec, 0, sizeof(ec_t));
@@ -1120,10 +1118,8 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
     (void)pool_open(&pec->mbx_message_pool_recv_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_recv_free_entries[0]);
     (void)pool_open(&pec->mbx_message_pool_send_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_send_free_entries[0]);
 
-    if (ret == EC_OK) {
-        ret = hw_open(&pec->hw, pec, ifname, prio, cpumask);
-    }
-
+    pec->phw = phw;
+    
     if (ret == EC_OK) {
         ret = ec_async_loop_create(&pec->async_loop, pec);
     }
@@ -1154,7 +1150,7 @@ int ec_open(ec_t *pec, const osal_char_t *ifname, int prio, int cpumask, int eep
         if (pec != NULL) {
             ec_log(1, "MASTER_OPEN", "error occured, closing EtherCAT!\n");
 
-            int local_ret = hw_close(&pec->hw);
+            int local_ret = hw_close(pec->phw);
             if (local_ret != EC_OK) {
                 ec_log(1, "MASTER_OPEN", "hw_close failed with %d\n", local_ret);
             }
@@ -1188,7 +1184,7 @@ int ec_close(ec_t *pec) {
     ec_log(10, "MASTER_CLOSE", "destroying async loop\n");
     (void)ec_async_loop_destroy(&pec->async_loop);
     ec_log(10, "MASTER_CLOSE", "closing hardware handle\n");
-    (void)hw_close(&pec->hw);
+    (void)hw_close(pec->phw);
     ec_log(10, "MASTER_CLOSE", "freeing frame pool\n");
     (void)pool_close(&pec->pool);
 
@@ -1269,20 +1265,20 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         p_entry->user_cb = cb_block;
 
         // queue frame and trigger tx
-        pool_put(&pec->hw.tx_low, p_entry);
+        pool_put(&pec->phw->tx_low, p_entry);
 
         // send frame immediately if in sync mode
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
                 (pec->master_state != EC_STATE_OP)) {
-            if (hw_tx_low(&pec->hw) != EC_OK) {
+            if (hw_tx_low(pec->phw) != EC_OK) {
                 ec_log(1, "MASTER_TRANSCEIVE", "hw_tx failed!\n");
             }
         } else {
             osal_timer_t test;
             // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
-            osal_timer_init(&test, (10 * 8 * pec->hw.mtu_size) * 1.5);  
-            if (osal_timer_cmp(&test, &pec->hw.next_cylce_start, <)) {
-                if (hw_tx_low(&pec->hw) != EC_OK) {
+            osal_timer_init(&test, (10 * 8 * pec->phw->mtu_size) * 1.5);  
+            if (osal_timer_cmp(&test, &pec->phw->next_cylce_start, <)) {
+                if (hw_tx_low(pec->phw) != EC_OK) {
                     ec_log(1, "MASTER_TRANSCEIVE", "hw_tx_low failed!\n");
                 } 
             }
@@ -1366,12 +1362,12 @@ int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         p_entry->user_cb = cb_no_reply;
 
         // queue frame and return, we don't care about an answer
-        pool_put(&pec->hw.tx_low, p_entry);
+        pool_put(&pec->phw->tx_low, p_entry);
 
         // send frame immediately if in sync mode
         if (    (pec->master_state != EC_STATE_SAFEOP) &&
                 (pec->master_state != EC_STATE_OP)  ) {
-            if (hw_tx_low(&pec->hw) != EC_OK) {
+            if (hw_tx_low(pec->phw) != EC_OK) {
                 ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "hw_tx_low failed!\n");
             }
         }
@@ -1583,7 +1579,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 }
 
                 // queue frame and trigger tx
-                pool_put(&pec->hw.tx_high, pd->cdg.p_entry);
+                pool_put(&pec->phw->tx_high, pd->cdg.p_entry);
             }
         }
 
@@ -1626,7 +1622,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 }
 
                 // queue frame and trigger tx
-                pool_put(&pec->hw.tx_high, pd->cdg_lwr.p_entry);
+                pool_put(&pec->phw->tx_high, pd->cdg_lwr.p_entry);
             }
         }
 
@@ -1665,7 +1661,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 p_dg->len = pd->pdin_len;
 
                 // queue frame and trigger tx
-                pool_put(&pec->hw.tx_high, pd->cdg_lrd.p_entry);
+                pool_put(&pec->phw->tx_high, pd->cdg_lrd.p_entry);
             }
         }
 
@@ -1705,7 +1701,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
             p_dg->len = pd->log_mbx_state_len;
 
             // queue frame and trigger tx
-            pool_put(&pec->hw.tx_high, pd->cdg_lrd_mbx_state.p_entry);
+            pool_put(&pec->phw->tx_high, pd->cdg_lrd_mbx_state.p_entry);
         }
     }
     
@@ -1811,7 +1807,7 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
                 p_entry_dc_sto->user_cb = cb_no_reply;
 
                 // queue frame and trigger tx
-                pool_put(&pec->hw.tx_low, p_entry_dc_sto);
+                pool_put(&pec->phw->tx_low, p_entry_dc_sto);
             }
         } else {}
     }
@@ -1893,7 +1889,7 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
             }
 
             // queue frame and trigger tx
-            pool_put(&pec->hw.tx_high, pec->dc.cdg.p_entry);
+            pool_put(&pec->phw->tx_high, pec->dc.cdg.p_entry);
 
             pec->dc.sent_time_nsec = act_rtc_time;
         }
@@ -1994,7 +1990,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
         p_dg->len = 2;
 
         // queue frame and trigger tx
-        pool_put(&pec->hw.tx_high, pec->cdg_state.p_entry);
+        pool_put(&pec->phw->tx_high, pec->cdg_state.p_entry);
         osal_timer_init(&pec->cdg_state.timeout, 10000000);
     }
     

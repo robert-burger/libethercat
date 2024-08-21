@@ -53,6 +53,10 @@
 #include <drv/sbuf_hdr.h>
 #endif
 
+#define container_of(ptr, type, member) ({ \
+        __typeof__( ((type *)0)->member ) *__mptr = (void *)(ptr); \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
+
 /** \defgroup hardware_group HW
  *
  * This modules contains main EtherCAT hardware functions.
@@ -64,7 +68,7 @@
 
 // forward decl
 struct ec;
-struct hw;
+struct hw_common;
 
 //! Receive a frame from an EtherCAT hw device.
 /*!
@@ -72,7 +76,7 @@ struct hw;
  *
  * \return 0 or negative error code
  */
-typedef int (*hw_device_recv_t)(struct hw *phw);
+typedef int (*hw_device_recv_t)(struct hw_common *phw);
 
 //! Send a frame from an EtherCAT hw device.
 /*!
@@ -81,13 +85,13 @@ typedef int (*hw_device_recv_t)(struct hw *phw);
  *
  * \return 0 or negative error code
  */
-typedef int (*hw_device_send_t)(struct hw *phw, ec_frame_t *pframe);
+typedef int (*hw_device_send_t)(struct hw_common *phw, ec_frame_t *pframe);
 
 //! Doing internal stuff when finished sending frames
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-typedef void (*hw_device_send_finished_t)(struct hw *phw);
+typedef void (*hw_device_send_finished_t)(struct hw_common *phw);
 
 //! Get a free tx buffer from underlying hw device.
 /*!
@@ -96,19 +100,15 @@ typedef void (*hw_device_send_finished_t)(struct hw *phw);
  *
  * \return 0 or negative error code
  */
-typedef int (*hw_device_get_tx_buffer_t)(struct hw *phw, ec_frame_t **ppframe);
+typedef int (*hw_device_get_tx_buffer_t)(struct hw_common *phw, ec_frame_t **ppframe);
+
+#define ETH_FRAME_LEN   0x1518
 
 //! hardware structure
-typedef struct hw {
+typedef struct hw_common {
     struct ec *pec;                 //!< Pointer to EtherCAT master structure.
 
-    int sockfd;                     //!< raw socket file descriptor
     osal_uint32_t mtu_size;         //!< mtu size
-
-    // receiver thread settings
-    osal_task_t rxthread;           //!< receiver thread handle
-    int rxthreadrunning;            //!< receiver thread running flag
-
     osal_mutex_t hw_lock;           //!< transmit lock
 
     pool_t tx_high;                 //!< high priority datagrams
@@ -124,28 +124,7 @@ typedef struct hw {
     hw_device_send_t send;                      //!< \brief Function to send frames via device.
     hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
     hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
-
-#define ETH_FRAME_LEN   0x1518
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
-    osal_bool_t polling_mode;               //!< \brief Special interrupt-less polling-mode flag.
-    
-#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
-    int mmap_packets;               //!< \brief Doing mmap packets.
-    osal_char_t *rx_ring;           //!< kernel mmap receive buffers
-    osal_char_t *tx_ring;           //!< kernel mmap send buffers
-
-    osal_off_t rx_ring_offset;      //!< \brief Offset in RX ring.
-    osal_off_t tx_ring_offset;      //!< \brief Offset in TX ring.
-#endif
-
-#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
-    osal_bool_t use_sbuf;
-
-    vm_file_desc_t fd;                      //!< \brief Driver file descriptor.
-    drv_sbuf_desc_t sbuf;                   //!< \brief Driver SBUF descriptor.
-#endif
-} hw_t;                 //!< \brief Hardware struct type. 
+} hw_common_t;                 //!< \brief Hardware struct type. 
 
 #ifdef __cplusplus
 extern "C" {
@@ -153,41 +132,40 @@ extern "C" {
 
 //! open a new hw
 /*!
- * \param phw return hw 
- * \param devname ethernet device name
- * \param prio receive thread prio
- * \param cpumask receive thread cpumask
+ * \param[in]   phw         Pointer to hw structure.
+ * \param[in]   pec         Pointer to master structure.
+ *
  * \return 0 or negative error code
  */
-int hw_open(hw_t *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpumask);
+int hw_open(struct hw_common *phw, struct ec *pec);
 
 //! destroys a hw
 /*!
  * \param phw hw handle
  * \return 0 or negative error code
  */
-int hw_close(hw_t *phw);
+int hw_close(struct hw_common *phw);
 
 //! start sending queued ethercat datagrams
 /*!
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx_low(hw_t *phw);
+int hw_tx_low(struct hw_common *phw);
 
 //! start sending queued ethercat datagrams
 /*!
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx(hw_t *phw);
+int hw_tx(struct hw_common *phw);
 
 //! Process a received EtherCAT frame
 /*!
  * \param[in]   phw     Pointer to hw handle.
  * \param[in]   pframe  Pointer to received EtherCAT frame.
  */
-void hw_process_rx_frame(hw_t *phw, ec_frame_t *pframe);
+void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe);
 
 #ifdef __cplusplus
 }

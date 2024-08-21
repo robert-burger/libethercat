@@ -36,22 +36,27 @@ libethercat_la_SOURCES += soe.c
 endif
 
 if BUILD_DEVICE_SOCK_RAW_LEGACY
+include_HEADERS += $(top_srcdir)/include/libethercat/hw_sock_raw.h
 libethercat_la_SOURCES += hw_sock_raw.c
 endif
 
 if BUILD_DEVICE_SOCK_RAW_MMAPED
+include_HEADERS += $(top_srcdir)/include/libethercat/hw_sock_raw_mmaped.h
 libethercat_la_SOURCES += hw_sock_raw_mmaped.c
 endif
 
 if BUILD_DEVICE_FILE
+include_HEADERS += $(top_srcdir)/include/libethercat/hw_file.h
 libethercat_la_SOURCES += hw_file.c
 endif
 
 if BUILD_DEVICE_BPF
+include_HEADERS += $(top_srcdir)/include/libethercat/hw_bpf.h
 libethercat_la_SOURCES += hw_bpf.c
 endif
 
 if BUILD_PIKEOS
+include_HEADERS += $(top_srcdir)/include/libethercat/hw_pikeos.h
 libethercat_la_SOURCES += hw_pikeos.c
 endif
 
