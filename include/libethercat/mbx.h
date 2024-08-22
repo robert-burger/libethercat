@@ -44,10 +44,23 @@
 #include <libosal/osal.h>
 
 #include "libethercat/common.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 #include "libethercat/soe.h"
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 #include "libethercat/foe.h"
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 #include "libethercat/eoe.h"
+#endif
+
 #include "libethercat/pool.h"
 #include "libethercat/datagram.h"
 
@@ -130,11 +143,22 @@ typedef struct ec_mbx {
 
     pool_t message_pool_send_queued;//!< \brief Pool with mailbox buffers ready to be sent.
 
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
     ec_coe_t coe;               //!< \brief Structure for CANOpen over EtherCAT mailbox.
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
     ec_soe_t soe;               //!< \brief Structure for Servodrive over EtherCAT mailbox.
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
     ec_foe_t foe;               //!< \brief Structure for File over EtherCAT mailbox.
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     ec_eoe_t eoe;               //!< \brief Strucutre for Ethernet over EtherCAT mailbox.
-    
+#endif
+
     osal_uint32_t sm_state_bitno;
     osal_uint8_t *sm_state;     //!< Sync manager state of read mailbox.
                                 /*!<

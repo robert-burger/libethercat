@@ -8,7 +8,9 @@ if BUILD_POSIX
 SUBDIRS+=tools/ethercatdiag 
 SUBDIRS+=tools/eepromtool
 SUBDIRS+=tools/example_with_dc
+if MBX_SUPPORT_FOE
 SUBDIRS+=tools/foe_tool
+endif
 endif
 
 if BUILD_PIKEOS

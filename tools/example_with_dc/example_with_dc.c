@@ -64,7 +64,9 @@ int usage(int argc, char **argv) {
     printf("  -p|--prio             Set base priority for cyclic and rx thread.\n");
     printf("  -a|--affinity         Set CPU affinity for cyclic and rx thread.\n");
     printf("  -c|--clock            Distributed clock master (master/ref).\n");
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     printf("  -e|--eoe              Enable EoE for slave network comm.\n");
+#endif
     printf("  -f|--cycle-frequency  Specify cycle frequency in [Hz].\n");
     printf("  -b|--busy-wait        Don't sleep, do busy-wait instead.\n");
     printf("  --disable-overlapping Disable LRW data overlapping.\n");
@@ -130,7 +132,9 @@ int main(int argc, char **argv) {
     long reg = 0, val = 0;
     int base_prio = 60;
     int base_affinity = 0x8;
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     int eoe = 0;
+#endif
     int disable_overlapping = 0;
     int disable_lrw = 0;
     double dc_kp = 0.1;
@@ -146,10 +150,14 @@ int main(int argc, char **argv) {
         } else if ((strcmp(argv[i], "-v") == 0) || 
                 (strcmp(argv[i], "--verbose") == 0)) {
             max_print_level = 100;
-        } else if ((strcmp(argv[i], "-e") == 0) || 
+        } 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
+        else if ((strcmp(argv[i], "-e") == 0) || 
                 (strcmp(argv[i], "--eoe") == 0)) {
             eoe = 1;
-        } else if ((strcmp(argv[i], "-b") == 0) || 
+        } 
+#endif
+        else if ((strcmp(argv[i], "-b") == 0) || 
                 (strcmp(argv[i], "--busy-wait") == 0)) {
             wait_time = osal_busy_wait_until_nsec;
         } else if (strcmp(argv[i], "--disable-overlapping") == 0) {
@@ -299,6 +307,7 @@ int main(int argc, char **argv) {
     
     ec_set_state(&ec, EC_STATE_INIT);
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE
     if (eoe != 0) {
         osal_uint8_t ip[4] = { 1, 100, 168, 192 };
         ec_configure_tun(&ec, ip);
@@ -318,6 +327,7 @@ int main(int argc, char **argv) {
             }
         }
     }
+#endif
 
     ec_set_state(&ec, EC_STATE_PREOP);
 

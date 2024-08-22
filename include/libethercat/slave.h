@@ -43,6 +43,7 @@
 
 #include <libosal/types.h>
 
+#include "libethercat/config.h"
 #include "libethercat/common.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/dc.h"
@@ -312,7 +313,9 @@ typedef struct ec_slave {
     eeprom_info_t eeprom;       //!< EtherCAT slave EEPROM data
     ec_dc_info_slave_t dc;      //!< Distributed Clock settings
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     ec_eoe_slave_config_t eoe;  //!< EoE config
+#endif
     
     ec_state_t expected_state;  //!< Master expected slave state
     ec_state_t act_state;       //!< Actual/Last read slave state.
@@ -482,6 +485,7 @@ void ec_slave_mailbox_coe_init_cmd_init(ec_init_cmd_t *cmd,
         int transition, int id, int si_el, int ca_atn,
         osal_char_t *data, osal_size_t datalen);
 
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 //! Initialie SoE init command.
 /*!
  * This adds an EtherCAT slave init command. 
@@ -500,6 +504,7 @@ void ec_slave_mailbox_coe_init_cmd_init(ec_init_cmd_t *cmd,
 void ec_slave_mailbox_soe_init_cmd_init(ec_init_cmd_t *cmd,
         int transition, int id, int si_el, int ca_atn,
         osal_char_t *data, osal_size_t datalen);
+#endif
 
 //! Add master init command.
 /*!
@@ -531,6 +536,7 @@ void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave,
         int use_dc, int type, osal_uint32_t cycle_time_0, 
         osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 //! Adds master EoE settings.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -548,6 +554,7 @@ void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave,
 void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
         osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, 
         osal_uint8_t *dns, osal_char_t *dns_name);
+#endif
 
 const osal_char_t *al_status_code_2_string(int code);
 

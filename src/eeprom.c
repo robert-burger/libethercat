@@ -513,8 +513,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                         do_eeprom_log(10, "EEPROM_STRINGS", "slave %2d: stored strings %d\n", slave, slv->eeprom.strings_cnt);
                         if (slv->eeprom.strings_cnt > LEC_MAX_EEPROM_CAT_STRINGS) {
-                            slv->eeprom.strings_cnt = LEC_MAX_EEPROM_CAT_STRINGS;
-                            do_eeprom_log(10, "EEPROM_STRINGS", "        : warning: can only red %d strings\n", slv->eeprom.strings_cnt);
+                            do_eeprom_log(10, "EEPROM_STRINGS", "        : warning: can only store %" PRIu64 " strings\n", LEC_MAX_EEPROM_CAT_STRINGS);
                         }
 
                         if (!slv->eeprom.strings_cnt) {
@@ -534,12 +533,23 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                 read_string_len = string_len;
                             }
 
-                            (void)strncpy(&slv->eeprom.strings[i][0], (osal_char_t *)&ec_eeprom_buf[local_offset], read_string_len);
-                            local_offset += string_len;
+                            if (i >= LEC_MAX_EEPROM_CAT_STRINGS) {
+                                char tmp[65];
+                                read_string_len = min(64, read_string_len);
+                                (void)strncpy(&tmp[0], (osal_char_t *)&ec_eeprom_buf[local_offset], read_string_len);
+                                local_offset += string_len;
+                                tmp[read_string_len] = '\0';
+                            
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        (-)  string %2d, length %2d : %s\n", i, string_len, tmp);
+                            } else {
+                                (void)strncpy(&slv->eeprom.strings[i][0], (osal_char_t *)&ec_eeprom_buf[local_offset], read_string_len);
+                                local_offset += string_len;
 
-                            slv->eeprom.strings[i][read_string_len] = '\0';
+                                slv->eeprom.strings[i][read_string_len] = '\0';
 
-                            do_eeprom_log(10, "EEPROM_STRINGS", "          string %2d, length %2d : %s\n", i, string_len, slv->eeprom.strings[i]);
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        (S)  string %2d, length %2d : %s\n", i, string_len, slv->eeprom.strings[i]);
+                            }
+                            
                             if (local_offset > (cat_len * 2u)) {
                                 do_eeprom_log(5, "EEPROM_STRINGS", "          something wrong in eeprom string section\n");
                                 break;
