@@ -54,7 +54,11 @@
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"
 #include "libethercat/mbx.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
+
 #include "libethercat/dc.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/error_codes.h"
@@ -1177,7 +1181,9 @@ int ec_close(ec_t *pec) {
 
     ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     ec_eoe_destroy_tun(pec);
+#endif
 
     ec_log(10, "MASTER_CLOSE", "destroying async loop\n");
     (void)ec_async_loop_destroy(&pec->async_loop);
@@ -1997,6 +2003,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
     return ret;
 }
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 //! configures tun device of EtherCAT master, used for EoE slaves.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -2011,6 +2018,7 @@ void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
         ec_log(1, "MASTER_CONFIGURE_TUN", "ec_eoe_setup_tun failed!\n");
     }
 }
+#endif
 
 //! \brief Configures distributed clocks settings on EtherCAT master.
 /*!

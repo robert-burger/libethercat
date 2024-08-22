@@ -41,9 +41,19 @@
 
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 #include "libethercat/soe.h"
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 #include "libethercat/foe.h"
+#endif
+
 #include "libethercat/mbx.h"
 #include "libethercat/dc.h"
 #include "libethercat/error_codes.h"
@@ -160,6 +170,7 @@ void ec_slave_mailbox_coe_init_cmd_init(ec_init_cmd_t *cmd,
     (void)memcpy(cmd->data, data, datalen);
 }
 
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 // initialize init command structure
 void ec_slave_mailbox_soe_init_cmd_init(ec_init_cmd_t *cmd,
         int transition, int id, int si_el, int ca_atn,
@@ -177,6 +188,7 @@ void ec_slave_mailbox_soe_init_cmd_init(ec_init_cmd_t *cmd,
 
     (void)memcpy(cmd->data, data, datalen);
 }
+#endif
 
 // add master init command
 void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd)
@@ -652,11 +664,17 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
         // we're already done
     } else {
         // check sm settings
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
         if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) != 0u) {
             ret = ec_coe_generate_mapping(pec, slave);
-        } else if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
+        } else 
+#endif
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
+        if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
             ret = ec_soe_generate_mapping(pec, slave);
-        } else {
+        } else
+#endif
+        {
             // try eeprom
             for (osal_uint8_t sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
                 int txpdos_cnt = 0;
@@ -744,6 +762,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                     switch (cmd->type) {
                         default:
                             break;
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
                         case EC_MBX_COE: {
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending CoE init cmd 0x%04X:%d, "
@@ -762,6 +781,8 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                             } 
                             break;
                         }
+#endif
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
                         case EC_MBX_SOE: {
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending SoE init cmd 0x%04X:%d, "
@@ -780,6 +801,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                             } 
                             break;
                         }
+#endif
                     }
                 }
 
@@ -813,6 +835,7 @@ void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
     osal_mutex_destroy(&slv->transition_mutex);
 }
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 static osal_bool_t check_null(osal_uint8_t *ptr, osal_size_t len) {
     osal_bool_t ret = OSAL_TRUE;
 
@@ -825,6 +848,7 @@ static osal_bool_t check_null(osal_uint8_t *ptr, osal_size_t len) {
 
     return ret;
 }
+#endif
 
 // state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
@@ -968,6 +992,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     ret = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
                 }
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
                 // apply eoe settings if any
                 if ((ret == EC_OK) && (slv->eoe.use_eoe != 0)) {
                     ec_log(10, get_transition_string(transition), 
@@ -1012,6 +1037,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     ret = ec_eoe_set_ip_parameter(pec, slave, slv->eoe.mac, slv->eoe.ip_address, 
                             slv->eoe.subnet, slv->eoe.gateway, slv->eoe.dns, slv->eoe.dns_name);
                 }
+#endif
 
                 if ((ret != EC_OK) || (transition == INIT_2_PREOP) || (transition == INIT_2_BOOT)) {
                     break;
@@ -1232,9 +1258,13 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // allocate sub device structures
                 if (slv->eeprom.general.ds402_channels > 0u) {
                     slv->subdev_cnt = slv->eeprom.general.ds402_channels;
-                } else if (slv->eeprom.general.soe_channels > 0u) {
+                } 
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
+                else if (slv->eeprom.general.soe_channels > 0u) {
                     slv->subdev_cnt = slv->eeprom.general.soe_channels;
-                } else {
+                } 
+#endif
+                else {
                     slv->subdev_cnt = 0;
                 }
 
@@ -1276,6 +1306,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
     return ret;
 }
+
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 
 //! Adds master EoE settings.
 /*!
@@ -1322,4 +1354,6 @@ void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
 #undef EOE_SET
 
 }
+
+#endif
 
