@@ -43,7 +43,6 @@ var group__slave__group =
       [ "dc", "structec__slave.html#a0ed78d887087d45e6874e68c1df6e922", null ],
       [ "eeprom", "structec__slave.html#af28408ebcc73322ac847f9a2da38024f", null ],
       [ "entry_port", "structec__slave.html#a78b3d889aa82e5a0388a86e3487cac0e", null ],
-      [ "eoe", "structec__slave.html#a24b58ff51a74edb59538d174c0f367f1", null ],
       [ "expected_state", "structec__slave.html#a514d0f49d1d6aedd636d0f58003707cf", null ],
       [ "features", "structec__slave.html#a9a181f75a90f3b8cde352a79ee05773b", null ],
       [ "fixed_address", "structec__slave.html#af3ab1b4c70665e0bc96d27418ac9adcf", null ],
@@ -113,10 +112,8 @@ var group__slave__group =
     [ "ec_slave_get_state", "group__slave__group.html#gaeaa337cd1b0ebf6564da3819d28f894f", null ],
     [ "ec_slave_init", "group__slave__group.html#ga07dd3a968c535cd1881b419b2f1be4e3", null ],
     [ "ec_slave_mailbox_coe_init_cmd_init", "group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0", null ],
-    [ "ec_slave_mailbox_soe_init_cmd_init", "group__slave__group.html#gaee42d5626e8d010646bb4926f080b0ae", null ],
     [ "ec_slave_prepare_state_transition", "group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57", null ],
     [ "ec_slave_set_dc_config", "group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94", null ],
-    [ "ec_slave_set_eoe_settings", "group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407", null ],
     [ "ec_slave_set_state", "group__slave__group.html#gade31717a7d8d528f538806c4e248a504", null ],
     [ "ec_slave_state_transition", "group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746", null ]
 ];

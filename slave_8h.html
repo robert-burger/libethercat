@@ -96,6 +96,7 @@ $(document).ready(function(){initNavTree('slave_8h.html',''); initResizable(); }
 <p>EtherCAT slave functions.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;libosal/types.h&gt;</code><br />
+<code>#include &quot;libethercat/config.h&quot;</code><br />
 <code>#include &quot;<a class="el" href="common_8h_source.html">libethercat/common.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="eeprom_8h_source.html">libethercat/eeprom.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="dc_8h_source.html">libethercat/dc.h</a>&quot;</code><br />
@@ -305,18 +306,12 @@ Functions</h2></td></tr>
 <tr class="memitem:gae9aa3505dec963178bd665bc907b46f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">ec_slave_mailbox_coe_init_cmd_init</a> (<a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *cmd, int transition, int id, int si_el, int ca_atn, osal_char_t *data, osal_size_t datalen)</td></tr>
 <tr class="memdesc:gae9aa3505dec963178bd665bc907b46f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize CoE init command.  <a href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">More...</a><br /></td></tr>
 <tr class="separator:gae9aa3505dec963178bd665bc907b46f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaee42d5626e8d010646bb4926f080b0ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#gaee42d5626e8d010646bb4926f080b0ae">ec_slave_mailbox_soe_init_cmd_init</a> (<a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *cmd, int transition, int id, int si_el, int ca_atn, osal_char_t *data, osal_size_t datalen)</td></tr>
-<tr class="memdesc:gaee42d5626e8d010646bb4926f080b0ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialie SoE init command.  <a href="group__slave__group.html#gaee42d5626e8d010646bb4926f080b0ae">More...</a><br /></td></tr>
-<tr class="separator:gaee42d5626e8d010646bb4926f080b0ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">ec_slave_add_init_cmd</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint16_t slave, <a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *cmd)</td></tr>
 <tr class="memdesc:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add master init command.  <a href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">More...</a><br /></td></tr>
 <tr class="separator:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga625acf0f390c93a7d76a111632dc7e94"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">ec_slave_set_dc_config</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, int use_dc, int type, osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift)</td></tr>
 <tr class="memdesc:ga625acf0f390c93a7d76a111632dc7e94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set Distributed Clocks config to slave.  <a href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">More...</a><br /></td></tr>
 <tr class="separator:ga625acf0f390c93a7d76a111632dc7e94"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407">ec_slave_set_eoe_settings</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, osal_uint8_t *dns, osal_char_t *dns_name)</td></tr>
-<tr class="memdesc:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds master EoE settings.  <a href="group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407">More...</a><br /></td></tr>
-<tr class="separator:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga369c3e7751dbddd237458afec10444e6"><td class="memItemLeft" align="right" valign="top">
 const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_status_code_2_string</b> (int code)</td></tr>
 <tr class="separator:ga369c3e7751dbddd237458afec10444e6"><td class="memSeparator" colspan="2">&#160;</td></tr>

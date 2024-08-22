@@ -7,7 +7,6 @@ var structec__slave =
     [ "dc", "structec__slave.html#a0ed78d887087d45e6874e68c1df6e922", null ],
     [ "eeprom", "structec__slave.html#af28408ebcc73322ac847f9a2da38024f", null ],
     [ "entry_port", "structec__slave.html#a78b3d889aa82e5a0388a86e3487cac0e", null ],
-    [ "eoe", "structec__slave.html#a24b58ff51a74edb59538d174c0f367f1", null ],
     [ "expected_state", "structec__slave.html#a514d0f49d1d6aedd636d0f58003707cf", null ],
     [ "features", "structec__slave.html#a9a181f75a90f3b8cde352a79ee05773b", null ],
     [ "fixed_address", "structec__slave.html#af3ab1b4c70665e0bc96d27418ac9adcf", null ],

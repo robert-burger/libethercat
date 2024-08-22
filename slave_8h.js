@@ -46,10 +46,8 @@ var slave_8h =
     [ "ec_slave_get_state", "group__slave__group.html#gaeaa337cd1b0ebf6564da3819d28f894f", null ],
     [ "ec_slave_init", "group__slave__group.html#ga07dd3a968c535cd1881b419b2f1be4e3", null ],
     [ "ec_slave_mailbox_coe_init_cmd_init", "group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0", null ],
-    [ "ec_slave_mailbox_soe_init_cmd_init", "group__slave__group.html#gaee42d5626e8d010646bb4926f080b0ae", null ],
     [ "ec_slave_prepare_state_transition", "group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57", null ],
     [ "ec_slave_set_dc_config", "group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94", null ],
-    [ "ec_slave_set_eoe_settings", "group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407", null ],
     [ "ec_slave_set_state", "group__slave__group.html#gade31717a7d8d528f538806c4e248a504", null ],
     [ "ec_slave_state_transition", "group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746", null ],
     [ "LIST_HEAD", "group__slave__group.html#ga824a2df86e2db60ac6edec51b7fdf6f0", null ]

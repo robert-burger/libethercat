@@ -295,18 +295,12 @@ Functions</h2></td></tr>
 <tr class="memitem:gae9aa3505dec963178bd665bc907b46f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">ec_slave_mailbox_coe_init_cmd_init</a> (<a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *cmd, int transition, int id, int si_el, int ca_atn, osal_char_t *data, osal_size_t datalen)</td></tr>
 <tr class="memdesc:gae9aa3505dec963178bd665bc907b46f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize CoE init command.  <a href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">More...</a><br /></td></tr>
 <tr class="separator:gae9aa3505dec963178bd665bc907b46f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaee42d5626e8d010646bb4926f080b0ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#gaee42d5626e8d010646bb4926f080b0ae">ec_slave_mailbox_soe_init_cmd_init</a> (<a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *cmd, int transition, int id, int si_el, int ca_atn, osal_char_t *data, osal_size_t datalen)</td></tr>
-<tr class="memdesc:gaee42d5626e8d010646bb4926f080b0ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialie SoE init command.  <a href="group__slave__group.html#gaee42d5626e8d010646bb4926f080b0ae">More...</a><br /></td></tr>
-<tr class="separator:gaee42d5626e8d010646bb4926f080b0ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">ec_slave_add_init_cmd</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint16_t slave, <a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *cmd)</td></tr>
 <tr class="memdesc:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add master init command.  <a href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">More...</a><br /></td></tr>
 <tr class="separator:ga7c6de79e7358dba8794f6f9ceb31e793"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga625acf0f390c93a7d76a111632dc7e94"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">ec_slave_set_dc_config</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, int use_dc, int type, osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift)</td></tr>
 <tr class="memdesc:ga625acf0f390c93a7d76a111632dc7e94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set Distributed Clocks config to slave.  <a href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">More...</a><br /></td></tr>
 <tr class="separator:ga625acf0f390c93a7d76a111632dc7e94"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407">ec_slave_set_eoe_settings</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, osal_uint8_t *dns, osal_char_t *dns_name)</td></tr>
-<tr class="memdesc:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds master EoE settings.  <a href="group__slave__group.html#ga5519b9d0b9bad0a1e3b804904ca35407">More...</a><br /></td></tr>
-<tr class="separator:ga5519b9d0b9bad0a1e3b804904ca35407"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga369c3e7751dbddd237458afec10444e6"><td class="memItemLeft" align="right" valign="top"><a id="ga369c3e7751dbddd237458afec10444e6"></a>
 const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_status_code_2_string</b> (int code)</td></tr>
 <tr class="separator:ga369c3e7751dbddd237458afec10444e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -364,7 +358,7 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">    <a class="code" href="structec__slave.html">ec_slave_t</a> *(ptr) = (<a class="code" href="structec__slave.html">ec_slave_t</a> *)&amp;pec-&gt;slaves[slave]; \</div>
 <div class="line">    assert((ptr) != NULL);</div>
-<div class="ttc" id="astructec__slave_html"><div class="ttname"><a href="structec__slave.html">ec_slave</a></div><div class="ttdef"><b>Definition:</b> slave.h:228</div></div>
+<div class="ttc" id="astructec__slave_html"><div class="ttname"><a href="structec__slave.html">ec_slave</a></div><div class="ttdef"><b>Definition:</b> slave.h:229</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -649,79 +643,6 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
 
 </div>
 </div>
-<a id="gaee42d5626e8d010646bb4926f080b0ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaee42d5626e8d010646bb4926f080b0ae">&#9670;&nbsp;</a></span>ec_slave_mailbox_soe_init_cmd_init()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ec_slave_mailbox_soe_init_cmd_init </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__slave__group.html#ga7f3f7dc1f423aafa120f00f90f820109">ec_init_cmd_t</a> *&#160;</td>
-          <td class="paramname"><em>cmd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>transition</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>id</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>si_el</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>ca_atn</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_char_t *&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_size_t&#160;</td>
-          <td class="paramname"><em>datalen</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initialie SoE init command. </p>
-<p>This adds an EtherCAT slave init command.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">cmd</td><td>Init command to add. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">transition</td><td>EtherCAT state transition in form 0xab, where 'a' is the state we are coming from and 'b' is the state we want to get. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>Either SoE Index number or the ServoDrive IDN. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">si_el</td><td>Either SoE SubIndex or ServoDrive element number. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">ca_atn</td><td>Either SoE complete access or ServoDrive ATN. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>Pointer to memory buffer with data which should be transfered. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">datalen</td><td>Length of <code>data</code> </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="gae52a9b36266876b5b9a0127748d8cf57"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gae52a9b36266876b5b9a0127748d8cf57">&#9670;&nbsp;</a></span>ec_slave_prepare_state_transition()</h2>
 
@@ -834,85 +755,6 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_time_0</td><td>Cycle time of sync 0 [ns]. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_time_1</td><td>Cycle time of sync 1 [ns]. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_shift</td><td>Cycle shift time [ns]. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ga5519b9d0b9bad0a1e3b804904ca35407"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5519b9d0b9bad0a1e3b804904ca35407">&#9670;&nbsp;</a></span>ec_slave_set_eoe_settings()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ec_slave_set_eoe_settings </td>
-          <td>(</td>
-          <td class="paramtype">struct <a class="el" href="structec.html">ec</a> *&#160;</td>
-          <td class="paramname"><em>pec</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_uint16_t&#160;</td>
-          <td class="paramname"><em>slave</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_uint8_t *&#160;</td>
-          <td class="paramname"><em>mac</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_uint8_t *&#160;</td>
-          <td class="paramname"><em>ip_address</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_uint8_t *&#160;</td>
-          <td class="paramname"><em>subnet</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_uint8_t *&#160;</td>
-          <td class="paramname"><em>gateway</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_uint8_t *&#160;</td>
-          <td class="paramname"><em>dns</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">osal_char_t *&#160;</td>
-          <td class="paramname"><em>dns_name</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Adds master EoE settings. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">mac</td><td>Pointer to 6 byte MAC address (mandatory). </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">ip_address</td><td>Pointer to 4 byte IP address (optional maybe NULL). </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">subnet</td><td>Pointer to 4 byte subnet address (optional maybe NULL). </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">gateway</td><td>Pointer to 4 byte gateway address (optional maybe NULL). </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>Pointer to 4 byte DNS address (optional maybe NULL). </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">dns_name</td><td>Null-terminated domain name server string. </td></tr>
   </table>
   </dd>
 </dl>
