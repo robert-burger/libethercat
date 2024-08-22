@@ -62,7 +62,7 @@ static struct bpf_insn insns[] = {
 };
 
 // forward declarations
-int hw_device_bpf_send(hw_t *phw, ec_frame_t *pframe);
+int hw_device_bpf_send(hw_t *phw, ec_frame_t *pframe, pooltype_t pool_type);
 int hw_device_bpf_recv(hw_t *phw);
 void hw_device_bpf_send_finished(hw_t *phw);
 int hw_device_bpf_get_tx_buffer(hw_t *phw, ec_frame_t **ppframe);

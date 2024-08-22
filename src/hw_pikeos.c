@@ -61,7 +61,7 @@
 #include <drv/sbuf_common_svc.h>
 
 // forward declarations
-int hw_device_pikeos_send(struct hw_common *phw, ec_frame_t *pframe);
+int hw_device_pikeos_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type);
 int hw_device_pikeos_recv(struct hw_common *phw);
 void hw_device_pikeos_send_finished(struct hw_common *phw);
 int hw_device_pikeos_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
@@ -324,12 +324,15 @@ int hw_device_pikeos_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) 
 /*!
  * \param[in]   phw         Pointer to hw handle. 
  * \param[in]   pframe      Pointer to frame buffer.
+ * \param[in]   pool_type   Pool type to distinguish between high and low prio frames.
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_send(struct hw_common *phw, ec_frame_t *pframe) {
+int hw_device_pikeos_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type) {
     assert(phw != NULL);
     assert(pframe != NULL);
+
+    (void)pool_type;
 
     struct hw_pikeos *phw_pikeos = container_of(phw, struct hw_pikeos, common);
 

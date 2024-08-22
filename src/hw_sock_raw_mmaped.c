@@ -65,7 +65,7 @@
 #include <errno.h>
 
 // forward declarations
-int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe);
+int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type);
 int hw_device_sock_raw_mmaped_recv(struct hw_common *phw);
 void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw);
 int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
@@ -365,12 +365,15 @@ int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **
 /*!
  * \param[in]   phw         Pointer to hw handle. 
  * \param[in]   pframe      Pointer to frame buffer.
+ * \param[in]   pool_type   Pool type to distinguish between high and low prio frames.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe) {
+int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type) {
     assert(phw != NULL);
     assert(pframe != NULL);
+
+    (void)pool_type;
 
     int ret = EC_OK;
     struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);

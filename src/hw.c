@@ -144,11 +144,12 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
 }
 
 //! internal tx func
-static void hw_tx_pool(struct hw_common *phw, pool_t *pool) {
+static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     assert(phw != NULL);
 
     osal_bool_t sent = OSAL_FALSE;
     ec_frame_t *pframe = NULL;
+    pool_t *pool = pool_type == POOL_HIGH ? &phw->tx_high : &phw->tx_low;
 
     (void)phw->get_tx_buffer(phw, &pframe);
 
@@ -170,7 +171,7 @@ static void hw_tx_pool(struct hw_common *phw, pool_t *pool) {
 
         if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len != sizeof(ec_frame_t)) {
-                (void)phw->send(phw, pframe);
+                (void)phw->send(phw, pframe, pool_type);
                 sent = OSAL_TRUE;
                 (void)phw->get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
@@ -210,7 +211,7 @@ int hw_tx_low(struct hw_common *phw) {
     int ret = EC_OK;
 
     osal_mutex_lock(&phw->hw_lock);
-    hw_tx_pool(phw, &phw->tx_low);
+    hw_tx_pool(phw, POOL_LOW);
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;
@@ -229,8 +230,8 @@ int hw_tx(struct hw_common *phw) {
     osal_mutex_lock(&phw->hw_lock);
 
     osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
-    hw_tx_pool(phw, &phw->tx_high);
-    hw_tx_pool(phw, &phw->tx_low);
+    hw_tx_pool(phw, POOL_HIGH);
+    hw_tx_pool(phw, POOL_LOW);
 
     osal_mutex_unlock(&phw->hw_lock);
 

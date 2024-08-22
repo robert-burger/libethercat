@@ -70,6 +70,12 @@
 struct ec;
 struct hw_common;
 
+//! Flag to distinguish the pool types during processing
+typedef enum pooltype {
+    POOL_HIGH,
+    POOL_LOW,
+} pooltype_t; //!< \brief pool type struct type. 
+              //
 //! Receive a frame from an EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -82,10 +88,11 @@ typedef int (*hw_device_recv_t)(struct hw_common *phw);
 /*!
  * \param[in]   phw         Pointer to hw handle. 
  * \param[in]   pframe      Pointer to frame buffer.
+ * \param[in]   pool_type   Pool type to distinguish between high and low prio frames.
  *
  * \return 0 or negative error code
  */
-typedef int (*hw_device_send_t)(struct hw_common *phw, ec_frame_t *pframe);
+typedef int (*hw_device_send_t)(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type);
 
 //! Doing internal stuff when finished sending frames
 /*!
