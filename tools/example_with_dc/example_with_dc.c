@@ -88,6 +88,7 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 
 static ec_t ec;
 static osal_uint64_t cycle_rate = 1000000;
+static osal_uint64_t act_cycle_rate = 1000000;
 static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
 osal_retval_t (*wait_time)(osal_uint64_t) = osal_sleep_until_nsec;
@@ -107,7 +108,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     no_verbose_log(0, NULL, "cyclic_task: running endless loop, cycle rate is %lu\n", cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
-        abs_timeout += cycle_rate;
+        abs_timeout += act_cycle_rate;
         (void)wait_time(abs_timeout);
         time_start = osal_trace_point(tx_start);
 
@@ -321,12 +322,10 @@ int main(int argc, char **argv) {
 
     ec_set_state(&ec, EC_STATE_PREOP);
 
-    ec.dc.control.kp = dc_kp;
-    ec.dc.control.ki = dc_ki;
     ec_configure_dc(&ec, cycle_rate, dc_mode, ({
                 void anon_cb(void *arg, int num) { 
                     if (dc_mode == dc_mode_ref_clock) {
-                        cycle_rate += ec.dc.timer_correction;
+                        act_cycle_rate = cycle_rate + ec.dc.timer_correction;
                     }
 
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
@@ -334,6 +333,13 @@ int main(int argc, char **argv) {
 
                     osal_trace_time(roundtrip_duration, time_end - time_start);
                 } &anon_cb; }), NULL);
+
+    int cycle_rate_hz = 1. / (cycle_rate * 1E-9);
+    ec.dc.control.kp = dc_kp / cycle_rate_hz;
+    ec.dc.control.ki = dc_ki / (cycle_rate_hz * cycle_rate_hz);
+    ec.dc.control.diffsum_limit = cycle_rate / 10000.;
+    //ec_configure_dc_settling_time(&ec, 50000000000);
+//    ec_configure_dc_settling_threshold(&ec, 5000, 10000); // 1000 cycles below 5000ns
 
     // -----------------------------------------------------------
     // creating process data groups
@@ -381,11 +387,11 @@ int main(int argc, char **argv) {
         no_verbose_log(0, NULL, 
                 "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
+                "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
                 ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
                 to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
                 to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
-                to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
+                to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit), to_us(ec.dc.act_diff), ec.dc.control.diffsum, act_cycle_rate);
 	}
 
     osal_task_join(&cyclic_task_hdl, NULL);
