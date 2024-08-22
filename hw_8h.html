@@ -87,6 +87,7 @@ $(document).ready(function(){initNavTree('hw_8h.html',''); initResizable(); });
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">hw.h File Reference</div>  </div>
@@ -124,12 +125,15 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:gaa211bde91362d8546c64c3424689e603"><td class="memItemLeft" align="right" valign="top">typedef enum <a class="el" href="group__hardware__group.html#ga78f817daf3daff912062dc6c44eb8e46">pooltype</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gaa211bde91362d8546c64c3424689e603">pooltype_t</a></td></tr>
+<tr class="memdesc:gaa211bde91362d8546c64c3424689e603"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag to distinguish the pool types during processing.  <a href="group__hardware__group.html#gaa211bde91362d8546c64c3424689e603">More...</a><br /></td></tr>
+<tr class="separator:gaa211bde91362d8546c64c3424689e603"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaed7debe264ae67664ccf62196c477ef9"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gaed7debe264ae67664ccf62196c477ef9">hw_device_recv_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
 <tr class="memdesc:gaed7debe264ae67664ccf62196c477ef9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive a frame from an EtherCAT hw device.  <a href="group__hardware__group.html#gaed7debe264ae67664ccf62196c477ef9">More...</a><br /></td></tr>
 <tr class="separator:gaed7debe264ae67664ccf62196c477ef9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf7b32af799b17b9a2757edf9715f0a9b"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gaf7b32af799b17b9a2757edf9715f0a9b">hw_device_send_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
-<tr class="memdesc:gaf7b32af799b17b9a2757edf9715f0a9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a frame from an EtherCAT hw device.  <a href="group__hardware__group.html#gaf7b32af799b17b9a2757edf9715f0a9b">More...</a><br /></td></tr>
-<tr class="separator:gaf7b32af799b17b9a2757edf9715f0a9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga72177235f97a5ee413558c2e4d0aa8ac"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga72177235f97a5ee413558c2e4d0aa8ac">hw_device_send_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe, <a class="el" href="group__hardware__group.html#gaa211bde91362d8546c64c3424689e603">pooltype_t</a> pool_type)</td></tr>
+<tr class="memdesc:ga72177235f97a5ee413558c2e4d0aa8ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a frame from an EtherCAT hw device.  <a href="group__hardware__group.html#ga72177235f97a5ee413558c2e4d0aa8ac">More...</a><br /></td></tr>
+<tr class="separator:ga72177235f97a5ee413558c2e4d0aa8ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac97f1d9eb2db1a7d95f3f6cf9825c5d8"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gac97f1d9eb2db1a7d95f3f6cf9825c5d8">hw_device_send_finished_t</a>) (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
 <tr class="memdesc:gac97f1d9eb2db1a7d95f3f6cf9825c5d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Doing internal stuff when finished sending frames.  <a href="group__hardware__group.html#gac97f1d9eb2db1a7d95f3f6cf9825c5d8">More...</a><br /></td></tr>
 <tr class="separator:gac97f1d9eb2db1a7d95f3f6cf9825c5d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -142,6 +146,14 @@ Typedefs</h2></td></tr>
 <tr class="memitem:gaecb659d11c6edf688c5ad1583f36eee7"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structhw__common.html">hw_common</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#gaecb659d11c6edf688c5ad1583f36eee7">hw_common_t</a></td></tr>
 <tr class="memdesc:gaecb659d11c6edf688c5ad1583f36eee7"><td class="mdescLeft">&#160;</td><td class="mdescRight">hardware structure  <a href="group__hardware__group.html#gaecb659d11c6edf688c5ad1583f36eee7">More...</a><br /></td></tr>
 <tr class="separator:gaecb659d11c6edf688c5ad1583f36eee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:ga78f817daf3daff912062dc6c44eb8e46"><td class="memItemLeft" align="right" valign="top"><a id="ga78f817daf3daff912062dc6c44eb8e46"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga78f817daf3daff912062dc6c44eb8e46">pooltype</a> { <b>POOL_HIGH</b>
+, <b>POOL_LOW</b>
+ }</td></tr>
+<tr class="memdesc:ga78f817daf3daff912062dc6c44eb8e46"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag to distinguish the pool types during processing. <br /></td></tr>
+<tr class="separator:ga78f817daf3daff912062dc6c44eb8e46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
