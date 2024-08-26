@@ -1179,18 +1179,10 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
 int ec_close(ec_t *pec) {
     assert(pec != NULL);
 
-    ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
-
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
+    ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
     ec_eoe_destroy_tun(pec);
 #endif
-
-    ec_log(10, "MASTER_CLOSE", "destroying async loop\n");
-    (void)ec_async_loop_destroy(&pec->async_loop);
-    ec_log(10, "MASTER_CLOSE", "closing hardware handle\n");
-    (void)hw_close(pec->phw);
-    ec_log(10, "MASTER_CLOSE", "freeing frame pool\n");
-    (void)pool_close(&pec->pool);
 
     ec_log(10, "MASTER_CLOSE", "destroying pd_groups\n");
     ec_index_deinit(&pec->idx_q);
@@ -1205,6 +1197,13 @@ int ec_close(ec_t *pec) {
     }
 
     pec->slave_cnt = 0;
+
+    ec_log(10, "MASTER_CLOSE", "destroying async loop\n");
+    (void)ec_async_loop_destroy(&pec->async_loop);
+    ec_log(10, "MASTER_CLOSE", "closing hardware handle\n");
+    (void)hw_close(pec->phw);
+    ec_log(10, "MASTER_CLOSE", "freeing frame pool\n");
+    (void)pool_close(&pec->pool);
 
     (void)pool_close(&pec->mbx_message_pool_recv_free);
     (void)pool_close(&pec->mbx_message_pool_send_free);
