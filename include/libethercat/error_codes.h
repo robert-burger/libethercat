@@ -101,9 +101,9 @@
 #define EC_ERROR_MAILBOX_READ                   (EC_ERROR_MAILBOX_MASK | 0x00004000)        //!< \brief Mailbox error on reading mailbox.
 #define EC_ERROR_MAILBOX_WRITE                  (EC_ERROR_MAILBOX_MASK | 0x00008000)        //!< \brief Mailbox error on writing mailbox.
 
-#define EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS    (EC_ERROR_MAILBOX_MASK | 0x00000001)        //!< \brief Mailbox ran out of read buffers. See LEC_MAX_MBX_ENTRIES.
-#define EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS   (EC_ERROR_MAILBOX_MASK | 0x00000002)        //!< \brief Mailbox ran out of write buffers. See LEC_MAX_MBX_ENTRIES.
-#define EC_ERROR_MAILBOX_BUFFER_TOO_SMALL       (EC_ERROR_MAILBOX_MASK | 0x00000004)        //!< \brief Mailbox buffer is too small.
+#define EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS    (EC_ERROR_MAILBOX_MASK | 0x00010000)        //!< \brief Mailbox ran out of read buffers. See LEC_MAX_MBX_ENTRIES.
+#define EC_ERROR_MAILBOX_OUT_OF_WRITE_BUFFERS   (EC_ERROR_MAILBOX_MASK | 0x00020000)        //!< \brief Mailbox ran out of write buffers. See LEC_MAX_MBX_ENTRIES.
+#define EC_ERROR_MAILBOX_BUFFER_TOO_SMALL       (EC_ERROR_MAILBOX_MASK | 0x00040000)        //!< \brief Mailbox buffer is too small.
 
 #define EC_ERROR_MAILBOX_COE_MASK               (0x00200000)                                //!< \brief CoE mailbox error mask.
 #define EC_ERROR_MAILBOX_COE_INDEX_NOT_FOUND    (EC_ERROR_MAILBOX_COE_MASK | 0x00000001)    //!< \brief Mailbox CoE
