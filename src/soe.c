@@ -422,6 +422,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                     if (op_code != EC_SOE_WRITE_RES) {
                         ec_log(5, "SOE_WRITE", "got unexpected response %d\n", op_code);
                     } else {
+                        ret = EC_OK;
                         break;
                     }
 
