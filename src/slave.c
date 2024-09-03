@@ -1051,8 +1051,16 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     if (slv->dc.cycle_time_0 == 0u) {
                         slv->dc.cycle_time_0 = pec->main_cycle_interval; 
                     }
+                    if (slv->dc.type == 2) {
+                         ec_log(10, get_transition_string(transition), 
+                                "slave %2d: configuring dc sync 1, "
+                                "cycle_times %d/%d, cycle_shift %d\n", 
+                                slave, slv->dc.cycle_time_0, 
+                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
 
-                    if (slv->dc.type == 1) {
+                        ec_dc_sync(pec, slave, 5, slv->dc.cycle_time_0, 
+                                slv->dc.cycle_time_1, slv->dc.cycle_shift); 
+                    } else if (slv->dc.type == 1) {
                         if (slv->dc.cycle_time_1 == 0u) {
                             slv->dc.cycle_time_1 = pec->main_cycle_interval; 
                         }

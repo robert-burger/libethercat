@@ -527,7 +527,7 @@ void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd);
  *                          the physical order of the ethercat slaves 
  *                          (usually the n'th slave attached).
  * \param[in] use_dc        Whether to en-/disable dc on slave.
- * \param[in] type          DC type, 0 = sync0, 1 = sync01.
+ * \param[in] type          DC type, 0 = sync0, 1 = sync01, 2 = sync1.
  * \param[in] cycle_time_0  Cycle time of sync 0 [ns].
  * \param[in] cycle_time_1  Cycle time of sync 1 [ns].
  * \param[in] cycle_shift   Cycle shift time [ns].
