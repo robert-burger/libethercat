@@ -89,7 +89,7 @@ var group__ec__group =
     [ "ec_close", "group__ec__group.html#ga6413bb07c5aab4165ce2c35e9cd049c4", null ],
     [ "ec_configure_dc", "group__ec__group.html#gafcedee35e71c5dcfda0f14d25592a6ce", null ],
     [ "ec_configure_pd_group", "group__ec__group.html#ga1e88c8d6db33a7ef0d20a91239afe275", null ],
-    [ "ec_configure_tun", "group__ec__group.html#gaa205ce61912b65369da9e3b5529ed63b", null ],
+    [ "ec_configure_tun", "group__ec__group.html#ga017cc10573f61b5dc4113cc77ea787a7", null ],
     [ "ec_create_pd_groups", "group__ec__group.html#gae6151b5238389629d06d11b89d61b7e3", null ],
     [ "ec_destroy_pd_groups", "group__ec__group.html#ga509683e6a8bab096be23af7d086aad29", null ],
     [ "ec_get_slave_count", "group__ec__group.html#gaf7a827d9da875d1481113f3291391142", null ],

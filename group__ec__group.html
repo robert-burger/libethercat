@@ -228,9 +228,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga6413bb07c5aab4165ce2c35e9cd049c4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#ga6413bb07c5aab4165ce2c35e9cd049c4">ec_close</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec)</td></tr>
 <tr class="memdesc:ga6413bb07c5aab4165ce2c35e9cd049c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes ethercat master.  <a href="group__ec__group.html#ga6413bb07c5aab4165ce2c35e9cd049c4">More...</a><br /></td></tr>
 <tr class="separator:ga6413bb07c5aab4165ce2c35e9cd049c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa205ce61912b65369da9e3b5529ed63b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gaa205ce61912b65369da9e3b5529ed63b">ec_configure_tun</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint8_t ip_address[4])</td></tr>
-<tr class="memdesc:gaa205ce61912b65369da9e3b5529ed63b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures tun device of EtherCAT master, used for EoE slaves.  <a href="group__ec__group.html#gaa205ce61912b65369da9e3b5529ed63b">More...</a><br /></td></tr>
-<tr class="separator:gaa205ce61912b65369da9e3b5529ed63b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga017cc10573f61b5dc4113cc77ea787a7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#ga017cc10573f61b5dc4113cc77ea787a7">ec_configure_tun</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint8_t ip_address[4])</td></tr>
+<tr class="memdesc:ga017cc10573f61b5dc4113cc77ea787a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures tun device of EtherCAT master, used for EoE slaves.  <a href="group__ec__group.html#ga017cc10573f61b5dc4113cc77ea787a7">More...</a><br /></td></tr>
+<tr class="separator:ga017cc10573f61b5dc4113cc77ea787a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gafcedee35e71c5dcfda0f14d25592a6ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gafcedee35e71c5dcfda0f14d25592a6ce">ec_configure_dc</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint64_t timer, ec_dc_mode_t mode, void(*user_cb)(void *arg, int num), void *user_cb_arg)</td></tr>
 <tr class="memdesc:gafcedee35e71c5dcfda0f14d25592a6ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures distributed clocks settings on EtherCAT master.  <a href="group__ec__group.html#gafcedee35e71c5dcfda0f14d25592a6ce">More...</a><br /></td></tr>
 <tr class="separator:gafcedee35e71c5dcfda0f14d25592a6ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1009,14 +1009,14 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>ec_log_func</b> )(i
 
 </div>
 </div>
-<a id="gaa205ce61912b65369da9e3b5529ed63b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa205ce61912b65369da9e3b5529ed63b">&#9670;&nbsp;</a></span>ec_configure_tun()</h2>
+<a id="ga017cc10573f61b5dc4113cc77ea787a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga017cc10573f61b5dc4113cc77ea787a7">&#9670;&nbsp;</a></span>ec_configure_tun()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ec_configure_tun </td>
+          <td class="memname">int ec_configure_tun </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *&#160;</td>
           <td class="paramname"><em>pec</em>, </td>
@@ -1043,6 +1043,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>ec_log_func</b> )(i
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success </dd></dl>
 
 </div>
 </div>
