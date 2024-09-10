@@ -565,7 +565,7 @@ int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     slave, mdt_sm, mdt_bits, (mdt_bits + 7u) / 8u);
 
             if (slv->sm_ch > mdt_sm) {
-                slv->sm[mdt_sm].len = (mdt_bits + 8u) / 8u;
+                slv->sm[mdt_sm].len = (mdt_bits + 7u) / 8u;
             }
         }
     }
