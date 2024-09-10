@@ -2008,14 +2008,17 @@ int ec_send_brd_ec_state(ec_t *pec) {
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
  * \param[in] ip_address    IP address to be set for tun device.
+ * \return 0 on success
  */
-void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
+int ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
     assert(pec != NULL);
 
     (void)memcpy((osal_uint8_t *)&pec->tun_ip, (osal_uint8_t *)&ip_address[0], 4);
-    if (ec_eoe_setup_tun(pec) != EC_OK) {
+    int ret = ec_eoe_setup_tun(pec);
+    if (ret != EC_OK) {
         ec_log(1, "MASTER_CONFIGURE_TUN", "ec_eoe_setup_tun failed!\n");
     }
+    return ret;
 }
 #endif
 
