@@ -363,7 +363,7 @@ int main(int argc, char **argv) {
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
         ec.slaves[i].assigned_pd_group = 0;
-        ec_slave_set_dc_config(&ec, i, 1, 0, cycle_rate, 0, 0);
+        ec_slave_set_dc_config(&ec, i, 1, EC_DC_ACTIVATION_REG_SYNC0, cycle_rate, 0, 0);
     }
 
     cyclic_task_running = OSAL_TRUE;

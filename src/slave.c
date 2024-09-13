@@ -212,18 +212,18 @@ void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd)
 
 // Set Distributed Clocks config to slave
 void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, 
-        int use_dc, int type, osal_uint32_t cycle_time_0, 
+        int use_dc, int activation_reg, osal_uint32_t cycle_time_0, 
         osal_uint32_t cycle_time_1, osal_int32_t cycle_shift) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     ec_slave_ptr(slv, pec, slave);
 
-    slv->dc.use_dc        = use_dc;
-    slv->dc.type          = type;
-    slv->dc.cycle_time_0  = cycle_time_0;
-    slv->dc.cycle_time_1  = cycle_time_1;
-    slv->dc.cycle_shift   = cycle_shift;
+    slv->dc.use_dc         = use_dc;
+    slv->dc.activation_reg = activation_reg;
+    slv->dc.cycle_time_0   = cycle_time_0;
+    slv->dc.cycle_time_1   = cycle_time_1;
+    slv->dc.cycle_shift    = cycle_shift;
 }
 
 #define AL_STATUS_CODE__NOERROR                        0x0000 
@@ -1051,37 +1051,13 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     if (slv->dc.cycle_time_0 == 0u) {
                         slv->dc.cycle_time_0 = pec->main_cycle_interval; 
                     }
-                    if (slv->dc.type == 2) {
-                         ec_log(10, get_transition_string(transition), 
-                                "slave %2d: configuring dc sync 1, "
-                                "cycle_times %d/%d, cycle_shift %d\n", 
-                                slave, slv->dc.cycle_time_0, 
-                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
-
-                        ec_dc_sync(pec, slave, 5, slv->dc.cycle_time_0, 
-                                slv->dc.cycle_time_1, slv->dc.cycle_shift); 
-                    } else if (slv->dc.type == 1) {
-                        if (slv->dc.cycle_time_1 == 0u) {
-                            slv->dc.cycle_time_1 = pec->main_cycle_interval; 
-                        }
-
-                        ec_log(10, get_transition_string(transition), 
-                                "slave %2d: configuring dc sync 01, "
-                                "cycle_times %d/%d, cycle_shift %d\n", 
-                                slave, slv->dc.cycle_time_0, 
-                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
-
-                        ec_dc_sync(pec, slave, 7, slv->dc.cycle_time_0, 
-                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
-                    } else {
-                        ec_log(10, get_transition_string(transition), 
-                                "slave %2d: configuring dc sync 0, "
-                                "cycle_time %d, cycle_shift %d\n", slave,
-                                slv->dc.cycle_time_0, slv->dc.cycle_shift);
-
-                        ec_dc_sync(pec, slave, 3, slv->dc.cycle_time_0, 0, 
-                                slv->dc.cycle_shift);
-                    }
+                    ec_log(10, get_transition_string(transition), 
+                        "slave %2d: configuring actiavtion reg. %d, "
+                        "cycle_times %d/%d, cycle_shift %d\n", 
+                        slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
+                        slv->dc.cycle_time_1, slv->dc.cycle_shift);
+                    ec_dc_sync(pec, slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
+                            slv->dc.cycle_time_1, slv->dc.cycle_shift); 
                 } else {
                     ec_dc_sync(pec, slave, 0, 0, 0, 0);
                 }
