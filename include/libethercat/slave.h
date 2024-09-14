@@ -521,16 +521,20 @@ void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd);
 
 //! Set Distributed Clocks config to slave
 /*! 
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \param[in] slave         Number of ethercat slave. this depends on 
- *                          the physical order of the ethercat slaves 
- *                          (usually the n'th slave attached).
- * \param[in] use_dc        Whether to en-/disable dc on slave.
- * \param[in] type          DC type, 0 = sync0, 1 = sync01.
- * \param[in] cycle_time_0  Cycle time of sync 0 [ns].
- * \param[in] cycle_time_1  Cycle time of sync 1 [ns].
- * \param[in] cycle_shift   Cycle shift time [ns].
+ * \param[in] pec            Pointer to ethercat master structure, 
+ *                           which you got from \link ec_open \endlink.
+ * \param[in] slave          Number of ethercat slave. this depends on 
+ *                           the physical order of the ethercat slaves 
+ *                           (usually the n'th slave attached).
+ * \param[in] use_dc         Whether to en-/disable dc on slave.
+ * \param[in] activation_reg DC Sync Activation Register (0x981). Sets
+ *                           the type of DC sync:
+ *                           * 0x3 = Sync0
+ *                           * 0x5 = Sync1
+ *                           * 0x7 = Sync01
+ * \param[in] cycle_time_0   Cycle time of sync 0 [ns].
+ * \param[in] cycle_time_1   Cycle time of sync 1 [ns].
+ * \param[in] cycle_shift    Cycle shift time [ns].
  */
 void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, 
         int use_dc, int type, osal_uint32_t cycle_time_0, 
