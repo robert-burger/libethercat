@@ -2,6 +2,9 @@ var dc_8h =
 [
     [ "ec_dc_info_slave", "structec__dc__info__slave.html", "structec__dc__info__slave" ],
     [ "ec_dc_info", "structec__dc__info.html", "structec__dc__info" ],
+    [ "EC_DC_ACTIVATION_REG_SYNC0", "dc_8h.html#a4ce965a8a38d098c07bc82a9d255a184", null ],
+    [ "EC_DC_ACTIVATION_REG_SYNC01", "dc_8h.html#a606de07c307459d5b9fa0e071cabc6a1", null ],
+    [ "EC_DC_ACTIVATION_REG_SYNC1", "dc_8h.html#a50097d6e932ba4dbb9866b05a77f7b06", null ],
     [ "EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION", "dc_8h.html#a8289048b3b0bbbe865c97bae16c9afcc", null ],
     [ "EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION", "dc_8h.html#a850edf1710f136815258963b62b4768b", null ],
     [ "EC_REG_DCSYNCACT__SYNC_OUT_UNIT_DEBUG_PULSE", "dc_8h.html#a96405c99ecfa798279e8a5560c5ebc03", null ],

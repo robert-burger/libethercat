@@ -1,5 +1,6 @@
 var structec__dc__info__slave =
 [
+    [ "activation_reg", "structec__dc__info__slave.html#a1ea1df333b4ca62a0128f12e8f231716", null ],
     [ "available_ports", "structec__dc__info__slave.html#a71086d9202be5cbab3639cc9a92c11dd", null ],
     [ "cycle_shift", "structec__dc__info__slave.html#abb9f3325511d9f38ac1a543a20617154", null ],
     [ "cycle_time_0", "structec__dc__info__slave.html#a7123af04d530d748a7a0e2977130cd76", null ],
@@ -11,6 +12,5 @@ var structec__dc__info__slave =
     [ "t_delay_parent_previous", "structec__dc__info__slave.html#a97706c4ca9b308b0968142083db72962", null ],
     [ "t_delay_slave", "structec__dc__info__slave.html#a9cd826193101df9869bb0952e355b3c9", null ],
     [ "t_delay_with_childs", "structec__dc__info__slave.html#ab9ddfb6470b2981a4b9a73d832967915", null ],
-    [ "type", "structec__dc__info__slave.html#a84c9cb135a2f3ff779ab3db4929f6d46", null ],
     [ "use_dc", "structec__dc__info__slave.html#a5b6230537f16b46cb3bd53e4f6f55d77", null ]
 ];

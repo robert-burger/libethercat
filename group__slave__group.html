@@ -751,7 +751,12 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
     <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">use_dc</td><td>Whether to en-/disable dc on slave. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">type</td><td>DC type, 0 = sync0, 1 = sync01. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">activation_reg</td><td>DC Sync Activation Register (0x981). Sets the type of DC sync:<ul>
+<li>0x3 = Sync0</li>
+<li>0x5 = Sync1</li>
+<li>0x7 = Sync01 </li>
+</ul>
+</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_time_0</td><td>Cycle time of sync 0 [ns]. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_time_1</td><td>Cycle time of sync 1 [ns]. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_shift</td><td>Cycle shift time [ns]. </td></tr>
