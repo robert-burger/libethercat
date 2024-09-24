@@ -1179,6 +1179,8 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
 int ec_close(ec_t *pec) {
     assert(pec != NULL);
 
+    ec_set_state(pec, EC_STATE_INIT);
+
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
     ec_eoe_destroy_tun(pec);
