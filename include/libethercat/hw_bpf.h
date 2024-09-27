@@ -42,6 +42,10 @@
 
 #include <libethercat/hw.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -50,6 +54,10 @@
  * \return 0 or negative error code
  */
 int hw_device_bpf_open(hw_t *phw, const osal_char_t *devname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LIBETHERCAT_HW_BPF_H
 
