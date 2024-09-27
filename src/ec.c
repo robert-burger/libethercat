@@ -1760,10 +1760,7 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
 
         // get clock difference
-        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time) % pec->main_cycle_interval; 
-        if (pec->dc.act_diff > (pec->main_cycle_interval/2)) { pec->dc.act_diff -= pec->main_cycle_interval; }
-        else if (pec->dc.act_diff < (-1. * (pec->main_cycle_interval / 2))) { pec->dc.act_diff += pec->main_cycle_interval; }
-        else {}
+        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time); 
 
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
