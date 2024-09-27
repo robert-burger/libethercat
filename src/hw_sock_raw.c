@@ -72,6 +72,8 @@ void hw_device_sock_raw_send_finished(struct hw_common *phw);
 int hw_device_sock_raw_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 int hw_device_sock_raw_close(struct hw_common *phw);
 
+static void *hw_device_sock_raw_rx_thread(void *arg);
+
 // this need the grant_cap_net_raw kernel module 
 // see https://gitlab.com/fastflo/open_ethercat
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
@@ -196,7 +198,7 @@ int hw_device_sock_raw_open(struct hw_sock_raw *phw_sock_raw, struct ec *pec, co
         ec_log(10, "HW_OPEN", "binding raw socket to %s\n", devname);
 
         (void)memset(&ifr, 0, sizeof(ifr));
-        (void)strncpy(ifr.ifr_name, devname, IFNAMSIZ);
+        (void)strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ));
         ioctl(phw_sock_raw->sockfd, SIOCGIFMTU, &ifr);
         phw_sock_raw->common.mtu_size = ifr.ifr_mtu;
         ec_log(10, "hw_open", "got mtu size %d\n", phw_sock_raw->common.mtu_size);
@@ -208,6 +210,16 @@ int hw_device_sock_raw_open(struct hw_sock_raw *phw_sock_raw, struct ec *pec, co
         sll.sll_ifindex = ifindex;
         sll.sll_protocol = htons(ETH_P_ECAT);
         bind(phw_sock_raw->sockfd, (struct sockaddr *) &sll, sizeof(sll));
+    }
+
+    if (ret == EC_OK) {
+        phw_sock_raw->rxthreadrunning = 1;
+        osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_FIFO;
+        attr.priority = prio;
+        attr.affinity = cpumask;
+        (void)strcpy(&attr.task_name[0], "ecat.rx");
+        osal_task_create(&phw_sock_raw->rxthread, &attr, hw_device_sock_raw_rx_thread, phw_sock_raw);
     }
 
     return ret;
@@ -223,9 +235,11 @@ int hw_device_sock_raw_close(struct hw_common *phw) {
     int ret = 0;
 
     struct hw_sock_raw *phw_sock_raw = container_of(phw, struct hw_sock_raw, common);
-    close(phw_sock_raw->sockfd);
+    
+    phw_sock_raw->rxthreadrunning = 0;
+    osal_task_join(&phw_sock_raw->rxthread, NULL);
 
-    // TODO some more close of sbuf things???
+    close(phw_sock_raw->sockfd);
 
     return ret;
 }
@@ -251,6 +265,29 @@ int hw_device_sock_raw_recv(struct hw_common *phw) {
     }
 
     return EC_OK;
+}
+
+//! receiver thread
+void *hw_device_sock_raw_rx_thread(void *arg) {
+    // cppcheck-suppress misra-c2012-11.5
+    struct hw_sock_raw *phw_sock_raw = (struct hw_sock_raw *) arg;
+
+    assert(phw_sock_raw != NULL);
+    
+    osal_task_sched_priority_t rx_prio;
+    if (osal_task_get_priority(&phw_sock_raw->rxthread, &rx_prio) != OSAL_OK) {
+        rx_prio = 0;
+    }
+
+    ec_log(10, "HW_SOCK_RAW_RX", "receive thread running (prio %d)\n", rx_prio);
+
+    while (phw_sock_raw->rxthreadrunning != 0) {
+        (void)hw_device_sock_raw_recv(&phw_sock_raw->common);
+    }
+    
+    ec_log(10, "HW_SOCK_RAW_RX", "receive thread stopped\n");
+    
+    return NULL;
 }
 
 //! Get a free tx buffer from underlying hw device.

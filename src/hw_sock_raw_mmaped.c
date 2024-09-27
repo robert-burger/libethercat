@@ -71,6 +71,8 @@ void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw);
 int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 int hw_device_sock_raw_mmaped_close(struct hw_common *phw);
 
+static void *hw_device_sock_raw_mmaped_rx_thread(void *arg);
+
 // this need the grant_cap_net_raw kernel module 
 // see https://gitlab.com/fastflo/open_ethercat
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
@@ -103,10 +105,12 @@ static int try_grant_cap_net_raw_init(void) {
 /*!
  * \param[in]   phw         Pointer to hw handle. 
  * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
+ * \param[in]   prio        Priority for receiver thread.
+ * \param[in]   cpu_mask    CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname) {
+int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname, int prio, int cpumask) {
     int ret = EC_OK;
     struct ifreq ifr;
     int ifindex;
@@ -234,6 +238,16 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
         sll.sll_protocol = htons(ETH_P_ECAT);
         bind(phw_sock_raw_mmaped->sockfd, (struct sockaddr *) &sll, sizeof(sll));
     }
+    
+    if (ret == EC_OK) {
+        phw_sock_raw_mmaped->rxthreadrunning = 1;
+        osal_task_attr_t attr;
+        attr.policy = OSAL_SCHED_POLICY_FIFO;
+        attr.priority = prio;
+        attr.affinity = cpumask;
+        (void)strcpy(&attr.task_name[0], "ecat.rx");
+        osal_task_create(&phw_sock_raw_mmaped->rxthread, &attr, hw_device_sock_raw_mmaped_rx_thread, phw_sock_raw_mmaped);
+    }
 
     return ret;
 }
@@ -248,9 +262,11 @@ int hw_device_sock_raw_mmaped_close(struct hw_common *phw) {
     int ret = 0;
 
     struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
+    
+    phw_sock_raw_mmaped->rxthreadrunning = 0;
+    osal_task_join(&phw_sock_raw_mmaped->rxthread, NULL);
+    
     close(phw_sock_raw_mmaped->sockfd);
-
-    // TODO some more close of sbuf things???
 
     return ret;
 }
@@ -295,6 +311,30 @@ int hw_device_sock_raw_mmaped_recv(struct hw_common *phw) {
 
     return EC_OK;
 }
+
+//! receiver thread
+void *hw_device_sock_raw_mmaped_rx_thread(void *arg) {
+    // cppcheck-suppress misra-c2012-11.5
+    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = (struct hw_sock_raw_mmaped *) arg;
+
+    assert(phw_sock_raw_mmaped != NULL);
+    
+    osal_task_sched_priority_t rx_prio;
+    if (osal_task_get_priority(&phw_sock_raw_mmaped->rxthread, &rx_prio) != OSAL_OK) {
+        rx_prio = 0;
+    }
+
+    ec_log(10, "HW_SOCK_RAW_MMAPED_RX", "receive thread running (prio %d)\n", rx_prio);
+
+    while (phw_sock_raw_mmaped->rxthreadrunning != 0) {
+        (void)hw_device_sock_raw_mmaped_recv(&phw_sock_raw_mmaped->common);
+    }
+    
+    ec_log(10, "HW_SOCK_RAW_MMAPED_RX", "receive thread stopped\n");
+    
+    return NULL;
+}
+
 
 static struct tpacket_hdr *hw_get_next_tx_buffer(struct hw_common *phw) {
     struct tpacket_hdr *header;

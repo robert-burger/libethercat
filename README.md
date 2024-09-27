@@ -81,6 +81,10 @@ cmake --build .
 | CMAKE_PREFIX_PATH |          | Install directory of the libosal                                                                          |
 | ECAT_DEVICE       | sock_raw | List of EtherCAT devices as `+` separated list. Possible values: sock_raw+sock_raw_mmaped+file+pikeos+bpf |
 | BUILD_SHARED_LIBS | OFF      | Flag to build shared libraries instead of static ones.                                                    |
+| MBX_SUPPORT_COE   | ON       | Flag to enable or disable Mailbox CoE support
+| MBX_SUPPORT_FOE   | ON       | Flag to enable or disable Mailbox FoE support
+| MBX_SUPPORT_SOE   | ON       | Flag to enable or disable Mailbox SoE support
+| MBX_SUPPORT_EOE   | ON       | Flag to enable or disable Mailbox EoE support
 
 ## Tools
 

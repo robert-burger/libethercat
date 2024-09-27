@@ -41,9 +41,19 @@
 
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 #include "libethercat/soe.h"
+#endif
+
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 #include "libethercat/foe.h"
+#endif
+
 #include "libethercat/mbx.h"
 #include "libethercat/dc.h"
 #include "libethercat/error_codes.h"
@@ -160,6 +170,7 @@ void ec_slave_mailbox_coe_init_cmd_init(ec_init_cmd_t *cmd,
     (void)memcpy(cmd->data, data, datalen);
 }
 
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 // initialize init command structure
 void ec_slave_mailbox_soe_init_cmd_init(ec_init_cmd_t *cmd,
         int transition, int id, int si_el, int ca_atn,
@@ -177,6 +188,7 @@ void ec_slave_mailbox_soe_init_cmd_init(ec_init_cmd_t *cmd,
 
     (void)memcpy(cmd->data, data, datalen);
 }
+#endif
 
 // add master init command
 void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd)
@@ -200,18 +212,18 @@ void ec_slave_add_init_cmd(ec_t *pec, osal_uint16_t slave, ec_init_cmd_t *cmd)
 
 // Set Distributed Clocks config to slave
 void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, 
-        int use_dc, int type, osal_uint32_t cycle_time_0, 
+        int use_dc, int activation_reg, osal_uint32_t cycle_time_0, 
         osal_uint32_t cycle_time_1, osal_int32_t cycle_shift) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     ec_slave_ptr(slv, pec, slave);
 
-    slv->dc.use_dc        = use_dc;
-    slv->dc.type          = type;
-    slv->dc.cycle_time_0  = cycle_time_0;
-    slv->dc.cycle_time_1  = cycle_time_1;
-    slv->dc.cycle_shift   = cycle_shift;
+    slv->dc.use_dc         = use_dc;
+    slv->dc.activation_reg = activation_reg;
+    slv->dc.cycle_time_0   = cycle_time_0;
+    slv->dc.cycle_time_1   = cycle_time_1;
+    slv->dc.cycle_shift    = cycle_shift;
 }
 
 #define AL_STATUS_CODE__NOERROR                        0x0000 
@@ -652,11 +664,17 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
         // we're already done
     } else {
         // check sm settings
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
         if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE) != 0u) {
             ret = ec_coe_generate_mapping(pec, slave);
-        } else if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
+        } else 
+#endif
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
+        if ((slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE) != 0u) {
             ret = ec_soe_generate_mapping(pec, slave);
-        } else {
+        } else
+#endif
+        {
             // try eeprom
             for (osal_uint8_t sm_idx = 0; sm_idx < slv->sm_ch; ++sm_idx) {
                 int txpdos_cnt = 0;
@@ -744,6 +762,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                     switch (cmd->type) {
                         default:
                             break;
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
                         case EC_MBX_COE: {
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending CoE init cmd 0x%04X:%d, "
@@ -762,6 +781,8 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                             } 
                             break;
                         }
+#endif
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
                         case EC_MBX_SOE: {
                             ec_log(10, get_transition_string(transition), 
                                     "slave %2d: sending SoE init cmd 0x%04X:%d, "
@@ -780,6 +801,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                             } 
                             break;
                         }
+#endif
                     }
                 }
 
@@ -813,6 +835,7 @@ void ec_slave_free(ec_t *pec, osal_uint16_t slave) {
     osal_mutex_destroy(&slv->transition_mutex);
 }
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 static osal_bool_t check_null(osal_uint8_t *ptr, osal_size_t len) {
     osal_bool_t ret = OSAL_TRUE;
 
@@ -825,6 +848,7 @@ static osal_bool_t check_null(osal_uint8_t *ptr, osal_size_t len) {
 
     return ret;
 }
+#endif
 
 // state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
@@ -968,6 +992,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     ret = ec_slave_set_state(pec, slave, EC_STATE_PREOP);
                 }
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
                 // apply eoe settings if any
                 if ((ret == EC_OK) && (slv->eoe.use_eoe != 0)) {
                     ec_log(10, get_transition_string(transition), 
@@ -1012,6 +1037,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     ret = ec_eoe_set_ip_parameter(pec, slave, slv->eoe.mac, slv->eoe.ip_address, 
                             slv->eoe.subnet, slv->eoe.gateway, slv->eoe.dns, slv->eoe.dns_name);
                 }
+#endif
 
                 if ((ret != EC_OK) || (transition == INIT_2_PREOP) || (transition == INIT_2_BOOT)) {
                     break;
@@ -1025,29 +1051,13 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     if (slv->dc.cycle_time_0 == 0u) {
                         slv->dc.cycle_time_0 = pec->main_cycle_interval; 
                     }
-
-                    if (slv->dc.type == 1) {
-                        if (slv->dc.cycle_time_1 == 0u) {
-                            slv->dc.cycle_time_1 = pec->main_cycle_interval; 
-                        }
-
-                        ec_log(10, get_transition_string(transition), 
-                                "slave %2d: configuring dc sync 01, "
-                                "cycle_times %d/%d, cycle_shift %d\n", 
-                                slave, slv->dc.cycle_time_0, 
-                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
-
-                        ec_dc_sync(pec, slave, 7, slv->dc.cycle_time_0, 
-                                slv->dc.cycle_time_1, slv->dc.cycle_shift);
-                    } else {
-                        ec_log(10, get_transition_string(transition), 
-                                "slave %2d: configuring dc sync 0, "
-                                "cycle_time %d, cycle_shift %d\n", slave,
-                                slv->dc.cycle_time_0, slv->dc.cycle_shift);
-
-                        ec_dc_sync(pec, slave, 3, slv->dc.cycle_time_0, 0, 
-                                slv->dc.cycle_shift);
-                    }
+                    ec_log(10, get_transition_string(transition), 
+                        "slave %2d: configuring actiavtion reg. %d, "
+                        "cycle_times %d/%d, cycle_shift %d\n", 
+                        slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
+                        slv->dc.cycle_time_1, slv->dc.cycle_shift);
+                    ec_dc_sync(pec, slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
+                            slv->dc.cycle_time_1, slv->dc.cycle_shift); 
                 } else {
                     ec_dc_sync(pec, slave, 0, 0, 0, 0);
                 }
@@ -1232,9 +1242,13 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // allocate sub device structures
                 if (slv->eeprom.general.ds402_channels > 0u) {
                     slv->subdev_cnt = slv->eeprom.general.ds402_channels;
-                } else if (slv->eeprom.general.soe_channels > 0u) {
+                } 
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
+                else if (slv->eeprom.general.soe_channels > 0u) {
                     slv->subdev_cnt = slv->eeprom.general.soe_channels;
-                } else {
+                } 
+#endif
+                else {
                     slv->subdev_cnt = 0;
                 }
 
@@ -1276,6 +1290,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
     return ret;
 }
+
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 
 //! Adds master EoE settings.
 /*!
@@ -1322,4 +1338,6 @@ void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
 #undef EOE_SET
 
 }
+
+#endif
 

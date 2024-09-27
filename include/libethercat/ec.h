@@ -285,8 +285,9 @@ int ec_close(ec_t *pec);
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
  * \param[in] ip_address    IP address to be set for tun device.
+ * \return 0 on success 
  */
-void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]);
+int ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]);
 
 //! \brief Configures distributed clocks settings on EtherCAT master.
 /*!

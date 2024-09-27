@@ -54,7 +54,11 @@
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"
 #include "libethercat/mbx.h"
+
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
+#endif
+
 #include "libethercat/dc.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/error_codes.h"
@@ -1175,16 +1179,12 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
 int ec_close(ec_t *pec) {
     assert(pec != NULL);
 
+    ec_set_state(pec, EC_STATE_INIT);
+
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
     ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
-
     ec_eoe_destroy_tun(pec);
-
-    ec_log(10, "MASTER_CLOSE", "destroying async loop\n");
-    (void)ec_async_loop_destroy(&pec->async_loop);
-    ec_log(10, "MASTER_CLOSE", "closing hardware handle\n");
-    (void)hw_close(pec->phw);
-    ec_log(10, "MASTER_CLOSE", "freeing frame pool\n");
-    (void)pool_close(&pec->pool);
+#endif
 
     ec_log(10, "MASTER_CLOSE", "destroying pd_groups\n");
     ec_index_deinit(&pec->idx_q);
@@ -1199,6 +1199,13 @@ int ec_close(ec_t *pec) {
     }
 
     pec->slave_cnt = 0;
+
+    ec_log(10, "MASTER_CLOSE", "destroying async loop\n");
+    (void)ec_async_loop_destroy(&pec->async_loop);
+    ec_log(10, "MASTER_CLOSE", "closing hardware handle\n");
+    (void)hw_close(pec->phw);
+    ec_log(10, "MASTER_CLOSE", "freeing frame pool\n");
+    (void)pool_close(&pec->pool);
 
     (void)pool_close(&pec->mbx_message_pool_recv_free);
     (void)pool_close(&pec->mbx_message_pool_send_free);
@@ -1994,20 +2001,25 @@ int ec_send_brd_ec_state(ec_t *pec) {
     return ret;
 }
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 //! configures tun device of EtherCAT master, used for EoE slaves.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
  *                          which you got from \link ec_open \endlink.
  * \param[in] ip_address    IP address to be set for tun device.
+ * \return 0 on success
  */
-void ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
+int ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
     assert(pec != NULL);
 
     (void)memcpy((osal_uint8_t *)&pec->tun_ip, (osal_uint8_t *)&ip_address[0], 4);
-    if (ec_eoe_setup_tun(pec) != EC_OK) {
+    int ret = ec_eoe_setup_tun(pec);
+    if (ret != EC_OK) {
         ec_log(1, "MASTER_CONFIGURE_TUN", "ec_eoe_setup_tun failed!\n");
     }
+    return ret;
 }
+#endif
 
 //! \brief Configures distributed clocks settings on EtherCAT master.
 /*!
