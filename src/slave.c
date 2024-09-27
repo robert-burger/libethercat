@@ -567,7 +567,8 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
         } while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT);
     } else {
         ec_log(10, get_transition_string(transition), "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
-
+    
+        pec->slaves[slave].transition_active = OSAL_TRUE;
         pec->slaves[slave].expected_state = state;
 
         osal_timer_t timeout;
@@ -611,6 +612,8 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
 
             pec->slaves[slave].act_state = act_state;
         }
+        
+        pec->slaves[slave].transition_active = OSAL_FALSE;
     }
 
     return ret;

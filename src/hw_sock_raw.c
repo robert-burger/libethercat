@@ -78,7 +78,7 @@ static void *hw_device_sock_raw_rx_thread(void *arg);
 // see https://gitlab.com/fastflo/open_ethercat
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
 
-static int try_grant_cap_net_raw_init(void) {
+static int try_grant_cap_net_raw_init(ec_t *pec) {
     int ret = 0;
 
     if (access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0) {
@@ -117,7 +117,7 @@ int hw_device_sock_raw_open(struct hw_sock_raw *phw_sock_raw, struct ec *pec, co
     struct ifreq ifr;
     int ifindex;
     
-    if (try_grant_cap_net_raw_init() == -1) {
+    if (try_grant_cap_net_raw_init(pec) == -1) {
         ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
                 "not allowed to open a raw socket\n");
     }
@@ -271,6 +271,7 @@ int hw_device_sock_raw_recv(struct hw_common *phw) {
 void *hw_device_sock_raw_rx_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     struct hw_sock_raw *phw_sock_raw = (struct hw_sock_raw *) arg;
+    ec_t *pec = phw_sock_raw->common.pec;
 
     assert(phw_sock_raw != NULL);
     
@@ -334,6 +335,7 @@ int hw_device_sock_raw_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe
 int hw_device_sock_raw_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type) {
     assert(phw != NULL);
     assert(pframe != NULL);
+    ec_t *pec = phw->pec;
 
     (void)pool_type;
 

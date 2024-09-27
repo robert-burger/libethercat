@@ -40,6 +40,7 @@
 #ifndef LIBETHERCAT_HW_SOCK_RAW_MMAPED_H
 #define LIBETHERCAT_HW_SOCK_RAW_MMAPED_H
 
+#include <libethercat/ec.h>
 #include <libethercat/hw.h>
 #include <libosal/task.h>
 
@@ -70,13 +71,18 @@ extern "C" {
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw_sock_raw_mmaped     Pointer to sock_raw_mmmaped hw handle. 
+ * \param[in]   pec                     Pointer to master struct.
  * \param[in]   devname                 Null-terminated string to EtherCAT hw device name.
  * \param[in]   prio                    Priority for receiver thread.
  * \param[in]   cpu_mask                CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname, int prio, int cpumask);
+int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, ec_t *pec, const osal_char_t *devname, int prio, int cpumask);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef __cplusplus
 }

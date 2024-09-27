@@ -184,6 +184,7 @@ void hw_device_file_recv_internal(struct hw_file *phw_file) {
 void *hw_device_file_rx_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     struct hw_file *phw_file = (struct hw_file *) arg;
+    ec_t *pec = phw_file->common.pec;
 
     assert(phw_file != NULL);
     
@@ -267,6 +268,7 @@ int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t po
     (void)pool_type;
 
     int ret = EC_OK;
+    ec_t *pec = phw->pec;
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
 
     // no more datagrams need to be sent or no more space in frame

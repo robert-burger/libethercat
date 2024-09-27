@@ -169,7 +169,7 @@ typedef struct eth_frame {
     osal_uint8_t frame_data[1518];
 } eth_frame_t;
 
-static void eoe_debug_print(const osal_char_t *ctx, const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
+static void eoe_debug_print(ec_t *pec, const osal_char_t *ctx, const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
 #define EOE_DEBUG_BUFFER_SIZE   1024
     static osal_char_t eoe_debug_buffer[EOE_DEBUG_BUFFER_SIZE];
     
@@ -588,7 +588,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                 }
             } else {
                 if (pec->tun_fd > 0) {
-                    eoe_debug_print("EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
+                    eoe_debug_print(pec, "EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
 
 #if LIBETHERCAT_BUILD_POSIX == 1
                     int local_ret = write(pec->tun_fd, eth_frame->frame_data, frame_offset);
@@ -654,7 +654,7 @@ static void ec_eoe_tun_handler(ec_t *pec) {
                 int rd = read(pec->tun_fd, &tmp_frame.frame_data[0], sizeof(tmp_frame.frame_data));
                 if (rd > 0) {
                     // simple switch here 
-                    eoe_debug_print("EOE_TUN_HANDLER", "got eth frame", tmp_frame.frame_data, rd);
+                    eoe_debug_print(pec, "EOE_TUN_HANDLER", "got eth frame", tmp_frame.frame_data, rd);
 
                     static const osal_uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
                     osal_uint8_t *dst_mac = &tmp_frame.frame_data[0];

@@ -65,8 +65,8 @@ static char message[512];
 int new_line = 0;
 
 // only log level <= 10 
-void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
-void no_verbose_log(int lvl, void *user, const char *format, ...) {
+void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) __attribute__(( format(printf, 3, 4)));
+void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) {
     if (lvl > max_print_level)
         return;
 
@@ -112,6 +112,7 @@ int main(int argc, char **argv) {
     
     long reg = 0, val = 0;
     enum tool_mode mode = mode_undefined;
+    ec_t *pec = &ec;
 //    ec_log_func_user = NULL;
 //    ec_log_func = &no_log;
 
@@ -153,8 +154,8 @@ int main(int argc, char **argv) {
         return usage(argc, argv);
 
     // use our log function
-    ec_log_func_user = NULL;
-    ec_log_func = &no_verbose_log;
+    pec->ec_log_func_user = NULL;
+    pec->ec_log_func = &no_verbose_log;
     struct hw_common *phw = NULL;
             
 #if LIBETHERCAT_BUILD_DEVICE_FILE == 1
@@ -213,7 +214,7 @@ int main(int argc, char **argv) {
         intf = &intf[16];
 
         ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", intf);
-        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf, base_prio - 1, base_affinity);
+        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, &ec, intf, base_prio - 1, base_affinity);
 
         if (ret == 0) {
             phw = &hw_sock_raw_mmaped.common;

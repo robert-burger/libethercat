@@ -219,7 +219,7 @@ typedef struct {
 
 #define MSG_BUF_LEN     256u
 
-static void ec_coe_print_msg(int level, const osal_char_t *ctx, int slave, const osal_char_t *msg, osal_uint8_t *buf, osal_size_t buflen) {
+static void ec_coe_print_msg(ec_t *pec, int level, const osal_char_t *ctx, int slave, const osal_char_t *msg, osal_uint8_t *buf, osal_size_t buflen) {
     static osal_char_t msg_buf[MSG_BUF_LEN];
 
     osal_char_t *tmp = msg_buf;
@@ -434,7 +434,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                         }
                     }
                 } else {
-                    ec_coe_print_msg(1, "COE_SDO_READ", slave, "got unexpected mailbox message", 
+                    ec_coe_print_msg(pec, 1, "COE_SDO_READ", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
@@ -531,7 +531,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
                     // everthing is fine
                     ret = EC_OK;
                 } else {
-                    ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
+                    ec_coe_print_msg(pec, 5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
@@ -637,7 +637,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                 } else {
                     ec_log(5, "COE_SDO_WRITE", "slave %2d: got unexpected mailbox message (service 0x%X, command 0x%X)\n", 
                             slave, read_buf->coe_hdr.service, read_buf->sdo_hdr.command);
-                    ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "message was: ", (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                    ec_coe_print_msg(pec, 5, "COE_SDO_WRITE", slave, "message was: ", (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
@@ -714,7 +714,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                                 // everthing is fine
                                 ret = EC_OK;
                             } else {
-                                ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
+                                ec_coe_print_msg(pec, 5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
                                         (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                                 ret = EC_ERROR_MAILBOX_READ;
                             }
@@ -961,7 +961,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     } else {}
                 } else {
                     // not our answer, print out this message
-                    ec_coe_print_msg(5, "COE_SDO_DESC_READ", slave, "unexpected coe answer", 
+                    ec_coe_print_msg(pec, 5, "COE_SDO_DESC_READ", slave, "unexpected coe answer", 
                             (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                     (void)memset(desc, 0, sizeof(ec_coe_sdo_desc_t));
                     ret = EC_ERROR_MAILBOX_READ;
@@ -1087,7 +1087,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                     } else {}
                 } else {
                     // not our answer, print out this message
-                    ec_coe_print_msg(5, "COE_SDO_ENTRY_DESC_READ", slave, "unexpected coe answer", 
+                    ec_coe_print_msg(pec, 5, "COE_SDO_ENTRY_DESC_READ", slave, "unexpected coe answer", 
                             (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                     (void)memset(desc, 0, sizeof(ec_coe_sdo_entry_desc_t));
                     ret = EC_ERROR_MAILBOX_READ;
