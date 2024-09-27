@@ -71,10 +71,12 @@ extern "C" {
 /*!
  * \param[in]   phw_sock_raw_mmaped     Pointer to sock_raw_mmmaped hw handle. 
  * \param[in]   devname                 Null-terminated string to EtherCAT hw device name.
+ * \param[in]   prio                    Priority for receiver thread.
+ * \param[in]   cpu_mask                CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname);
+int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname, int prio, int cpumask);
 
 #ifdef __cplusplus
 }

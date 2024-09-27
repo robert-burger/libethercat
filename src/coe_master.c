@@ -309,7 +309,7 @@ static int callback_master_0x3nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     } else if (sub_index == 8u) {
         BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.receive_times[3]);
     } else if (sub_index == 9u) {
-        BUF_PUT(osal_uint8_t, &pec->slaves[slave].dc.type);
+        BUF_PUT(osal_uint8_t, &pec->slaves[slave].dc.activation_reg);
     } else if (sub_index == 10u) {
         BUF_PUT(osal_uint32_t, &pec->slaves[slave].dc.cycle_time_0);
     } else if (sub_index == 11u) {

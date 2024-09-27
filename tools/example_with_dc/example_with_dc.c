@@ -286,7 +286,7 @@ int main(int argc, char **argv) {
         intf = &intf[16];
 
         ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", intf);
-        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf);
+        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf, base_prio - 1, base_affinity);
 
         if (ret == 0) {
             phw = &hw_sock_raw_mmaped.common;
@@ -369,7 +369,7 @@ int main(int argc, char **argv) {
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
         ec.slaves[i].assigned_pd_group = 0;
-        ec_slave_set_dc_config(&ec, i, 1, 0, cycle_rate, 0, 0);
+        ec_slave_set_dc_config(&ec, i, 1, EC_DC_ACTIVATION_REG_SYNC0, cycle_rate, 0, 0);
     }
 
     cyclic_task_running = OSAL_TRUE;

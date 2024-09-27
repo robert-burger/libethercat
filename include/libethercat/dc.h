@@ -60,6 +60,10 @@
 #define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_NEAR_FUTURE_CONFIG      ( 0x40u )
 #define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_DEBUG_PULSE             ( 0x80u )
 
+#define EC_DC_ACTIVATION_REG_SYNC0                              ( 0x3 )
+#define EC_DC_ACTIVATION_REG_SYNC1                              ( 0x5 )
+#define EC_DC_ACTIVATION_REG_SYNC01                             ( 0x7 )
+
 typedef struct ec_dc_info_slave {
     int use_dc;                     //!< \brief flag, whether to use dc
     int next;                       //!< \brief marker for next dc slave
@@ -73,7 +77,7 @@ typedef struct ec_dc_info_slave {
     osal_int32_t t_delay_slave;
     osal_int32_t t_delay_parent_previous;
                  
-    int type;                       //!< \brief dc type, 0 = sync0, 1 = sync01
+    int activation_reg;             //!< \brief DC Sync Activation Register (0x981). 0x3 = Sync0, 0x5 = Sync1, 0x7 = Sync01
     osal_uint32_t cycle_time_0;     //!< \brief cycle time of sync 0 [ns]
     osal_uint32_t cycle_time_1;     //!< \brief cycle time of sync 1 [ns]
     osal_int32_t cycle_shift;       //!< \brief cycle shift time [ns]

@@ -4,6 +4,11 @@ string(REGEX MATCH "VERSION = ([0-9]*.[0-9]*.[0-9]*)" _ ${PROJECT_PROPERTIES})
 set(PROJECT_VERSION ${CMAKE_MATCH_1})
 project(libethercat VERSION ${PROJECT_VERSION})
 
+
+option(MBX_SUPPORT_COE "Flag to enable or disable Mailbox CoE support" ON)       
+option(MBX_SUPPORT_FOE "Flag to enable or disable Mailbox FoE support" ON)
+option(MBX_SUPPORT_SOE "Flag to enable or disable Mailbox SoE support" ON)
+option(MBX_SUPPORT_EOE "Flag to enable or disable Mailbox EoE support" ON)
 set(ECAT_DEVICE "sock_raw" CACHE STRING "EtherCAT device layer as `+` separated list")
 string(REPLACE "+" ";" ECAT_DEVICE ${ECAT_DEVICE})
 
@@ -65,24 +70,21 @@ find_package (Threads REQUIRED)
 
 include_directories(${libosal_INCLUDE_DIRS} include)
 link_directories(${libosal_LIB_DIR})
+check_symbol_exists("LIBOSAL_BUILD_POSIX" "libosal/config.h" LIBETHERCAT_BUILD_POSIX)
 
 set(SRC_ETHERCAT 
     src/async_loop.c
-    src/coe.c
-    src/coe_master.c
     src/datagram.c
     src/dc.c
     src/ec.c
     src/eeprom.c
-    src/eoe.c
-    src/foe.c
     src/hw.c
     src/idx.c
     src/mbx.c
     src/mii.c
     src/pool.c
     src/slave.c
-    src/soe.c)
+    )
 
 list(FIND ECAT_DEVICE "sock_raw" HAS_SOCK_RAW)
 list(FIND ECAT_DEVICE "sock_raw_mmaped" HAS_SOCK_RAW_MMAPED)
@@ -116,6 +118,26 @@ if (${HAS_SOCK_BPF} GREATER -1)
     set(LIBETHERCAT_BUILD_DEVICE_BPF 1)
 endif()
 
+if(${MBX_SUPPORT_COE})
+    set(LIBETHERCAT_MBX_SUPPORT_COE 1)
+    list(APPEND SRC_ETHERCAT src/coe.c src/coe_master.c)
+endif()
+
+if(${MBX_SUPPORT_FOE})
+    set(LIBETHERCAT_MBX_SUPPORT_FOE 1)
+    list(APPEND SRC_ETHERCAT src/foe.c)
+endif()
+
+if(${MBX_SUPPORT_SOE})
+    set(LIBETHERCAT_MBX_SUPPORT_SOE 1)
+    list(APPEND SRC_ETHERCAT src/soe.c)
+endif()
+
+if(${MBX_SUPPORT_EOE})
+    set(LIBETHERCAT_MBX_SUPPORT_EOE 1)
+    list(APPEND SRC_ETHERCAT src/eoe.c)
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/config.h)
 
 # LIBS
@@ -131,6 +153,11 @@ target_link_libraries (ethercatdiag ethercat ${libosal_LIBS})
 
 add_executable(example_with_dc tools/example_with_dc/example_with_dc.c)
 target_link_libraries (example_with_dc ethercat ${libosal_LIBS} m)
+
+if (${MBX_SUPPORT_FOE})
+    add_executable(foe_tool tools/foe_tool/foe_tool.c)
+    target_link_libraries (foe_tool ethercat ${libosal_LIBS})
+endif()
 
 # Install 
 write_basic_package_version_file(

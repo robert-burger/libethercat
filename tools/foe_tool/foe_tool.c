@@ -72,10 +72,11 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 
     va_list ap;
     va_start(ap, format);
-    if (    (strstr(format, "sending file offset") != NULL) ||
-            (strstr(format, "retrieving file offset") != NULL) )
+    vsnprintf(&message[1], 511, format, ap);
+
+    if (    (strstr(&message[1], "sending file offset") != NULL) ||
+            (strstr(&message[1], "retrieving file offset") != NULL) )
     {
-        vsnprintf(&message[1], 511, format, ap);
         message[0] = '\r';
         message[strlen(message)-1] = '\0';
         fprintf(stderr, "%s", message);
@@ -86,6 +87,7 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
             fprintf(stderr, "\n");
         }
 
+        va_start(ap, format);
         vfprintf(stderr, format, ap);
     }
     va_end(ap);
@@ -211,7 +213,7 @@ int main(int argc, char **argv) {
         intf = &intf[16];
 
         ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", intf);
-        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf);
+        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf, base_prio - 1, base_affinity);
 
         if (ret == 0) {
             phw = &hw_sock_raw_mmaped.common;
