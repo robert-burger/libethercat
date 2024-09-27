@@ -77,8 +77,8 @@ int usage(int argc, char **argv) {
 int max_print_level = 10;
 
 // only log level <= 10 
-void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
-void no_verbose_log(int lvl, void *user, const char *format, ...) {
+void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) __attribute__(( format(printf, 3, 4)));
+void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) {
     if (lvl > max_print_level)
         return;
 
@@ -106,7 +106,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     osal_uint64_t time_start = 0u;
     osal_uint64_t time_end = 0u;
 
-    no_verbose_log(0, NULL, "cyclic_task: running endless loop, cycle rate is %lu\n", cycle_rate);
+    no_verbose_log(pec, 0, "cyclic_task: running endless loop, cycle rate is %lu\n", cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
         abs_timeout += cycle_rate;
@@ -123,7 +123,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
     }
 
-    no_verbose_log(0, NULL, "cyclic_task: exiting!\n");
+    no_verbose_log(pec, 0, "cyclic_task: exiting!\n");
 }
 
 int main(int argc, char **argv) {
@@ -139,6 +139,7 @@ int main(int argc, char **argv) {
     int disable_lrw = 0;
     double dc_kp = 0.1;
     double dc_ki = 0.01;
+    ec_t *pec = &ec;
 
     for (i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0)) {
@@ -225,8 +226,8 @@ int main(int argc, char **argv) {
     osal_trace_alloc(&roundtrip_duration, num_samples);
 
     // use our log function
-    ec_log_func_user = NULL;
-    ec_log_func = &no_verbose_log;
+    pec->ec_log_func_user = NULL;
+    pec->ec_log_func = &no_verbose_log;
     struct hw_common *phw = NULL;
             
 #if LIBETHERCAT_BUILD_DEVICE_FILE == 1
@@ -285,7 +286,7 @@ int main(int argc, char **argv) {
         intf = &intf[16];
 
         ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", intf);
-        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf, base_prio - 1, base_affinity);
+        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, pec, intf, base_prio - 1, base_affinity);
 
         if (ret == 0) {
             phw = &hw_sock_raw_mmaped.common;
@@ -388,7 +389,7 @@ int main(int argc, char **argv) {
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
         
 #define to_us(x)    ((double)(x)/1000.)
-        no_verbose_log(0, NULL, 
+        no_verbose_log(&ec, 0, 
                 "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                 "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 

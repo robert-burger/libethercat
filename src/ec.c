@@ -73,7 +73,7 @@
 //#define LIBETHERCAT_DEBUG
 
 // forward declaration
-static void default_log_func(int lvl, void* user, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
+static void default_log_func(ec_t *pec, int lvl, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
 
 //! calculate signed difference of 64-bit unsigned int's
 /*!
@@ -104,9 +104,8 @@ static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
     return (tmp_a > tmp_b) ? (int64_t)abs_diff : -(int64_t)abs_diff;
 }
 
-void default_log_func(int lvl, void* user, const osal_char_t *format, ...) {
+void default_log_func(ec_t *pec, int lvl, const osal_char_t *format, ...) {
     (void)lvl;
-    (void)user;
 
     va_list args;                   // cppcheck-suppress misra-c2012-17.1
     va_start(args, format);         // cppcheck-suppress misra-c2012-17.1
@@ -114,11 +113,11 @@ void default_log_func(int lvl, void* user, const osal_char_t *format, ...) {
     va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 }
 
-void *ec_log_func_user = NULL;
-void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4))) = default_log_func;
-
-void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
-    if (ec_log_func != NULL) {
+//void *ec_log_func_user = NULL;
+//void (*ec_log_func)(ec_t *pec, int lvl, void *user, const osal_char_t *format, ...) __attribute__ ((format (printf, 4, 5))) = default_log_func;
+//
+void _ec_log(ec_t *pec, int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
+    if (pec->ec_log_func != NULL) {
         osal_char_t buf[512];
         osal_char_t *tmp = &buf[0];
 
@@ -129,7 +128,7 @@ void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
         (void)vsnprintf(&tmp[ret], 512-ret, format, args);
         va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 
-        ec_log_func(lvl, ec_log_func_user, "%s", buf);
+        pec->ec_log_func(pec, lvl, "%s", buf);
     }
 }
 
@@ -582,6 +581,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
 static void *prepare_state_transition_wrapper(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     worker_arg_t *tmp = (worker_arg_t *)arg;
+    ec_t *pec = tmp->pec;
     
     ec_log(100, get_state_string(tmp->state), "prepare state transition for slave %d\n", tmp->slave);
     if (ec_slave_prepare_state_transition(tmp->pec, tmp->slave, tmp->state) != EC_OK) {
@@ -599,6 +599,7 @@ static void *prepare_state_transition_wrapper(void *arg) {
 static void *set_state_wrapper(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     worker_arg_t *tmp = (worker_arg_t *)arg;
+    ec_t *pec = tmp->pec;
 
     ec_log(100, get_state_string(tmp->state), "setting state for slave %d\n", tmp->slave);
 
@@ -1080,6 +1081,8 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     // reset data structure
     (void)memset(pec, 0, sizeof(ec_t));
 
+    pec->ec_log_func = default_log_func;
+
     int ret = EC_OK;
     
     ret = ec_index_init(&pec->idx_q);
@@ -1405,16 +1408,28 @@ static void cb_process_data_group_lwr(struct ec *pec, pool_entry_t *p_entry, ec_
 
     if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                 (pec->master_state == EC_STATE_OP)  ) && 
-            (wkc != wkc_expected)) {
-        if ((pd->wkc_mismatch_cnt_lwr++%1000) == 0) {
-            ec_log(1, "MASTER_RECV_PD_LWR", 
-                    "group %2d: working counter mismatch got %u, "
-                    "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
-                    pd->group, wkc, wkc_expected, 
-                    pec->slave_cnt, pd->wkc_mismatch_cnt_lwr);
+            (wkc != wkc_expected)) 
+    {
+        osal_bool_t do_check_group = OSAL_TRUE;
+
+        for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
+            if (pec->slaves[slave].transition_active == OSAL_TRUE) {
+                do_check_group = OSAL_FALSE;
+                break;
+            }
         }
 
-        ec_async_check_group(&pec->async_loop, pd->group);
+        if (do_check_group == OSAL_TRUE) {
+            if ((pd->wkc_mismatch_cnt_lwr++%1000) == 0) {
+                ec_log(1, "MASTER_RECV_PD_LWR", 
+                        "group %2d: working counter mismatch got %u, "
+                        "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
+                        pd->group, wkc, wkc_expected, 
+                        pec->slave_cnt, pd->wkc_mismatch_cnt_lwr);
+            }
+
+            ec_async_check_group(&pec->async_loop, pd->group);
+        }
     } else {
         pd->wkc_mismatch_cnt_lwr = 0;
     }

@@ -235,14 +235,17 @@ typedef struct ec {
     int consecutive_max_miss;       //!< max missed counter for receive frames before falling back to init
 
     ec_cyclic_datagram_t cdg_state; //!< Monitor EtherCAT AL Status from slaves.
+
+    void *ec_log_func_user;
+    void (*ec_log_func)(ec_t *pec, int lvl, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
 } ec_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void *ec_log_func_user;
-extern void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
+#define ec_log(lvl, pre, format, ...) \
+    _ec_log(pec, (lvl), (pre), (format), ##__VA_ARGS__)
 
 //! \brief EtherCAT logging function 
 /*!
@@ -253,7 +256,7 @@ extern void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...) 
  * \param[in]   format      String format.
  * \param[in]   ...         String format arguments.
  */
-void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
+void _ec_log(ec_t *pec, int lvl, const osal_char_t *pre, const osal_char_t *format, ...) __attribute__ ((format (printf, 4, 5)));
 
 //! \brief Open ethercat master.
 /*!
