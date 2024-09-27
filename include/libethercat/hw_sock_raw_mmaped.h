@@ -84,10 +84,6 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
 }
 #endif
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif // LIBETHERCAT_HW_SOCK_RAW_MMAPED_H
 
 
