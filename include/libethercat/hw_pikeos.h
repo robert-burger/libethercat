@@ -58,6 +58,10 @@ typedef struct hw_pikeos {
     int rxthreadrunning;                    //!< receiver thread running flag
 } hw_pikeos_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -69,6 +73,10 @@ typedef struct hw_pikeos {
  */
 int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname,
         int prio, int cpumask);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LIBETHERCAT_HW_PIKEOS_H
 
