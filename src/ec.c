@@ -105,6 +105,7 @@ static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
 }
 
 void default_log_func(ec_t *pec, int lvl, const osal_char_t *format, ...) {
+    (void)pec;
     (void)lvl;
 
     va_list args;                   // cppcheck-suppress misra-c2012-17.1
