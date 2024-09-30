@@ -158,6 +158,7 @@ int ec_create_pd_groups(ec_t *pec, osal_uint32_t pd_group_cnt) {
         pec->pd_groups[i].pdin_len          = 0u;
         pec->pd_groups[i].use_lrw           = 1;
         pec->pd_groups[i].overlapping       = 1;
+        pec->pd_groups[i].skip_pd_on_wkc_mismatch = 0;
         pec->pd_groups[i].wkc_mismatch_cnt_lrw = 0;
         pec->pd_groups[i].wkc_mismatch_cnt_lrd = 0;
         pec->pd_groups[i].wkc_mismatch_cnt_lwr = 0;
@@ -1429,6 +1430,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     ec_pd_group_t *pd = &pec->pd_groups[p_entry->user_arg];
     osal_uint16_t wkc = 0;
     osal_uint16_t wkc_expected = pd->use_lrw == 0 ? pd->wkc_expected_lrd : pd->wkc_expected_lrw;
+    int wkc_mismatch;
 
 #ifdef LIBETHERCAT_DEBUG
     ec_log(100, "MASTER_RECV_PD_GROUP", "group %2d: received process data\n", p_entry->user_arg);
@@ -1440,7 +1442,10 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
     pd->recv_missed_lrw = 0;
 
     wkc = ec_datagram_wkc(p_dg);
-    if (pd->pdin_len > 0) {
+
+    wkc_mismatch = wkc != wkc_expected;
+    // Copy if pdin_len > 0 and no wkc_missmatch occurs when skip_pd_on_wkc_mismatch is set
+    if (pd->pdin_len > 0 && (pd->skip_pd_on_wkc_mismatch ? !wkc_mismatch: OSAL_TRUE)) {
         if ((pd->use_lrw != 0) || (pd->overlapping)) {
             // use this if lrw overlapping or lrd command
             (void)memcpy(&pd->pd[pd->pdout_len], ec_datagram_payload(p_dg), pd->pdin_len);
@@ -1457,7 +1462,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
 
     if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
                 (pec->master_state == EC_STATE_OP)  ) && 
-            (wkc != wkc_expected)) {
+            (wkc_mismatch)) {
         if ((pd->wkc_mismatch_cnt_lrw++%1000) == 0) {
             ec_log(1, "MASTER_RECV_PD_GROUP", 
                     "group %2d: working counter mismatch got %u, "
