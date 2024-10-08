@@ -383,6 +383,17 @@ int ec_send_process_data(ec_t *pec);
  */
 int ec_send_distributed_clocks_sync(ec_t *pec);
 
+//! \brief Send distributed clock sync datagram
+/*!
+ * \param pec          Pointer to ethercat master structure, 
+ *                     which you got from \link ec_open \endlink.
+ * \param act_rtc_time Current real-time clock value. If 0, the time of 
+ *                     osal_timer_gettime_nsec() will be used. Otherwise
+ *                     the supplied time is used.
+ * \return 0 on success
+ */
+int ec_send_distributed_clocks_sync_with_rtc(ec_t *pec, osal_uint64_t act_rtc_time);
+
 //! \brief Send broadcast read to ec state.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 

@@ -1828,10 +1828,13 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
 //! send distributed clock sync datagram
 /*!
- * \param pec ethercat master pointer
+ * \param pec          ethercat master pointer
+ * \param act_rtc_time Current real-time clock value. If 0, the time of 
+ *                     osal_timer_gettime_nsec() will be used. Otherwise
+ *                     the supplied time is used.
  * \return 0 on success
  */
-int ec_send_distributed_clocks_sync(ec_t *pec) {
+int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time) {
     assert(pec != NULL);
 
     int ret = EC_OK;
@@ -1879,7 +1882,9 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
                 p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u) | pec->dc.master_address;
             }
 
-            osal_uint64_t act_rtc_time = osal_timer_gettime_nsec();
+            if (act_rtc_time == 0){
+                act_rtc_time = osal_timer_gettime_nsec();
+            } 
 
             if (pec->dc.mode == dc_mode_ref_clock) {
                 if (pec->main_cycle_interval > 0) {
@@ -1903,6 +1908,27 @@ int ec_send_distributed_clocks_sync(ec_t *pec) {
     osal_mutex_unlock(&pec->dc.cdg.lock);
       
     return ret;
+}
+
+//! send distributed clock sync datagram
+/*!
+ * \param pec ethercat master pointer
+ * \return 0 on success
+ */
+int ec_send_distributed_clocks_sync(ec_t *pec) {
+    return ec_send_distributed_clocks_sync_intern(pec,0);
+}
+
+//! send distributed clock sync datagram
+/*!
+ * \param pec          ethercat master pointer
+ * \param act_rtc_time Current real-time clock value. If 0, the time of 
+ *                     osal_timer_gettime_nsec() will be used. Otherwise
+ *                     the supplied time is used.
+ * \return 0 on success
+ */
+int ec_send_distributed_clocks_sync_with_rtc(ec_t *pec, osal_uint64_t act_rtc_time) {
+    return ec_send_distributed_clocks_sync_intern(pec,act_rtc_time);
 }
 
 //! local callack for syncronous read/write
