@@ -19,6 +19,7 @@ var structec__pd__group =
     [ "recv_missed_lrd", "structec__pd__group.html#a8359474342ccb85d4009336007674ea1", null ],
     [ "recv_missed_lrw", "structec__pd__group.html#aefb8ac43ee7164026716c56e8ec7777d", null ],
     [ "recv_missed_lwr", "structec__pd__group.html#a0f8dce941849e4461cc787f0b9afa419", null ],
+    [ "skip_pd_on_wkc_mismatch", "structec__pd__group.html#ac072c8eb0e761459014fdd8666586e38", null ],
     [ "use_lrw", "structec__pd__group.html#a6c1e52b74e35300c0d5f88b820966682", null ],
     [ "wkc_expected_lrd", "structec__pd__group.html#acfbfaf0b5f1ae2bbef3d6d52cc979991", null ],
     [ "wkc_expected_lrw", "structec__pd__group.html#a24d28cc31e88ae4ad41e869956ca8bef", null ],

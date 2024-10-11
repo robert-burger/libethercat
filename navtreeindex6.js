@@ -1,5 +1,6 @@
 var NAVTREEINDEX6 =
 {
+"structpool__entry.html#ac4b7b6e790f208370a9f8edf8cedb863":[1,9,0,4],
 "structpool__entry.html#ac5acae74f0a099ea0c2734fe00337755":[1,9,0,0],
 "structpool__entry.html#ad8f49dc45df99cebba5e17c0d36cfd16":[1,9,0,3],
 "structworker__arg.html":[1,11,4],

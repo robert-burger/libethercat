@@ -129,6 +129,9 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struc
 <tr class="memitem:a2645bedad7838bd3a6df4234a324a21b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structec__pd__group.html#a2645bedad7838bd3a6df4234a324a21b">overlapping</a></td></tr>
 <tr class="memdesc:a2645bedad7838bd3a6df4234a324a21b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logical areas (inputs and outputs) are overlapping.  <a href="structec__pd__group.html#a2645bedad7838bd3a6df4234a324a21b">More...</a><br /></td></tr>
 <tr class="separator:a2645bedad7838bd3a6df4234a324a21b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac072c8eb0e761459014fdd8666586e38"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structec__pd__group.html#ac072c8eb0e761459014fdd8666586e38">skip_pd_on_wkc_mismatch</a></td></tr>
+<tr class="memdesc:ac072c8eb0e761459014fdd8666586e38"><td class="mdescLeft">&#160;</td><td class="mdescRight">mismatch flag  <a href="structec__pd__group.html#ac072c8eb0e761459014fdd8666586e38">More...</a><br /></td></tr>
+<tr class="separator:ac072c8eb0e761459014fdd8666586e38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24d28cc31e88ae4ad41e869956ca8bef"><td class="memItemLeft" align="right" valign="top">osal_uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structec__pd__group.html#a24d28cc31e88ae4ad41e869956ca8bef">wkc_expected_lrw</a></td></tr>
 <tr class="memdesc:a24d28cc31e88ae4ad41e869956ca8bef"><td class="mdescLeft">&#160;</td><td class="mdescRight">expected working counter  <a href="structec__pd__group.html#a24d28cc31e88ae4ad41e869956ca8bef">More...</a><br /></td></tr>
 <tr class="separator:a24d28cc31e88ae4ad41e869956ca8bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -289,6 +292,24 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struc
 
 </div>
 </div>
+<a id="ac072c8eb0e761459014fdd8666586e38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac072c8eb0e761459014fdd8666586e38">&#9670;&nbsp;</a></span>skip_pd_on_wkc_mismatch</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ec_pd_group::skip_pd_on_wkc_mismatch</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>mismatch flag </p>
+<p>Skip process data on working counter <br  />
+ </p>
+
+</div>
+</div>
 <a id="acfbfaf0b5f1ae2bbef3d6d52cc979991"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acfbfaf0b5f1ae2bbef3d6d52cc979991">&#9670;&nbsp;</a></span>wkc_expected_lrd</h2>
 
@@ -319,7 +340,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struc
 </div><div class="memdoc">
 
 <p>expected working counter </p>
-<p>This is the expected working counter for the LRW command. The working counter will be incremented by every slave that reads data by 1, by every slave that writes data by 2 and by every slave that reads and writes data by 3. </p>
+<p>This flag specifies that the cyclic process data should not be copied to the <a class="el" href="structec__pd__group.html#ae7a3daaca55e8013b1da73ce192d30ee">pd</a> field when a working counter mismatch occurs. This is the expected working counter for the LRW command. The working counter will be incremented by every slave that reads data by 1, by every slave that writes data by 2 and by every slave that reads and writes data by 3. </p>
 
 </div>
 </div>
