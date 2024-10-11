@@ -264,11 +264,22 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">mbx_flag</td><td>Mailbox protocol flag to be checked</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">mbx_flag</td><td>Mailbox protocols flag to be checked</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>1 if supported, 0 otherwise </dd></dl>
+<dl class="retval"><dt>Return values</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">EC_OK</td><td>If all requested protocols supported, otherwise ored error codes. </td></tr>
+    <tr><td class="paramname">EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE</td><td>Mailbox AoE not supported. </td></tr>
+    <tr><td class="paramname">EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE</td><td>Mailbox EoE not supported. </td></tr>
+    <tr><td class="paramname">EC_ERROR_MAILBOX_NOT_SUPPORTED_COE</td><td>Mailbox CoE not supported. </td></tr>
+    <tr><td class="paramname">EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE</td><td>Mailbox FoE not supported. </td></tr>
+    <tr><td class="paramname">EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE</td><td>Mailbox SoE not supported. </td></tr>
+    <tr><td class="paramname">EC_ERROR_MAILBOX_NOT_SUPPORTED_VOE</td><td>Mailbox VoE not supported. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
