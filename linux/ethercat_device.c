@@ -344,6 +344,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
         }
     }
 
+#if 0
     ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
 
     ecat_dev->ethercat_polling = false;
@@ -354,6 +355,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     }
 
     (void)ethercat_monitor_create(ecat_dev);
+#endif
 
     return ecat_dev;
 
@@ -382,9 +384,11 @@ EXPORT_SYMBOL(ethercat_device_create);
 int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     int i = 0;
 
+#if 0
     ethercat_monitor_destroy(ecat_dev);
     
     ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
+#endif
 
     for (i = 0; i < EC_TX_RING_SIZE; i++) {
         if (ecat_dev->tx_skb[i]) {
@@ -458,11 +462,23 @@ EXPORT_SYMBOL(ethercat_device_receive);
  * @param return 0
  */
 static int ethercat_device_open(struct inode *inode, struct file *filp) {
+    int local_ret = 0;
     struct ethercat_device_user *user;
     struct ethercat_device *ecat_dev;
     ecat_dev = (void *)container_of(inode->i_cdev, struct ethercat_device, cdev);
 
     debug_pr_info("libethercat char dev driver: open called\n");
+
+    ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
+
+    ecat_dev->ethercat_polling = false;
+    local_ret = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(
+            ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
+    if (local_ret > 0) {
+        ecat_dev->ethercat_polling = true;
+    }
+
+    (void)ethercat_monitor_create(ecat_dev);
 
     if (ecat_dev->ethercat_polling) {
         int not_cleaned = 1;
@@ -495,12 +511,18 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
  */
 static int ethercat_device_release(struct inode *inode, struct file *filp) {
     struct ethercat_device_user *user;
+    struct ethercat_device *ecat_dev;
     user = (struct ethercat_device_user *)filp->private_data;
+    ecat_dev = user->ecat_dev;
     
     debug_pr_info("libetherat char dev driver: release called\n");
 
     // free allocated user struct memory
     kfree(user);
+
+    ethercat_monitor_destroy(ecat_dev);
+    
+    ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
 
     return 0;
 }
