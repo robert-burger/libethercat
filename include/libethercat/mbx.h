@@ -234,9 +234,15 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave);
  * \param[in] slave     Number of ethercat slave. this depends on 
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
- * \param[in] mbx_flag  Mailbox protocol flag to be checked
+ * \param[in] mbx_flag  Mailbox protocols flag to be checked
  *
- * \return 1 if supported, 0 otherwise
+ * \retval EC_OK                                   If all requested protocols supported, otherwise ored error codes.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE      Mailbox AoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE      Mailbox EoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE      Mailbox CoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      Mailbox FoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE      Mailbox SoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_VOE      Mailbox VoE not supported.
  */
 int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag);
 
