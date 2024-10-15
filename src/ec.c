@@ -776,7 +776,7 @@ static void ec_scan(ec_t *pec) {
                 init_state = EC_STATE_INIT | EC_STATE_RESET;
                 local_ret = ec_fpwr(pec, fixed, EC_REG_ALCTL, &init_state, sizeof(init_state), &wkc); 
                 if (local_ret != EC_OK) {
-                    ec_log(1, "MASTER_SCAN", "salve %2d: reading al control failed with %d\n", i, local_ret);
+                    ec_log(1, "MASTER_SCAN", "slave %2d: reading al control failed with %d\n", i, local_ret);
                 }
 
                 fixed++;

@@ -63,21 +63,13 @@ struct ethercat_device {
     unsigned int rx_skb_index_last_read;
 
     bool ethercat_polling;                  //! \brief EtherCAT polling mode (no irq's)
+    uint64_t rx_timeout_ns;                 //! \brief Timeout in polling mode.
 
     // EtherCAT monitor device 
     bool monitor_enabled;                   //! \brief Monitor device enabled.
     struct net_device *monitor_dev;         //! \brief Monitor device net_dev.
     struct net_device_stats monitor_stats;  //! \brief Monitor device statistics.
 };
-
-/* ioctls */
-#define ETHERCAT_DEVICE_MAGIC             'e'
-#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
-#define ETHERCAT_DEVICE_GET_POLLING       _IOR (ETHERCAT_DEVICE_MAGIC, 2, unsigned int)
-
-#define ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC      (0x88A40000)
-#define ETHERCAT_DEVICE_NET_DEVICE_DO_POLL          (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0000)
-#define ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING      (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0001)
 
 //! \brief Create an characted device node for provided network device.
 /*!

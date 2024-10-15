@@ -224,17 +224,31 @@ static const osal_char_t *ec_mbx_get_protocol_string(osal_uint16_t mbx_flag) {
  * \param[in] slave     Number of ethercat slave. this depends on 
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
- * \param[in] mbx_flag  Mailbox protocol flag to be checked
+ * \param[in] mbx_flag  Mailbox protocols flag to be checked
  *
- * \return 1 if supported, 0 otherwise
+ * \retval EC_OK                                   If all requested protocols supported, otherwise ored error codes.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE      Mailbox AoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE      Mailbox EoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE      Mailbox CoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      Mailbox FoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE      Mailbox SoE not supported.
+ * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_VOE      Mailbox VoE not supported.
  */
 int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag) {
     int ret = EC_OK;
 
-    if (!(pec->slaves[slave].eeprom.mbx_supported & (mbx_flag))) {
-        ec_log(200, "MAILBOX_CHECK", "no %s support on slave %d\n", 
-                ec_mbx_get_protocol_string(mbx_flag), slave); 
-        ret = EC_ERROR_MAILBOX_MASK | (int32_t)mbx_flag;
+    if ((pec->slaves[slave].eeprom.mbx_supported & (mbx_flag)) != mbx_flag) {
+        osal_uint16_t not_supp = (pec->slaves[slave].eeprom.mbx_supported & (mbx_flag)) ^ mbx_flag;
+
+        for (unsigned i = 0u; i < 16u; ++i) {
+            osal_uint16_t proto = not_supp & (1u << i);
+
+            if (proto != 0u) {
+                ec_log(200, "MAILBOX_CHECK", "slave %d has no %s support\n", slave, ec_mbx_get_protocol_string(proto)); 
+            }
+        }
+
+        ret = EC_ERROR_MAILBOX_MASK | (int32_t)not_supp;
     }
 
     return ret;
