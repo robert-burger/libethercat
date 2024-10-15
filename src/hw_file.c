@@ -56,6 +56,7 @@
 #include <errno.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #if LIBETHERCAT_HAVE_UNISTD_H == 1
 #include <unistd.h>
@@ -101,14 +102,49 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     phw_file->common.send_finished = hw_device_file_send_finished;
     phw_file->common.get_tx_buffer = hw_device_file_get_tx_buffer;
     phw_file->common.close = hw_device_file_close;
+    
+    int flags = O_RDWR;
+    uint64_t rx_timeout_ns = 1000000;
+
+    char *tmp;
+    if ((tmp = strchr(devname, ':')) != NULL) {
+        *tmp = 0;
+        tmp++;
+
+        char *act = tmp;
+        do {
+            char *next = strchr(tmp, ':');
+            if (next != NULL) { *next = 0; next++; }
+
+            char *value;
+            if ((value = strchr(act, '=')) != NULL) {
+                *value = 0;
+                value++; 
+
+                if (strcmp(act, "rx_timeout_ns") == 0) {
+                    rx_timeout_ns = strtoull(value, NULL, 10);
+                }
+            } else {
+                if (strcmp(act, "polling") == 0) {
+                    ec_log(1, "HW_OPEN", "switching to polling mode\n");
+                    flags |= O_SYNC;
+                }
+            }
+
+            if ((next != NULL) && (*next != '0')) { act = next; } else { break; }
+        } while (1);
+    }
 
     /* we use file link layer device driver */
     // cppcheck-suppress misra-c2012-7.1
-    phw_file->fd = open(devname, O_RDWR, 0644);
+    phw_file->fd = open(devname, flags, 0644);
     if (phw_file->fd <= 0) {
         ec_log(1, "HW_OPEN", "error opening %s: %s\n", devname, strerror(errno));
         ret = EC_ERROR_HW_NO_INTERFACE;
     } else {
+        ec_log(1, "HW_OPEN", "device opened successfully, waiting 3 seconds for link to come up...\n");
+        sleep(3);
+
         phw_file->common.mtu_size = 1480;
     
         // cppcheck-suppress misra-c2012-11.3
@@ -122,6 +158,11 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
         unsigned int pollval = 0;
         if (ioctl(phw_file->fd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
             phw_file->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
+        }
+        
+        if (phw_file->polling_mode == OSAL_TRUE) {
+            ec_log(10, "HW_OPEN", "set rx polling timeout to %" PRIu64 " ns.\n", rx_timeout_ns);
+            (void)ioctl(phw_file->fd, ETHERCAT_DEVICE_SET_POLLING_RX_TIMEOUT, &rx_timeout_ns);
         }
 
         unsigned int monitor = 0;
