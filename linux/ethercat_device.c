@@ -689,6 +689,12 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
             }
             break;
         }
+        case ETHERCAT_DEVICE_GET_LINK_STATE: {
+            if (__copy_to_user((void *)arg, &ecat_dev->link_state, sizeof(uint8_t))) {
+                ret = -EFAULT;
+            }
+            break;
+        }
         default:
             break;
     }

@@ -142,8 +142,20 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
         ec_log(1, "HW_OPEN", "error opening %s: %s\n", devname, strerror(errno));
         ret = EC_ERROR_HW_NO_INTERFACE;
     } else {
-        ec_log(1, "HW_OPEN", "device opened successfully, waiting 3 seconds for link to come up...\n");
-        sleep(3);
+        ec_log(1, "HW_OPEN", "device opened successfully, waiting max 5 seconds for link to come up...\n");
+
+        osal_timer_t timeout;
+        osal_timer_init(&timeout, 5000000000);
+        do {
+            uint8_t link_state = 0;
+            if (ioctl(phw_file->fd, ETHERCAT_DEVICE_GET_LINK_STATE, &link_state) >= 0) {
+                if (link_state != 0) {
+                    break;
+                }
+            }
+
+            osal_microsleep(100000);
+        } while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT);
 
         phw_file->common.mtu_size = 1480;
     
