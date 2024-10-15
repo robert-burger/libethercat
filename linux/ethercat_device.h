@@ -70,15 +70,6 @@ struct ethercat_device {
     struct net_device_stats monitor_stats;  //! \brief Monitor device statistics.
 };
 
-/* ioctls */
-#define ETHERCAT_DEVICE_MAGIC             'e'
-#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
-#define ETHERCAT_DEVICE_GET_POLLING       _IOR (ETHERCAT_DEVICE_MAGIC, 2, unsigned int)
-
-#define ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC      (0x88A40000)
-#define ETHERCAT_DEVICE_NET_DEVICE_DO_POLL          (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0000)
-#define ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING      (ETHERCAT_DEVICE_NET_DEVICE_IOCTL_MAGIC | 0x0001)
-
 //! \brief Create an characted device node for provided network device.
 /*!
  * \param[in]   net_dev     Network device to attach.

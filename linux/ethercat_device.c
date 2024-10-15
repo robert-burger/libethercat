@@ -28,6 +28,7 @@
  */
 
 #include "ethercat_device.h"
+#include "ethercat_device_ioctl.h"
 
 #include <linux/kernel.h>
 #include <linux/init.h>

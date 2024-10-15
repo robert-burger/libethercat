@@ -43,6 +43,8 @@
 #include <libethercat/idx.h>
 #include <libethercat/error_codes.h>
 
+#include <linux/ethercat_device_ioctl.h>
+
 #include <assert.h>
 #include <sys/stat.h>
 
@@ -66,11 +68,6 @@
 #if LIBETHERCAT_HAVE_WINSOCK_H == 1
 #include <winsock.h>
 #endif
-
-/* ioctls from ethercat_device */
-#define ETHERCAT_DEVICE_MAGIC             'e'
-#define ETHERCAT_DEVICE_MONITOR_ENABLE    _IOW (ETHERCAT_DEVICE_MAGIC, 1, unsigned int)
-#define ETHERCAT_DEVICE_GET_POLLING       _IOR (ETHERCAT_DEVICE_MAGIC, 2, unsigned int)
 
 // forward declarations
 int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type);
