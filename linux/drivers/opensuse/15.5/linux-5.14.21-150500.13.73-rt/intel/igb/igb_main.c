@@ -4375,6 +4375,9 @@ static int __igb_close(struct net_device *netdev, bool suspending)
 	igb_free_all_tx_resources(adapter);
 	igb_free_all_rx_resources(adapter);
 
+	if (adapter->is_ecat)
+		igb_reset(adapter);
+
 	if (!suspending)
 		pm_runtime_put_sync(&pdev->dev);
 	return 0;
@@ -9419,6 +9422,24 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 			return 1;
 
 		return 0;
+	}
+	case ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
+		}
+
+		ethercat_polling = 1;
+		return 1;
+	}
+	case ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
+		}
+
+		ethercat_polling = 0;
+		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
 		struct igb_adapter *adapter = netdev_priv(netdev);
