@@ -7,6 +7,6 @@ all:
 clean:
 	make -C /lib/modules/${KERNEL_VERSION}/build/ M=$(shell pwd) DRIVER_PATH=$(DRIVER_PATH) clean
 
-module_install:
+modules_install:
 	make -C /lib/modules/${KERNEL_VERSION}/build/ M=$(shell pwd) DRIVER_PATH=$(DRIVER_PATH) modules_install
 

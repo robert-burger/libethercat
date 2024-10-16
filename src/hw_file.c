@@ -146,7 +146,12 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
 
         osal_timer_t timeout;
         osal_timer_init(&timeout, 5000000000);
-        do {
+        while (1) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
+                ret = EC_ERROR_HW_NO_LINK;
+                break;
+            }
+
             uint8_t link_state = 0;
             if (ioctl(phw_file->fd, ETHERCAT_DEVICE_GET_LINK_STATE, &link_state) >= 0) {
                 if (link_state != 0) {
@@ -155,8 +160,10 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
             }
 
             osal_microsleep(100000);
-        } while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT);
+        }
+    }
 
+    if (ret == EC_OK) {
         phw_file->common.mtu_size = 1480;
     
         // cppcheck-suppress misra-c2012-11.3
@@ -193,6 +200,12 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
             attr.affinity = cpumask;
             (void)strcpy(&attr.task_name[0], "ecat.rx");
             osal_task_create(&phw_file->rxthread, &attr, hw_device_file_rx_thread, phw_file);
+        }
+    }
+
+    if (ret != EC_OK) {
+        if (phw_file->fd > 0) {
+            close(phw_file->fd);
         }
     }
 

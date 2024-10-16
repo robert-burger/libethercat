@@ -445,36 +445,43 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
     int local_ret = 0;
     struct ethercat_device_user *user;
     struct ethercat_device *ecat_dev;
+    int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
     ecat_dev = (void *)container_of(inode->i_cdev, struct ethercat_device, cdev);
 
     debug_pr_info("libethercat char dev driver: open called\n");
+    
+    ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+    if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
 
-    if (filp->f_flags & O_SYNC) {
-        (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(
-            ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING);
-    } else {
-        (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(
-            ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING);
+    if (ndo_do_ioctl) {
+        if (filp->f_flags & O_SYNC) {
+            (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING);
+        } else {
+            (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING);
+        }
     }
 
     ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
 
     ecat_dev->ethercat_polling = false;
-    local_ret = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(
-            ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
-    if (local_ret > 0) {
-        ecat_dev->ethercat_polling = true;
+    
+    if (ndo_do_ioctl) {
+        local_ret = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
+        if (local_ret > 0) {
+            ecat_dev->ethercat_polling = true;
+        }
     }
 
     (void)ethercat_monitor_create(ecat_dev);
 
-    if (ecat_dev->ethercat_polling) {
-        int not_cleaned = 1;
-        // consume frames ...
-        do {
-            not_cleaned = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev,
-                    NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
-        } while (not_cleaned != 0);
+    if (ndo_do_ioctl) {
+        if (ecat_dev->ethercat_polling) {
+            int not_cleaned = 1;
+            // consume frames ...
+            do {
+                not_cleaned = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
+            } while (not_cleaned != 0);
+        }
     }
     
     ecat_dev->tx_skb_index_next = 0;
@@ -531,9 +538,13 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
     struct ethercat_device *ecat_dev;
     struct sk_buff *skb;
     size_t copy_len;
+    int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
 
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
+
+    ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+    if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
 
     debug_pr_info("libethercat char dev driver: read called\n");
 
@@ -546,16 +557,17 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
                 s64 act_time = ktime_to_ns(ktime_get_raw());
                 s64 end_time = act_time + ecat_dev->rx_timeout_ns;
 
-                do {
-                    (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, 
-                            NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
+                if (ndo_do_ioctl) {
+                    do {
+                        (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
 
-                    if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
-                        break;
-                    }
+                        if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
+                            break;
+                        }
 
-                    act_time = ktime_to_ns(ktime_get_raw());
-                } while (act_time < end_time);
+                        act_time = ktime_to_ns(ktime_get_raw());
+                    } while (act_time < end_time);
+                }
 
                 if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
                     return -EAGAIN;

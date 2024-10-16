@@ -81,6 +81,7 @@
 #define EC_ERROR_HW_MASK                        (0x00080000)                                //!< \brief Hardware error mask.
 #define EC_ERROR_HW_NOT_SUPPORTED               (EC_ERROR_HW_MASK      | 0x00000001)        //!< \brief Hardware not supported error.
 #define EC_ERROR_HW_NO_INTERFACE                (EC_ERROR_HW_MASK      | 0x00000002)        //!< \brief No interface found.
+#define EC_ERROR_HW_NO_LINK                     (EC_ERROR_HW_MASK      | 0x00000004)        //!< \brief No link detected on interface.                                                                                            
 
 #define EC_ERROR_MAILBOX_MASK                   (0x00100000)                                //!< \brief General mailbox error mask.
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_AOE)        //!< \brief Mailbox AoE not supported.
