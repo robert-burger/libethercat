@@ -451,7 +451,9 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
     debug_pr_info("libethercat char dev driver: open called\n");
     
     ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
     if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
+#endif
 
     if (ndo_do_ioctl) {
         if (filp->f_flags & O_SYNC) {
@@ -544,7 +546,9 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
     ecat_dev = user->ecat_dev;
 
     ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
     if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
+#endif
 
     debug_pr_info("libethercat char dev driver: read called\n");
 
