@@ -105,6 +105,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     
     int flags = O_RDWR;
     uint64_t rx_timeout_ns = 1000000;
+    uint64_t link_timeout_sec = 5;
 
     char *tmp;
     if ((tmp = strchr(devname, ':')) != NULL) {
@@ -113,7 +114,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
 
         char *act = tmp;
         do {
-            char *next = strchr(tmp, ':');
+            char *next = strchr(act, ':');
             if (next != NULL) { *next = 0; next++; }
 
             char *value;
@@ -121,8 +122,10 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
                 *value = 0;
                 value++; 
 
-                if (strcmp(act, "rx_timeout_ns") == 0) {
+                if (strcmp(act, "rx_timeout_nsec") == 0) {
                     rx_timeout_ns = strtoull(value, NULL, 10);
+                } else if (strcmp(act, "link_timeout_sec") == 0) {
+                    link_timeout_sec = strtoull(value, NULL, 10);
                 }
             } else {
                 if (strcmp(act, "polling") == 0) {
@@ -142,12 +145,13 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
         ec_log(1, "HW_OPEN", "error opening %s: %s\n", devname, strerror(errno));
         ret = EC_ERROR_HW_NO_INTERFACE;
     } else {
-        ec_log(1, "HW_OPEN", "device opened successfully, waiting max 5 seconds for link to come up...\n");
+        ec_log(1, "HW_OPEN", "device opened successfully, waiting max %" PRId64 " seconds for link to come up...\n", link_timeout_sec);
 
         osal_timer_t timeout;
-        osal_timer_init(&timeout, 5000000000);
+        osal_timer_init(&timeout, link_timeout_sec * 1000000000);
         while (1) {
             if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
+                ec_log(1, "HW_OPEN", "timeout waiting for link!\n");
                 ret = EC_ERROR_HW_NO_LINK;
                 break;
             }

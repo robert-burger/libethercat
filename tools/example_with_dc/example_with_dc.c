@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
 
     if (phw == NULL) {
         ec_log(10, "HW_OPEN", "Hardware device layer failure!\n");
-        goto exit;
+        goto hw_exit;
     }
 
     ret = ec_open(&ec, phw, 1);
@@ -412,6 +412,7 @@ int main(int argc, char **argv) {
 exit:
     ec_close(&ec);
     
+hw_exit:
     osal_trace_free(tx_start);
     osal_trace_free(tx_duration);
     osal_trace_free(roundtrip_duration);
