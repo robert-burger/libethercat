@@ -155,6 +155,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
             uint8_t link_state = 0;
             if (ioctl(phw_file->fd, ETHERCAT_DEVICE_GET_LINK_STATE, &link_state) >= 0) {
                 if (link_state != 0) {
+                    ec_log(1, "HW_OPEN", "success, got link!\n");
                     break;
                 }
             }
