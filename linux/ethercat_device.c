@@ -245,7 +245,11 @@ static int ethercat_device_init(void) {
 	int ret = 0;
 
 	// create driver class and character devices
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+	ecat_chr_class = class_create("ecat");
+#else
 	ecat_chr_class = class_create(THIS_MODULE, "ecat");
+#endif
 	if ((ret = alloc_chrdev_region(&ecat_chr_dev, 0, ecat_chr_cnt, "ecat")) < 0) {
 		pr_info("cannot obtain major nr!\n");
 		return ret;
