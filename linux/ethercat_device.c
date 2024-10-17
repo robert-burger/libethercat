@@ -230,7 +230,7 @@ static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8
     skb->protocol = eth_type_trans(skb, ecat_dev->monitor_dev);
     skb->ip_summed = CHECKSUM_UNNECESSARY;
 
-    netif_rx_ni(skb);
+    netif_rx(skb);
 }
 
 //================================================================================================
