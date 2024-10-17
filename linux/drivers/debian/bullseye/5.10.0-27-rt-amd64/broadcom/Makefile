@@ -3,9 +3,9 @@
 # Makefile for the Broadcom network device drivers.
 #
 
-obj-m += tg3-libethercat.o
+obj-m += tg3-ethercat.o
 
-tg3-libethercat-objs := tg3.o
+tg3-ethercat-objs := tg3.o
 
 EXTRA_CFLAGS=-I$(src)/../../../../../
 KBUILD_EXTRA_SYMBOLS=$(src)/../../../../../Module.symvers
