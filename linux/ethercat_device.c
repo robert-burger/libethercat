@@ -173,7 +173,6 @@ static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
         ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
         *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
 
-        //memcpy(ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
         dev_addr_mod(ecat_dev->monitor_dev, 0, ecat_dev->net_dev->dev_addr, ETH_ALEN);
 
         if ((ret = register_netdev(ecat_dev->monitor_dev))) {
