@@ -21,6 +21,9 @@
 
 #include <net/xdp.h>
 
+#include "ethercat_device.h"
+#include "ethercat_device_ioctl.h"
+
 struct igb_adapter;
 
 #define E1000_PCS_CFG_IGN_SD	1
@@ -666,6 +669,9 @@ struct igb_adapter {
 	struct vf_mac_filter *vf_mac_list;
 	/* lock for VF resources */
 	spinlock_t vfs_lock;
+
+	bool is_ecat;
+	struct ethercat_device *ecat_dev;
 };
 
 /* flags controlling PTP/1588 function */
