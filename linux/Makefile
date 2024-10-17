@@ -9,4 +9,5 @@ clean:
 
 modules_install:
 	make -C /lib/modules/${KERNEL_VERSION}/build/ M=$(shell pwd) DRIVER_PATH=$(DRIVER_PATH) modules_install
+	depmod ${KERNEL_VERSION}
 
