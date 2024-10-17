@@ -1439,9 +1439,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
-        if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-            goto request_done;
-        }
+		if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+			goto request_done;
+		}
 
 		err = igb_request_msix(adapter);
 		if (!err)
@@ -1462,9 +1462,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 
 	igb_assign_vector(adapter->q_vector[0], 0);
 
-    if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-        goto request_done;
-    }
+	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+		goto request_done;
+	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSI) {
 		err = request_irq(pdev->irq, igb_intr_msi, irq_flags,
@@ -4319,6 +4319,9 @@ static int __igb_close(struct net_device *netdev, bool suspending)
 
 	igb_free_all_tx_resources(adapter);
 	igb_free_all_rx_resources(adapter);
+
+	if (adapter->is_ecat)
+		igb_reset(adapter);
 
 	if (!suspending)
 		pm_runtime_put_sync(&pdev->dev);
