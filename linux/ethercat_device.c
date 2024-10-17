@@ -342,6 +342,10 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
             goto error_exit;
         }
     }
+    
+    ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
+
+    (void)ethercat_monitor_create(ecat_dev);
 
     return ecat_dev;
 
@@ -369,6 +373,10 @@ EXPORT_SYMBOL(ethercat_device_create);
 
 int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     int i = 0;
+    
+    ethercat_monitor_destroy(ecat_dev);
+    
+    ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
 
     for (i = 0; i < EC_TX_RING_SIZE; i++) {
         if (ecat_dev->tx_skb[i]) {
@@ -455,16 +463,6 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
     if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
 #endif
 
-    if (ndo_do_ioctl) {
-        if (filp->f_flags & O_SYNC) {
-            (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING);
-        } else {
-            (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING);
-        }
-    }
-
-    ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
-
     ecat_dev->ethercat_polling = false;
     
     if (ndo_do_ioctl) {
@@ -473,8 +471,6 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
             ecat_dev->ethercat_polling = true;
         }
     }
-
-    (void)ethercat_monitor_create(ecat_dev);
 
     if (ndo_do_ioctl) {
         if (ecat_dev->ethercat_polling) {
@@ -513,10 +509,6 @@ static int ethercat_device_release(struct inode *inode, struct file *filp) {
     ecat_dev = user->ecat_dev;
     
     debug_pr_info("libetherat char dev driver: release called\n");
-
-    ethercat_monitor_destroy(ecat_dev);
-    
-    ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
 
     // free allocated user struct memory
     kfree(user);
@@ -685,10 +677,16 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
     long ret = 0;
     struct ethercat_device_user *user;
     struct ethercat_device *ecat_dev;
-    
+    int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
+
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
-
+    
+    ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+    if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
+#endif
+    
     switch (num) {
         case ETHERCAT_DEVICE_SET_POLLING_RX_TIMEOUT: {
             if (__copy_from_user(&ecat_dev->rx_timeout_ns, (void *)arg, sizeof(uint64_t))) {
@@ -698,9 +696,36 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
             pr_info("set rx_timeout_ns to %lld\n", ecat_dev->rx_timeout_ns);
             break;
         }
+        case ETHERCAT_DEVICE_SET_POLLING: { 
+            uint32_t set_polling;
+            if (__copy_from_user(&set_polling, (void *)arg, sizeof(uint32_t))) {
+                ret = -EFAULT;
+            }
+
+            if ((ret == 0) && ndo_do_ioctl) {
+                int local_ret;
+
+                if (set_polling) {
+                    (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING);
+                } else {
+                    (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING);
+                }
+        
+                local_ret = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
+                if (local_ret > 0) {
+                    ecat_dev->ethercat_polling = true;
+                } else {
+                    ecat_dev->ethercat_polling = false;
+                }
+            } else {
+                ret = -EFAULT;
+            }
+
+            break;
+        }
         case ETHERCAT_DEVICE_GET_POLLING: {
-            unsigned int val = ecat_dev->ethercat_polling == false ? 0 : 1;
-            if (__copy_to_user((void *)arg, &val, sizeof(unsigned int))) {
+            uint32_t val = ecat_dev->ethercat_polling == false ? 0 : 1;
+            if (__copy_to_user((void *)arg, &val, sizeof(uint32_t))) {
                 ret = -EFAULT;
             }
             break;

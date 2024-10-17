@@ -129,8 +129,8 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
                 }
             } else {
                 if (strcmp(act, "polling") == 0) {
-                    ec_log(1, "HW_OPEN", "switching to polling mode\n");
-                    flags |= O_SYNC;
+                    ec_log(10, "HW_OPEN", "switching to polling mode\n");
+                    phw_file->polling_mode = OSAL_TRUE;
                 }
             }
 
@@ -145,7 +145,14 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
         ec_log(1, "HW_OPEN", "error opening %s: %s\n", devname, strerror(errno));
         ret = EC_ERROR_HW_NO_INTERFACE;
     } else {
-        ec_log(1, "HW_OPEN", "device opened successfully, waiting max %" PRId64 " seconds for link to come up...\n", link_timeout_sec);
+        ec_log(10, "HW_OPEN", "device opened successfully\n");
+        
+#if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
+        int set_polling = phw_file->polling_mode == OSAL_TRUE ? 1 : 0;
+        (void)ioctl(phw_file->fd, ETHERCAT_DEVICE_SET_POLLING, &set_polling);
+#endif
+
+        ec_log(10, "HW_OPEN", "waiting max %" PRId64 " seconds for link to come up...\n", link_timeout_sec);
 
         osal_timer_t timeout;
         osal_timer_init(&timeout, link_timeout_sec * 1000000000);
@@ -159,7 +166,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
             uint8_t link_state = 0;
             if (ioctl(phw_file->fd, ETHERCAT_DEVICE_GET_LINK_STATE, &link_state) >= 0) {
                 if (link_state != 0) {
-                    ec_log(1, "HW_OPEN", "success, got link!\n");
+                    ec_log(10, "HW_OPEN", "success, got link!\n");
                     break;
                 }
             }
@@ -177,7 +184,6 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
         (void)memcpy(pframe->mac_src, mac_src, 6);
 
         // check polling mode
-        phw_file->polling_mode = OSAL_FALSE;
 #if LIBETHERCAT_HAVE_SYS_IOCTL_H == 1
         unsigned int pollval = 0;
         if (ioctl(phw_file->fd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
