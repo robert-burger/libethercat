@@ -9399,7 +9399,6 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		struct igb_q_vector *q_vector = adapter->q_vector[0];
-
 		int budget = 64;
 		bool clean_complete = true;
 
@@ -9417,28 +9416,45 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 			if (cleaned >= budget) 
 				clean_complete = false;
 		}
-
 		if (!clean_complete) 
 			return 1;
 
 		return 0;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING: {
+		int do_reopen = ethercat_polling != 1;
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
+		}
+
+		if (do_reopen) {
+			igb_close(netdev);
 		}
 
 		ethercat_polling = 1;
+
+		if (do_reopen) {
+			igb_open(netdev);
+		}
 		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING: {
+		int do_reopen = ethercat_polling != 0;
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
 		}
 
+		if (do_reopen) {
+			igb_close(netdev);
+		}
+
 		ethercat_polling = 0;
+
+		if (do_reopen) {
+			igb_open(netdev);
+		}
 		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
