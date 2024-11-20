@@ -921,7 +921,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
             ec_sdo_desc_req_t *write_buf = (ec_sdo_desc_req_t *)(p_entry->data);
 
             // mailbox header
-            write_buf->mbx_hdr.length       = 12; // (mbxhdr - length) + coehdr + sdohdr
+            write_buf->mbx_hdr.length       = 8; // (mbxhdr - length) + coehdr + sdohdr
             write_buf->mbx_hdr.mbxtype      = EC_MBX_COE;
             write_buf->mbx_hdr.counter      = counter;
             // coe header
