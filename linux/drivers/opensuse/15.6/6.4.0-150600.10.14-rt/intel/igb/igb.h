@@ -22,6 +22,7 @@
 #include <net/xdp.h>
 
 #include "ethercat_device.h"
+#include "ethercat_device_ioctl.h"
 
 struct igb_adapter;
 
@@ -639,7 +640,7 @@ struct igb_adapter {
 		struct timespec64 period;
 	} perout[IGB_N_PEROUT];
 
-	char fw_version[32];
+	char fw_version[48];
 #ifdef CONFIG_IGB_HWMON
 	struct hwmon_buff *igb_hwmon_buff;
 	bool ets;

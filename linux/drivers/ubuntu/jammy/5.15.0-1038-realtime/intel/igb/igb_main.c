@@ -1439,9 +1439,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
-        if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-            goto request_done;
-        }
+		if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+			goto request_done;
+		}
 
 		err = igb_request_msix(adapter);
 		if (!err)
@@ -1462,9 +1462,9 @@ static int igb_request_irq(struct igb_adapter *adapter)
 
 	igb_assign_vector(adapter->q_vector[0], 0);
 
-    if ((adapter->is_ecat) && (ethercat_polling != 0)) {
-        goto request_done;
-    }
+	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+		goto request_done;
+	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSI) {
 		err = request_irq(pdev->irq, igb_intr_msi, irq_flags,
@@ -4319,6 +4319,9 @@ static int __igb_close(struct net_device *netdev, bool suspending)
 
 	igb_free_all_tx_resources(adapter);
 	igb_free_all_rx_resources(adapter);
+
+	if (adapter->is_ecat)
+		igb_reset(adapter);
 
 	if (!suspending)
 		pm_runtime_put_sync(&pdev->dev);
@@ -9243,21 +9246,39 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return 0;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING: {
+		int do_reopen = ethercat_polling != 1;
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
+		}
+
+		if (do_reopen) {
+			igb_close(netdev);
 		}
 
 		ethercat_polling = 1;
+
+		if (do_reopen) {
+			igb_open(netdev);
+		}
 		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING: {
+		int do_reopen = ethercat_polling != 0;
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
 		}
 
+		if (do_reopen) {
+			igb_close(netdev);
+		}
+
 		ethercat_polling = 0;
+
+		if (do_reopen) {
+			igb_open(netdev);
+		}
 		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {

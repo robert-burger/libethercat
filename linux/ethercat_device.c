@@ -173,7 +173,7 @@ static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
         ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
         *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
 
-        memcpy(ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
+        dev_addr_mod(ecat_dev->monitor_dev, 0, ecat_dev->net_dev->dev_addr, ETH_ALEN);
 
         if ((ret = register_netdev(ecat_dev->monitor_dev))) {
             pr_err("error registering monitor net device!\n");
@@ -230,7 +230,7 @@ static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8
     skb->protocol = eth_type_trans(skb, ecat_dev->monitor_dev);
     skb->ip_summed = CHECKSUM_UNNECESSARY;
 
-    netif_rx_ni(skb);
+    netif_rx(skb);
 }
 
 //================================================================================================
@@ -245,7 +245,11 @@ static int ethercat_device_init(void) {
 	int ret = 0;
 
 	// create driver class and character devices
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+	ecat_chr_class = class_create("ecat");
+#else
 	ecat_chr_class = class_create(THIS_MODULE, "ecat");
+#endif
 	if ((ret = alloc_chrdev_region(&ecat_chr_dev, 0, ecat_chr_cnt, "ecat")) < 0) {
 		pr_info("cannot obtain major nr!\n");
 		return ret;

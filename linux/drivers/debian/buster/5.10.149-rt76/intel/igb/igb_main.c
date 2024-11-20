@@ -9243,39 +9243,39 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return 0;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING: {
-        int do_reopen = ethercat_polling != 1;
+		int do_reopen = ethercat_polling != 1;
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
 		}
 
-        if (do_reopen) {
-            igb_close(netdev);
-        }
+		if (do_reopen) {
+			igb_close(netdev);
+		}
 
 		ethercat_polling = 1;
-		
-        if (do_reopen) {
-            igb_open(netdev);
-        }
-        return 1;
+
+		if (do_reopen) {
+			igb_open(netdev);
+		}
+		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING: {
-        int do_reopen = ethercat_polling != 0;
+		int do_reopen = ethercat_polling != 0;
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
 		}
 
-        if (do_reopen) {
-            igb_close(netdev);
-        }
+		if (do_reopen) {
+			igb_close(netdev);
+		}
 
 		ethercat_polling = 0;
-		
-        if (do_reopen) {
-            igb_open(netdev);
-        }
+
+		if (do_reopen) {
+			igb_open(netdev);
+		}
 		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
