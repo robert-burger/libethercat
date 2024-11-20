@@ -921,7 +921,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
             ec_sdo_desc_req_t *write_buf = (ec_sdo_desc_req_t *)(p_entry->data);
 
             // mailbox header
-            write_buf->mbx_hdr.length       = 12; // (mbxhdr - length) + coehdr + sdohdr
+            write_buf->mbx_hdr.length       = 8; // (mbxhdr - length) + coehdr + sdohdr
             write_buf->mbx_hdr.mbxtype      = EC_MBX_COE;
             write_buf->mbx_hdr.counter      = counter;
             // coe header
@@ -1063,7 +1063,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                         desc->data_type     = read_buf->data_type;
                         desc->bit_length    = read_buf->bit_length;
                         desc->obj_access    = read_buf->obj_access;
-                        desc->data_len      = min(CANOPEN_MAXDATA, read_buf->mbx_hdr.length - 6u - 10u);
+                        desc->data_len      = min(CANOPEN_MAXDATA, read_buf->mbx_hdr.length - 2u - 10u);
 
                         (void)memcpy(desc->data, read_buf->desc_data, desc->data_len);
                         ret = EC_OK;
