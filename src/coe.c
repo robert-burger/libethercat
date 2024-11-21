@@ -33,7 +33,9 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include "libethercat/ec.h"
 #include "libethercat/mbx.h"
@@ -45,6 +47,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <inttypes.h>
 
 const osal_char_t *get_sdo_info_error_string(osal_uint32_t errorcode) {
     static const osal_char_t *sdo_info_error_0x05030000 = "Toggle bit not changed";
@@ -400,7 +403,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
                     ec_log(100, "COE_SDO_READ", "slave %2d: got sdo abort request on idx %#X, subidx %d, "
-                            "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
+                            "abortcode %" PRIu32 "\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
                     ret = EC_ERROR_MAILBOX_ABORT;
@@ -522,8 +525,8 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
                     // cppcheck-suppress misra-c2012-11.3
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
-                    ec_log(100, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
-                            "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
+                    ec_log(100, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %d, subidx %d, "
+                            "abortcode %" PRIu32 "\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
                     ret = EC_ERROR_MAILBOX_ABORT;
@@ -626,7 +629,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                     ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
                     ec_log(100, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
-                            "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
+                            "abortcode %"  PRIu32 "\n", slave, index, sub_index, abort_buf->abort_code);
 
                     *abort_code = abort_buf->abort_code;
                     ret = EC_ERROR_MAILBOX_ABORT;
@@ -706,7 +709,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                                 ec_sdo_abort_request_t *abort_buf = (ec_sdo_abort_request_t *)(p_entry->data); 
 
                                 ec_log(100, "COE_SDO_WRITE", "slave %d: got sdo abort request on idx %#X, subidx %d, "
-                                        "abortcode %#X\n", slave, index, sub_index, abort_buf->abort_code);
+                                        "abortcode %" PRIu32 "\n", slave, index, sub_index, abort_buf->abort_code);
 
                                 *abort_code = abort_buf->abort_code;
                                 ret = EC_ERROR_MAILBOX_ABORT;
@@ -951,7 +954,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                         osal_uint32_t ecode = read_buf->sdo_info_data[0];
 
                         ec_log(5, "COE_SDO_DESC_READ", "slave %2d: got sdo info error request on idx %#X, "
-                                "error_code %X, message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
+                                "error_code %"  PRIu32 ", message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
 
                         if (error_code != NULL) {
                             *error_code = ecode;
@@ -1077,7 +1080,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                             (osal_uint32_t)read_buf_error->sdo_info_data[3] << 24u );
 
                         ec_log(5, "COE_SDO_ENTRY_DESC_READ", "slave %2d: got sdo info error request on idx %#X, "
-                                "error_code %X, message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
+                                "error_code %" PRIu32 ", message: %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
 
                         if (error_code != NULL) {
                             *error_code = ecode;
@@ -1151,14 +1154,14 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
 
                     ret = 0u;
                 } else {
-                    ec_log(5, "COE_MAPPING", "slave %2d: sm%u reading "
-                            "0x%04X/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
+                    ec_log(5, "COE_MAPPING", "slave %2d: sm%" PRIu32 " reading "
+                            "0x%04" PRIu32 "/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
                 }
 
                 continue;
             }
 
-            ec_log(100, "COE_MAPPING", "slave %2d: sm%u 0x%04X "
+            ec_log(100, "COE_MAPPING", "slave %2d: sm%" PRIu32 "0x%04" PRIu32 ""
                     "count %d\n", slave, sm_idx, idx, entry_cnt); 
 
             // now read all mapped pdo's to retreave the mapped object lengths
@@ -1171,12 +1174,12 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 ret = ec_coe_sdo_read(pec, slave, idx, i, 0, buf, &entry_size, &abort_code);
                 if (ret != 0) {
                     ec_log(5, "COE_MAPPING", "            "
-                            "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
+                            "pdo: reading 0x%04"  PRIu32 "/%d failed, error code 0x%X\n",
                             idx, i, ret);
                     continue;
                 }
 
-                ec_log(100, "COE_MAPPING", "slave %2d: 0x%04X/%d mapped pdo 0x%04X\n",
+                ec_log(100, "COE_MAPPING", "slave %2d: 0x%04" PRIu32 "/%d mapped pdo 0x%04X\n",
                         slave, idx, i, entry_idx);
 
                 // read entry subindex with mapped value
@@ -1216,7 +1219,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     bit_len += entry & 0x000000FFu;
 
                     ec_log(100, "COE_MAPPING", "                "
-                            "mapped entry 0x%04X / %d -> %d bits\n",
+                            "mapped entry 0x%04" PRIu32 "/ %" PRIu32 "-> %" PRIu32 "bits\n",
                             (entry & 0xFFFF0000u) >> 16u, 
                             (entry & 0x0000FF00u) >> 8u, 
                             (entry & 0x000000FFu));
@@ -1226,7 +1229,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
             // store sync manager settings if we have at least 1 bit mapped
             if (bit_len != 0u) {
                 ec_log(100, "COE_MAPPING", 
-                        "slave %2d: sm%u length bits %d, bytes %d\n", 
+                        "slave %2d: sm%" PRIu32 "length bits %" PRIu32 ", bytes %" PRIu32 "\n",
                         slave, sm_idx, bit_len, (bit_len + 7u) / 8u);
 
                 if (slv->sm_ch > sm_idx) {
