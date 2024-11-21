@@ -36,8 +36,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
@@ -937,7 +938,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             case INIT_2_OP: {
                 // init to preop stuff
                 ec_log(10, get_transition_string(transition), 
-                        "slave %2d, vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
+                        "slave %2d, vendor 0x%08" PRIu32 ", product 0x%08" PRIu32 ", mbx 0x%04X\n",
                         slave, 
                         slv->eeprom.vendor_id, 
                         slv->eeprom.product_code, 
@@ -972,7 +973,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                     for (osal_uint32_t sm_idx = 0u; sm_idx < 2u; ++sm_idx) {
                         ec_log(10, get_transition_string(transition), "slave %2d: "
-                                "sm%u, adr 0x%04X, len %3d, flags 0x%08X\n",
+                                "sm%" PRIu32 ", adr 0x%04X, len %3d, flags 0x%08" PRIu32 "\n",
                                 slave, sm_idx, slv->sm[sm_idx].adr, 
                                 slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
 
@@ -1053,7 +1054,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     }
                     ec_log(10, get_transition_string(transition), 
                         "slave %2d: configuring actiavtion reg. %d, "
-                        "cycle_times %d/%d, cycle_shift %d\n", 
+                        "cycle_times %" PRIu32 "/%" PRIu32 ", cycle_shift %" PRIu32 "\n",
                         slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
                         slv->dc.cycle_time_1, slv->dc.cycle_shift);
                     ec_dc_sync(pec, slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
@@ -1070,7 +1071,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     }
 
                     ec_log(10, get_transition_string(transition), "slave %2d: "
-                            "sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
+                            "sm%" PRIu32 ", adr 0x%04X, len %3d, flags 0x%08" PRIu32 "\n",
                             slave, sm_idx, slv->sm[sm_idx].adr, 
                             slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
 
@@ -1080,7 +1081,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     if (!wkc) {
                         ec_log(10, get_transition_string(transition), 
                                 "slave %2d: no answer on "
-                                "writing sm%d settings\n", slave, sm_idx);
+                                "writing sm%" PRIu32 "settings\n", slave, sm_idx);
                     }
                 }
 
@@ -1091,7 +1092,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                     // safeop to op stuff 
                     ec_log(10, get_transition_string(transition), 
-                            "slave %2d: log%d 0x%08X/%d/%d, len %3d, phys "
+                            "slave %2d: log%" PRIu32 "0x%08" PRIu32 "/%d/%d, len %3d, phys "
                             "0x%04X/%d, type %d, active %d\n", slave, fmmu_idx,
                             slv->fmmu[fmmu_idx].log, 
                             slv->fmmu[fmmu_idx].log_bit_start,
@@ -1268,7 +1269,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 }
 
                 ec_log(10, get_transition_string(transition), 
-                        "slave %2d: vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
+                        "slave %2d: vendor 0x%08" PRIu32 ", product 0x%08" PRIu32 ", mbx 0x%04X\n",
                         slave, slv->eeprom.vendor_id, slv->eeprom.product_code, 
                         slv->eeprom.mbx_supported);
             }
