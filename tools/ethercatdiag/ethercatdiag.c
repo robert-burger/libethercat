@@ -1,4 +1,7 @@
+#ifdef HAVE_CONFIG_H
 #include "libethercat/config.h"
+#endif
+
 #include "libethercat/ec.h"
 #include "libethercat/mii.h"
 

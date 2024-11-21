@@ -9,7 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
 #include "libethercat/config.h"
+#endif
+
 #include "libethercat/ec.h"
 
 #if LIBETHERCAT_HAVE_UNISTD_H == 1

@@ -1,4 +1,6 @@
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include <stdio.h>
 #include <inttypes.h>

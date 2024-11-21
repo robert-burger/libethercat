@@ -34,7 +34,10 @@
  */
 
 #include <libosal/io.h>
+
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include <errno.h>
 
@@ -288,7 +291,7 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
         pd->pd_lrw_len += max_len;
     }
 
-    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
+    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2" PRIu32 ": pd out 0x%08" PRIx32
             "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes, lrw window %3" PRIu64 " bytes\n", 
             group, pd->log, pd->pdout_len, pd->log + pd->pdout_len, 
             pd->pdin_len, pd->pd_lrw_len);
@@ -412,7 +415,7 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
         log_base = max(log_base_in, log_base_out);
         pd->wkc_expected_lrw += wkc_expected_lrw;
     
-        ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: expected working counter %d\n",
+        ec_log(10, "CREATE_LOGICAL_MAPPING", "group %" PRIu32 ": expected working counter %d\n",
                 group, pd->wkc_expected_lrw);
     }
 
@@ -455,8 +458,8 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
         }
     }
 
-    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes\n", group, pd->log, 
+    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2" PRIu32 ": pd out 0x%08" PRIx32
+    		"%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes\n", group, pd->log,
             pd->pdout_len, pd->log + pd->pdout_len, pd->pdin_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
@@ -628,7 +631,7 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
                 attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
-                (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
+                (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%" PRIu32, slave);
                 (void)osal_task_create(&(pec->slaves[slave].worker_tid), &attr, 
                         prepare_state_transition_wrapper, 
                         &(pec->slaves[slave].worker_arg));
@@ -643,13 +646,13 @@ static void ec_prepare_state_transition_loop(ec_t *pec, ec_state_t state) {
     } else { 
         for (osal_uint32_t slave = 0u; slave < pec->slave_cnt; ++slave) {                  
             if (pec->slaves[slave].assigned_pd_group != -1) {
-                ec_log(100, get_state_string(state), "prepare state transition for slave %d\n", slave);
+                ec_log(100, get_state_string(state), "prepare state transition for slave %" PRIu32 "\n", slave);
                 int ret = ec_slave_prepare_state_transition(pec, slave, state);
                 if (ret != EC_OK) {
                     ec_log(1, get_state_string(state), "ec_slave_prepare_state_transition failed with %d\n", ret);
                 }
 
-                ec_log(100, get_state_string(state), "generate mapping for slave %d\n", slave);
+                ec_log(100, get_state_string(state), "generate mapping for slave %" PRIu32 "\n", slave);
                 ret = ec_slave_generate_mapping(pec, slave);
                 if (ret != EC_OK) {
                     ec_log(1, get_state_string(state), "ec_slave_generate_mapping failed with %d\n", ret);
@@ -679,7 +682,7 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
                 attr.policy = OSAL_SCHED_POLICY_OTHER;
                 attr.priority = 0;
                 attr.affinity = 0xFF;
-                (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%u", slave);
+                (void)snprintf(&attr.task_name[0], TASK_NAME_LEN, "ecat.worker%" PRIu32, slave);
                 osal_task_create(&(pec->slaves[slave].worker_tid), &attr, 
                         set_state_wrapper, 
                         &(pec->slaves[slave].worker_arg));
@@ -693,11 +696,11 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
         }
     } else {
         for (osal_uint32_t slave = 0u; slave < pec->slave_cnt; ++slave) {
-            ec_log(100, get_state_string(state), "slave %d, with_group %d, assigned %d\n", 
+            ec_log(100, get_state_string(state), "slave %" PRIu32 ", with_group %d, assigned %d\n",
                     slave, with_group, pec->slaves[slave].assigned_pd_group);
 
             if ((with_group == 0u) || (pec->slaves[slave].assigned_pd_group != -1)) {
-                ec_log(100, get_state_string(state), "setting state for slave %d\n", slave);
+                ec_log(100, get_state_string(state), "setting state for slave %" PRIu32 "\n", slave);
                 if (ec_slave_state_transition(pec, slave, state) != EC_OK) {
                     ec_log(1, get_state_string(state), "ec_slave_state_transition failed!\n");
                 }
@@ -1295,9 +1298,9 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
         if (local_ret != OSAL_OK) {
             if (local_ret == OSAL_ERR_TIMEOUT) {
-                ec_log(1, "MASTER_TRANSCEIVE", "timeout on cmd 0x%X, adr 0x%X\n", cmd, adr);
+                ec_log(1, "MASTER_TRANSCEIVE", "timeout on cmd 0x%X, adr 0x%" PRIu32 "\n", cmd, adr);
             } else {
-                ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
+                ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%" PRIu32 "\n",
                         local_ret, cmd, adr);
             }
 
@@ -1408,7 +1411,7 @@ static void cb_process_data_group_lwr(struct ec *pec, pool_entry_t *p_entry, ec_
             (wkc != wkc_expected)) {
         if ((pd->wkc_mismatch_cnt_lwr++%1000) == 0) {
             ec_log(1, "MASTER_RECV_PD_LWR", 
-                    "group %2d: working counter mismatch got %u, "
+                    "group %2" PRIu32 ": working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
                     pd->group, wkc, wkc_expected, 
                     pec->slave_cnt, pd->wkc_mismatch_cnt_lwr);
@@ -1460,7 +1463,7 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
             (wkc != wkc_expected)) {
         if ((pd->wkc_mismatch_cnt_lrw++%1000) == 0) {
             ec_log(1, "MASTER_RECV_PD_GROUP", 
-                    "group %2d: working counter mismatch got %u, "
+                    "group %2" PRIu32 ": working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
                     pd->group, wkc, wkc_expected, 
                     pec->slave_cnt, pd->wkc_mismatch_cnt_lrw);
@@ -1516,7 +1519,7 @@ static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
                     (pec->master_state == EC_STATE_OP)  ) && 
                 (pd->wkc_mismatch_cnt_mbx_state++%1000) == 0) {
             ec_log(1, "MASTER_RECV_MBX_STATE", 
-                    "group %2d: working counter mismatch got %u, "
+                    "group %" PRIu32 ": working counter mismatch got %u, "
                     "expected %u, slave_cnt %d, mismatch_cnt %d\n", 
                     pd->group, wkc, pd->wkc_expected_mbx_state, 
                     pec->slave_cnt, pd->wkc_mismatch_cnt_mbx_state);

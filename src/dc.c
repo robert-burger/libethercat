@@ -41,7 +41,9 @@
  */
 
 /* autoconf header goes first */
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 /* system includes */
 #include <assert.h>
