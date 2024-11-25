@@ -18,5 +18,4 @@ clean:
 
 modules_install:
 	make -C ${KERNEL_SOURCE_DIR} M=$(shell pwd) DRIVER_PATH=$(DRIVER_PATH) modules_install
-	depmod ${KERNEL_VERSION}
 
