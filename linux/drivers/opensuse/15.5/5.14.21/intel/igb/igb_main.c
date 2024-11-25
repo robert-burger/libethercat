@@ -9131,7 +9131,7 @@ static int igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
 		if (likely(adapter->is_ecat)) {
 			if (size > 0) {
 				prefetch(pktbuf);
-				ethercat_device_receive(adapter->ecat_dev, pktbuf, size, true);
+				ethercat_device_receive(adapter->ecat_dev, pktbuf, size);
 			}
 			igb_reuse_rx_page(rx_ring, rx_buffer);
 		} else {
