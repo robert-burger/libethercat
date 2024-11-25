@@ -11,6 +11,12 @@ Change working directory to the linux subdirecty and build the driver for your o
   make
   ```
 
+  or (specify os/kernel dir):
+
+  ```
+  make KERNEL_SOURCE_DIR=/usr/src/linux-rt
+  ```
+
 - Install drivers:
   ```
   sudo make modules_install
