@@ -34,6 +34,8 @@
 #include "r8169.h"
 #include "r8169_firmware.h"
 
+#include "ethercat_device_ioctl.h"
+
 #define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-1.fw"
 #define FIRMWARE_8168D_2	"rtl_nic/rtl8168d-2.fw"
 #define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-1.fw"
