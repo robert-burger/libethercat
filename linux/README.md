@@ -13,7 +13,7 @@ Change working directory to the linux subdirecty and build the driver for your o
 
 - Install drivers:
   ```
-  sudo make install
+  sudo make modules_install
   ```
 
 ### Blacklist original linux igb driver.
@@ -38,15 +38,7 @@ GRUB_CMDLINE_LINUX_DEFAULT="resume=/dev/disk/by-partlabel/swap0 showopts splash=
 to 
  
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="resume=/dev/disk/by-partlabel/swap0 showopts splash=silent igb-libethercat.ethercat_mac_addr=00:1b:21:ed:35:41 intel_iommu=on preempt=full quiet security=apparmor mitigations=auto processor.max_cstate=1 intel_idle.max_cstate=0 nortsched isolcpus=2,3,4,5 nohz_full=2,3,4,5 mitigations=off idle=poll nosmt systemd.unit=default-offline.target"
-```
-
-### Polling Mode
-
-The driver can also be configured without interrupts in polling mode. Therefore append following to the grub config:
-
-```
-igb-libethercat.ethercat_polling=1
+GRUB_CMDLINE_LINUX_DEFAULT="resume=/dev/disk/by-partlabel/swap0 showopts splash=silent igb_ethercat.ethercat_mac_addr=00:1b:21:ed:35:41 intel_iommu=on preempt=full quiet security=apparmor mitigations=auto processor.max_cstate=1 intel_idle.max_cstate=0 nortsched isolcpus=2,3,4,5 nohz_full=2,3,4,5 mitigations=off idle=poll nosmt systemd.unit=default-offline.target"
 ```
 
 ### Rebuild grub config file
