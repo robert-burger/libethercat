@@ -5155,16 +5155,51 @@ static int rtl_do_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 
 			return 0;
 		}
+		case ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING: {
+			int do_reopen = ethercat_polling != 1;
+			struct rtl8169_private *tp = netdev_priv(netdev);
+			if (!tp->is_ecat) {
+				return -EOPNOTSUPP;
+			}
+
+			if (do_reopen) {
+				rtl8169_close(netdev);
+			}
+
+			ethercat_polling = 1;
+
+			if (do_reopen) {
+				rtl_open(netdev);
+			}
+			return 1;
+		}
+		case ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING: {
+			int do_reopen = ethercat_polling != 0;
+			struct rtl8169_private *tp = netdev_priv(netdev);
+			if (!tp->is_ecat) {
+				return -EOPNOTSUPP;
+			}
+
+			if (do_reopen) {
+				rtl8169_close(netdev);
+			}
+
+			ethercat_polling = 0;
+
+			if (do_reopen) {
+				rtl_open(netdev);
+			}
+			return 1;
+		}
 		case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
 			struct rtl8169_private *tp = netdev_priv(netdev);
-			
 			if (!tp->is_ecat) {
 				return -EOPNOTSUPP;
 			}
 
 			if (ethercat_polling == 0) {
 				return 0;
-			}
+			} 
 
 			return 1;
 		}
