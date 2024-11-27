@@ -94,7 +94,8 @@ $(document).ready(function(){initNavTree('hw__sock__raw__mmaped_8h.html',''); in
 
 <p>SOCK_RAW hardware access functions.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;<a class="el" href="hw_8h_source.html">libethercat/hw.h</a>&gt;</code><br />
+<div class="textblock"><code>#include &lt;<a class="el" href="ec_8h_source.html">libethercat/ec.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="hw_8h_source.html">libethercat/hw.h</a>&gt;</code><br />
 <code>#include &lt;libosal/task.h&gt;</code><br />
 </div>
 <p><a href="hw__sock__raw__mmaped_8h_source.html">Go to the source code of this file.</a></p>
@@ -112,17 +113,17 @@ typedef struct <a class="el" href="structhw__sock__raw__mmaped.html">hw_sock_raw
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a35fad85fe419787832a4356a70c3be09"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__sock__raw__mmaped_8h.html#a35fad85fe419787832a4356a70c3be09">hw_device_sock_raw_mmaped_open</a> (struct <a class="el" href="structhw__sock__raw__mmaped.html">hw_sock_raw_mmaped</a> *phw_sock_raw_mmaped, const osal_char_t *devname, int prio, int cpumask)</td></tr>
-<tr class="memdesc:a35fad85fe419787832a4356a70c3be09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__sock__raw__mmaped_8h.html#a35fad85fe419787832a4356a70c3be09">More...</a><br /></td></tr>
-<tr class="separator:a35fad85fe419787832a4356a70c3be09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6379da9c72e98917b80091078e459dae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__sock__raw__mmaped_8h.html#a6379da9c72e98917b80091078e459dae">hw_device_sock_raw_mmaped_open</a> (struct <a class="el" href="structhw__sock__raw__mmaped.html">hw_sock_raw_mmaped</a> *phw_sock_raw_mmaped, <a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, const osal_char_t *devname, int prio, int cpumask)</td></tr>
+<tr class="memdesc:a6379da9c72e98917b80091078e459dae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__sock__raw__mmaped_8h.html#a6379da9c72e98917b80091078e459dae">More...</a><br /></td></tr>
+<tr class="separator:a6379da9c72e98917b80091078e459dae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>SOCK_RAW hardware access functions. </p>
 <dl class="section author"><dt>Author</dt><dd>Robert Burger <a href="#" onclick="location.href='mai'+'lto:'+'rob'+'er'+'t.b'+'ur'+'ger'+'@d'+'lr.'+'de'; return false;">rober<span style="display: none;">.nosp@m.</span>t.bu<span style="display: none;">.nosp@m.</span>rger@<span style="display: none;">.nosp@m.</span>dlr.<span style="display: none;">.nosp@m.</span>de</a></dd></dl>
 <dl class="section date"><dt>Date</dt><dd>24 Nov 2016 </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a35fad85fe419787832a4356a70c3be09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35fad85fe419787832a4356a70c3be09">&#9670;&nbsp;</a></span>hw_device_sock_raw_mmaped_open()</h2>
+<a id="a6379da9c72e98917b80091078e459dae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6379da9c72e98917b80091078e459dae">&#9670;&nbsp;</a></span>hw_device_sock_raw_mmaped_open()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -132,6 +133,12 @@ Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="structhw__sock__raw__mmaped.html">hw_sock_raw_mmaped</a> *&#160;</td>
           <td class="paramname"><em>phw_sock_raw_mmaped</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *&#160;</td>
+          <td class="paramname"><em>pec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -163,6 +170,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">phw_sock_raw_mmaped</td><td>Pointer to sock_raw_mmmaped hw handle. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to master struct. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">devname</td><td>Null-terminated string to EtherCAT hw device name. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">prio</td><td>Priority for receiver thread. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cpu_mask</td><td>CPU mask for receiver thread.</td></tr>

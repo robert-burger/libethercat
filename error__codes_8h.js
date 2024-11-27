@@ -11,6 +11,7 @@ var error__codes_8h =
     [ "EC_ERROR_GENERAL_MASK", "group__error__codes__group.html#ga547d1458f88342c16dba5ac991794a25", null ],
     [ "EC_ERROR_HW_MASK", "group__error__codes__group.html#ga474813a67eab8a0098159f7f8abc16ae", null ],
     [ "EC_ERROR_HW_NO_INTERFACE", "group__error__codes__group.html#ga00ba08ba98516a477e77cf533bde197d", null ],
+    [ "EC_ERROR_HW_NO_LINK", "group__error__codes__group.html#ga6d77a2a47304ab8d8261f45f3434b086", null ],
     [ "EC_ERROR_HW_NOT_SUPPORTED", "group__error__codes__group.html#gab87abe56353b4669c847539b92b9bd93", null ],
     [ "EC_ERROR_HW_SEND", "group__error__codes__group.html#ga6e21b48d517061b9d042a4a0dc8c85b0", null ],
     [ "EC_ERROR_MAILBOX_ABORT", "group__error__codes__group.html#gad0ce02a4f53b018e694f2a68e165020a", null ],

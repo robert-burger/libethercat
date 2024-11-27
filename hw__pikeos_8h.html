@@ -111,17 +111,17 @@ typedef struct <a class="el" href="structhw__pikeos.html">hw_pikeos</a>&#160;</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a82b2788055d8271c4680161200f9fa96"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__pikeos_8h.html#a82b2788055d8271c4680161200f9fa96">hw_device_pikeos_open</a> (struct <a class="el" href="structhw__pikeos.html">hw_pikeos</a> *phw, const osal_char_t *devname, int prio, int cpumask)</td></tr>
-<tr class="memdesc:a82b2788055d8271c4680161200f9fa96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__pikeos_8h.html#a82b2788055d8271c4680161200f9fa96">More...</a><br /></td></tr>
-<tr class="separator:a82b2788055d8271c4680161200f9fa96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a518e0f50ec682d1d1e734ebce9c29b6e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw__pikeos_8h.html#a518e0f50ec682d1d1e734ebce9c29b6e">hw_device_pikeos_open</a> (struct <a class="el" href="structhw__pikeos.html">hw_pikeos</a> *phw, <a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, const osal_char_t *devname, int prio, int cpumask)</td></tr>
+<tr class="memdesc:a518e0f50ec682d1d1e734ebce9c29b6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens EtherCAT hw device.  <a href="hw__pikeos_8h.html#a518e0f50ec682d1d1e734ebce9c29b6e">More...</a><br /></td></tr>
+<tr class="separator:a518e0f50ec682d1d1e734ebce9c29b6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>PIKEOS device hardware access functions. </p>
 <dl class="section author"><dt>Author</dt><dd>Robert Burger <a href="#" onclick="location.href='mai'+'lto:'+'rob'+'er'+'t.b'+'ur'+'ger'+'@d'+'lr.'+'de'; return false;">rober<span style="display: none;">.nosp@m.</span>t.bu<span style="display: none;">.nosp@m.</span>rger@<span style="display: none;">.nosp@m.</span>dlr.<span style="display: none;">.nosp@m.</span>de</a></dd></dl>
 <dl class="section date"><dt>Date</dt><dd>24 Nov 2016 </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a82b2788055d8271c4680161200f9fa96"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82b2788055d8271c4680161200f9fa96">&#9670;&nbsp;</a></span>hw_device_pikeos_open()</h2>
+<a id="a518e0f50ec682d1d1e734ebce9c29b6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a518e0f50ec682d1d1e734ebce9c29b6e">&#9670;&nbsp;</a></span>hw_device_pikeos_open()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -131,6 +131,12 @@ Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="structhw__pikeos.html">hw_pikeos</a> *&#160;</td>
           <td class="paramname"><em>phw</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *&#160;</td>
+          <td class="paramname"><em>pec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -162,6 +168,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">phw</td><td>Pointer to hw handle. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to master struct. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">devname</td><td>Null-terminated string to EtherCAT hw device name. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">prio</td><td>Priority for receiver thread. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cpu_mask</td><td>CPU mask for receiver thread.</td></tr>

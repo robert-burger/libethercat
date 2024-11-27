@@ -136,11 +136,19 @@ $(document).ready(function(){initNavTree('hw__sock__raw_8h_source.html',''); ini
 <div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="structhw__sock__raw.html#a432a52811d8847613ada933bcc3c25b8">   57</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="structhw__sock__raw.html#a432a52811d8847613ada933bcc3c25b8">rxthreadrunning</a>;            </div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;} <a class="code" href="structhw__sock__raw.html">hw_sock_raw_t</a>;</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="hw__sock__raw_8h.html#a208822e957cd22b0f5f8691fa88c06fb">   70</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="hw__sock__raw_8h.html#a208822e957cd22b0f5f8691fa88c06fb">hw_device_sock_raw_open</a>(<span class="keyword">struct</span> <a class="code" href="structhw__sock__raw.html">hw_sock_raw</a> *phw, <span class="keyword">struct</span> <a class="code" href="structec.html">ec</a> *<a class="code" href="structhw__common.html#acc0a4b953354a895c83b42466c791c6c">pec</a>, <span class="keyword">const</span> osal_char_t *devname, <span class="keywordtype">int</span> prio, <span class="keywordtype">int</span> cpu_mask);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_HW_SOCK_RAW_H</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="hw__sock__raw_8h.html#a208822e957cd22b0f5f8691fa88c06fb">   74</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="hw__sock__raw_8h.html#a208822e957cd22b0f5f8691fa88c06fb">hw_device_sock_raw_open</a>(<span class="keyword">struct</span> <a class="code" href="structhw__sock__raw.html">hw_sock_raw</a> *phw, <span class="keyword">struct</span> <a class="code" href="structec.html">ec</a> *<a class="code" href="structhw__common.html#acc0a4b953354a895c83b42466c791c6c">pec</a>, <span class="keyword">const</span> osal_char_t *devname, <span class="keywordtype">int</span> prio, <span class="keywordtype">int</span> cpu_mask);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;}</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_HW_SOCK_RAW_H</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
 <div class="ttc" id="aec_8h_html"><div class="ttname"><a href="ec_8h.html">ec.h</a></div><div class="ttdoc">ethercat master functions.</div></div>
 <div class="ttc" id="ahw_8h_html"><div class="ttname"><a href="hw_8h.html">hw.h</a></div><div class="ttdoc">hardware access functions</div></div>
 <div class="ttc" id="ahw__sock__raw_8h_html_a208822e957cd22b0f5f8691fa88c06fb"><div class="ttname"><a href="hw__sock__raw_8h.html#a208822e957cd22b0f5f8691fa88c06fb">hw_device_sock_raw_open</a></div><div class="ttdeci">int hw_device_sock_raw_open(struct hw_sock_raw *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpu_mask)</div><div class="ttdoc">Opens EtherCAT hw device.</div></div>

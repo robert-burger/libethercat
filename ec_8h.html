@@ -87,8 +87,7 @@ $(document).ready(function(){initNavTree('ec_8h.html',''); initResizable(); });
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">ec.h File Reference</div>  </div>
 </div><!--header-->
@@ -133,6 +132,9 @@ Macros</h2></td></tr>
 #define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#ga3b910cd7cdcd30dc782ff282b701fc8e">EC_DEFAULT_DELAY</a>&#160;&#160;&#160;(2000000)</td></tr>
 <tr class="memdesc:ga3b910cd7cdcd30dc782ff282b701fc8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default delay in [ns]. <br /></td></tr>
 <tr class="separator:ga3b910cd7cdcd30dc782ff282b701fc8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6f8542520a00beab3641ee893ddf0305"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>ec_log</b>(lvl,  pre,  format, ...)&#160;&#160;&#160;    <a class="el" href="group__ec__group.html#gacd11d2df6293ead910b1b24d179632ff">_ec_log</a>(pec, (lvl), (pre), (format), ##__VA_ARGS__)</td></tr>
+<tr class="separator:ga6f8542520a00beab3641ee893ddf0305"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaaabf0e0f7c5d3b179172784bdd583e66"><td class="memItemLeft" align="right" valign="top">
 #define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gaaabf0e0f7c5d3b179172784bdd583e66">ec_group_will_be_sent</a>(pec,  group)&#160;&#160;&#160;(int)((((pec)-&gt;pd_groups[(group)].divisor_cnt+1) % (pec)-&gt;pd_groups[(group)].divisor) == 0)</td></tr>
 <tr class="memdesc:gaaabf0e0f7c5d3b179172784bdd583e66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Group datagram will be send on next time step. <br /></td></tr>
@@ -235,9 +237,9 @@ typedef struct <a class="el" href="structec.html">ec</a>&#160;</td><td class="me
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gab0d37bdf3490b4b5dd7c4d7286886298"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gab0d37bdf3490b4b5dd7c4d7286886298">ec_log</a> (int lvl, const osal_char_t *pre, const osal_char_t *format,...)</td></tr>
-<tr class="memdesc:gab0d37bdf3490b4b5dd7c4d7286886298"><td class="mdescLeft">&#160;</td><td class="mdescRight">EtherCAT logging function.  <a href="group__ec__group.html#gab0d37bdf3490b4b5dd7c4d7286886298">More...</a><br /></td></tr>
-<tr class="separator:gab0d37bdf3490b4b5dd7c4d7286886298"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacd11d2df6293ead910b1b24d179632ff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gacd11d2df6293ead910b1b24d179632ff">_ec_log</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, int lvl, const osal_char_t *pre, const osal_char_t *format,...)</td></tr>
+<tr class="memdesc:gacd11d2df6293ead910b1b24d179632ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">EtherCAT logging function.  <a href="group__ec__group.html#gacd11d2df6293ead910b1b24d179632ff">More...</a><br /></td></tr>
+<tr class="separator:gacd11d2df6293ead910b1b24d179632ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga57814183337779bfc29a8c1170269c37"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, struct <a class="el" href="structhw__common.html">hw_common</a> *phw, int eeprom_log)</td></tr>
 <tr class="memdesc:ga57814183337779bfc29a8c1170269c37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Open ethercat master.  <a href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">More...</a><br /></td></tr>
 <tr class="separator:ga57814183337779bfc29a8c1170269c37"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -280,15 +282,6 @@ Functions</h2></td></tr>
 <tr class="memitem:gaf7a827d9da875d1481113f3291391142"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gaf7a827d9da875d1481113f3291391142">ec_get_slave_count</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec)</td></tr>
 <tr class="memdesc:gaf7a827d9da875d1481113f3291391142"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return current slave count.  <a href="group__ec__group.html#gaf7a827d9da875d1481113f3291391142">More...</a><br /></td></tr>
 <tr class="separator:gaf7a827d9da875d1481113f3291391142"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:ga9f81aebd3c6c7fd86c1673760f109bf3"><td class="memItemLeft" align="right" valign="top">
-void *&#160;</td><td class="memItemRight" valign="bottom"><b>ec_log_func_user</b></td></tr>
-<tr class="separator:ga9f81aebd3c6c7fd86c1673760f109bf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4f4fb2d7f8e46f29578209a968128398"><td class="memItemLeft" align="right" valign="top">
-void(*&#160;</td><td class="memItemRight" valign="bottom"><b>ec_log_func</b> )(int lvl, void *user, const osal_char_t *format,...)</td></tr>
-<tr class="separator:ga4f4fb2d7f8e46f29578209a968128398"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>ethercat master functions. </p>
