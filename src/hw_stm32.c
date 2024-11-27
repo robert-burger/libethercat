@@ -256,7 +256,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
 
     int errval = ETH_OK;
     ETH_BufferTypeDef Txbuffer[ETH_TX_DESC_CNT];
-
+    size_t frame_len = sizeof(*pframe);
     // Invalidate if cache is enabled
 //    SCB_CleanDCache_by_Addr((uint32_t*) frame, frame_len);
 
@@ -270,7 +270,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
 
     do {
         if (HAL_ETH_Transmit(&heth, hw_stm32->&TxConfig, ETH_TX_TIMEOUT) == HAL_OK) {
-            HAL_ETH_ReleaseTxPacket(&heth);
+            HAL_ETH_ReleaseTxPacket(&heth); // func in ...hal_eth.c
             errval = ETH_OK;
         } else {
             if (HAL_ETH_GetError(&heth) & HAL_ETH_ERROR_BUSY) {
@@ -285,6 +285,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
         }
     } while (errval == ETH_ERR_NO_BUFFER);
 
+    // are 2 returns possible!?
     return errval;
 
     return ret;
