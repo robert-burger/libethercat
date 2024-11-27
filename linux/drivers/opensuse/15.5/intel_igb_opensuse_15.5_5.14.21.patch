@@ -1,4 +1,27 @@
-diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb.h 5.14.21/intel/igb/igb.h
+Only in 5.14.21/intel/igb/: e1000_82575.o
+Only in 5.14.21/intel/igb/: .e1000_82575.o.cmd
+Only in 5.14.21/intel/igb/: e1000_i210.o
+Only in 5.14.21/intel/igb/: .e1000_i210.o.cmd
+Only in 5.14.21/intel/igb/: e1000_mac.o
+Only in 5.14.21/intel/igb/: .e1000_mac.o.cmd
+Only in 5.14.21/intel/igb/: e1000_mbx.o
+Only in 5.14.21/intel/igb/: .e1000_mbx.o.cmd
+Only in 5.14.21/intel/igb/: e1000_nvm.o
+Only in 5.14.21/intel/igb/: .e1000_nvm.o.cmd
+Only in 5.14.21/intel/igb/: e1000_phy.o
+Only in 5.14.21/intel/igb/: .e1000_phy.o.cmd
+Only in 5.14.21/intel/igb/: igb-ethercat.ko
+Only in 5.14.21/intel/igb/: .igb-ethercat.ko.cmd
+Only in 5.14.21/intel/igb/: igb-ethercat.mod
+Only in 5.14.21/intel/igb/: igb-ethercat.mod.c
+Only in 5.14.21/intel/igb/: .igb-ethercat.mod.cmd
+Only in 5.14.21/intel/igb/: igb-ethercat.mod.o
+Only in 5.14.21/intel/igb/: .igb-ethercat.mod.o.cmd
+Only in 5.14.21/intel/igb/: igb-ethercat.o
+Only in 5.14.21/intel/igb/: .igb-ethercat.o.cmd
+Only in 5.14.21/intel/igb/: igb_ethtool.o
+Only in 5.14.21/intel/igb/: .igb_ethtool.o.cmd
+diff -rup /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb.h 5.14.21/intel/igb/igb.h
 --- /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb.h	2024-11-06 14:07:03.000000000 +0100
 +++ 5.14.21/intel/igb/igb.h	2024-11-25 09:14:55.132245825 +0100
 @@ -21,6 +21,9 @@
@@ -11,7 +34,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb.h 5.14.21/intel/ig
  struct igb_adapter;
  
  #define E1000_PCS_CFG_IGN_SD	1
-@@ -666,6 +669,9 @@
+@@ -666,6 +669,9 @@ struct igb_adapter {
  	struct vf_mac_filter *vf_mac_list;
  	/* lock for VF resources */
  	spinlock_t vfs_lock;
@@ -21,10 +44,12 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb.h 5.14.21/intel/ig
  };
  
  /* flags controlling PTP/1588 function */
-diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/intel/igb/igb_main.c
+Only in 5.14.21/intel/igb/: igb_hwmon.o
+Only in 5.14.21/intel/igb/: .igb_hwmon.o.cmd
+diff -rup /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/intel/igb/igb_main.c
 --- /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c	2024-11-06 14:07:03.000000000 +0100
-+++ 5.14.21/intel/igb/igb_main.c	2024-11-27 06:31:48.793104659 +0100
-@@ -50,9 +50,9 @@
++++ 5.14.21/intel/igb/igb_main.c	2024-11-27 07:02:40.405767534 +0100
+@@ -50,9 +50,9 @@ enum tx_queue_prio {
  	TX_QUEUE_PRIO_LOW,
  };
  
@@ -36,7 +61,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  static const char igb_copyright[] =
  				"Copyright (c) 2007-2014 Intel Corporation.";
  
-@@ -205,6 +205,14 @@
+@@ -205,6 +205,14 @@ module_param(max_vfs, uint, 0);
  MODULE_PARM_DESC(max_vfs, "Maximum number of virtual functions to allocate per physical function");
  #endif /* CONFIG_PCI_IOV */
  
@@ -51,7 +76,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  static pci_ers_result_t igb_io_error_detected(struct pci_dev *,
  		     pci_channel_state_t);
  static pci_ers_result_t igb_io_slot_reset(struct pci_dev *);
-@@ -234,6 +242,7 @@
+@@ -234,6 +242,7 @@ static struct pci_driver igb_driver = {
  MODULE_AUTHOR("Intel Corporation, <e1000-devel@lists.sourceforge.net>");
  MODULE_DESCRIPTION("Intel(R) Gigabit Ethernet Network Driver");
  MODULE_LICENSE("GPL v2");
@@ -59,7 +84,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  #define DEFAULT_MSG_ENABLE (NETIF_MSG_DRV|NETIF_MSG_PROBE|NETIF_MSG_LINK)
  static int debug = -1;
-@@ -361,7 +370,7 @@
+@@ -361,7 +370,7 @@ static void igb_dump(struct igb_adapter
  	u32 staterr;
  	u16 i, n;
  
@@ -68,7 +93,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		return;
  
  	/* Print netdevice Info */
-@@ -381,7 +390,7 @@
+@@ -381,7 +390,7 @@ static void igb_dump(struct igb_adapter
  	}
  
  	/* Print TX Ring Summary */
@@ -77,7 +102,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		goto exit;
  
  	dev_info(&adapter->pdev->dev, "TX Rings Summary\n");
-@@ -399,7 +408,7 @@
+@@ -399,7 +408,7 @@ static void igb_dump(struct igb_adapter
  	}
  
  	/* Print TX Rings */
@@ -86,7 +111,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		goto rx_ring_summary;
  
  	dev_info(&adapter->pdev->dev, "TX Rings Dump\n");
-@@ -931,9 +940,13 @@
+@@ -931,9 +940,13 @@ static int igb_request_msix(struct igb_a
  	unsigned int num_q_vectors = adapter->num_q_vectors;
  	struct net_device *netdev = adapter->netdev;
  	int i, err = 0, vector = 0, free_vector = 0;
@@ -101,7 +126,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	if (err)
  		goto err_out;
  
-@@ -963,7 +976,7 @@
+@@ -963,7 +976,7 @@ static int igb_request_msix(struct igb_a
  			sprintf(q_vector->name, "%s-unused", netdev->name);
  
  		err = request_irq(adapter->msix_entries[vector].vector,
@@ -110,7 +135,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  				  q_vector);
  		if (err)
  			goto err_free;
-@@ -1029,8 +1042,9 @@
+@@ -1029,8 +1042,9 @@ static void igb_reset_q_vector(struct ig
  	if (q_vector->rx.ring)
  		adapter->rx_ring[q_vector->rx.ring->queue_index] = NULL;
  
@@ -122,7 +147,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  }
  
  static void igb_reset_interrupt_capability(struct igb_adapter *adapter)
-@@ -1209,9 +1223,11 @@
+@@ -1209,9 +1223,11 @@ static int igb_alloc_q_vector(struct igb
  	if (!q_vector)
  		return -ENOMEM;
  
@@ -137,7 +162,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* tie q_vector and adapter together */
  	adapter->q_vector[v_idx] = q_vector;
-@@ -1408,8 +1424,16 @@
+@@ -1408,8 +1424,16 @@ static int igb_request_irq(struct igb_ad
  	struct net_device *netdev = adapter->netdev;
  	struct pci_dev *pdev = adapter->pdev;
  	int err = 0;
@@ -154,7 +179,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		err = igb_request_msix(adapter);
  		if (!err)
  			goto request_done;
-@@ -1429,8 +1453,12 @@
+@@ -1429,8 +1453,12 @@ static int igb_request_irq(struct igb_ad
  
  	igb_assign_vector(adapter->q_vector[0], 0);
  
@@ -168,7 +193,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  				  netdev->name, adapter);
  		if (!err)
  			goto request_done;
-@@ -1440,7 +1468,11 @@
+@@ -1440,7 +1468,11 @@ static int igb_request_irq(struct igb_ad
  		adapter->flags &= ~IGB_FLAG_HAS_MSI;
  	}
  
@@ -181,7 +206,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  			  netdev->name, adapter);
  
  	if (err)
-@@ -1453,6 +1485,10 @@
+@@ -1453,6 +1485,10 @@ request_done:
  
  static void igb_free_irq(struct igb_adapter *adapter)
  {
@@ -192,7 +217,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
  		int vector = 0, i;
  
-@@ -1696,7 +1732,7 @@
+@@ -1696,7 +1732,7 @@ static void igb_config_tx_modes(struct i
  	 * with HIGH PRIO. If none is, then configure them with LOW PRIO and
  	 * as SP.
  	 */
@@ -201,7 +226,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		set_tx_desc_fetch_prio(hw, queue, TX_QUEUE_PRIO_HIGH);
  		set_queue_mode(hw, queue, QUEUE_MODE_STREAM_RESERVATION);
  	} else {
-@@ -1705,7 +1741,7 @@
+@@ -1705,7 +1741,7 @@ static void igb_config_tx_modes(struct i
  	}
  
  	/* If CBS is enabled, set DataTranARB and config its parameters. */
@@ -210,7 +235,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		/* i210 does not allow the queue 0 to be in the Strict
  		 * Priority mode while the Qav mode is enabled, so,
  		 * instead of disabling strict priority mode, we give
-@@ -2123,8 +2159,10 @@
+@@ -2123,8 +2159,10 @@ int igb_up(struct igb_adapter *adapter)
  
  	clear_bit(__IGB_DOWN, &adapter->state);
  
@@ -223,7 +248,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	if (adapter->flags & IGB_FLAG_HAS_MSIX)
  		igb_configure_msix(adapter);
-@@ -2144,7 +2182,9 @@
+@@ -2144,7 +2182,9 @@ int igb_up(struct igb_adapter *adapter)
  		wr32(E1000_CTRL_EXT, reg_data);
  	}
  
@@ -234,7 +259,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* start the watchdog. */
  	hw->mac.get_link_status = 1;
-@@ -2176,8 +2216,10 @@
+@@ -2176,8 +2216,10 @@ void igb_down(struct igb_adapter *adapte
  
  	igb_nfc_filter_exit(adapter);
  
@@ -247,7 +272,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* disable transmits in the hardware */
  	tctl = rd32(E1000_TCTL);
-@@ -2191,10 +2233,12 @@
+@@ -2191,10 +2233,12 @@ void igb_down(struct igb_adapter *adapte
  
  	adapter->flags &= ~IGB_FLAG_NEED_LINK_UPDATE;
  
@@ -264,7 +289,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		}
  	}
  
-@@ -2440,8 +2484,11 @@
+@@ -2440,8 +2484,11 @@ void igb_reset(struct igb_adapter *adapt
  			break;
  		}
  	}
@@ -278,7 +303,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	igb_update_mng_vlan(adapter);
  
-@@ -3159,6 +3206,35 @@
+@@ -3159,6 +3206,35 @@ static s32 igb_init_i2c(struct igb_adapt
  	return status;
  }
  
@@ -314,7 +339,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  /**
   *  igb_probe - Device Initialization Routine
   *  @pdev: PCI device information struct
-@@ -3181,6 +3257,7 @@
+@@ -3181,6 +3257,7 @@ static int igb_probe(struct pci_dev *pde
  	const struct e1000_info *ei = igb_info_tbl[ent->driver_data];
  	u8 part_str[E1000_PBANUM_LENGTH];
  	int err;
@@ -322,7 +347,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* Catch broken hardware that put the wrong VF device ID in
  	 * the PCIe SR-IOV capability.
-@@ -3223,6 +3300,8 @@
+@@ -3223,6 +3300,8 @@ static int igb_probe(struct pci_dev *pde
  	adapter = netdev_priv(netdev);
  	adapter->netdev = netdev;
  	adapter->pdev = pdev;
@@ -331,7 +356,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	hw = &adapter->hw;
  	hw->back = adapter;
  	adapter->msg_enable = netif_msg_init(debug, DEFAULT_MSG_ENABLE);
-@@ -3504,13 +3583,53 @@
+@@ -3504,13 +3583,53 @@ static int igb_probe(struct pci_dev *pde
  	 */
  	igb_get_hw_control(adapter);
  
@@ -391,7 +416,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  #ifdef CONFIG_IGB_DCA
  	if (dca_add_requester(&pdev->dev) == 0) {
-@@ -3845,6 +3964,10 @@
+@@ -3845,6 +3964,10 @@ static void igb_remove(struct pci_dev *p
  	struct igb_adapter *adapter = netdev_priv(netdev);
  	struct e1000_hw *hw = &adapter->hw;
  
@@ -402,7 +427,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	pm_runtime_get_noresume(&pdev->dev);
  #ifdef CONFIG_IGB_HWMON
  	igb_sysfs_exit(adapter);
-@@ -3879,7 +4002,9 @@
+@@ -3879,7 +4002,9 @@ static void igb_remove(struct pci_dev *p
  	igb_disable_sriov(pdev, false);
  #endif
  
@@ -413,7 +438,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	igb_clear_interrupt_scheme(adapter);
  
-@@ -4124,7 +4249,9 @@
+@@ -4124,7 +4249,9 @@ static int __igb_open(struct net_device
  	if (!resuming)
  		pm_runtime_get_sync(&pdev->dev);
  
@@ -424,7 +449,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* allocate transmit descriptors */
  	err = igb_setup_all_tx_resources(adapter);
-@@ -4149,22 +4276,26 @@
+@@ -4149,22 +4276,26 @@ static int __igb_open(struct net_device
  	if (err)
  		goto err_req_irq;
  
@@ -462,7 +487,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* Clear any pending interrupts. */
  	rd32(E1000_TSICR);
-@@ -4180,7 +4311,9 @@
+@@ -4180,7 +4311,9 @@ static int __igb_open(struct net_device
  		wr32(E1000_CTRL_EXT, reg_data);
  	}
  
@@ -473,7 +498,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	if (!resuming)
  		pm_runtime_put(&pdev->dev);
-@@ -4240,6 +4373,9 @@
+@@ -4240,6 +4373,9 @@ static int __igb_close(struct net_device
  	igb_free_all_tx_resources(adapter);
  	igb_free_all_rx_resources(adapter);
  
@@ -483,7 +508,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	if (!suspending)
  		pm_runtime_put_sync(&pdev->dev);
  	return 0;
-@@ -4247,7 +4383,9 @@
+@@ -4247,7 +4383,9 @@ static int __igb_close(struct net_device
  
  int igb_close(struct net_device *netdev)
  {
@@ -494,7 +519,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		return __igb_close(netdev, false);
  	return 0;
  }
-@@ -4888,11 +5026,16 @@
+@@ -4888,11 +5026,16 @@ static void igb_clean_tx_ring(struct igb
  	while (i != tx_ring->next_to_use) {
  		union e1000_adv_tx_desc *eop_desc, *tx_desc;
  
@@ -516,7 +541,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  		/* unmap skb header data */
  		dma_unmap_single(tx_ring->dev,
-@@ -5502,6 +5645,24 @@
+@@ -5502,6 +5645,24 @@ static void igb_watchdog_task(struct wor
  
  	link = igb_has_link(adapter);
  
@@ -541,7 +566,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	if (adapter->flags & IGB_FLAG_NEED_LINK_UPDATE) {
  		if (time_after(jiffies, (adapter->link_check_timeout + HZ)))
  			adapter->flags &= ~IGB_FLAG_NEED_LINK_UPDATE;
-@@ -5742,7 +5903,11 @@
+@@ -5742,7 +5903,11 @@ static void igb_update_ring_itr(struct i
  	 * ints/sec - ITR timer value of 120 ticks.
  	 */
  	if (adapter->link_speed != SPEED_1000) {
@@ -554,7 +579,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		goto set_itr_val;
  	}
  
-@@ -6148,8 +6313,11 @@
+@@ -6148,8 +6313,11 @@ static void igb_tx_olinfo_status(struct
  static int __igb_maybe_stop_tx(struct igb_ring *tx_ring, const u16 size)
  {
  	struct net_device *netdev = tx_ring->netdev;
@@ -567,7 +592,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* Herbert's original patch had:
  	 *  smp_mb__after_netif_stop_queue();
-@@ -6164,7 +6332,9 @@
+@@ -6164,7 +6332,9 @@ static int __igb_maybe_stop_tx(struct ig
  		return -EBUSY;
  
  	/* A reprieve! */
@@ -578,7 +603,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	u64_stats_update_begin(&tx_ring->tx_syncp2);
  	tx_ring->tx_stats.restart_queue2++;
-@@ -6193,6 +6363,7 @@
+@@ -6193,6 +6363,7 @@ static int igb_tx_map(struct igb_ring *t
  	u32 tx_flags = first->tx_flags;
  	u32 cmd_type = igb_tx_cmd_type(skb, tx_flags);
  	u16 i = tx_ring->next_to_use;
@@ -586,7 +611,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	tx_desc = IGB_TX_DESC(tx_ring, i);
  
-@@ -6259,7 +6430,9 @@
+@@ -6259,7 +6430,9 @@ static int igb_tx_map(struct igb_ring *t
  	cmd_type |= size | IGB_TXD_DCMD;
  	tx_desc->read.cmd_type_len = cpu_to_le32(cmd_type);
  
@@ -597,7 +622,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* set the timestamp */
  	first->time_stamp = jiffies;
-@@ -6287,8 +6460,13 @@
+@@ -6287,8 +6460,13 @@ static int igb_tx_map(struct igb_ring *t
  	/* Make sure there is space in the ring for the next send. */
  	igb_maybe_stop_tx(tx_ring, DESC_NEEDED);
  
@@ -612,7 +637,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	}
  	return 0;
  
-@@ -6317,8 +6495,10 @@
+@@ -6317,8 +6495,10 @@ dma_error:
  				 DMA_TO_DEVICE);
  	dma_unmap_len_set(tx_buffer, len, 0);
  
@@ -625,7 +650,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	tx_ring->next_to_use = i;
  
-@@ -6443,6 +6623,7 @@
+@@ -6443,6 +6623,7 @@ netdev_tx_t igb_xmit_frame_ring(struct s
  	u16 count = TXD_USE_COUNT(skb_headlen(skb));
  	__be16 protocol = vlan_get_protocol(skb);
  	u8 hdr_len = 0;
@@ -633,7 +658,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	/* need: 1 descriptor per page * PAGE_SIZE/IGB_MAX_DATA_PER_TXD,
  	 *       + 1 desc for skb_headlen/IGB_MAX_DATA_PER_TXD,
-@@ -6466,38 +6647,39 @@
+@@ -6466,38 +6647,39 @@ netdev_tx_t igb_xmit_frame_ring(struct s
  	first->bytecount = skb->len;
  	first->gso_segs = 1;
  
@@ -701,7 +726,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	if (igb_tx_map(tx_ring, first, hdr_len))
  		goto cleanup_tx_tstamp;
-@@ -6505,12 +6687,12 @@
+@@ -6505,12 +6687,12 @@ netdev_tx_t igb_xmit_frame_ring(struct s
  	return NETDEV_TX_OK;
  
  out_drop:
@@ -719,7 +744,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		dev_kfree_skb_any(adapter->ptp_tx_skb);
  		adapter->ptp_tx_skb = NULL;
  		if (adapter->hw.mac.type == e1000_82576)
-@@ -7063,11 +7245,16 @@
+@@ -7063,11 +7245,16 @@ static void igb_write_itr(struct igb_q_v
  static irqreturn_t igb_msix_ring(int irq, void *data)
  {
  	struct igb_q_vector *q_vector = data;
@@ -737,7 +762,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	return IRQ_HANDLED;
  }
-@@ -8108,7 +8295,11 @@
+@@ -8108,7 +8295,11 @@ static irqreturn_t igb_intr_msi(int irq,
  	if (icr & E1000_ICR_TS)
  		igb_tsync_interrupt(adapter);
  
@@ -750,7 +775,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	return IRQ_HANDLED;
  }
-@@ -8154,7 +8345,11 @@
+@@ -8154,7 +8345,11 @@ static irqreturn_t igb_intr(int irq, voi
  	if (icr & E1000_ICR_TS)
  		igb_tsync_interrupt(adapter);
  
@@ -763,7 +788,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  	return IRQ_HANDLED;
  }
-@@ -8215,7 +8410,7 @@
+@@ -8215,7 +8410,7 @@ static int igb_poll(struct napi_struct *
  	/* Exit the polling mode, but don't re-enable interrupts if stack might
  	 * poll us due to busy-polling
  	 */
@@ -772,7 +797,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		igb_ring_irq_enable(q_vector);
  
  	return work_done;
-@@ -8266,11 +8461,13 @@
+@@ -8266,11 +8461,13 @@ static bool igb_clean_tx_irq(struct igb_
  		total_bytes += tx_buffer->bytecount;
  		total_packets += tx_buffer->gso_segs;
  
@@ -791,7 +816,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  
  		/* unmap skb header data */
  		dma_unmap_single(tx_ring->dev,
-@@ -8319,8 +8516,10 @@
+@@ -8319,8 +8516,10 @@ static bool igb_clean_tx_irq(struct igb_
  		budget--;
  	} while (likely(budget));
  
@@ -804,7 +829,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	i += tx_ring->count;
  	tx_ring->next_to_clean = i;
  	u64_stats_update_begin(&tx_ring->tx_syncp);
-@@ -8330,7 +8529,8 @@
+@@ -8330,7 +8529,8 @@ static bool igb_clean_tx_irq(struct igb_
  	q_vector->tx.total_bytes += total_bytes;
  	q_vector->tx.total_packets += total_packets;
  
@@ -814,7 +839,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		struct e1000_hw *hw = &adapter->hw;
  
  		/* Detect a transmit hang in hardware, this serializes the
-@@ -8373,7 +8573,7 @@
+@@ -8373,7 +8573,7 @@ static bool igb_clean_tx_irq(struct igb_
  	}
  
  #define TX_WAKE_THRESHOLD (DESC_NEEDED * 2)
@@ -823,7 +848,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	    netif_carrier_ok(tx_ring->netdev) &&
  	    igb_desc_unused(tx_ring) >= TX_WAKE_THRESHOLD)) {
  		/* Make sure that anybody stopping the queue after this
-@@ -8507,7 +8707,11 @@
+@@ -8507,7 +8707,11 @@ static struct sk_buff *igb_construct_skb
  	net_prefetch(xdp->data);
  
  	/* allocate a skb to store the frags */
@@ -836,7 +861,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	if (unlikely(!skb))
  		return NULL;
  
-@@ -8922,54 +9126,69 @@
+@@ -8922,54 +9126,69 @@ static int igb_clean_rx_irq(struct igb_q
  			size -= ts_hdr_len;
  		}
  
@@ -941,7 +966,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		/* verify the packet layout is correct */
  		if (igb_cleanup_headers(rx_ring, rx_desc, skb)) {
  			skb = NULL;
-@@ -9175,6 +9394,79 @@
+@@ -9175,6 +9394,79 @@ static int igb_ioctl(struct net_device *
  		return igb_ptp_get_ts_config(netdev, ifr);
  	case SIOCSHWTSTAMP:
  		return igb_ptp_set_ts_config(netdev, ifr);
@@ -1021,7 +1046,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  	default:
  		return -EOPNOTSUPP;
  	}
-@@ -9356,7 +9648,7 @@
+@@ -9356,7 +9648,7 @@ static int __igb_shutdown(struct pci_dev
  	rtnl_lock();
  	netif_device_detach(netdev);
  
@@ -1030,7 +1055,11 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/igb_main.c 5.14.21/int
  		__igb_close(netdev, true);
  
  	igb_ptp_suspend(adapter);
-diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/Makefile 5.14.21/intel/igb/Makefile
+Only in 5.14.21/intel/igb/: igb_main.o
+Only in 5.14.21/intel/igb/: .igb_main.o.cmd
+Only in 5.14.21/intel/igb/: igb_ptp.o
+Only in 5.14.21/intel/igb/: .igb_ptp.o.cmd
+diff -rup /usr/src/linux-rt/drivers/net/ethernet/intel/igb/Makefile 5.14.21/intel/igb/Makefile
 --- /usr/src/linux-rt/drivers/net/ethernet/intel/igb/Makefile	2024-11-06 14:07:03.000000000 +0100
 +++ 5.14.21/intel/igb/Makefile	2024-11-25 09:14:55.106245831 +0100
 @@ -4,8 +4,11 @@
@@ -1047,3 +1076,5 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/intel/igb/Makefile 5.14.21/intel
 +
 +EXTRA_CFLAGS=-I$(src)/../../../../../../
 +KBUILD_EXTRA_SYMBOLS=$(src)/../../../../../../Module.symvers
+Only in 5.14.21/intel/igb/: modules.order
+Only in 5.14.21/intel/igb/: .modules.order.cmd

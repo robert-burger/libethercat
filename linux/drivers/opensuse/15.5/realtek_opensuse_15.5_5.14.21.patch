@@ -1,4 +1,31 @@
-diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/Makefile 5.14.21/realtek/Makefile
+Only in 5.14.21/realtek/: 8139cp.ko
+Only in 5.14.21/realtek/: .8139cp.ko.cmd
+Only in 5.14.21/realtek/: 8139cp.mod
+Only in 5.14.21/realtek/: 8139cp.mod.c
+Only in 5.14.21/realtek/: .8139cp.mod.cmd
+Only in 5.14.21/realtek/: 8139cp.mod.o
+Only in 5.14.21/realtek/: .8139cp.mod.o.cmd
+Only in 5.14.21/realtek/: 8139cp.o
+Only in 5.14.21/realtek/: .8139cp.o.cmd
+Only in 5.14.21/realtek/: 8139too.ko
+Only in 5.14.21/realtek/: .8139too.ko.cmd
+Only in 5.14.21/realtek/: 8139too.mod
+Only in 5.14.21/realtek/: 8139too.mod.c
+Only in 5.14.21/realtek/: .8139too.mod.cmd
+Only in 5.14.21/realtek/: 8139too.mod.o
+Only in 5.14.21/realtek/: .8139too.mod.o.cmd
+Only in 5.14.21/realtek/: 8139too.o
+Only in 5.14.21/realtek/: .8139too.o.cmd
+Only in 5.14.21/realtek/: atp.ko
+Only in 5.14.21/realtek/: .atp.ko.cmd
+Only in 5.14.21/realtek/: atp.mod
+Only in 5.14.21/realtek/: atp.mod.c
+Only in 5.14.21/realtek/: .atp.mod.cmd
+Only in 5.14.21/realtek/: atp.mod.o
+Only in 5.14.21/realtek/: .atp.mod.o.cmd
+Only in 5.14.21/realtek/: atp.o
+Only in 5.14.21/realtek/: .atp.o.cmd
+diff -rup /usr/src/linux-rt/drivers/net/ethernet/realtek/Makefile 5.14.21/realtek/Makefile
 --- /usr/src/linux-rt/drivers/net/ethernet/realtek/Makefile	2024-11-06 14:07:03.000000000 +0100
 +++ 5.14.21/realtek/Makefile	2024-11-25 10:06:09.650350735 +0100
 @@ -6,5 +6,8 @@
@@ -12,7 +39,11 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/Makefile 5.14.21/realtek
 +
 +EXTRA_CFLAGS=-I$(src)/../../../../../
 +KBUILD_EXTRA_SYMBOLS=$(src)/../../../../../Module.symvers
-diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169.h 5.14.21/realtek/r8169.h
+Only in 5.14.21/realtek/: modules.order
+Only in 5.14.21/realtek/: .modules.order.cmd
+Only in 5.14.21/realtek/: r8169_firmware.o
+Only in 5.14.21/realtek/: .r8169_firmware.o.cmd
+diff -rup /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169.h 5.14.21/realtek/r8169.h
 --- /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169.h	2024-11-06 14:07:03.000000000 +0100
 +++ 5.14.21/realtek/r8169.h	2024-11-25 10:06:09.653350734 +0100
 @@ -11,6 +11,8 @@
@@ -24,7 +55,16 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169.h 5.14.21/realtek/
  enum mac_version {
  	/* support for ancient RTL_GIGA_MAC_VER_01 has been removed */
  	RTL_GIGA_MAC_VER_02,
-diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/realtek/r8169_main.c
+Only in 5.14.21/realtek/: r8169-libethercat.ko
+Only in 5.14.21/realtek/: .r8169-libethercat.ko.cmd
+Only in 5.14.21/realtek/: r8169-libethercat.mod
+Only in 5.14.21/realtek/: r8169-libethercat.mod.c
+Only in 5.14.21/realtek/: .r8169-libethercat.mod.cmd
+Only in 5.14.21/realtek/: r8169-libethercat.mod.o
+Only in 5.14.21/realtek/: .r8169-libethercat.mod.o.cmd
+Only in 5.14.21/realtek/: r8169-libethercat.o
+Only in 5.14.21/realtek/: .r8169-libethercat.o.cmd
+diff -rup /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/realtek/r8169_main.c
 --- /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c	2024-11-06 14:07:03.000000000 +0100
 +++ 5.14.21/realtek/r8169_main.c	2024-11-25 10:27:14.661967250 +0100
 @@ -34,6 +34,8 @@
@@ -36,7 +76,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  #define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-1.fw"
  #define FIRMWARE_8168D_2	"rtl_nic/rtl8168d-2.fw"
  #define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-1.fw"
-@@ -575,33 +577,6 @@
+@@ -575,33 +577,6 @@ struct rtl8169_counters {
  	__le32	rx_multicast;
  	__le16	tx_aborted;
  	__le16	tx_underun;
@@ -70,7 +110,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  };
  
  struct rtl8169_tc_offsets {
-@@ -644,6 +619,7 @@
+@@ -644,6 +619,7 @@ struct rtl8169_private {
  	u16 cp_cmd;
  	u32 irq_mask;
  	struct clk *clk;
@@ -78,7 +118,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	struct {
  		DECLARE_BITMAP(flags, RTL_FLAG_MAX);
-@@ -662,8 +638,21 @@
+@@ -662,8 +638,21 @@ struct rtl8169_private {
  	struct rtl_fw *rtl_fw;
  
  	u32 ocp_base;
@@ -100,7 +140,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  typedef void (*rtl_generic_fct)(struct rtl8169_private *tp);
  
  MODULE_AUTHOR("Realtek and the Linux r8169 crew <netdev@vger.kernel.org>");
-@@ -3963,7 +3952,7 @@
+@@ -3963,7 +3952,7 @@ static void rtl8169_tx_clear_range(struc
  			struct sk_buff *skb = tx_skb->skb;
  
  			rtl8169_unmap_tx_skb(tp, entry);
@@ -109,7 +149,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  				dev_consume_skb_any(skb);
  		}
  	}
-@@ -3972,12 +3961,15 @@
+@@ -3972,12 +3961,15 @@ static void rtl8169_tx_clear_range(struc
  static void rtl8169_tx_clear(struct rtl8169_private *tp)
  {
  	rtl8169_tx_clear_range(tp, tp->dirty_tx, NUM_TX_DESC);
@@ -127,7 +167,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	/* Give a racing hard_start_xmit a few cycles to complete. */
  	synchronize_net();
-@@ -4020,14 +4012,18 @@
+@@ -4020,14 +4012,18 @@ static void rtl_reset_work(struct rtl816
  {
  	int i;
  
@@ -148,7 +188,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	rtl_hw_start(tp);
  }
  
-@@ -4035,7 +4031,9 @@
+@@ -4035,7 +4031,9 @@ static void rtl8169_tx_timeout(struct ne
  {
  	struct rtl8169_private *tp = netdev_priv(dev);
  
@@ -159,7 +199,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  }
  
  static int rtl8169_tx_map(struct rtl8169_private *tp, const u32 *opts, u32 len,
-@@ -4278,6 +4276,10 @@
+@@ -4278,6 +4276,10 @@ static netdev_tx_t rtl8169_start_xmit(st
  	bool stop_queue, door_bell;
  	unsigned int frags;
  	u32 opts[2];
@@ -170,7 +210,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	if (unlikely(!rtl_tx_slots_avail(tp))) {
  		if (net_ratelimit())
-@@ -4315,14 +4317,21 @@
+@@ -4315,14 +4317,21 @@ static netdev_tx_t rtl8169_start_xmit(st
  	/* Force memory writes to complete before releasing descriptor */
  	dma_wmb();
  
@@ -194,7 +234,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	stop_queue = !rtl_tx_slots_avail(tp);
  	if (unlikely(stop_queue)) {
-@@ -4330,7 +4339,9 @@
+@@ -4330,7 +4339,9 @@ static netdev_tx_t rtl8169_start_xmit(st
  		 * not miss a ring update when it notices a stopped queue.
  		 */
  		smp_wmb();
@@ -205,7 +245,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		/* Sync with rtl_tx:
  		 * - publish queue status and cur_tx ring index (write barrier)
  		 * - refresh dirty_tx ring index (read barrier).
-@@ -4339,7 +4350,7 @@
+@@ -4339,7 +4350,7 @@ static netdev_tx_t rtl8169_start_xmit(st
  		 * can't.
  		 */
  		smp_mb__after_atomic();
@@ -214,7 +254,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  			netif_start_queue(dev);
  		door_bell = true;
  	}
-@@ -4347,18 +4358,27 @@
+@@ -4347,18 +4358,27 @@ static netdev_tx_t rtl8169_start_xmit(st
  	if (door_bell)
  		rtl8169_doorbell(tp);
  
@@ -244,7 +284,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	return NETDEV_TX_BUSY;
  }
  
-@@ -4446,6 +4466,33 @@
+@@ -4446,6 +4466,33 @@ static void rtl_tx(struct net_device *de
  	unsigned int dirty_tx, bytes_compl = 0, pkts_compl = 0;
  	struct sk_buff *skb;
  
@@ -278,7 +318,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	dirty_tx = tp->dirty_tx;
  
  	while (READ_ONCE(tp->cur_tx) != dirty_tx) {
-@@ -4462,13 +4509,20 @@
+@@ -4462,13 +4509,20 @@ static void rtl_tx(struct net_device *de
  		if (skb) {
  			pkts_compl++;
  			bytes_compl += skb->len;
@@ -301,7 +341,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		dev_sw_netstats_tx_add(dev, pkts_compl, bytes_compl);
  
  		/* Sync with rtl8169_start_xmit:
-@@ -4479,8 +4533,11 @@
+@@ -4479,8 +4533,11 @@ static void rtl_tx(struct net_device *de
  		 * ring status.
  		 */
  		smp_store_mb(tp->dirty_tx, dirty_tx);
@@ -315,7 +355,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		/*
  		 * 8168 hack: TxPoll requests are lost when the Tx packets are
  		 * too close. Let's kick an extra TxPoll request when a burst
-@@ -4521,6 +4578,9 @@
+@@ -4521,6 +4578,9 @@ static int rtl_rx(struct net_device *dev
  		const void *rx_buf;
  		dma_addr_t addr;
  		u32 status;
@@ -325,7 +365,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  		status = le32_to_cpu(desc->opts1);
  		if (status & DescOwn)
-@@ -4561,10 +4621,13 @@
+@@ -4561,10 +4621,13 @@ static int rtl_rx(struct net_device *dev
  			goto release_descriptor;
  		}
  
@@ -343,7 +383,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		}
  
  		addr = le64_to_cpu(desc->addr);
-@@ -4572,6 +4635,12 @@
+@@ -4572,6 +4635,12 @@ static int rtl_rx(struct net_device *dev
  
  		dma_sync_single_for_cpu(d, addr, pkt_size, DMA_FROM_DEVICE);
  		prefetch(rx_buf);
@@ -356,7 +396,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		skb_copy_to_linear_data(skb, rx_buf, pkt_size);
  		skb->tail += pkt_size;
  		skb->len = pkt_size;
-@@ -4595,15 +4664,19 @@
+@@ -4595,15 +4664,19 @@ release_descriptor:
  	return count;
  }
  
@@ -379,7 +419,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		rtl8169_pcierr_interrupt(tp->dev);
  		goto out;
  	}
-@@ -4611,16 +4684,22 @@
+@@ -4611,16 +4684,22 @@ static irqreturn_t rtl8169_interrupt(int
  	if (status & LinkChg)
  		phy_mac_interrupt(tp->phydev);
  
@@ -410,7 +450,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  out:
  	rtl_ack_events(tp, status);
  
-@@ -4634,29 +4713,37 @@
+@@ -4634,29 +4713,37 @@ static void rtl_task(struct work_struct
  
  	rtnl_lock();
  
@@ -453,7 +493,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		rtl_irq_enable(tp);
  
  	return work_done;
-@@ -4666,7 +4753,7 @@
+@@ -4666,7 +4753,7 @@ static void r8169_phylink_handler(struct
  {
  	struct rtl8169_private *tp = netdev_priv(ndev);
  
@@ -462,7 +502,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		rtl_link_chg_patch(tp);
  		pm_request_resume(&tp->pci_dev->dev);
  	} else {
-@@ -4691,7 +4778,7 @@
+@@ -4691,7 +4778,7 @@ static int r8169_phy_connect(struct rtl8
  	if (ret)
  		return ret;
  
@@ -471,7 +511,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		phy_set_max_speed(phydev, SPEED_100);
  
  	phy_attached_info(phydev);
-@@ -4722,7 +4809,9 @@
+@@ -4722,7 +4809,9 @@ static void rtl8169_up(struct rtl8169_pr
  	phy_init_hw(tp->phydev);
  	phy_resume(tp->phydev);
  	rtl8169_init_phy(tp);
@@ -482,7 +522,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	set_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
  	rtl_reset_work(tp);
  
-@@ -4736,7 +4825,9 @@
+@@ -4736,7 +4825,9 @@ static int rtl8169_close(struct net_devi
  
  	pm_runtime_get_sync(&pdev->dev);
  
@@ -493,7 +533,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	rtl8169_down(tp);
  	rtl8169_rx_clear(tp);
  
-@@ -4776,6 +4867,10 @@
+@@ -4776,6 +4867,10 @@ static int rtl_open(struct net_device *d
  
  	pm_runtime_get_sync(&pdev->dev);
  
@@ -504,7 +544,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	/*
  	 * Rx and Tx descriptors needs 256 bytes alignment.
  	 * dma_alloc_coherent provides more.
-@@ -4796,11 +4891,13 @@
+@@ -4796,11 +4891,13 @@ static int rtl_open(struct net_device *d
  
  	rtl_request_firmware(tp);
  
@@ -523,7 +563,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	retval = r8169_phy_connect(tp);
  	if (retval)
-@@ -4808,7 +4905,10 @@
+@@ -4808,7 +4905,10 @@ static int rtl_open(struct net_device *d
  
  	rtl8169_up(tp);
  	rtl8169_init_counter_offsets(tp);
@@ -535,7 +575,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  out:
  	pm_runtime_put_sync(&pdev->dev);
  
-@@ -4867,10 +4967,14 @@
+@@ -4867,10 +4967,14 @@ rtl8169_get_stats64(struct net_device *d
  
  static void rtl8169_net_suspend(struct rtl8169_private *tp)
  {
@@ -553,7 +593,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  }
  
  #ifdef CONFIG_PM
-@@ -4879,6 +4983,10 @@
+@@ -4879,6 +4983,10 @@ static int rtl8169_runtime_resume(struct
  {
  	struct rtl8169_private *tp = dev_get_drvdata(dev);
  
@@ -564,7 +604,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	rtl_rar_set(tp, tp->dev->dev_addr);
  	__rtl8169_set_wol(tp, tp->saved_wolopts);
  
-@@ -4893,6 +5001,10 @@
+@@ -4893,6 +5001,10 @@ static int rtl8169_runtime_resume(struct
  static int __maybe_unused rtl8169_suspend(struct device *device)
  {
  	struct rtl8169_private *tp = dev_get_drvdata(device);
@@ -575,7 +615,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	rtnl_lock();
  	rtl8169_net_suspend(tp);
-@@ -4906,6 +5018,10 @@
+@@ -4906,6 +5018,10 @@ static int __maybe_unused rtl8169_suspen
  static int __maybe_unused rtl8169_resume(struct device *device)
  {
  	struct rtl8169_private *tp = dev_get_drvdata(device);
@@ -586,7 +626,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	if (!device_may_wakeup(tp_to_dev(tp)))
  		clk_prepare_enable(tp->clk);
-@@ -4920,6 +5036,10 @@
+@@ -4920,6 +5036,10 @@ static int __maybe_unused rtl8169_resume
  static int rtl8169_runtime_suspend(struct device *device)
  {
  	struct rtl8169_private *tp = dev_get_drvdata(device);
@@ -597,7 +637,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	if (!tp->TxDescArray) {
  		netif_device_detach(tp->dev);
-@@ -4937,8 +5057,12 @@
+@@ -4937,8 +5057,12 @@ static int rtl8169_runtime_suspend(struc
  static int rtl8169_runtime_idle(struct device *device)
  {
  	struct rtl8169_private *tp = dev_get_drvdata(device);
@@ -611,7 +651,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  		pm_schedule_suspend(device, 10000);
  
  	return -EBUSY;
-@@ -4992,11 +5116,17 @@
+@@ -4992,11 +5116,17 @@ static void rtl_shutdown(struct pci_dev
  static void rtl_remove_one(struct pci_dev *pdev)
  {
  	struct rtl8169_private *tp = pci_get_drvdata(pdev);
@@ -630,7 +670,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	if (tp->dash_type != RTL_DASH_NONE)
  		rtl8168_driver_stop(tp);
-@@ -5007,6 +5137,80 @@
+@@ -5007,6 +5137,80 @@ static void rtl_remove_one(struct pci_de
  	rtl_rar_set(tp, tp->dev->perm_addr);
  }
  
@@ -711,7 +751,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  static const struct net_device_ops rtl_netdev_ops = {
  	.ndo_open		= rtl_open,
  	.ndo_stop		= rtl8169_close,
-@@ -5020,6 +5224,7 @@
+@@ -5020,6 +5224,7 @@ static const struct net_device_ops rtl_n
  	.ndo_set_features	= rtl8169_set_features,
  	.ndo_set_mac_address	= rtl_set_mac_address,
  	.ndo_eth_ioctl		= phy_do_ioctl_running,
@@ -719,7 +759,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  	.ndo_set_rx_mode	= rtl_set_rx_mode,
  #ifdef CONFIG_NET_POLL_CONTROLLER
  	.ndo_poll_controller	= rtl8169_netpoll,
-@@ -5285,6 +5490,35 @@
+@@ -5285,6 +5490,35 @@ done:
  	rtl_rar_set(tp, mac_addr);
  }
  
@@ -755,7 +795,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
  {
  	struct rtl8169_private *tp;
-@@ -5292,6 +5526,7 @@
+@@ -5292,6 +5526,7 @@ static int rtl_init_one(struct pci_dev *
  	enum mac_version chipset;
  	struct net_device *dev;
  	u16 xid;
@@ -763,7 +803,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	dev = devm_alloc_etherdev(&pdev->dev, sizeof (*tp));
  	if (!dev)
-@@ -5393,7 +5628,9 @@
+@@ -5393,7 +5628,9 @@ static int rtl_init_one(struct pci_dev *
  
  	dev->ethtool_ops = &rtl8169_ethtool_ops;
  
@@ -774,7 +814,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	dev->hw_features = NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
  			   NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX;
-@@ -5456,9 +5693,43 @@
+@@ -5456,9 +5693,43 @@ static int rtl_init_one(struct pci_dev *
  	if (rc)
  		return rc;
  
@@ -821,3 +861,7 @@ diff -ru /usr/src/linux-rt/drivers/net/ethernet/realtek/r8169_main.c 5.14.21/rea
  
  	netdev_info(dev, "%s, %pM, XID %03x, IRQ %d\n",
  		    rtl_chip_infos[chipset].name, dev->dev_addr, xid,
+Only in 5.14.21/realtek/: r8169_main.o
+Only in 5.14.21/realtek/: .r8169_main.o.cmd
+Only in 5.14.21/realtek/: r8169_phy_config.o
+Only in 5.14.21/realtek/: .r8169_phy_config.o.cmd

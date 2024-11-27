@@ -17,6 +17,9 @@
 
 #include "igc_hw.h"
 
+#include "ethercat_device.h"
+#include "ethercat_device_ioctl.h"
+
 void igc_ethtool_set_ops(struct net_device *);
 
 /* Transmit and receive queues */
@@ -255,6 +258,9 @@ struct igc_adapter {
 		struct timespec64 start;
 		struct timespec64 period;
 	} perout[IGC_N_PEROUT];
+	
+	bool is_ecat;
+	struct ethercat_device *ecat_dev;
 };
 
 void igc_up(struct igc_adapter *adapter);
