@@ -188,7 +188,16 @@ int hw_device_stm32_recv(struct hw_common *phw) {
 
     hw_device_stm32_recv_internal(phw_stm32);
 
-    return EC_OK;
+    // new code MB
+    void *app_buff;    
+    if(HAL_ETH_ReadData(&heth, &app_buff) != HAL_OK) // func in ...hal_eth.c
+    {
+	return EC_ERROR_UNAVAILABLE; // maybe write some other ERROR code in the error_code.h!?
+    }
+    else
+    {
+    	return EC_OK;
+    }
 }
 
 //! Get a free tx buffer from underlying hw device.
@@ -297,6 +306,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
  */
 void hw_device_stm32_send_finished(struct hw_common *phw) {
     assert(phw != NULL);
+    // maybe if phw==NULL --> insert tx_frame_brd to send a brd frame!?
 
     struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
     
