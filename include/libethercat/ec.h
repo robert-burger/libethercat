@@ -110,6 +110,15 @@ typedef struct ec_pd_group {
 
     int overlapping;                //!< Logical areas (inputs and outputs) are overlapping.
 
+    int skip_pd_on_wkc_mismatch;   //!< Skip process data on working counter 
+                                    //!< mismatch flag
+                                    /*!
+                                     * This flag specifies that the cyclic process 
+                                     * data should not be copied to the
+                                     * \link pd \endlink field when a working counter
+                                     * mismatch occurs.
+                                     */
+
     osal_uint16_t wkc_expected_lrw; //!< expected working counter
                                     /*!< 
                                      * This is the expected working counter 
