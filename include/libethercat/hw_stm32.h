@@ -55,6 +55,9 @@ typedef struct hw_stm32 {
     osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
 } hw_stm32_t;
 
+// HTONS MACRO
+#define HTONS(x) (((x) << 8) | ((x) >> 8))
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
