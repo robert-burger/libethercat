@@ -101,7 +101,7 @@ int hw_device_stm32_open(struct hw_stm32 *phw_stm32, struct ec *pec) {
     phw_stm32->common.send_finished = hw_device_stm32_send_finished;
     phw_stm32->common.get_tx_buffer = hw_device_stm32_get_tx_buffer;
     phw_stm32->common.close = hw_device_stm32_close;
-	phw_stm32->common.mtu_size = 1480;
+    phw_stm32->common.mtu_size = 1480;
 
     memset(&phw_stm32->TxConfig, 0 , sizeof(ETH_TxPacketConfig));
     phw_stm32->TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
@@ -109,9 +109,9 @@ int hw_device_stm32_open(struct hw_stm32 *phw_stm32, struct ec *pec) {
     phw_stm32->TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
 
     // cppcheck-suppress misra-c2012-11.3
-	pframe = (ec_frame_t *)phw_stm32->send_frame;
-	(void)memcpy(pframe->mac_dest, mac_dest, 6);
-	(void)memcpy(pframe->mac_src, mac_src, 6);
+    pframe = (ec_frame_t *)phw_stm32->send_frame;
+    (void)memcpy(pframe->mac_dest, mac_dest, 6);
+    (void)memcpy(pframe->mac_src, mac_src, 6);
 
     return ret;
 }
@@ -135,41 +135,6 @@ int hw_device_stm32_close(struct hw_common *phw) {
     return ret;
 }
 
-void hw_device_stm32_recv_internal(struct hw_stm32 *phw_stm32) {
-    // cppcheck-suppress misra-c2012-11.3
-    ec_frame_t *pframe = (ec_frame_t *) &phw_stm32->recv_frame;
-
-    // using tradional recv function
-    //osal_ssize_t bytesrx = read(phw_stm32->fd, pframe, ETH_FRAME_LEN);
-
-    if (phw_stm32 != NULL) {
-        hw_process_rx_frame(&phw_stm32->common, pframe);
-    }
-}
-
-//! receiver thread
-void *hw_device_stm32_rx_thread(void *arg) {
-    // cppcheck-suppress misra-c2012-11.5
-    struct hw_stm32 *phw_stm32 = (struct hw_stm32 *) arg;
-
-    assert(phw_stm32 != NULL);
-    
-    osal_task_sched_priority_t rx_prio;
-//    if (osal_task_get_priority(&phw_stm32->rxthread, &rx_prio) != OSAL_OK) {
-        rx_prio = 0;
-//    }
-
-    ec_log(10, "HW_FILE_RX", "receive thread running (prio %d)\n", rx_prio);
-
-//    while (phw_stm32->rxthreadrunning != 0) {
-        hw_device_stm32_recv_internal(phw_stm32);
-//    }
-    
-    ec_log(10, "HW_FILE_RX", "receive thread stopped\n");
-    
-    return NULL;
-}
-
 //! Receive a frame from an EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -180,23 +145,16 @@ void *hw_device_stm32_rx_thread(void *arg) {
 int hw_device_stm32_recv(struct hw_common *phw) {
     assert(phw != NULL);
 
-    struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
-
-//    if (phw_stm32->polling_mode == OSAL_TRUE) {
-//        return EC_ERROR_HW_NOT_SUPPORTED;
-//    }
-
-    hw_device_stm32_recv_internal(phw_stm32);
-
     // new code MB
-    void *app_buff;    
+    void *app_buff;
     if(HAL_ETH_ReadData(&heth, &app_buff) != HAL_OK) // func in ...hal_eth.c
     {
-	return EC_ERROR_UNAVAILABLE; // maybe write some other ERROR code in the error_code.h!?
+        return EC_ERROR_UNAVAILABLE; // maybe write some other ERROR code in the error_code.h!?
     }
     else
     {
-    	return EC_OK;
+        hw_process_rx_frame(phw, app_buff);
+        return EC_OK;
     }
 }
 
@@ -245,27 +203,9 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
     int ret = EC_OK;
     struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
 
-    // no more datagrams need to be sent or no more space in frame
-//    osal_ssize_t bytestx = write(phw_stm32->fd, pframe, pframe->len);
-
-//    if ((osal_ssize_t)pframe->len != bytestx) {
-//        ec_log(1, "HW_TX", "got only %" PRId64 " bytes out of %d bytes "
-//                "through.\n", bytestx, pframe->len);
-//
-//        if (bytestx == -1) {
-//            ec_log(1, "HW_TX", "error: %s\n", strerror(errno));
-//        }
-
-        ret = EC_ERROR_HW_SEND;
-//    }
-    
-//    phw_stm32->common.bytes_sent += bytestx;
-
-    /*********************/
-
     int errval = ETH_OK;
     ETH_BufferTypeDef Txbuffer[ETH_TX_DESC_CNT];
-    size_t frame_len = sizeof(*pframe);
+    size_t frame_len = ec_frame_length(pframe);
     // Invalidate if cache is enabled
 //    SCB_CleanDCache_by_Addr((uint32_t*) frame, frame_len);
 
@@ -288,14 +228,12 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
             } else {
                 /* Other error */
                 errval = ETH_ERR_OTHER;
+                ret = EC_ERROR_HW_SEND;
 
-                Error_Handler();
+                break;
             }
         }
     } while (errval == ETH_ERR_NO_BUFFER);
-
-    // are 2 returns possible!?
-    return errval;
 
     return ret;
 }
