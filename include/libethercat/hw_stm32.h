@@ -63,6 +63,8 @@ typedef struct hw_stm32 {
  * \return 0 or negative error code
  */
 int hw_device_stm32_open(struct hw_stm32 *phw, struct ec *pec);
+int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type);
+int hw_device_stm32_recv(struct hw_common *phw);
 
 #endif // LIBETHERCAT_HW_STM32_H
 
