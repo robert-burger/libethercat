@@ -70,7 +70,9 @@
 #include <winsock.h>
 #endif
 
+// MB includes/defines
 #include "eth.h"
+#define ETH_TX_TIMEOUT  2000u // taken from eth.c
 
 /* ioctls from ethercat_device */
 #define ETHERCAT_DEVICE_MAGIC             'e'
@@ -84,8 +86,14 @@ void hw_device_stm32_send_finished(struct hw_common *phw);
 int hw_device_stm32_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 int hw_device_stm32_close(struct hw_common *phw);
 
-static void hw_device_stm32_recv_internal(struct hw_stm32 *phw_stm32);
-static void *hw_device_stm32_rx_thread(void *arg);
+//static void hw_device_stm32_recv_internal(struct hw_stm32 *phw_stm32);
+//static void *hw_device_stm32_rx_thread(void *arg);
+
+// HTONS function MB
+uint16_t htons(uint16_t hostshort)
+{
+    return (hostshort << 8) | (hostshort >> 8);
+}
 
 // Opens EtherCAT hw device.
 int hw_device_stm32_open(struct hw_stm32 *phw_stm32, struct ec *pec) {
@@ -209,7 +217,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
     // Invalidate if cache is enabled
 //    SCB_CleanDCache_by_Addr((uint32_t*) frame, frame_len);
 
-    Txbuffer[0].buffer = pframe;
+    Txbuffer[0].buffer = (uint8_t *)(pframe);
     Txbuffer[0].len = frame_len;
     Txbuffer[0].next = NULL;
 
@@ -218,7 +226,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
     phw_stm32->TxConfig.pData = NULL;
 
     do {
-        if (HAL_ETH_Transmit(&heth, hw_stm32->&TxConfig, ETH_TX_TIMEOUT) == HAL_OK) {
+        if (HAL_ETH_Transmit(&heth, &(phw_stm32->TxConfig), ETH_TX_TIMEOUT) == HAL_OK) {
             HAL_ETH_ReleaseTxPacket(&heth); // func in ...hal_eth.c
             errval = ETH_OK;
         } else {
@@ -257,7 +265,7 @@ void hw_device_stm32_send_finished(struct hw_common *phw) {
         phw_stm32->common.bytes_last_sent = phw_stm32->common.bytes_sent;
         phw_stm32->common.bytes_sent = 0;
 
-        hw_device_stm32_recv_internal(phw_stm32);
+        //hw_device_stm32_recv_internal(phw_stm32);
     //}
 }
 
