@@ -89,12 +89,6 @@ int hw_device_stm32_close(struct hw_common *phw);
 //static void hw_device_stm32_recv_internal(struct hw_stm32 *phw_stm32);
 //static void *hw_device_stm32_rx_thread(void *arg);
 
-// HTONS function MB
-uint16_t htons(uint16_t hostshort)
-{
-    return (hostshort << 8) | (hostshort >> 8);
-}
-
 // Opens EtherCAT hw device.
 int hw_device_stm32_open(struct hw_stm32 *phw_stm32, struct ec *pec) {
     int ret = EC_OK;
@@ -185,7 +179,7 @@ int hw_device_stm32_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) {
     pframe = (ec_frame_t *)phw_stm32->send_frame;
 
     // reset length to send new frame
-    pframe->ethertype = htons(ETH_P_ECAT);
+    pframe->ethertype = HTONS(ETH_P_ECAT);
     pframe->type = 0x01;
     pframe->len = sizeof(ec_frame_t);
 
