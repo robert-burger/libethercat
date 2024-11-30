@@ -1,3 +1,10 @@
+libethercat (0.6.2) unstable; urgency=low
+
+  * bump: 0.6.2
+  * update: changelog for 0.6.1
+
+ -- Robert Burger <robert.burger@dlr.de>  Sat, 30 Nov 2024 09:35:56 +0100
+
 libethercat (0.6.1) unstable; urgency=low
 
   * bump: version 0.6.1
