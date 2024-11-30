@@ -1,3 +1,13 @@
+libethercat (0.6.1) unstable; urgency=low
+
+  * bump: version 0.6.1
+  * bump: 0.6.0
+  * fix: version number into project.properties
+  * update: changelog for 0.6.0
+  * fix: reverted entry desc name calculation
+
+ -- Robert Burger <robert.burger@dlr.de>  Sat, 30 Nov 2024 09:27:22 +0100
+
 libethercat (0.6.0) unstable; urgency=low
 
   * fix: strncpy on ifr_name
