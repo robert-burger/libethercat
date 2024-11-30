@@ -1,411 +1,1090 @@
-libethercat (0.5.1) stable; urgency=medium
+libethercat (0.6.0) unstable; urgency=low
 
-  * printing some coe messages
-  * CHANGE: creating mailbox handler thread
-  * CHANGE: making pool more generic
-  * CHANGE: implemented first version of mbx send queue
-  * ADD: queueing mailbox messages, handled in threads for each slave
-  * CHANGE: some cleanup
-  * CLEANUP: moved some vars, checking sm_state in receive group
-  * CLEANUP: moved some vars, checking sm_state in receive group
-  * FIX: some improvements, should not busy-lock in waiting for coe answer now
-  * WORK: EoE implementation with tap device
-  * FIX: header include for old osl42 systems
-  * FIX: FoE handling with new mailbox queues
-  * FIX: set EoE ip request id
-  * ADD: set ip address of tun device directly from source
-  * FIX: CoE return value in read
-  * CHANGE: mailbox and EoE handling
-  * CHANGE: some doc and cleanup
-  * FIX: double free
-  * FIX: uninitialzed value
-  * FIX: uninitialzed value
-  * ADD: field with actual slave state
-  * MOVED: i
-  * ADD: eoe sync sem
-  * ADD: eoe lock
-  * FIX: pool wait
-  * CHANGE: working on mbx handler thread
-  * FIX: typo
-  * ADD: eoe_debug_print
-  * FIX: resetting pool user_cb, user_arg
-  * FIX: coe answer message checks
-  * ADD: EoE response pool to distinguish between requests and frames/fragments
-  * FIX: pool_get and added pool_put_head routine
-  * FIX: mbx handler thread
-  * ADD: check pool macro for CoE
-  * CLEANUP: mailbox queueing stuff
-  * ADD: checks getting free mailbox buffer
-  * CHANGE: state switch log message
-  * FXI: log message format
-  * CHANGE: new doxygen version
-  * CHANGE: working on doxygen documentation
-  * REM: unused functions
-  * ADD: some doc
-  * FIX: printing out EoE settings
-  * CHANGE: seperate pool's for send and recv mailbox
-  * FIX: strict aliasing rule
-  * CHANGE: better error handling on sdo info reads
-  * ADD: timeout to select on tun device
-  * ADD: timeout to select on tun device
-  * FIX: latest changes for mbx send/recv buffers
-  * CHANGE: increased log level to not scatter output to much
-  * FIX: check for null, reading input mailbox not in OP
-  * CHANGE: max consecutive missed frames added
-  * CHANGE: added a lot of assertions
-  * DEL: uneeded include
-  * FIX: shut down on too much frame miss
-  * ADD: setting pointer p_entry to NULL
-  * ADD: sanity check for mailbox support
-  * FIX: changed some mailbox log levels
-  * FIX: small changes
-  * CHANGE: mailbox pool sizes
-  * CLEANUP: some unused code, some reorganization
-  * FIX: member rename
-  * FIX: distributed clocks init
-  * FIX: issue #1 opening non-existent network interface
-  * FIX: fixed #4, setting max loglevel on state switch error
-  * FIX: service field in coe header when putting a coe mailbox message
-  * FIX: soe function
-  * FIX: soe init commands will be sent now
-  * CHANGE: doing linux_default builds now
-  * CHANGE: printing notifications and unexpected read response
-  * FIX: fragmented soe_write now working
-  * FIX: breaking on init command processing
-  * change: timeout decrease of socket
-  * changes: a lot of misra fixes
-  * changes: misra for message_pool
-  * change: included missing error_codes header
-  * change: more misra fixes
-  * change: more misra fixes
-  * add: missing header include
-  * change: reworked error codes for index queue
-  * change: more misra-c
-  * change: more misra
-  * change: more misra
-  * change: more misra
-  * change: more misra
-  * change: more misra
-  * change: return value of mii funcs depend on return of fprd commands
-  * change: suppress false cppcheck error
-  * change: some pool improvements
-  * change: cleaned up tun device setup
-  * change: cleaned up timer funcs return values
-  * fix: small fixes in calling get_state
-  * fixes and work on dc sync
-  * add: missing memory impl
-  * change: removed rtc_sto from dc time calculation, now directly subtracted from timer_prev
-  * change: dc frame retourne routine rework
-  * cleanup: cleaned up dc calculations
-  * fix: comment indent
-  * fix: start sync manager on mapping calculatioN
-  * fix: coe write transfer
-  * fix: return value of ec_mbx_receive
-  * fix: cleanup and fixed all dc modes
-  * fix: return value of mbx funcs
-  * change: libosal partial
-  * change: latest rt changes
-  * change: using timer timeout
-  * change: removed own timer funcs and use them from libosal
-  * change: osal data typs
-  * change: using libosal semaphores now
-  * change: add trywait to binary_semaphore
-  * change: using spinlock instead of mutex here
-  * add: missing mutex include
-  * change: removde pthread incldue
-  * change: removed prio changing in thread func, done by osal
-  * style: format fix
-  * change: setting libosal task names
-  * rename async loop
-  * change: using mutexes instead of spinlocks
-  * passing correct timeout datatype to osal_timer_init
-  * fix: using timeout directly
-  * change: using libosal from common
-  * change: doing index alloc static way
-  * change: more removing malloc stuff
-  * fix: include headers
-  * change: index is static now
-  * fix: wkc double definition, brackets
-  * fix: static eeprom pdo entries
-  * fix: using retval of osal_semaphore_timedwait
-  * fix: config.h defines!
-  * test: using global mailbox buffers
-  * better log output on timeout of first ecat packet
-  * change: removed more dynamic allocs
-  * add: a lot of config defines
-  * fix: removed all allocation/free routines
-  * add: more conanfile options
-  * change: splitted hw device layer
-  * fix: misra compliance
-  * fix: undefined value
-  * add: conanfile options
-  * fix: libosal changed to unstable
-  * fix: creation and destroying of async_loop
-  * changed: device enabling behaviour
-  * fix: reduced scope of pframe in receive func
-  * change: set mmap poll timeout to 1 ms
-  * change: build device choose option
-  * fix: file device mode
-  * add: device mode builds
-  * fix: bpf build, does not compile
-  * fix: CoE emergency message length and lock
-  * add: CoE emergency get function
-  * fix: made static dc_lock to struct member
-  * fix: printf format argument matching
-  * fix: another printf fix
-  * change: lot of printf format fixes, some include fixes
-  * add: pikeos hardware layer over shared memory buffers, lot of pikeos fixes
-  * add pikeos build
-  * fix: build target syntax
-  * include cleanup
-  * change: libosal switched to unstable
-  * integrated divisor and timeouts for groups/dcs/states
-  * fix: checking return value of binary sem timedwait
-  * fix: checking brd of al status
-  * add: log messages for start/stop of rx thread
-  * add: log message on pikeos device open
-  * change: pikeos mtu size
-  * fix: sending first dc frame
-  * change: --with-x options instead of compiler defines
-  * add: printing all config variables
-  * change: printing rx thread prio
-  * add: async check all slaves on state mismatch
-  * option to disable mapping of mbx sync manager status
-  * add: dc auto activation
-  * reordered dc sync activatioN
-  * fix: pointer dereference
-  * fix: next try fixing type-punned pointer deref
-  * fix: eepcftsta is 2 bytes
-  * fix: segfault when setting eoe
-  * change: reading mbx state if not mapped
-  * fix: parameter shadowing
-  * fix: sm_state fprd command when not mapped
-  * fix: read mbx use cyclic sm_state
-  * fix: misra compliance
-  * fix: better slave al err reset
-  * fix: indent
-  * fix: switching initially to init from other state
-  * slave state machine lock
-  * fix: read mailbox flag
-  * add: printing slave features
-  * only set master state if state switch was a success
-  * change: reset only on non-stupid slave where al_status_code is not 0
-  * change: doing more stuff in rx-thread, do not wait on cyclic frames
-  * add: debug option to configure
-  * chagne: some doc
-  * del: removed debug message
-  * change: some doc
-  * cleanup: callback stuff for cyclic datagrams
-  * removed: had_timeout flag from cyclic_datagram, not used
-  * change: some docs
-  * misra: some fixes
-  * doc: dc doxygen fixes
-  * fix: compilation with mingw
-  * fix: linker
-  * change: datagrams are reused and not returned to pool for cyclic stuff
-  * cleanup: removed uneeded check
-  * fix: some changes for misra compliance
-  * fix: receive mbx_state non-blocking callback now
-  * fix: force re-initialization of lrw/lrd/lwr datagrams if mapping is (re-)created
-  * fix: clearing last indicator of datagrams
-  * change: better reinit of lrw/lwr/lrd datagrams
-  * change: do not release libtool la file
-  * change: control tx_sync via libethercat state machine
-  * dc test added
-  * change: added ec_configure_dc function
-  * change: added configure pd group function
-  * add: log messages for async_loop thread
-  * change: reworked async_loop timeout management
-  * change: do always initialize datagram headers
-  * change: pikeos hw layer blocking
-  * change: waiting if interface was down to switch to runing state
-  * fix: get error code in sdo entry description
-  * change: mailbox check timeouts in INIT/PREOP and SAFEOP/OP
-  * change: removed tx_sync, not needed any more
-  * change: added packet duration for dc datagram
-  * change: added first version of MDP 1100 master profile
-  * change: moved coe master stuff to separate file
-  * fix: datatypes of master objects, address lists
-  * add: link status of master object 0x8000
-  * dc cleanup
-  * fix: anti-windup default value
-  * change: sending high prio ethernet frame (cyclic data) and optionally a second low prio frame (mbx...)
-  * fix: odlist longer than given buffer
-  * add: coe master objects
-  * add: reading entries of std master objects
-  * add: example program
-  * working on example
-  * fix: add prio and affinity as option
-  * change: reduce memcpy
-  * misra: fixes
-  * change: code cleanup
-  * change: mutex priority inheritance
-  * cleanup: removed unused code part
-  * change: added eoe for supported slaves
-  * fix: parameter shadowing
-  * fix: print format data types
-  * fix: print format data types
-  * fix: print format data types
-  * cleanup: removed unused/unneeded code
-  * change: to stable libosal 0.0.1
-  * fix: async check of slaves and groups
-  * cleanup: log messages
-  * change: init of macs in file case
-  * cleanup: removed old commented code
-  * change: added some array initializer brackets
-  * change: building coe_object dict of master
-  * change: doing things in coe master dict more generic
-  * change: added some static
-  * add: cyclic group config to master dict
-  * add: master dict - cyclic group assignment
-  * fix: cycle_shift datatype
-  * fix: disable dc if not supported
-  * fix: master dict - passing index to callbacks
-  * fix: cycle_shift datatype
-  * fix: disable dc if not supported
-  * fix: receive times are unsigned
-  * fix: topology calculation
-  * fix: master dict - received times datatypes
-  * fix: receive times are unsigned
-  * fix: topology calculation
-  * cleanup: small dc cleanup
-  * Added a function to calculate length of objects
-  * fix: returning NULL if coe_object was not found in dictionary
-  * Added documentation to master dict get length
-  * change: add some verbose prints
-  * add: slave number to master object 0x3nnn
-  * fix: parameter shadowing
-  * fix: debug build with assertions
-  * changes to make coe master dict more misra compliant
-  * showing frame len in example_with_dc
-  * added polling mode impl
-  * using polling mode
-  * avoid busy waiting when in polling mode
-  * fix last sent byte count initialization
-  * fixed missing hw_device_send_finished
-  * fixed bytes last sent
-  * sending low prio frames in cyclic gap
-  * moved timer_override, now main_cycle_interval
-  * moved timer_override, now main_cycle_interval
-  * cleaned up tx routine
-  * removed extern func decl
-  * added foe download example
-  * simplification of hw_tx
-  * coe mailbox poll more often on wait
-  * returning error in hw_file if file does not exists
-  * quit when error on ec_open
-  * added missing define EC_ERROR_HW_NO_INTERFACE
-  * added doc header
-  * added define for bits of features register
-  * working on lrw supported/not supported
-  * removed mutex attr protocol inherit
-  * added lwr/lrd implementation if lrw is not supported by all slaves from group
-  * increased low prio wait threshold
-  * reset sent frame pointer to NULL
-  * hw_file made internal recv function static
-  * fixed calculation of roundtrip in example
-  * EoE scheduling read more often
-  * removed const qualifier
-  * include sys/ioctl.h only if existing
-  * skip ioctl's if we do not have ioctl's
-  * implemented mailbox sequence counter
-  * fixed FoE write loop
-  * elmo platinum hack
-  * added warning when port 0 is not the upstream port
-  * dont warn a eeprom checksum error on write
-  * fixed eepromtool and doing a ESC reset on successfull write
-  * reworked forward and backward port search
-  * removed debug log message
-  * fixed func call
+  * fix: strncpy on ifr_name
+  * inc: libosal dependency version
+  * add: debian11 build
+  * add: patch files for 15.6
+  * add: build of igc drivers
+  * add: 15.6 intel igc
+  * add: opensuse 15.4 intel igc
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * driver: patched igc for opensuse 15.5
+  * add patch for realtek_opensuse_15.5_5.14.21
+  * add: patch for intel_igb_opensuse_15.5_5.14.21
+  * add: igc driver for opensuse 15.5
   * Update README.md
-  * storing ethercat slave type
-  * removed port tests
-  * dc config cleanup
-  * removed dc_test stuff
-  * fixed pikeos parameter shadowing error
-  * cleaned up dc stuff
-  * added dc_mode_ref_clock option
-  * moved dc_active
-  * switched license to LGPL-V3 with the permission of the other contributors Jan Cremer, Florian Schmidt and Klaus Kunze
-  * further dc cleanup
-  * added kp and ki factor command line option
-  * fixed cmake build
-  * Update LICENSE
-  * trying some doxygen
-  * added progress on file write
-  * file download pretty progress output
-  * added log message on file read
-  * added command line parameters for read and write
-  * changed foe_download to foe_tool
-  * Updated doxygen
-  * added doxygen generation on gh-pages
-  * updated index
-  * doing some doc
-  * more doc
-  * removed @page
-  * fixed datatypes of common defines
-  * fixed printf with common datatypes
-  * fixed return value of write not ignored
-  * fixed minor printf format warnings
-  * fix: debian description
-  * switched to stable libosal
-  * removed unneeded  closing comment.
-  * using second lrd datagram to read mailbox state bits
-  * fix: mapping mailbox status bit
-  * fix: processing answer of lrw command to read mailbox status bits
-  * fix: only check wkc in safeop/op of mbx status bits
-  * fix: slave with no fmmu left for sm_state are dooing mailbox polling in short interval!
-  * changed loglevel when coe abort code occured
-  * better reset on al status error
-  * cleaned up with lrw/lrd/lwr and overlapping group mappings
-  * fix: shadowing act_state
-  * fix: working counter in lwr case
-  * fix: lrw size when not overlapping
-  * add: EoE function doc
-  * add: SEoE function doc
-  * cleanup: removed no longer used manually retreave mbx_state funcs
-  * change: 'const static' to 'static const'
-  * fixes some compiler warnings and pikeos-4.2 mods
-  * add pikeos-4.2 builds
-  * fix: rmc-build.yaml syntax
-  * fix: target_os detection
-  * reworked example with osal_trace
-  * fix: relative trace analyze
-  * add: cycle frequency command line option
-  * removed pikeos4.2-armv7hf-gcc5.5, it's only a link to pikeos4.2-armv7hf-gcc5
-  * fixed: ethercatdiag
-  * switched to develop
-  * change: try to integrate all supported hw_devices of OS in builds
-  * change: more hw device changes
-  * fix: device pikeos define
-  * fix: device sock-raw-mmaped data
-  * config sub for pikeos
-  * fix: pikeos header include
-  * fix: datagram initialization count
-  * add: master struct size info
-  * clean up: remove ec_device_t
-  * fix: windows printf
-  * fix: windows printf
-  * add: busy wait loop
-  * add: -h option to show help page
-  * fix: limits of elements that can be stored in master struct
-  * fix: string format
-  * fix: re-reading al status after error reset
-  * add: printing calculated working counter for groups
-  * fix: reset some dc registers and time control loop on dc_config
-  * fix: dc start value calculation
-  * fix: parameter shadowing of dcsof
   * Update README.md
-  * update to conan2 syntax
-  * fix for pikeos build on jenkins
-  * fix: devices for pikeos
-  * changed off_t to osal_off_t
+  * add: realtek driver for 15.5
+  * fix: polling settings for rtl8169 on opensuse 15.4
+  * fix: opensuse 15.4 drivers
+  * fix: ethercat_device_receive parameter mismatch
+  * fix: memcpy error when discarding const qualifier
+  * change: removed manual depmod
+  * fix: memcpy for dev_addr_mod workaround
+  * rename: debian buster driver path
+  * fix: dev_addr_mod for older kernels
+  * fix: makefile for shorted kernel version dirs
+  * change: moved opensuse kernel version dirs to shorter names
+  * Merge remote-tracking branch 'origin/release/0.6.0' into release/0.6.0-rename
+  * Merge branch 'release/0.6.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.6.0
+  * fix: length of object desc request
+  * fix: data length of object entry desc response
+  * change: renamed to ethercat_chrdev.ko and igb-ethercat.ko
+  * del: removed dups
+  * add: opensuse/15.5/5.14.21-150500.13.73-rt
+  * fix: opensuse kernel dir names
+  * fix: shutdown on ubuntu/jammy
+  * fix: opensuse/15.5/linux-5.14.21-150500.13.73-rt/intel/igb build
+  * add: missing makefiles
+  * add: missing makefiles
+  * patched: opensuse/15.6/linux-6.4.0-150600.10.14-rt/intel/igb
+  * change: kernel module makefile mod
+  * del: commented line
+  * fix: replace memcpy with dev_addr_mod
+  * fix: class_create changed in kernel >= 6.4.0
+  * fix: ubuntu igb driver polling mode
+  * fix: force depmod for kernel currently build
+  * fix: indenting
+  * fix: use netif_rx in monitor device because maybe we are in irq context
+  * change: only reopen adapter if polling mode has changed
+  * fix: parsing args for hw_file
+  * fix: file write finished
+  * add: log message on link detected
+  * add: ndo_eth_ioctl only for kernel >= 5.15.0
+  * change: ubuntu mods opening device with link_state
+  * Merge branch 'release/0.6.0' of https://rmc-github.robotic.dlr.de/common/libethercat into release/0.6.0
+  * add: igb ioctls for opensuse/15.5/linux-5.14.21-150500.13.73-rt
+  * add: get_link_state ioctl
+  * import: igb driver source for opensuse/15.6/linux-6.4.0-150600.10.14-rt
+  * patch: kernel igb driver for opensuse/15.5/linux-5.14.21-150500.13.73-rt
+  * add: unpatched opensuse/15.5/linux-5.14.21-150500.13.73-rt/intel/igb sources
+  * Merge branch 'master' into release/0.6.0
+  * change: open ethernet hardware on driver open call
+  * add: some polling mode ioctls
+  * change: driver ioctls now in separate file
+  * Merge pull request #26 from marcfir/feat/wkc_mismatch
+  * add: igb driver for debian/buster 5.10.149-rt76
+  * fix: doc of ec_mbx_check
+  * fix: typo in log message
+  * feat: Add option to skip copying of process data on wkc mismatch
+  * add: missing ubuntu Makefiles
+  * fix: remove wrong bracket
+  * Merge pull request #18 from common/release/0.6.0-ec-log
+  * Merge branch 'master' into release/0.6.0
+  * xMerge branch 'master' of https://rmc-github.robotic.dlr.de/common/libethercat
+  * Merge branch 'master' into release/0.6.0
+  * fix: unused func param
+  * fix: pikeos log printing
+  * Merge branch 'release/0.6.0' into release/0.6.0-ec-log
+  * fix: added 'extern "C"' to hw-layer header
+  * fix: setting user log func
+  * fix: ec_log functions now have pec pointer
+  * chore: setting to init before destruction
+  * fix: interface name length on copy to ifreq
+  * fix: printing foe read/write counter
+  * Merge pull request #21 from marcfir/feat/sync1
+  * feat: Use actiavtion reg 0x981 content to configure dc sync
+  * feat: Support the configuration of slaves to use only dc sync1
+  * fix: sock_raw_mmaped receive thread added
+  * Update soe.c
+  * Merge pull request #22 from marcfir/feat/tun_status
+  * feat: status code for ec_configure_tun
+  * fix: returning EC_OK on ec_soe_write
+  * fix: ambiguous error codes
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Merge pull request #17 from marcfir/master
+  * fix(cmake): Set correct preprocessor defines in CMake to enable/disable mbx functions
+  * fix: cleanup order
+  * fix: sock-raw layer receive thread
+  * Merge branch 'release/0.6.0'
+  * Merge pull request #13 from common/feat/mbx_options
+  * change: latest tests on dc-settling
+  * change: adding pool_type to hw send routines
+  * fix: passing pointer to vm_close
+  * add: close hw function pointers
+  * add: option to disable coe
+  * add: option to disable foe
+  * fix: format string
+  * Merge branch 'master' into feat/mbx_options
+  * Merge pull request #15 from common/feat/hw_rework
+  * Merge branch 'master' into feat/hw_rework
+  * Revert "Merge remote-tracking branch 'origin/feat/dc-pi-control-enhancement' into feat/hw_rework"
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Merge pull request #14 from marcfir/master
+  * feat(cmake): Use config.h to set the preprocessor device variables
+  * doc: Fix typo in cmake
+  * Merge remote-tracking branch 'origin/feat/dc-pi-control-enhancement' into feat/hw_rework
+  * fix issue #11
+  * chore: some dc settling mode improvements and setters
+  * add: settling mode for dc ref_clock mode
+  * fix: returning in foe_tool if hw layer failed!
+  * fix: printf format attribute
+  * fix: distributing headers
+  * Merge pull request #13 from marcfir/master
+  * Merge branch 'master' into feat/hw_rework
+  * fix: examples using hw devices
+  * Merge branch 'master' into feat/mbx_options
+  * fix(cmake) Use + separated list as configuration variable because ; breaks ExternalProject_Add
+  * add: rx thread for pikeos
+  * change: reworked pikeos stuff
+  * Merge branch 'master' into feat/hw_rework
+  * Merge branch 'master' into feat/hw_rework
+  * add: hardware layer rework
+  * add: option to disable mailbox EoE and SoE
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 29 Nov 2024 08:28:01 +0100
+
+libethercat (0.5.3) unstable; urgency=low
+
+  * change: foe_tool print to stdout if destination filename is obmitted
+  * change: foe_tool add quiet mode
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Merge pull request #10 from marcfir/master
+  * fix(hw): Restructure hw_open
+  * feat(cmake): Add HAVE_NETINET_IN_H
+  * feat(cmake): Allow multiple devices to be build
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * build: fix linker errors in enclustra setup
+  * fix: make printf platform independent
+  * Update README.md
+  * Merge pull request #12 from common/build-conan2_compatibility
+  * build: migrate options to conan2
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * Update hw.c
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Merge pull request #6 from marcfir/master
+  * fix(build_so): Make anon_cb an explicit function in dc.c
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * doc: return value of ec_set_state issue, fixes #4
+  * Merge pull request #3 from marcfir/master
+  * Add install command to cmake file
+  * Update README.md
+  * change: reading VERSION from project.properties in CMakeLists.txt
+  * Update eoe.h
+  * Update README.md
+  * Update doxygen-gh-pages.yml
+  * Update doxygen-gh-pages.yml
+  * Update doxygen-gh-pages.yml
+  * Create doxygen-gh-pages.yml
+  * Merge pull request #1 from marcfir/master
+  * Fix and improve the CMake building
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 31 Jul 2024 07:14:02 +0200
+
+libethercat (0.5.2) unstable; urgency=low
+
+  * Merge pull request #10 from common/fix/17_cycle_shift_signed
+  * fix: making cycle_shift unsigned
+  * fix: pikeos sbuf and legacy vm_read/vm_write
+  * fix: pikeos device name parsing
+  * add: linking libm on demand
+  * change: don't build example on pikeos for now
+  * change: pikeos using vm_read and vm_write as option
+  * fix: build for pikeos
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Update README.md
+  * Update README.md
+  * moved: drivers readme to linux subdir
+  * add: makefiles and eth driver detect script
+  * fix: tigon3 on debian bullseye compiling (untested)
+  * patch: first try to patch ethercat_polling to broadcom on debian bullseye
+  * patch: hacked broadcom drivers for debian bullseye, polling mode still missing
+  * imported: orig drivers/debian/bullseye/5.10.0-27-rt-amd64/broadcom
+  * update: DRIVERS doc
+  * moved: drivers readme
+  * Merge remote-tracking branch 'ethercat_device/driver_merge_subdir'
+  * move: everything to linux subidr
+  * fix: readded KERNEL_VERSION
+  * build: enable possibility to pass DRIVER_PATH to top-level Makefile
+  * fix: drivers/opensuse/15.4/5.14.21-150400.13-rt build
+  * fix: drivers/opensuse/15.4/5.14.21-150400.15.65-rt Makefiles
+  * change: using src variable from kernel makefile
+  * change: using src variable from kernel makefile
+  * Merge branch 'driver_merge' of rmc-github.robotic.dlr.de:burger-r/ethercat_device into driver_merge
+  * change: opensuse 15.4
+  * fix: mixed decl and code
+  * change: only do top level build
+  * change: only do top level build
+  * cleanup: drivers/opensuse/15.4/5.14.21-150400.15.65-rt
+  * import drivers/opensuse/15.4/5.14.21-150400.15.65-rt
+  * Merge branch 'driver_merge' of rmc-github.robotic.dlr.de:burger-r/ethercat_device into driver_merge
+  * fix: patch issue
+  * change: easier top level build
+  * rename: ommiting leap- prefix
+  * add: bash script to determine os/kernel
+  * patched: drivers/debian/bullseye/5.10.0-27-rt-amd64
+  * removed: not patching all intel stuff
+  * import: orig drivers/debian/bullseye/5.10.0-27-rt-amd64
+  * update: Makefiles
+  * import: drivers/debian/buster/4.19.0-18-rt-amd64
+  * import: drivers/debian/bullseye/5.10.0-14-rt-amd64/broadcom
+  * fix: indentation
+  * fix: indentation
+  * import: drivers/debian/bullseye/5.10.0-14-rt-amd64
+  * change: cleaned duplicate page_address
+  * import: drivers/ubuntu/jammy/5.15.0-1038-realtime
+  * fix: indentation
+  * update: intel igb opensuse/leap-15.3/5.3.18-150300.82-rt
+  * import: drivers/opensuse/leap-15.3/5.3.18-150300.82-rt
+  * import: drivers/opensuse/leap-15.4/5.14.21-150400.13-rt
+  * Merge pull request #1 from burger-r/feat/ethercat_polling
+  * fix: ignore 0x1C12 or 0x1C13 not existing while mapping (fixes #15)
+  * Aktualisieren von README.md
+  * Update README.md
+  * fixed for debian build
+  * add: debian release
+  * fix: permission violation when using userspace directly
+  * commented out CFLAGS
+  * fix: monitoring device, only set link to up to enable
+  * made local functions static
+  * cleaned up ethercat_device and monitor stuff
+  * changed constant to ioctl define
+  * added some doc
+  * Merge branch 'feat/ethercat_polling' of rmc-github.robotic.dlr.de:burger-r/ethercat_device into feat/ethercat_polling
+  * fixed cleaning on open
+  * cleaned up ethercat_device structure, defines for ioctl
+  * consuming frames on startup
+  * added ethercat polling for supported network devices
+  * add: deleting monitor device
+  * ioctl number gen
+  * add: ioctl number generation
+  * add: git ignores
+  * del: debug message
+  * add: imported ethercat device impl
+  * first commit
+
+ -- Burger, Robert <robert.burger@dlr.de>  Tue, 23 Apr 2024 13:51:47 +0200
+
+libethercat (0.5.1) unstable; urgency=low
+
   * updated README
+  * changed off_t to osal_off_t
+  * fix: devices for pikeos
+  * fix for pikeos build on jenkins
+  * update to conan2 syntax
+  * Update README.md
+  * fix: parameter shadowing of dcsof
+  * fix: dc start value calculation
+  * fix: reset some dc registers and time control loop on dc_config
+  * add: printing calculated working counter for groups
+  * fix: re-reading al status after error reset
+  * fix: string format
+  * fix: limits of elements that can be stored in master struct
+  * add: -h option to show help page
+  * Merge branch 'release/0.5.1' of https://rmc-github.robotic.dlr.de/common/libethercat into release/0.5.1
+  * add: busy wait loop
+  * fix: windows printf
+  * fix: windows printf
+  * clean up: remove ec_device_t
+  * add: master struct size info
+  * fix: datagram initialization count
+  * fix: pikeos header include
+  * config sub for pikeos
+  * fix: device sock-raw-mmaped data
+  * fix: device pikeos define
+  * change: more hw device changes
+  * change: try to integrate all supported hw_devices of OS in builds
+  * switched to develop
+  * Merge branch 'master' into release/0.5.1
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * fixed: ethercatdiag
+  * removed pikeos4.2-armv7hf-gcc5.5, it's only a link to pikeos4.2-armv7hf-gcc5
+  * add: cycle frequency command line option
+  * fix: relative trace analyze
+  * reworked example with osal_trace
+  * fix: target_os detection
+  * fix: rmc-build.yaml syntax
+  * add pikeos-4.2 builds
+  * fixes some compiler warnings and pikeos-4.2 mods
+  * change: 'const static' to 'static const'
+  * cleanup: removed no longer used manually retreave mbx_state funcs
+  * add: SEoE function doc
+  * add: EoE function doc
+  * fix: lrw size when not overlapping
+  * fix: working counter in lwr case
+  * fix: shadowing act_state
+  * cleaned up with lrw/lrd/lwr and overlapping group mappings
+  * better reset on al status error
+  * changed loglevel when coe abort code occured
+  * fix: slave with no fmmu left for sm_state are dooing mailbox polling in short interval!
+  * fix: only check wkc in safeop/op of mbx status bits
+  * fix: processing answer of lrw command to read mailbox status bits
+  * fix: mapping mailbox status bit
+  * using second lrd datagram to read mailbox state bits
+  * removed unneeded  closing comment.
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 07 Feb 2024 14:49:32 +0100
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 7 Feb 2024 14:38:41 +0100
 
-libethercat (0.2.6) testing; urgency=medium
+libethercat (0.5.0) unstable; urgency=low
 
-  * Initial Release.
+  * switched to stable libosal
+  * fix: debian description
+  * fixed minor printf format warnings
+  * Merge branch 'master' into release/0.5.0
+  * fixed return value of write not ignored
+  * fixed printf with common datatypes
+  * fixed datatypes of common defines
+  * Merge branch 'master' into release/0.5.0
+  * removed @page
+  * more doc
+  * doing some doc
+  * updated index
+  * added doxygen generation on gh-pages
+  * Merge branch 'release/0.5.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.5.0
+  * Updated doxygen
+  * changed foe_download to foe_tool
+  * added command line parameters for read and write
+  * added log message on file read
+  * file download pretty progress output
+  * added progress on file write
+  * trying some doxygen
+  * Update LICENSE
+  * fixed cmake build
+  * Merge pull request #7 from common/feat/lgpl-v3-switch
+  * Merge pull request #6 from common/feat/dc_rework
+  * added kp and ki factor command line option
+  * further dc cleanup
+  * switched license to LGPL-V3 with the permission of the other contributors Jan Cremer, Florian Schmidt and Klaus Kunze
+  * moved dc_active
+  * added dc_mode_ref_clock option
+  * cleaned up dc stuff
+  * fixed pikeos parameter shadowing error
+  * removed dc_test stuff
+  * dc config cleanup
+  * removed port tests
+  * storing ethercat slave type
+  * Update README.md
+  * fixed func call
+  * removed debug log message
+  * reworked forward and backward port search
+  * fixed eepromtool and doing a ESC reset on successfull write
+  * dont warn a eeprom checksum error on write
+  * added warning when port 0 is not the upstream port
+  * elmo platinum hack
+  * fixed FoE write loop
+  * implemented mailbox sequence counter
+  * skip ioctl's if we do not have ioctl's
+  * include sys/ioctl.h only if existing
+  * removed const qualifier
+  * EoE scheduling read more often
+  * fixed calculation of roundtrip in example
+  * hw_file made internal recv function static
+  * reset sent frame pointer to NULL
+  * increased low prio wait threshold
+  * added lwr/lrd implementation if lrw is not supported by all slaves from group
+  * removed mutex attr protocol inherit
+  * working on lrw supported/not supported
+  * added define for bits of features register
+  * Merge branch 'feat/ethercat_polling' of rmc-github.robotic.dlr.de:common/libethercat into feat/ethercat_polling
+  * added doc header
+  * added missing define EC_ERROR_HW_NO_INTERFACE
+  * Merge branch 'feat/ethercat_polling' of rmc-github.robotic.dlr.de:common/libethercat into feat/ethercat_polling
+  * quit when error on ec_open
+  * returning error in hw_file if file does not exists
+  * coe mailbox poll more often on wait
+  * simplification of hw_tx
+  * added foe download example
+  * removed extern func decl
+  * cleaned up tx routine
+  * moved timer_override, now main_cycle_interval
+  * moved timer_override, now main_cycle_interval
+  * sending low prio frames in cyclic gap
+  * fixed bytes last sent
+  * fixed missing hw_device_send_finished
+  * fix last sent byte count initialization
+  * avoid busy waiting when in polling mode
+  * Merge branch 'feat/show_hw_frame_len' into feat/ethercat_polling
+  * using polling mode
+  * added polling mode impl
+  * showing frame len in example_with_dc
+  * changes to make coe master dict more misra compliant
+  * fix: debug build with assertions
+  * fix: parameter shadowing
+  * Merge branch 'master-dict-rework'
+  * add: slave number to master object 0x3nnn
+  * change: add some verbose prints
+  * Added documentation to master dict get length
+  * fix: returning NULL if coe_object was not found in dictionary
+  * Added a function to calculate length of objects
+  * cleanup: small dc cleanup
+  * fix: master dict - received times datatypes
+  * fix: topology calculation
+  * fix: receive times are unsigned
+  * fix: master dict - passing index to callbacks
+  * fix: disable dc if not supported
+  * fix: cycle_shift datatype
+  * add: master dict - cyclic group assignment
+  * add: cyclic group config to master dict
+  * change: added some static
+  * change: doing things in coe master dict more generic
+  * change: building coe_object dict of master
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 31 Mar 2021 10:47:14 +0200
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 11 Aug 2023 12:53:10 +0200
+
+libethercat (0.4.2) unstable; urgency=low
+
+  * fix: topology calculation
+  * fix: receive times are unsigned
+  * fix: disable dc if not supported
+  * fix: cycle_shift datatype
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 9 Mar 2023 12:41:48 +0100
+
+libethercat (0.4.1) unstable; urgency=low
+
+  * Merge branch 'master' into release/0.4.1
+  * change: added some array initializer brackets
+  * cleanup: removed old commented code
+  * change: init of macs in file case
+  * cleanup: log messages
+  * fix: async check of slaves and groups
+  * change: to stable libosal 0.0.1
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 3 Mar 2023 13:21:44 +0100
+
+libethercat (0.4.0) unstable; urgency=low
+
+  * cleanup: removed unused/unneeded code
+  * fix: print format data types
+  * fix: print format data types
+  * fix: print format data types
+  * fix: parameter shadowing
+  * change: added eoe for supported slaves
+  * cleanup: removed unused code part
+  * change: mutex priority inheritance
+  * change: code cleanup
+  * misra: fixes
+  * change: reduce memcpy
+  * fix: add prio and affinity as option
+  * working on example
+  * add: example program
+  * add: reading entries of std master objects
+  * add: coe master objects
+  * fix: odlist longer than given buffer
+  * change: sending high prio ethernet frame (cyclic data) and optionally a second low prio frame (mbx...)
+  * fix: anti-windup default value
+  * dc cleanup
+  * Merge branch 'release/0.4.0' into release/0.4.0-dc-test
+  * add: link status of master object 0x8000
+  * fix: datatypes of master objects, address lists
+  * change: moved coe master stuff to separate file
+  * change: added first version of MDP 1100 master profile
+  * change: added packet duration for dc datagram
+  * change: removed tx_sync, not needed any more
+  * change: mailbox check timeouts in INIT/PREOP and SAFEOP/OP
+  * fix: get error code in sdo entry description
+  * change: waiting if interface was down to switch to runing state
+  * change: pikeos hw layer blocking
+  * change: do always initialize datagram headers
+  * change: reworked async_loop timeout management
+  * add: log messages for async_loop thread
+  * change: added configure pd group function
+  * change: added ec_configure_dc function
+  * dc test added
+  * change: control tx_sync via libethercat state machine
+  * Merge branch 'release/0.4.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.4.0
+  * change: do not release libtool la file
+  * change: better reinit of lrw/lwr/lrd datagrams
+  * fix: clearing last indicator of datagrams
+  * fix: force re-initialization of lrw/lrd/lwr datagrams if mapping is (re-)created
+  * fix: receive mbx_state non-blocking callback now
+  * fix: some changes for misra compliance
+  * cleanup: removed uneeded check
+  * Update README.md
+  * Update README.md
+  * change: datagrams are reused and not returned to pool for cyclic stuff
+  * fix: linker
+  * fix: compilation with mingw
+  * doc: dc doxygen fixes
+  * misra: some fixes
+  * change: some docs
+  * removed: had_timeout flag from cyclic_datagram, not used
+  * cleanup: callback stuff for cyclic datagrams
+  * change: some doc
+  * del: removed debug message
+  * Merge branch 'release/0.4.0' into release/0.4.0-rx-no-wait
+  * chagne: some doc
+  * add: debug option to configure
+  * change: doing more stuff in rx-thread, do not wait on cyclic frames
+  * change: reset only on non-stupid slave where al_status_code is not 0
+  * Merge branch 'release/0.4.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.4.0
+  * only set master state if state switch was a success
+  * Merge branch 'release/0.4.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.4.0
+  * add: printing slave features
+  * fix: read mailbox flag
+  * Merge branch 'release/0.4.0' of https://rmc-github.robotic.dlr.de/common/libethercat into release/0.4.0
+  * slave state machine lock
+  * fix: switching initially to init from other state
+  * fix: indent
+  * fix: better slave al err reset
+  * fix: misra compliance
+  * fix: read mbx use cyclic sm_state
+  * Merge branch 'release/0.4.0' of https://rmc-github.robotic.dlr.de/common/libethercat into release/0.4.0
+  * fix: sm_state fprd command when not mapped
+  * fix: parameter shadowing
+  * Merge branch 'release/0.4.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.4.0
+  * change: reading mbx state if not mapped
+  * fix: segfault when setting eoe
+  * fix: eepcftsta is 2 bytes
+  * fix: next try fixing type-punned pointer deref
+  * fix: pointer dereference
+  * reordered dc sync activatioN
+  * add: dc auto activation
+  * Merge branch 'release/0.4.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.4.0
+  * option to disable mapping of mbx sync manager status
+  * add: async check all slaves on state mismatch
+  * change: printing rx thread prio
+  * add: printing all config variables
+  * change: --with-x options instead of compiler defines
+  * fix: sending first dc frame
+  * change: pikeos mtu size
+  * add: log message on pikeos device open
+  * add: log messages for start/stop of rx thread
+  * fix: checking brd of al status
+  * fix: checking return value of binary sem timedwait
+  * integrated divisor and timeouts for groups/dcs/states
+  * change: libosal switched to unstable
+  * include cleanup
+  * fix: build target syntax
+  * add pikeos build
+  * add: pikeos hardware layer over shared memory buffers, lot of pikeos fixes
+  * change: lot of printf format fixes, some include fixes
+  * fix: another printf fix
+  * fix: printf format argument matching
+  * fix: made static dc_lock to struct member
+  * add: CoE emergency get function
+  * fix: CoE emergency message length and lock
+  * fix: bpf build, does not compile
+  * add: device mode builds
+  * fix: file device mode
+  * change: build device choose option
+  * change: set mmap poll timeout to 1 ms
+  * fix: reduced scope of pframe in receive func
+  * changed: device enabling behaviour
+  * fix: creation and destroying of async_loop
+  * fix: libosal changed to unstable
+  * add: conanfile options
+  * fix: undefined value
+  * fix: misra compliance
+  * change: splitted hw device layer
+  * add: more conanfile options
+  * fix: removed all allocation/free routines
+  * add: a lot of config defines
+  * change: removed more dynamic allocs
+  * Merge branch 'misra-2012-libosal-no-alloc' of rmc-github.robotic.dlr.de:common/libethercat into misra-2012-libosal-no-alloc
+  * better log output on timeout of first ecat packet
+  * test: using global mailbox buffers
+  * fix: config.h defines!
+  * fix: using retval of osal_semaphore_timedwait
+  * fix: static eeprom pdo entries
+  * fix: wkc double definition, brackets
+  * change: index is static now
+  * fix: include headers
+  * change: more removing malloc stuff
+  * change: doing index alloc static way
+  * change: using libosal from common
+  * Merge branch 'misra-2012-libosal' of rmc-github.robotic.dlr.de:common/libethercat into misra-2012-libosal
+  * fix: using timeout directly
+  * passing correct timeout datatype to osal_timer_init
+  * change: using mutexes instead of spinlocks
+  * rename async loop
+  * change: setting libosal task names
+  * style: format fix
+  * change: removed prio changing in thread func, done by osal
+  * change: removde pthread incldue
+  * add: missing mutex include
+  * change: using spinlock instead of mutex here
+  * change: add trywait to binary_semaphore
+  * change: using libosal semaphores now
+  * change: osal data typs
+  * change: removed own timer funcs and use them from libosal
+  * change: using timer timeout
+  * Merge branch 'misra-2012' into misra-2012-libosal
+  * change: latest rt changes
+  * change: libosal partial
+  * fix: return value of mbx funcs
+  * fix: cleanup and fixed all dc modes
+  * merge: branch 'misra-2012' of rmc-github.robotic.dlr.de:common/libethercat into misra-2012
+  * fix: return value of ec_mbx_receive
+  * fix: coe write transfer
+  * fix: start sync manager on mapping calculatioN
+  * fix: comment indent
+  * cleanup: cleaned up dc calculations
+  * change: dc frame retourne routine rework
+  * change: removed rtc_sto from dc time calculation, now directly subtracted from timer_prev
+  * add: missing memory impl
+  * fixes and work on dc sync
+  * fix: small fixes in calling get_state
+  * change: cleaned up timer funcs return values
+  * change: cleaned up tun device setup
+  * change: some pool improvements
+  * change: suppress false cppcheck error
+  * change: return value of mii funcs depend on return of fprd commands
+  * change: more misra
+  * change: more misra
+  * change: more misra
+  * change: more misra
+  * change: more misra
+  * change: more misra-c
+  * change: reworked error codes for index queue
+  * add: missing header include
+  * change: more misra fixes
+  * change: more misra fixes
+  * change: included missing error_codes header
+  * changes: misra for message_pool
+  * changes: a lot of misra fixes
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 20 Feb 2023 11:01:38 +0100
+
+libethercat (0.3.7) unstable; urgency=low
+
+  * Merge branch 'release/0.3.7' of rmc-github.robotic.dlr.de:common/libethercat into release/0.3.7
+  * fix: last changes regarding EoE
+  * Merge branch 'release/0.3.7' of rmc-github.robotic.dlr.de:common/libethercat into release/0.3.7
+  * Merge branch 'release/0.3.7' of rmc-github.robotic.dlr.de:common/libethercat into release/0.3.7
+  * fix: receiving EoE frame when no tun/tap device is configured
+  * fix: receiving EoE frame when no tun/tap device is configured
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 22 Nov 2022 06:48:50 +0100
+
+libethercat (0.3.6) unstable; urgency=low
+
+  * change: timeout decrease of socket
+  * FIX: breaking on init command processing
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 5 May 2022 07:09:41 +0200
+
+libethercat (0.3.5) unstable; urgency=low
+
+  * FIX: fragmented soe_write now working
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 6 Apr 2022 11:30:19 +0200
+
+libethercat (0.3.4) unstable; urgency=low
+
+  * CHANGE: printing notifications and unexpected read response
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 22 Mar 2022 07:35:25 +0100
+
+libethercat (0.3.3) unstable; urgency=low
+
+  * CHANGE: doing linux_default builds now
+  * FIX: soe init commands will be sent now
+  * FIX: soe function
+  * FIX: service field in coe header when putting a coe mailbox message
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 21 Mar 2022 07:34:39 +0100
+
+libethercat (0.3.2) unstable; urgency=low
+
+  * FIX: fixed #4, setting max loglevel on state switch error
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Mar 2022 13:23:46 +0100
+
+libethercat (0.3.1) unstable; urgency=low
+
+  * FIX: issue #1 opening non-existent network interface
+  * MERGE: branch 'release/0.3.0'
+  * MERGE: branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * MOVED: i
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Mar 2022 11:46:05 +0100
+
+libethercat (0.3.0) unstable; urgency=low
+
+  * FIX: distributed clocks init
+  * FIX: member rename
+  * MERGE: branch 'release/0.3.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.3.0
+  * CLEANUP: some unused code, some reorganization
+  * CHANGE: mailbox pool sizes
+  * FIX: small changes
+  * FIX: changed some mailbox log levels
+  * ADD: sanity check for mailbox support
+  * ADD: setting pointer p_entry to NULL
+  * FIX: shut down on too much frame miss
+  * DEL: uneeded include
+  * CHANGE: added a lot of assertions
+  * CHANGE: max consecutive missed frames added
+  * FIX: check for null, reading input mailbox not in OP
+  * CHANGE: increased log level to not scatter output to much
+  * FIX: latest changes for mbx send/recv buffers
+  * ADD: timeout to select on tun device
+  * MERGE: branch 'release/0.3.0' of rmc-github.robotic.dlr.de:common/libethercat into release/0.3.0
+  * ADD: timeout to select on tun device
+  * CHANGE: better error handling on sdo info reads
+  * FIX: strict aliasing rule
+  * CHANGE: seperate pool's for send and recv mailbox
+  * FIX: printing out EoE settings
+  * ADD: some doc
+  * REM: unused functions
+  * CHANGE: working on doxygen documentation
+  * CHANGE: new doxygen version
+  * FXI: log message format
+  * CHANGE: state switch log message
+  * ADD: checks getting free mailbox buffer
+  * CLEANUP: mailbox queueing stuff
+  * ADD: check pool macro for CoE
+  * FIX: mbx handler thread
+  * FIX: pool_get and added pool_put_head routine
+  * ADD: EoE response pool to distinguish between requests and frames/fragments
+  * FIX: coe answer message checks
+  * FIX: resetting pool user_cb, user_arg
+  * ADD: eoe_debug_print
+  * FIX: typo
+  * MERGE: branch 'eoe' of rmc-github.robotic.dlr.de:common/libethercat into eoe
+  * CHANGE: working on mbx handler thread
+  * FIX: pool wait
+  * ADD: eoe lock
+  * ADD: eoe sync sem
+  * ADD: field with actual slave state
+  * FIX: uninitialzed value
+  * FIX: uninitialzed value
+  * FIX: double free
+  * CHANGE: some doc and cleanup
+  * CHANGE: mailbox and EoE handling
+  * FIX: CoE return value in read
+  * ADD: set ip address of tun device directly from source
+  * FIX: set EoE ip request id
+  * FIX: FoE handling with new mailbox queues
+  * FIX: header include for old osl42 systems
+  * WORK: EoE implementation with tap device
+  * FIX: some improvements, should not busy-lock in waiting for coe answer now
+  * CLEANUP: moved some vars, checking sm_state in receive group
+  * CLEANUP: moved some vars, checking sm_state in receive group
+  * CHANGE: some cleanup
+  * ADD: queueing mailbox messages, handled in threads for each slave
+  * CHANGE: implemented first version of mbx send queue
+  * CHANGE: making pool more generic
+  * CHANGE: creating mailbox handler thread
+  * printing some coe messages
+  * FIX: debian dist
+  * FIX: debian version
+  * DEL: generated files
+  * DEL: generated files
+  * added debian package buld stuff
+  * FIX: compiler warning ignoring return values of write and missing mode on open
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 11 Nov 2021 08:55:01 +0100
+
+libethercat (0.2.6) unstable; urgency=low
+
+  * changed error log level
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 25 Mar 2020 07:45:22 +0100
+
+libethercat (0.2.5) unstable; urgency=low
+
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * changed perror log to print to ec_log
+  * more log message
+  * debug message shown on default
+  * fixed obj dict list length
+  * Revert "dc config enabled at end"
+  * updated build archs
+  * added author
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 25 Mar 2020 07:12:04 +0100
+
+libethercat (0.2.4) unstable; urgency=low
+
+  * installing la file
+  * using -version-info instead of release
+  * ingnoring const defines error
+  * Merge branch 'master' into eoe
+  * working on eoe
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 31 Oct 2019 09:27:54 +0100
+
+libethercat (0.2.3) unstable; urgency=low
+
+  * fixed bracket
+  * added seqm
+  * added osl15
+  * ported to new jenkins library
+  * fixed dc start delay
+  * removed to verbose logging
+  * calculating dc act_diff so that we are between [-1/2 cycle, 1/2 cycle]
+  * do not read beyond eeprom size
+  * changed logging level of sdo_abort
+  * Merge branch 'release/0.2.3' of rmc-github.robotic.dlr.de:common/libethercat into release/0.2.3
+  * added sdo abort with sdo request service
+  * fixed slave search count
+  * some logging for ftrace output
+  * added log on mbx error
+  * Merge branch 'release/0.2.3' of rmc-github.robotic.dlr.de:common/libethercat into release/0.2.3
+  * added better init error handling
+  * new conanfile version
+  * added dc lock and init of dc structures
+  * some sanity checks added
+  * created fmmus stuff
+  * conversion of eeprom size to byte
+  * dc config enabled at end
+  * disabled mmap packets ring
+  * state trans pending fix
+  * do not complain about wrong state during state transitions
+  * added ec_state_mismatch_cnt
+  * added state_transition_pending
+  * ring buffer init frame header
+  * using existing hw_lock
+  * locking sync hw_tx
+  * printing pagesize
+  * printing pagesize
+  * direct send frame
+  * fixed memset to invalid pointer
+  * rotating datagram buffer will not work, different threads, reverting
+  * testing datagram rotate
+  * testing datagram rotate
+  * added debug msg
+  * added debug msg
+  * added debug msg
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 23 Oct 2019 07:35:21 +0200
+
+libethercat (0.2.2) unstable; urgency=low
+
+  * debug msg
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 11 Apr 2019 12:55:16 +0200
+
+libethercat (0.2.1) unstable; urgency=low
+
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * added broadcast read of ec_state
+  * added todo
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 11 Apr 2019 11:00:54 +0200
+
+libethercat (0.2.0) unstable; urgency=low
+
+  * Merge pull request #2 from common/master
+  * removed comment
+  * one send of multiple frames if using ring buffer mode
+  * try to rework hw_tx routine
+  * try to use received datagram pointer directly
+  * making ec_datagram_t to a pointer in pool structure
+  * recalc frame start
+  * recalc frame start
+  * recalc frame start
+  * recalc frame start
+  * recalc frame start
+  * recalc frame start
+  * recalc frame start
+  * recalc frame start
+  * recalc frame start
+  * added debug output
+  * send impl with tx ring
+  * fixed gcc8 error on strncpy
+  * packet ring test
+  * fixed compiler issues with clang
+  * updated jenkins file
+  * updated build targets
+
+ -- Burger, Robert <robert.burger@dlr.de>  Tue, 2 Apr 2019 07:18:18 +0200
+
+libethercat (0.1.1) unstable; urgency=low
+
+  * Merge branch 'release/0.2.0'
+  * added shared option
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 15 Jan 2019 10:15:35 +0100
+
+libethercat (0.1.0) unstable; urgency=low
+
+  * added al status code error message
+  * Merge branch 'feature/conan'
+  * chore: conan integration
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat
+  * added set_dc_config function
+  * added config.h file for cmake
+  * fix: several changes from rtems branch
+  * add INSTALL file from /usr/share/autoconf of sled11
+  * remove old example main
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat
+  * fixed dc's when switching from safeop to preop and back to safeop
+  * fixed slave state machine
+  * fixed segfault when coe read error occured
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat
+  * fixed metrix++ warnings
+  * prep 0.1.beta12
+  * reworked some coe stuff, eeprom size check
+  * added length to emergency message queue item
+  * rewrite queue mailbox to only queue coe emergencies now
+  * prep 0.1.beta11
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat
+  * added mailbox message queueing
+  * fix: uninitialized warning
+  * fixed compiler error of gcc-6 int-in-bool-context
+  * fix: include order
+  * feat: added cmake for use with clion
+  * removed la from beeing installed
+  * prepare 0.1.beta9 release
+  * added c++ to satisfy rmpm
+  * prepare 0.1.beta8 release
+  * prepare 0.1.beta8 release
+  * changed to PT_ prefix
+  * inc version
+  * fixed distributed clocks sync mode 1
+  * removed unused .idea folder
+  * remoed tcl script for scosa
+  * removed cmake stuff
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat
+  * fixed documentation of return codes of coe functions
+  * inc beta version to 0.1.beta7
+  * removed not needed include of stdio.h
+  * fixed parsing TXPDO and RXPDO entries of eeprom
+  * new version
+  * merged
+  * vxworks compile fixes
+  * inc version, removed archs#
+  * added LIBS to project properties, removed deprecated SUPPORTED_ARCHS
+  * refactoring of project structure
+  * added libethercat.pt to ignores
+  * pt file generation
+  * vxworks headers added
+  * added mii read/write support to diag tool
+  * fixed help page on eeprom read/write tool
+  * better handling of distributed clocks sync
+  * fixed mii write
+  * removed log message on successfull foe fragment
+  * added MII read and write operations
+  * fixed some memory leaks freeing slave strutures
+  * fixed memory leak in ec_scan
+  * fixed memory leak in ec_scan
+  * fixed log message with not initialized values
+  * added eepromtool doc
+  * added eepromtool doc
+  * fixed write mode
+  * link tools static
+  * Merge branch 'autotools'
+  * added eepromtool
+  * Merge branch 'autotools' of https://rmc-github.robotic.dlr.de/burger-r/libethercat into autotools
+  * changes?
+  * added comment
+  * more doxygen work
+  * more work on doxygen docu
+  * more doxygen work
+  * reverted ethercatdiag to a working one...
+  * Merge branch 'scosa'
+  * Merge branch 'autotools'
+  * doxygen work on soe files
+  * fixed foe in boot mode, writing ethercat firmware efw files directly
+  * fixed cycle shift in dc_mode_master_as_ref_clock
+  * fixed cycle shift in dc_mode_master_as_ref_clock
+  * fixed indent
+  * added third dc sync mode: distribute master clock as dc ref clock
+  * fixed abs
+  * removed idea
+  * fixed strange scosa drift
+  * st
+  * Merge branch 'autotools' of rmc-github.robotic.dlr.de:burger-r/libethercat into scosa
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat into scosa
+  * scosa changes
+  * some code cleanup
+  * increases frame return timeout
+  * additional fixes in slave state transitions
+  * reworked set_state to use state transitions instead
+  * removed wrong libdir definition
+  * added silent-rules
+  * added libs to pc-file
+  * Merge branch 'master' of https://rmc-github.robotic.dlr.de/burger-r/libethercat into autotools
+  * updated to master
+  * changed to full autotools buld
+  * changed scripts to git
+  * found network device on zedboard
+  * fixed includes order
+  * removed flags for arm rtems compiler
+  * re-added moved files
+  * fixed project structure
+  * compiles and links on rtems-arm
+  * compiles for zynqboard, does not link
+  * added __USE_BPF__ flag
+  * added bpf stuff
+  * added license file
+  * test
+  * added continue on error in receive thread
+  * new beta2 version build
+  * fixed coe sdo reading and writing return value handling
+  * working on element description call
+  * added error codes as return values for coe calls
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 15 Jan 2019 09:53:58 +0100
+
+libethercat (0.0.6) unstable; urgency=low
+
+  * increased version
+  * fixed uninitailized values
+  * fixed double free
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 9 Mar 2017 07:11:41 +0100
+
+libethercat (0.0.5) unstable; urgency=low
+
+  * prep 0.0.5
+  * fixed segfault when no mailbox was present
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 13 Feb 2017 09:19:37 +0100
+
+libethercat (0.0.4) unstable; urgency=low
+
+  * prep 0.0.4
+  * added grant_cap_net_raw
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 13 Feb 2017 08:41:40 +0100
+
+libethercat (0.0.3) unstable; urgency=low
+
+  * inc version
+  * inc version
+  * inc version
+  * fixed pthread flags
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat
+  * added better lrw calculation, faster parallel startup
+  * specify -pthread and -lpthread
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 2 Feb 2017 13:17:57 +0100
+
+libethercat (0.0.2) unstable; urgency=low
+
+  * fixed order of init commands
+  * sorting init commands with simple queue
+  * changed LIST to TAILQ for init commands
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 7 Dec 2016 14:44:20 +0100
+
+libethercat (0.0.1) unstable; urgency=low
+
+  * fixed cross build, added pic library target
+  * removed unused include
+  * added strndup function for vxworks
+  * added m4 dirs to aclocal_amflags
+  * generating pt file
+  * dlr cross build works
+  * added submodule scripts
+  * added doxygen-doc to gitignore
+  * reformatted soe
+  * doxygen work
+  * some reformatting
+  * some work on indices and some checks in coe
+  * add some doxygen documentation
+  * restructured some headers and sdded some docs
+  * fixed compiler warnings fixed memory leak not freeing pdo->entries
+  * added idx in separate files
+  * Merge branch 'master' of http://rmc-github.robotic.dlr.de/burger-r/libethercat
+  * added diag test program
+  * some mods, not working now
+  * added doxygen generation from autotools
+  * added license text
+  * added pkg-config file
+  * added install rule for headers
+  * added ignores
+  * changed project structure, added src directory
+  * added autotools needed files
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:burger-r/libethercat
+  * Initial commit
+  * fixed build
+  * added autotool build system
+  * added libethercat files
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 25 Nov 2016 10:25:47 +0100
+
