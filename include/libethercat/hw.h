@@ -67,7 +67,7 @@
  * @{
  */
 
-#define ETH_P_ECAT      (0x88A4)        //!< \brief Ethertype for EtherCAT.
+#define ETH_P_ECAT      ((osal_uint16_t)0x88A4u)        //!< \brief Ethertype for EtherCAT.
 
 // forward decl
 struct ec;
