@@ -56,7 +56,7 @@ typedef struct hw_stm32 {
 } hw_stm32_t;
 
 // HTONS MACRO -> configured in config.h (libethcat)
-#ifndef
+#if 0
 #define HTONS(x) (((x) << 8) | ((x) >> 8))
 #define htons(x) (((x) << 8) | ((x) >> 8))
 #endif
