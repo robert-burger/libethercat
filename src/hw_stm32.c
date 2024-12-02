@@ -129,6 +129,7 @@ int hw_device_stm32_close(struct hw_common *phw) {
 
     struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
 
+    (void)phw_stm32;
     //phw_stm32->rxthreadrunning = 0;
     //osal_task_join(&phw_stm32->rxthread, NULL);
 
@@ -179,7 +180,7 @@ int hw_device_stm32_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) {
     pframe = (ec_frame_t *)phw_stm32->send_frame;
 
     // reset length to send new frame
-    pframe->ethertype = HTONS(ETH_P_ECAT);
+    pframe->ethertype = htons(ETH_P_ECAT);
     pframe->type = 0x01;
     pframe->len = sizeof(ec_frame_t);
 
@@ -259,6 +260,7 @@ void hw_device_stm32_send_finished(struct hw_common *phw) {
         phw_stm32->common.bytes_last_sent = phw_stm32->common.bytes_sent;
         phw_stm32->common.bytes_sent = 0;
 
+        (void)hw_device_stm32_recv(phw);
         //hw_device_stm32_recv_internal(phw_stm32);
     //}
 }
