@@ -55,8 +55,11 @@ typedef struct hw_stm32 {
     osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
 } hw_stm32_t;
 
-// HTONS MACRO
+// HTONS MACRO -> configured in config.h (libethcat)
+#ifndef
 #define HTONS(x) (((x) << 8) | ((x) >> 8))
+#define htons(x) (((x) << 8) | ((x) >> 8))
+#endif
 
 //! Opens EtherCAT hw device.
 /*!
