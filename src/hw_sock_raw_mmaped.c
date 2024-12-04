@@ -225,7 +225,9 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
         ec_log(10, "HW_OPEN", "binding raw socket to %s\n", devname);
 
         (void)memset(&ifr, 0, sizeof(ifr));
-        (void)strncpy(ifr.ifr_name, devname, min(strlen(devname), IFNAMSIZ - 1));
+        size_t copy_len = min(strlen(devname), IFNAMSIZ - 1);
+        (void)memset(ifr.ifr_name, 0, IFNAMSIZ);
+        (void)memcpy(ifr.ifr_name, devname, copy_len);
         ioctl(phw_sock_raw_mmaped->sockfd, SIOCGIFMTU, &ifr);
         phw_sock_raw_mmaped->common.mtu_size = ifr.ifr_mtu;
         ec_log(10, "hw_open", "got mtu size %d\n", phw_sock_raw_mmaped->common.mtu_size);
