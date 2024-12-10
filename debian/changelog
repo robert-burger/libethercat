@@ -1,9 +1,19 @@
+libethercat (0.6.3) unstable; urgency=low
+
+  * fix: eeprom size up to 64kB
+  * fix: copying ifname to ifr
+  * add: git changelog gen script
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 10 Dec 2024 06:15:18 +0100
+
 libethercat (0.6.2) unstable; urgency=low
 
+  * fix: debian rules duplicate rule
+  * update: changelog for 0.6.2
   * bump: 0.6.2
   * update: changelog for 0.6.1
 
- -- Robert Burger <robert.burger@dlr.de>  Sat, 30 Nov 2024 09:35:56 +0100
+ -- Robert Burger <robert.burger@dlr.de>  Sat, 30 Nov 2024 09:36:46 +0100
 
 libethercat (0.6.1) unstable; urgency=low
 
