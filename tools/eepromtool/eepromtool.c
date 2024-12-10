@@ -73,6 +73,9 @@ enum tool_mode {
 };
 
 struct ec ec;
+            
+#define bigbuf_len  65536
+uint8_t bigbuf[bigbuf_len];
 
 int main(int argc, char **argv) {
     int ret, slave = -1, i;
@@ -187,8 +190,6 @@ int main(int argc, char **argv) {
         default: 
             break;
         case mode_read: {
-            uint8_t bigbuf[2048];
-            size_t bigbuf_len = 2048;
             ec_eepromread_len(&ec, slave, 0, (uint8_t *)bigbuf, bigbuf_len);
 
             if (fn) {
@@ -211,8 +212,6 @@ int main(int argc, char **argv) {
             break;
         }
         case mode_write: {
-            uint8_t bigbuf[2048];
-            size_t bigbuf_len = 2048;
             int bytes;
             uint16_t wkc;
             
@@ -223,7 +222,7 @@ int main(int argc, char **argv) {
             } else
                 bytes = read(0, bigbuf, bigbuf_len);
             
-            ec_eepromwrite_len(&ec, slave, 0, (uint8_t *)bigbuf, bigbuf_len);
+            ec_eepromwrite_len(&ec, slave, 0, (uint8_t *)bigbuf, bytes);
                 
             ec_log(10, "EEPROM WRITE", "slave %2d: try to reset PDI\n", slave);
             osal_uint8_t reset_vals[] = { (osal_uint8_t)'R', (osal_uint8_t)'E', (osal_uint8_t)'S' };
