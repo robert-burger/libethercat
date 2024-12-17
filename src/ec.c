@@ -1132,7 +1132,7 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     }
 
     ec_log(10, "MASTER_OPEN", "libethercat version          : %s\n", LIBETHERCAT_VERSION);
-    ec_log(10, "MASTER_OPEN", "  MAX_SLAVES                 : %" PRIi64 "\n", LEC_MAX_SLAVES);
+    ec_log(10, "MASTER_OPEN", "  MAX_SLAVES                 : %" PRIu64 "\n", LEC_MAX_SLAVES);
     ec_log(10, "MASTER_OPEN", "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
     ec_log(10, "MASTER_OPEN", "  MAX_PDLEN                  : %" PRIi64 "\n", LEC_MAX_PDLEN);
     ec_log(10, "MASTER_OPEN", "  MAX_MBX_ENTRIES            : %" PRIi64 "\n", LEC_MAX_MBX_ENTRIES);
