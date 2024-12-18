@@ -1,6 +1,7 @@
 //! ethercat master
 /*!
  * author: Robert Burger
+ * author: Marcel Beausencourt
  *
  * $Id$
  */
@@ -72,6 +73,11 @@
 #define max(a, b) \
     ((a) > (b) ? (a) : (b))
 #endif
+
+//convert integers into strings for printing the values defined in config.h
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 
 //#define LIBETHERCAT_DEBUG
 
@@ -1131,7 +1137,9 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
         ret = ec_async_loop_create(&pec->async_loop, pec);
     }
 
-    ec_log(10, "MASTER_OPEN", "libethercat version          : %s\n", LIBETHERCAT_VERSION);
+    ec_log(10, "MASTER_OPEN", "  libethercat version        : %s\n", LIBETHERCAT_VERSION);
+    ec_log(10, "MASTER OPEN", "  MAX_SLAVES                 : %s\n", LIBETHERCAT_MAX_SLAVES_STRING);
+    ec_log(10, "MASTER_OPEN", "  MAX_SLAVES                 : %s\n", TOSTRING(LEC_MAX_SLAVES));
     ec_log(10, "MASTER_OPEN", "  MAX_SLAVES                 : %" PRIu64 "\n", LEC_MAX_SLAVES);
     ec_log(10, "MASTER_OPEN", "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
     ec_log(10, "MASTER_OPEN", "  MAX_PDLEN                  : %" PRIi64 "\n", LEC_MAX_PDLEN);
