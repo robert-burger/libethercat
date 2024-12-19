@@ -52,6 +52,7 @@
 #ifdef LIBETHERCAT_MAX_SLAVES
 //! Maximum number of EtherCAT slaves supported.
 #define LEC_MAX_SLAVES                      ( (osal_size_t)LIBETHERCAT_MAX_SLAVES )
+#define LEC_MAX_SLAVES_STRING 				TOSTRING(LIBETHERCAT_MAX_SLAVES)
 #else
 //! Maximum number of EtherCAT slaves supported.
 #define LEC_MAX_SLAVES                      ( (osal_size_t)     256u)
