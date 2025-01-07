@@ -150,15 +150,14 @@ int hw_device_stm32_recv(struct hw_common *phw) {
 
     // new code MB
     void *app_buff;
-    if(HAL_ETH_ReadData(&heth, &app_buff) != HAL_OK) // func in ...hal_eth.c
-    {
-        return EC_ERROR_UNAVAILABLE; // maybe write some other ERROR code in the error_code.h!?
-    }
-    else
+    if (	(HAL_ETH_ReadData(&heth, &app_buff) == HAL_OK) && // func in ...hal_eth.c
+    		(app_buff != NULL) )
     {
         hw_process_rx_frame(phw, app_buff);
         return EC_OK;
     }
+
+    return EC_ERROR_UNAVAILABLE; // maybe write some other ERROR code in the error_code.h!?
 }
 
 //! Get a free tx buffer from underlying hw device.
