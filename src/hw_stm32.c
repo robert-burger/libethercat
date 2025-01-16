@@ -237,6 +237,8 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
         }
     } while (errval == ETH_ERR_NO_BUFFER);
 
+    phw_stm32->common.bytes_sent += frame_len;
+
     return ret;
 }
 
