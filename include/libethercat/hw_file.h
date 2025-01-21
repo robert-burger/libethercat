@@ -54,6 +54,9 @@ typedef struct hw_file {
     // receiver thread settings in non-polling mode
     osal_task_t rxthread;                   //!< receiver thread handle
     int rxthreadrunning;                    //!< receiver thread running flag
+                                            
+    int frames_send;
+
 } hw_file_t;
 
 #ifdef __cplusplus

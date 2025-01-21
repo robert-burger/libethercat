@@ -77,7 +77,7 @@ void hw_device_file_send_finished(struct hw_common *phw);
 int hw_device_file_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 int hw_device_file_close(struct hw_common *phw);
 
-static void hw_device_file_recv_internal(struct hw_file *phw_file);
+static osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file);
 static void *hw_device_file_rx_thread(void *arg);
 
 //! Opens EtherCAT hw device.
@@ -220,6 +220,8 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
         }
     }
 
+    phw_file->frames_send = 0;
+
     return ret;
 }
 
@@ -242,7 +244,9 @@ int hw_device_file_close(struct hw_common *phw) {
     return ret;
 }
 
-void hw_device_file_recv_internal(struct hw_file *phw_file) {
+osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file) {
+    osal_bool_t ret = OSAL_FALSE;
+
     // cppcheck-suppress misra-c2012-11.3
     ec_frame_t *pframe = (ec_frame_t *) &phw_file->recv_frame;
 
@@ -251,7 +255,10 @@ void hw_device_file_recv_internal(struct hw_file *phw_file) {
 
     if (bytesrx > 0) {
         hw_process_rx_frame(&phw_file->common, pframe);
+        ret = OSAL_TRUE;
     }
+
+    return ret;
 }
 
 //! receiver thread
@@ -270,7 +277,7 @@ void *hw_device_file_rx_thread(void *arg) {
     ec_log(10, "HW_FILE_RX", "receive thread running (prio %d)\n", rx_prio);
 
     while (phw_file->rxthreadrunning != 0) {
-        hw_device_file_recv_internal(phw_file);
+        (void)hw_device_file_recv_internal(phw_file);
     }
     
     ec_log(10, "HW_FILE_RX", "receive thread stopped\n");
@@ -359,7 +366,10 @@ int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t po
         ret = EC_ERROR_HW_SEND;
     }
     
-    phw_file->common.bytes_sent += bytestx;
+    if (ret == EC_OK) {
+        phw_file->common.bytes_sent += bytestx;
+        phw_file->frames_send++;
+    }
 
     return ret;
 }
@@ -375,14 +385,20 @@ void hw_device_file_send_finished(struct hw_common *phw) {
     
     // in case of polling do receive now
     if (phw_file->polling_mode == OSAL_TRUE) {
-        // sleep a little bit (at least packet-on-wire-duration)
-        // 10 [ns] per bit on 100 Mbit/s Ethernet.
-        //uint64_t packet_time = 10 * 8 * phw->bytes_sent; 
-        //osal_sleep(packet_time * 0.4);
-        phw_file->common.bytes_last_sent = phw_file->common.bytes_sent;
-        phw_file->common.bytes_sent = 0;
+        while (phw_file->frames_send > 0) {
+            // sleep a little bit (at least packet-on-wire-duration)
+            // 10 [ns] per bit on 100 Mbit/s Ethernet.
+            //uint64_t packet_time = 10 * 8 * phw->bytes_sent; 
+            //osal_sleep(packet_time * 0.4);
+            phw_file->common.bytes_last_sent = phw_file->common.bytes_sent;
+            phw_file->common.bytes_sent = 0;
 
-        hw_device_file_recv_internal(phw_file);
+            if (hw_device_file_recv_internal(phw_file) == OSAL_FALSE) {
+                break;
+            }
+
+            phw_file->frames_send--;
+        }
     }
 }
 
