@@ -8,9 +8,5 @@ var structec__dc__info__slave =
     [ "next", "structec__dc__info__slave.html#af62aadba96b24e06b6dd3c266ea135b5", null ],
     [ "prev", "structec__dc__info__slave.html#ad22e22a9ea7ebc51522cd32eed3e36fa", null ],
     [ "receive_times", "structec__dc__info__slave.html#a63a09dd7d0c3e15f5d508bb400c3df2a", null ],
-    [ "t_delay_childs", "structec__dc__info__slave.html#a270c605fc0f80500898205df4845e4b9", null ],
-    [ "t_delay_parent_previous", "structec__dc__info__slave.html#a97706c4ca9b308b0968142083db72962", null ],
-    [ "t_delay_slave", "structec__dc__info__slave.html#a9cd826193101df9869bb0952e355b3c9", null ],
-    [ "t_delay_with_childs", "structec__dc__info__slave.html#ab9ddfb6470b2981a4b9a73d832967915", null ],
     [ "use_dc", "structec__dc__info__slave.html#a5b6230537f16b46cb3bd53e4f6f55d77", null ]
 ];

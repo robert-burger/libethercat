@@ -89,5 +89,5 @@ var group__coe__group =
     [ "ec_coe_sdo_entry_desc_read", "group__coe__group.html#gafd49d8a1c772f80f409acb71d8212f9a", null ],
     [ "ec_coe_sdo_read", "group__coe__group.html#gadda05b5d99e3ff5cd52637041b6b163b", null ],
     [ "ec_coe_sdo_write", "group__coe__group.html#ga46b937f1a97d7de356ed16aa97881866", null ],
-    [ "get_sdo_info_error_string", "group__coe__group.html#ga4617f7c84a82d831948d1138792039a0", null ]
+    [ "get_sdo_info_error_string", "group__coe__group.html#gaf4b29be17f0d291cdae3921367d8a43b", null ]
 ];

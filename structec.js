@@ -5,8 +5,6 @@ var structec =
     [ "consecutive_max_miss", "structec.html#a3e64471442d0a393c711d615ed236686", null ],
     [ "dc", "structec.html#a3542b6b4892386fdc14a7c248028988d", null ],
     [ "dg_entries", "structec.html#aa6db1522fd0130c785cdd02715f72b70", null ],
-    [ "ec_log_func", "structec.html#a565c3ff59d812143360863e5daf741f1", null ],
-    [ "ec_log_func_user", "structec.html#af168b33cfc48dc2dc7a532707db485e7", null ],
     [ "eeprom_log", "structec.html#ae91d314e7723e67cbf09868646223dae", null ],
     [ "idx_q", "structec.html#a8de902dd15e6d78550f94931c2266977", null ],
     [ "main_cycle_interval", "structec.html#a9369057b9d52db712bac3b11d1746631", null ],

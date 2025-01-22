@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['servodrive_20over_20ethercat_20_28soe_29_1502',['Servodrive over EtherCAT (SoE)',['../group__soe__group.html',1,'']]],
-  ['slave_1503',['Slave',['../group__slave__group.html',1,'']]]
+  ['registers_0',['Registers',['../group__regs__group.html',1,'']]]
 ];

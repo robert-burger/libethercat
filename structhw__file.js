@@ -1,6 +1,5 @@
 var structhw__file =
 [
-    [ "common", "structhw__file.html#a4fe853434650ea76e8c1aa1ef5a9a8b2", null ],
     [ "fd", "structhw__file.html#a0dc72f6dd96c4cc7e4bb017c780dcdb7", null ],
     [ "polling_mode", "structhw__file.html#ab66f841b0dc690708d49cc5118ed9321", null ],
     [ "recv_frame", "structhw__file.html#a822ce5d2f216b92c14adba797b404d6a", null ],

@@ -25,26 +25,8 @@
 var NAVTREE =
 [
   [ "libethercat - an embeddable realtime EtherCAT-master library", "index.html", [
-    [ "libethercat", "index.html", [
-      [ "Network device access", "index.html#autotoc_md1", null ],
-      [ "Legal notices", "index.html#autotoc_md2", [
-        [ "Usage", "index.html#autotoc_md3", null ],
-        [ "Build from source", "index.html#autotoc_md4", [
-          [ "Prerequisites", "index.html#autotoc_md5", null ],
-          [ "CMake", "index.html#autotoc_md6", [
-            [ "Configuration parameters", "index.html#autotoc_md7", null ]
-          ] ]
-        ] ],
-        [ "Tools", "index.html#autotoc_md8", [
-          [ "eepromtool", "index.html#autotoc_md9", [
-            [ "read eeprom", "index.html#autotoc_md10", null ],
-            [ "write", "index.html#autotoc_md11", null ],
-            [ "example_with_dc", "index.html#autotoc_md12", null ]
-          ] ]
-        ] ]
-      ] ]
-    ] ],
-    [ "Modules", "modules.html", "modules" ],
+    [ "libethercat", "index.html", "index" ],
+    [ "Topics", "topics.html", "topics" ],
     [ "Data Structures", "annotated.html", [
       [ "Data Structures", "annotated.html", "annotated_dup" ],
       [ "Data Structure Index", "classes.html", null ],
@@ -71,12 +53,10 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"group__coe__group.html#ggadf764cbdea00d65edcd07bb9953ad2b7acaeefbfe1d251bc417422255dded7aa3",
-"group__eoe__group.html#gab66a107d17bb966a7e8bf439564413d1",
-"group__mailbox__group.html#gad0aef8f5b2ebba089fd2baeb8fd1bc52",
-"group__soe__group.html#gga513359a2f3fcda3cd0ed19a2f2afea18a191a326067eb0c76bc81c1915ad55f45",
-"structec__fw__update.html#a65a3619753f84672d407ed2679f46ea3",
-"structpool.html#ad5fcb392e51562ee1b56a9637831e2cd"
+"group__ec__group.html#gacd11d2df6293ead910b1b24d179632ff",
+"group__regs__group.html#ga8b7d44017dd4da19a7abb8b819ac4111",
+"structec__dc__info.html#aef0820a407c8c658abaca711153e8e51",
+"structeeprom__info.html#a86faf60d995795d744959a423bd92a53"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

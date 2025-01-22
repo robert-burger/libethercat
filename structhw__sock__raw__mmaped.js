@@ -1,6 +1,5 @@
 var structhw__sock__raw__mmaped =
 [
-    [ "common", "structhw__sock__raw__mmaped.html#ab0f8bf676ac1b990d80f4cc0a473424d", null ],
     [ "mmap_packets", "structhw__sock__raw__mmaped.html#ac1da5b4e0e40334159ddfd82d4a6683e", null ],
     [ "recv_frame", "structhw__sock__raw__mmaped.html#a6954932986fcb5dfb8242a028ad3cb45", null ],
     [ "rx_ring", "structhw__sock__raw__mmaped.html#a3fcca512615e0f11ddedba2f0f44d7eb", null ],

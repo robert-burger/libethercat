@@ -29,9 +29,5 @@ var common_8h =
     [ "LEC_MAX_SLAVE_SM", "common_8h.html#a5b1569c5c4da429dd26c99af9fd75f5e", null ],
     [ "LEC_MAX_SLAVES", "common_8h.html#ac43bab8f7addf416e03e404652cbebc4", null ],
     [ "LEC_MAX_STRING_LEN", "common_8h.html#a484bd8ce2cf24db229f07c15f7669c35", null ],
-    [ "min", "common_8h.html#ac6afabdc09a49a433ee19d8a9486056d", null ],
-    [ "PACKED", "common_8h.html#a36d525cf4d116b2fe4ecc00222b256f1", null ],
-    [ "ec_data_t", "common_8h.html#a3fe42825c2bb9f73f2fa609ad374064d", null ],
-    [ "ec_pd_t", "common_8h.html#ab8ee7afe8283ff75c0429cfec3f6fc31", null ],
-    [ "ec_state_t", "common_8h.html#a25a86121d49d094e5c683abc4e28101d", null ]
+    [ "ec_pd_t", "common_8h.html#ab8ee7afe8283ff75c0429cfec3f6fc31", null ]
 ];

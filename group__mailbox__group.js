@@ -22,7 +22,6 @@ var group__mailbox__group =
       [ "seq_counter", "structec__mbx.html#ab2a005e2f40a5a01636d2b93a4571fd8", null ],
       [ "slave", "structec__mbx.html#aea6919b8c09922364a997085ac5710bc", null ],
       [ "sm_state", "structec__mbx.html#a91f6b5080e4e7438db0383b22b37ac0b", null ],
-      [ "sm_state_bitno", "structec__mbx.html#ae4219e4c1792e157266af4b7f923efd2", null ],
       [ "sync_mutex", "structec__mbx.html#a3f0dae6b4fce4e3cedfc011e88ad0e4b", null ],
       [ "sync_sem", "structec__mbx.html#ab5834cc5e73fc1a18aac5490c261ff1b", null ]
     ] ],

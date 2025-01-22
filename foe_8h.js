@@ -31,7 +31,6 @@ var foe_8h =
     [ "EFW_CMD_WRCODECHKSUM", "group__foe__group.html#gab734c9c513a829d454df0b937c01d274", null ],
     [ "MAX_ERROR_TEXT_SIZE", "group__foe__group.html#ga7f7619744439b9942bb0cbcaa6245031", null ],
     [ "MAX_FILE_NAME_SIZE", "group__foe__group.html#ga0887cab1acf8e238e6777ab604ed7044", null ],
-    [ "ec_foe_t", "group__foe__group.html#gaeac115cb1ed322e130dc170574f10ef7", null ],
     [ "ec_fw_update_t", "group__foe__group.html#ga5ef5769a2514316da4c49239ab4c1564", null ],
     [ "ec_foe_deinit", "group__foe__group.html#ga1a640129ef0ab328b2d479694b6a9eb3", null ],
     [ "ec_foe_enqueue", "group__foe__group.html#ga3bbe728c41837257a99313e214528aab", null ],
