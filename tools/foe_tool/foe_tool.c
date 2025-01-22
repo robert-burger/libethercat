@@ -268,7 +268,11 @@ int main(int argc, char **argv) {
         int local_ret = fread(string, fsize, 1, f);
         if (local_ret == 0) {
             printf("waring got 0 bytes from file!\n");
+        } else if (local_ret < 0) {
+            printf("error reading file %s\n", first_fn);
+            exit(-1);
         }
+
         fclose(f);
 
         string[fsize] = 0;
