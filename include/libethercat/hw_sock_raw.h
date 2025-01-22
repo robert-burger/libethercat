@@ -57,6 +57,10 @@ typedef struct hw_sock_raw {
     int rxthreadrunning;            //!< receiver thread running flag
 } hw_sock_raw_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
@@ -68,6 +72,10 @@ typedef struct hw_sock_raw {
  * \return 0 or negative error code
  */
 int hw_device_sock_raw_open(struct hw_sock_raw *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpu_mask);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LIBETHERCAT_HW_SOCK_RAW_H
 

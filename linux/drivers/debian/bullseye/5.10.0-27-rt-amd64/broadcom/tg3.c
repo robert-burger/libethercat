@@ -95,7 +95,7 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
 #define tg3_flag_clear(tp, flag)			\
 	_tg3_flag_clear(TG3_FLAG_##flag, (tp)->tg3_flags)
 
-#define DRV_MODULE_NAME		"tg3-libethercat"
+#define DRV_MODULE_NAME		"tg3-ethercat"
 /* DO NOT UPDATE TG3_*_NUM defines */
 #define TG3_MAJ_NUM			3
 #define TG3_MIN_NUM			137
@@ -227,7 +227,7 @@ MODULE_FIRMWARE(FIRMWARE_TG3);
 MODULE_FIRMWARE(FIRMWARE_TG357766);
 MODULE_FIRMWARE(FIRMWARE_TG3TSO);
 MODULE_FIRMWARE(FIRMWARE_TG3TSO5);
-MODULE_SOFTDEP("pre: libethercat");
+MODULE_SOFTDEP("pre: ethercat");
 
 static int tg3_debug = -1;	/* -1 == use TG3_DEF_MSG_ENABLE as value */
 module_param(tg3_debug, int, 0);

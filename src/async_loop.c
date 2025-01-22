@@ -99,6 +99,7 @@ static int ec_async_loop_put(ec_message_pool_t *ppool,
 
 // check slave expected state 
 static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
+    ec_t *pec = paml->pec;
     ec_state_t state = 0;
     osal_uint16_t alstatcode = 0;
     
@@ -180,6 +181,7 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
 static void *ec_async_loop_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     ec_async_loop_t *paml = (ec_async_loop_t *)arg;
+    ec_t *pec = paml->pec;
     
     assert(paml != NULL);
     assert(paml->pec != NULL);
@@ -207,12 +209,17 @@ static void *ec_async_loop_thread(void *arg) {
                         continue;
                     }
 
-                    ec_async_check_slave(paml, slave);
+                    if (paml->pec->slaves[slave].transition_active == OSAL_FALSE) {
+                        ec_async_check_slave(paml, slave);
+                    }
                 }
                 break;
             }
             case EC_MSG_CHECK_SLAVE:
-                ec_async_check_slave(paml, me->msg.payload);
+                if (paml->pec->slaves[me->msg.payload].transition_active == OSAL_FALSE) {
+                    ec_async_check_slave(paml, me->msg.payload);
+                }
+
                 break;
         };
 
@@ -240,6 +247,7 @@ void ec_async_check_all(ec_async_loop_t *paml) {
 // execute asynchronous check group
 void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
     assert(paml != NULL);
+    ec_t *pec = paml->pec;
 
     if (osal_timer_expired(&paml->next_check_group) == OSAL_OK) {
         // no need to check now

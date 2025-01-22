@@ -120,6 +120,7 @@ int hw_close(struct hw_common *phw) {
 void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
+    ec_t *pec = phw->pec;
 
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {

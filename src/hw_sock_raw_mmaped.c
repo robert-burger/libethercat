@@ -77,7 +77,7 @@ static void *hw_device_sock_raw_mmaped_rx_thread(void *arg);
 // see https://gitlab.com/fastflo/open_ethercat
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
 
-static int try_grant_cap_net_raw_init(void) {
+static int try_grant_cap_net_raw_init(ec_t *pec) {
     int ret = 0;
 
     if (access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0) {
@@ -110,12 +110,12 @@ static int try_grant_cap_net_raw_init(void) {
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, const osal_char_t *devname, int prio, int cpumask) {
+int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, ec_t *pec, const osal_char_t *devname, int prio, int cpumask) {
     int ret = EC_OK;
     struct ifreq ifr;
     int ifindex;
     
-    if (try_grant_cap_net_raw_init() == -1) {
+    if (try_grant_cap_net_raw_init(pec) == -1) {
         ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
                 "not allowed to open a raw socket\n");
     }
@@ -225,7 +225,9 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
         ec_log(10, "HW_OPEN", "binding raw socket to %s\n", devname);
 
         (void)memset(&ifr, 0, sizeof(ifr));
-        (void)strncpy(ifr.ifr_name, devname, IFNAMSIZ);
+        size_t copy_len = min(strlen(devname), IFNAMSIZ - 1);
+        (void)memset(ifr.ifr_name, 0, IFNAMSIZ);
+        (void)memcpy(ifr.ifr_name, devname, copy_len);
         ioctl(phw_sock_raw_mmaped->sockfd, SIOCGIFMTU, &ifr);
         phw_sock_raw_mmaped->common.mtu_size = ifr.ifr_mtu;
         ec_log(10, "hw_open", "got mtu size %d\n", phw_sock_raw_mmaped->common.mtu_size);
@@ -316,6 +318,7 @@ int hw_device_sock_raw_mmaped_recv(struct hw_common *phw) {
 void *hw_device_sock_raw_mmaped_rx_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = (struct hw_sock_raw_mmaped *) arg;
+    ec_t *pec = phw_sock_raw_mmaped->common.pec;
 
     assert(phw_sock_raw_mmaped != NULL);
     
@@ -341,6 +344,7 @@ static struct tpacket_hdr *hw_get_next_tx_buffer(struct hw_common *phw) {
     struct pollfd pollset;
 
     assert(phw != NULL);
+    ec_t *pec = phw->pec;
     
     struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
 
@@ -416,6 +420,7 @@ int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, po
     (void)pool_type;
 
     int ret = EC_OK;
+    ec_t *pec = phw->pec;
     struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
 
     // fill header
