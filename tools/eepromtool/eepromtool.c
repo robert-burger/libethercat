@@ -222,6 +222,12 @@ int main(int argc, char **argv) {
             } else
                 bytes = read(0, bigbuf, bigbuf_len);
             
+            if (bytes < 0) {
+                ec_log(10, "EEPROM WRITE", "error reading %s\n", fn);
+                exit(-1);
+            }
+
+            ec_log(10, "EEPROM WRITE", "slave %2d: writing %d bytes\n", slave, bytes);
             ec_eepromwrite_len(&ec, slave, 0, (uint8_t *)bigbuf, bytes);
                 
             ec_log(10, "EEPROM WRITE", "slave %2d: try to reset PDI\n", slave);
