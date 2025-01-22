@@ -1,3 +1,10 @@
+libethercat (0.6.5) unstable; urgency=low
+
+  * fix: foe_tool on file read error
+  * fix: abort when reading file to write failed!
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 22 Jan 2025 15:59:33 +0100
+
 libethercat (0.6.4) unstable; urgency=low
 
   * fix: file hw layer -> try to receive as much frames as were sent
