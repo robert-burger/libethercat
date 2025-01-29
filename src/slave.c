@@ -807,6 +807,8 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
 #endif
                     }
                 }
+                
+                ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds done\n", slave);
 
                 break;
         }
