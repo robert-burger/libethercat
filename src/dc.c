@@ -49,12 +49,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 /* libethercat header includes */
 #include "libethercat/dc.h"
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
+
+#define sign(a)     ((a) < 0 ? -1 : 1)
+#define abs(a)      (sign((a))*(a))
 
 #define ONE_SEC     ((osal_uint64_t)1000000000u)
 
@@ -381,13 +385,13 @@ int ec_dc_config(struct ec *pec) {
             slv->port_on_parent = get_and_consume_next_available_port(slv_parent, slv_parent->entry_port);
             parent_previous_port = get_previous_active_port(slv_parent, slv->port_on_parent); 
 
-            slv->dc.t_delay_with_childs = abs((osal_int32_t)times_parent[slv->port_on_parent] - times_parent[parent_previous_port]);
+            slv->dc.t_delay_with_childs = abs((osal_int32_t)times_parent[slv->port_on_parent] - (osal_int32_t)times_parent[parent_previous_port]);
             slv->dc.t_delay_slave = abs((slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2);
             slv->dc.t_delay_parent_previous = times_parent[parent_previous_port] - times_parent[slv_parent->entry_port];
             if (slv->entry_port == 0) {
                 slv->pdelay = slv_parent->pdelay + slv->dc.t_delay_parent_previous + slv->dc.t_delay_slave;
             } else {
-                slv->pdelay = slv_parent->pdelay + (abs(times_slave[slv->entry_port] - times_slave[0] + t_diff) / 2);
+                slv->pdelay = slv_parent->pdelay + (abs((osal_int32_t)times_slave[slv->entry_port] - (osal_int32_t)times_slave[0] + t_diff) / 2);
             }
         } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
             slv->dc.t_delay_with_childs = packet_duration;
