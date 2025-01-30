@@ -521,6 +521,10 @@ static int ethercat_device_release(struct inode *inode, struct file *filp) {
     // free allocated user struct memory
     kfree(user);
 
+    ethercat_monitor_destroy(ecat_dev);
+    
+    ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
+
     return 0;
 }
 
