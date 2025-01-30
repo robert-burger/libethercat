@@ -310,7 +310,7 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
         attr.policy = OSAL_SCHED_POLICY_OTHER;
         attr.priority = 0;
         attr.affinity = 0xFF;
-        (void)strcpy(&attr.task_name[0], "ecat.async");
+        (void)memcpy(&attr.task_name[0], "ecat.async", strlen("ecat.async"));
         if (osal_task_create(&paml->loop_tid, &attr, 
                 ec_async_loop_thread, paml) != OSAL_OK) {
             ec_log(1, "ASYNC_INIT", "error creating async loop task!\n");
