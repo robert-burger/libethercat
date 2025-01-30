@@ -86,7 +86,7 @@ static osal_uint32_t data_master_0x1000 = 0;
 
 static ec_coe_sdo_desc_t obj_desc_master_0x1008 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Device Name" }, 11 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1008 =
-    { 0, DEFTYPE_VISIBLESTRING, strlen(LIBETHERCAT_PACKAGE_NAME) << 3, ACCESS_READ, { "Device Name" },       11 };
+    { 0, DEFTYPE_VISIBLESTRING, (sizeof(LIBETHERCAT_PACKAGE_NAME) - 1) << 3, ACCESS_READ, { "Device Name" },       11 };
 static osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
 
 /****************************************************************************
@@ -95,7 +95,7 @@ static osal_char_t data_master_0x1008[] = LIBETHERCAT_PACKAGE_NAME;
 
 static ec_coe_sdo_desc_t obj_desc_master_0x1009 = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Hardware Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x1009 =
-    { 0, DEFTYPE_VISIBLESTRING , strlen(HW_VERSION) << 3, ACCESS_READ, { "Manufacturer Hardware Version" },       29 };
+    { 0, DEFTYPE_VISIBLESTRING , (sizeof(HW_VERSION) - 1) << 3, ACCESS_READ, { "Manufacturer Hardware Version" },       29 };
 static osal_char_t data_master_0x1009[] = HW_VERSION;
 
 /****************************************************************************
@@ -104,7 +104,7 @@ static osal_char_t data_master_0x1009[] = HW_VERSION;
 
 static ec_coe_sdo_desc_t obj_desc_master_0x100A = { DEFTYPE_VISIBLESTRING, OBJCODE_VAR, 0, { "Manufacturer Software Version" }, 29 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0x100A =
-    { 0, DEFTYPE_VISIBLESTRING , strlen(LIBETHERCAT_PACKAGE_VERSION) << 3, ACCESS_READ, { "Manufacturer Software Version" },       29 };
+    { 0, DEFTYPE_VISIBLESTRING , (sizeof(LIBETHERCAT_PACKAGE_VERSION) - 1) << 3, ACCESS_READ, { "Manufacturer Software Version" },       29 };
 static osal_char_t data_master_0x100A[] = LIBETHERCAT_PACKAGE_VERSION;
 
 /****************************************************************************
