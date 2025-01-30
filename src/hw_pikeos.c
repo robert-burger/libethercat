@@ -38,6 +38,9 @@
  */
 
 #include <libethercat/config.h>
+
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
+
 #include <libethercat/hw.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
@@ -382,3 +385,4 @@ void hw_device_pikeos_send_finished(struct hw_common *phw) {
     (void)phw;
 }
 
+#endif /* LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1 */
