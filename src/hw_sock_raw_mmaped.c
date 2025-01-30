@@ -38,6 +38,9 @@
  */
 
 #include <libethercat/config.h>
+
+#if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
+
 #include <libethercat/hw_sock_raw_mmaped.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
@@ -448,4 +451,6 @@ int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, po
 void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw) {
 }
 
+
+#endif /* LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1 */
 
