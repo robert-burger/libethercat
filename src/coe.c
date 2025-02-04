@@ -35,6 +35,8 @@
 
 #include <libethercat/config.h>
 
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
+
 #include "libethercat/ec.h"
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
@@ -1323,4 +1325,6 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
 
     return ret;
 }
+
+#endif /* LIBETHERCAT_MBX_SUPPORT_COE */
 
