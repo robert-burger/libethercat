@@ -41,6 +41,8 @@
 
 #include <libethercat/config.h>
 
+#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
+
 #include "libethercat/ec.h"
 #include "libethercat/foe.h"
 #include "libethercat/error_codes.h"
@@ -504,4 +506,6 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 
     return ret;
 }
+
+#endif /* LIBETHERCAT_MBX_SUPPORT_FOE */
 
