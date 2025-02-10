@@ -40,6 +40,7 @@ var ec_8h =
     [ "ec_open", "group__ec__group.html#ga57814183337779bfc29a8c1170269c37", null ],
     [ "ec_send_brd_ec_state", "group__ec__group.html#gaa5b7131d203697a73bc51b885e457199", null ],
     [ "ec_send_distributed_clocks_sync", "group__ec__group.html#ga6bacf70aeef0c0e65083785617b5f25d", null ],
+    [ "ec_send_distributed_clocks_sync_with_rtc", "group__ec__group.html#gaa63b30f58c80832c17ce14e19e0b4acd", null ],
     [ "ec_send_process_data", "group__ec__group.html#ga0858169a1d7af160964d7b2264eca4aa", null ],
     [ "ec_set_state", "group__ec__group.html#gab8797c371fd754ef1e465fdc2d6c5a9c", null ],
     [ "ec_transceive", "group__ec__group.html#ga982ceec27068a0b8172a33e630eba641", null ],

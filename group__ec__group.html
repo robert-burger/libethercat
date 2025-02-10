@@ -267,6 +267,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga6bacf70aeef0c0e65083785617b5f25d" id="r_ga6bacf70aeef0c0e65083785617b5f25d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#ga6bacf70aeef0c0e65083785617b5f25d">ec_send_distributed_clocks_sync</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec)</td></tr>
 <tr class="memdesc:ga6bacf70aeef0c0e65083785617b5f25d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send distributed clocks sync datagram.  <br /></td></tr>
 <tr class="separator:ga6bacf70aeef0c0e65083785617b5f25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa63b30f58c80832c17ce14e19e0b4acd" id="r_gaa63b30f58c80832c17ce14e19e0b4acd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gaa63b30f58c80832c17ce14e19e0b4acd">ec_send_distributed_clocks_sync_with_rtc</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint64_t act_rtc_time)</td></tr>
+<tr class="memdesc:gaa63b30f58c80832c17ce14e19e0b4acd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send distributed clock sync datagram.  <br /></td></tr>
+<tr class="separator:gaa63b30f58c80832c17ce14e19e0b4acd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa5b7131d203697a73bc51b885e457199" id="r_gaa5b7131d203697a73bc51b885e457199"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gaa5b7131d203697a73bc51b885e457199">ec_send_brd_ec_state</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec)</td></tr>
 <tr class="memdesc:gaa5b7131d203697a73bc51b885e457199"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send broadcast read to ec state.  <br /></td></tr>
 <tr class="separator:gaa5b7131d203697a73bc51b885e457199"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1291,6 +1294,44 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success </dd></dl>
+
+</div>
+</div>
+<a id="gaa63b30f58c80832c17ce14e19e0b4acd" name="gaa63b30f58c80832c17ce14e19e0b4acd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa63b30f58c80832c17ce14e19e0b4acd">&#9670;&#160;</a></span>ec_send_distributed_clocks_sync_with_rtc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ec_send_distributed_clocks_sync_with_rtc </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *&#160;</td>
+          <td class="paramname"><em>pec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">osal_uint64_t&#160;</td>
+          <td class="paramname"><em>act_rtc_time</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Send distributed clock sync datagram. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
+    <tr><td class="paramname">act_rtc_time</td><td>Current real-time clock value. If 0, the time of osal_timer_gettime_nsec() will be used. Otherwise the supplied time is used. </td></tr>
   </table>
   </dd>
 </dl>
