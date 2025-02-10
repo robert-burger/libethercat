@@ -92,23 +92,50 @@ typedef osal_uint16_t ec_state_transition_t;
 
 //! slave sync manager settings
 typedef struct PACKED ec_slave_sm {
-    osal_uint16_t adr;          //!< sync manager address
-                                /*!<
-                                 * This field specifies the physical address
-                                 * where the sync manager starts.
-                                 */
+    osal_uint16_t adr;              //!< sync manager address
+                                    /*!<
+                                     * This field specifies the physical address
+                                     * where the sync manager starts.
+                                     */
 
-    osal_uint16_t len;          //!< sync manager length
-                                /*!>
-                                 * This field specifies the length of the sync 
-                                 * manager
-                                 */
+    osal_uint16_t len;              //!< sync manager length
+                                    /*!<
+                                     * This field specifies the length of the sync 
+                                     * manager
+                                     */
+    osal_uint8_t control_register;  //!< control register
+                                    /*!<
+                                     * Defines Mode of Operation
+                                     */
+    osal_uint8_t status_regsiter;   //!< status register
+                                    /*!<
+                                     * don’t care
+                                     */
+    osal_uint8_t enable_sm;         //!< enable sync manager
+                                    /*!<
+                                     * Bit 0: enable
+                                     * Bit 1: fixed content
+                                     * Bit 2: virtual SyncManager
+                                     * Bit 3: opOnly
+                                     * Bit 7:4: reserved
+                                     */
+    osal_uint8_t sm_type;           //!< sync manager type
+                                    /*!<
+                                     * 0x00 = not used or unknown
+                                     * 0x01 = used for mailbox out
+                                     * 0x02 = used for mailbox in
+                                     * 0x03 = used for process data outputs
+                                     * 0x04 = used for process data inputs
+                                     * 0x05 = used for dynamic process data outputs
+                                     * 0x06 = used for dynamic process data inputs
+                                     */
 
-    osal_uint32_t flags;        //!< sync manager flags
-                                /*!<
-                                 * Sync manager flags according to EtherCAT 
-                                 * specifications
-                                 */
+
+    // osal_uint32_t flags;        //!< sync manager flags
+    //                             /*!<
+    //                              * Sync manager flags according to EtherCAT 
+    //                              * specifications
+    //                              */
 } PACKED ec_slave_sm_t;
 
 //! slave fielbus memory management unit (fmmu) settings

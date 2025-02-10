@@ -957,7 +957,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                         slv->sm[MAILBOX_READ].adr = slv->eeprom.mbx_send_offset;
                         slv->sm[MAILBOX_READ].len = slv->eeprom.mbx_send_size;
                     }
-                    slv->sm[MAILBOX_READ].flags = 0x00010022;
+                    slv->sm[MAILBOX_READ].enable_sm = 0x01;
+                    slv->sm[MAILBOX_READ].control_register = 0x22;
 
                     // write mailbox
                     if ((transition == INIT_2_BOOT) && 
@@ -969,15 +970,18 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                         slv->sm[MAILBOX_WRITE].len = slv->eeprom.mbx_receive_size;
                     }
 
-                    slv->sm[MAILBOX_WRITE].flags = 0x00010026;
+                    slv->sm[MAILBOX_WRITE].enable_sm = 0x01;
+                    slv->sm[MAILBOX_WRITE].control_register = 0x26;
 
                     ec_mbx_init(pec, slave);
 
                     for (osal_uint32_t sm_idx = 0u; sm_idx < 2u; ++sm_idx) {
                         ec_log(10, get_transition_string(transition), "slave %2d: "
-                                "sm%u, adr 0x%04X, len %3d, flags 0x%08X\n",
+                                "sm%u, adr 0x%04X, len %3d, enable_sm "
+                                        "0x%X, control_register 0x%X\n",
                                 slave, sm_idx, slv->sm[sm_idx].adr, 
-                                slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
+                                slv->sm[sm_idx].len, slv->sm[sm_idx].enable_sm,
+                                slv->sm[sm_idx].control_register);
 
                         (void)ec_fpwr(pec, slv->fixed_address, 0x800u + (sm_idx * 8u),
                                 &slv->sm[sm_idx], sizeof(ec_slave_sm_t), &wkc);
@@ -1073,9 +1077,11 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     }
 
                     ec_log(10, get_transition_string(transition), "slave %2d: "
-                            "sm%d, adr 0x%04X, len %3d, flags 0x%08X\n",
+                            "sm%d, adr 0x%04X, len %3d, enable_sm "
+                                "0x%X, control_register 0x%X\n",
                             slave, sm_idx, slv->sm[sm_idx].adr, 
-                            slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
+                            slv->sm[sm_idx].len, slv->sm[sm_idx].enable_sm,
+                            slv->sm[sm_idx].control_register);
 
                     (void)ec_fpwr(pec, slv->fixed_address, 0x800u + (sm_idx * 8u),
                             &slv->sm[sm_idx], sizeof(ec_slave_sm_t), &wkc);

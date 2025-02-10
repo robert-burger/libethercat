@@ -1129,13 +1129,30 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
             start_adr = slv->sm[1].adr + slv->sm[1].len;
         }
 
-        for (osal_uint32_t sm_idx = 2u; sm_idx <= 3u; ++sm_idx) {
+        for (osal_uint32_t sm_idx = 2u; sm_idx < LEC_MAX_SLAVE_SM; ++sm_idx) {
+            if (slv->sm[sm_idx].adr == 0) {
+                // We break the loop when we found a zero address because this means end of the list.
+                break;
+            }
             osal_uint32_t bit_len = 0u;
             osal_uint32_t idx = 0x1c10u + sm_idx;
             osal_uint8_t entry_cnt = 0u;
             osal_uint8_t entry_cnt_2 = 0u;
             osal_size_t entry_cnt_size = sizeof(entry_cnt);
+            osal_uint8_t sm_type = 0u;
             osal_uint32_t abort_code = 0u;
+
+            // read sm type
+            buf = (osal_uint8_t *)&sm_type;
+            ret = ec_coe_sdo_read(pec, slave, 0x1C00, sm_idx, 0, buf, &entry_cnt_size, &abort_code);
+            if (ret != 0 || abort_code != 0) {
+                ec_log(5, "COE_MAPPING", "slave %2d: sm%u reading "
+                    "sm type failed, error code 0x%X/0x%X\n", slave, sm_idx, ret,abort_code);
+                sm_type = 0;
+            } else {
+                ec_log(100, "COE_MAPPING", "slave %2d: sm%u reading "
+                    "sm type 0x%X\n", slave, sm_idx, sm_type);
+            }
 
             // read count of mapping entries, stored in subindex 0
             // mapped entreis are stored at 0x1c12 and 0x1c13 and should usually be
@@ -1146,7 +1163,10 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 if (abort_code == 0x06020000) { // object does not exist in the object dictionary
                     if (slv->sm_ch > sm_idx) {
                         slv->sm[sm_idx].len = 0u;
-                        slv->sm[sm_idx].flags = 0u;
+                        slv->sm[sm_idx].control_register = 0u;
+                        slv->sm[sm_idx].status_regsiter = 0u;
+                        slv->sm[sm_idx].enable_sm = 0u;
+                        slv->sm[sm_idx].sm_type = 0u;
                     }
 
                     ret = 0u;
@@ -1240,7 +1260,32 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                         start_adr += slv->sm[sm_idx].len * 3u;
                     }
 
-                    slv->sm[sm_idx].flags = (sm_idx == 2u) ? 0x10064u : 0x10020u;
+                    switch (sm_type) {
+                        case 0x00:
+                            slv->sm[sm_idx].control_register = 0u;
+                            break;
+                        case 0x01:
+                            slv->sm[sm_idx].control_register = 0x26u;
+                            break;
+                        case 0x02:
+                            slv->sm[sm_idx].control_register = 0x22u;
+                            break;
+                        case 0x03:
+                            slv->sm[sm_idx].control_register = 0x64u; // TODO: Is this right?
+                            break;
+                        case 0x04:
+                            slv->sm[sm_idx].control_register = 0x20;
+                            break;
+                        case 0x05:
+                            slv->sm[sm_idx].control_register = 0u; // TODO: What to write here?
+                            break;
+                        case 0x06:
+                            slv->sm[sm_idx].control_register = 0u; // TODO: What to write here?
+                            break;
+                    }
+                    
+                    slv->sm[sm_idx].enable_sm = 1u;
+                    slv->sm[sm_idx].sm_type = sm_type;
                 }
             }
         }
