@@ -74,6 +74,7 @@
 
 // forward declaration
 static void default_log_func(ec_t *pec, int lvl, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
+static int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time);
 
 //! calculate signed difference of 64-bit unsigned int's
 /*!
@@ -1894,10 +1895,6 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
                 p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u) | pec->dc.master_address;
             }
 
-            if (act_rtc_time == 0){
-                act_rtc_time = osal_timer_gettime_nsec();
-            } 
-
             if (pec->dc.mode == dc_mode_ref_clock) {
                 if (pec->main_cycle_interval > 0) {
                     pec->dc.rtc_time += (osal_uint64_t)(pec->main_cycle_interval);
@@ -1928,7 +1925,7 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
-    return ec_send_distributed_clocks_sync_intern(pec,0);
+    return ec_send_distributed_clocks_sync_intern(pec, osal_timer_gettime_nsec());
 }
 
 //! send distributed clock sync datagram
