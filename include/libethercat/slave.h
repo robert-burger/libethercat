@@ -47,6 +47,8 @@
 #include "libethercat/config.h"
 #endif
 
+#include <assert.h>
+
 #include "libethercat/common.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/dc.h"
