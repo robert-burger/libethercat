@@ -711,11 +711,11 @@ int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     }
                 }
 
-                ec_log(100, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2" PRIu16 ": txpdos %d, rxpdos %d, bitlen%d %" PRIu8 "\n",
+                ec_log(100, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2" PRIu16 ": txpdos %d, rxpdos %d, bitlen%d %" PRIu64 "\n",
                         slave, txpdos_cnt, rxpdos_cnt, sm_idx, bit_len);
 
                 if (bit_len > 0u) {
-                    ec_log(10, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2" PRIu16 ": sm%d length bits %" PRIu8 ", bytes %" PRIu8 "\n",
+                    ec_log(10, "SLAVE_GENERATE_MAPPING_EEPROM", "slave %2" PRIu16 ": sm%d length bits %" PRIu64 ", bytes %" PRIu64 "\n",
                             slave, sm_idx, bit_len, (bit_len + 7u) / 8u);
 
                     slv->sm[sm_idx].len = (bit_len + 7u) / 8u;
