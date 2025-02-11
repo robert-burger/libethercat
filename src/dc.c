@@ -268,7 +268,7 @@ int ec_dc_config(struct ec *pec) {
     check_ec_bwr(pec, EC_REG_DCSYSDELAY, &dcsysdelay, sizeof(dcsysdelay), &wkc);
 
     osal_uint64_t packet_duration = get_packet_duration(pec);
-    ec_log(100, "DC_CONFIG", "master packet duration %" PRIu64 "\n", packet_duration);
+    ec_log(100, "DC_CONFIG", "master packet duration %" PRIu64 " ns\n", packet_duration);
 
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
         ec_slave_ptr(slv, pec, slave);

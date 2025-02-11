@@ -1136,33 +1136,7 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     if (ret == EC_OK) {
         ret = ec_async_loop_create(&pec->async_loop, pec);
     }
-    if(LIBETHERCAT_BUILD_STM32 == 1)
-    {
-    	ec_log(10, "MASTER_OPEN", "  libethercat version        : %s\n", LIBETHERCAT_VERSION);
-    	ec_log(10, "MASTER OPEN", "  MAX_SLAVES                 : %d\n", LIBETHERCAT_MAX_SLAVES);
-    	ec_log(10, "MASTER_OPEN", "  MAX_GROUPS                 : %d\n", LIBETHERCAT_MAX_GROUPS);
-    	ec_log(10, "MASTER_OPEN", "  MAX_PDLEN                  : %d\n", LIBETHERCAT_MAX_PDLEN);
-    	ec_log(10, "MASTER_OPEN", "  MAX_MBX_ENTRIES            : %d\n", LIBETHERCAT_MAX_MBX_ENTRIES);
-    	ec_log(10, "MASTER_OPEN", "  MAX_INIT_CMD_DATA          : %d\n", LIBETHERCAT_MAX_INIT_CMD_DATA);
-    	ec_log(10, "MASTER_OPEN", "  MAX_SLAVE_FMMU             : %d\n", LIBETHERCAT_MAX_SLAVE_FMMU);
-    	ec_log(10, "MASTER_OPEN", "  MAX_SLAVE_SM               : %d\n", LIBETHERCAT_MAX_SLAVE_SM);
-    	ec_log(10, "MASTER_OPEN", "  MAX_DATAGRAMS              : %d\n", LIBETHERCAT_MAX_DATAGRAMS);
-    	ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_SM          : %d\n", LIBETHERCAT_MAX_EEPROM_CAT_SM);
-    	ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_FMMU        : %d\n", LIBETHERCAT_MAX_EEPROM_CAT_FMMU);
-    	ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO         : %d\n", LIBETHERCAT_MAX_EEPROM_CAT_PDO);
-    	ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO_ENTRIES : %d\n", LIBETHERCAT_MAX_EEPROM_CAT_PDO_ENTRIES);
-    	ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_STRINGS     : %d\n", LIBETHERCAT_MAX_EEPROM_CAT_STRINGS);
-    	ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_DC          : %d\n", LIBETHERCAT_MAX_EEPROM_CAT_DC);
-    	ec_log(10, "MASTER_OPEN", "  MAX_STRING_LEN             : %d\n", LIBETHERCAT_MAX_STRING_LEN);
-    	ec_log(10, "MASTER_OPEN", "  MAX_DATA                   : %d\n", LIBETHERCAT_MAX_DATA);
-    	ec_log(10, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %d\n", LIBETHERCAT_MAX_DS402_SUBDEVS);
-    	ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %d\n", LIBETHERCAT_MAX_COE_EMERGENCIES);
-    	// not used on stm32 atm:
-    	//ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %d\n", LIBETHERCAT_MAX_COE_EMERGENCY_MSG_LEN);
-    	ec_log(10, "MASTER_OPEN", "  Master struct needs %d bytes\n", sizeof(ec_t));
-    }
-    else
-    {
+
     ec_log(10, "MASTER_OPEN", "  libethercat version        : %s\n", LIBETHERCAT_VERSION);
     ec_log(10, "MASTER_OPEN", "  MAX_SLAVES                 : %" PRIi64 "\n", LEC_MAX_SLAVES);
     ec_log(10, "MASTER_OPEN", "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
@@ -1184,7 +1158,7 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
     ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
     ec_log(10, "MASTER_OPEN", "  Master struct needs %" PRIu64 " bytes\n", (osal_uint64_t)sizeof(ec_t));
-    }
+
 
     if (ret != EC_OK) {
         if (pec != NULL) {
