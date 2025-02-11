@@ -541,14 +541,14 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                 local_offset += string_len;
                                 tmp[read_string_len] = '\0';
                             
-                                do_eeprom_log(10, "EEPROM_STRINGS", "        (-)  string %2d, length %2d : %s\n", i, string_len, tmp);
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        (-)  string %2" PRIu32 ", length %2d : %s\n", i, string_len, tmp);
                             } else {
                                 (void)strncpy(&slv->eeprom.strings[i][0], (osal_char_t *)&ec_eeprom_buf[local_offset], read_string_len);
                                 local_offset += string_len;
 
                                 slv->eeprom.strings[i][read_string_len] = '\0';
 
-                                do_eeprom_log(10, "EEPROM_STRINGS", "        (S)  string %2d, length %2d : %s\n", i, string_len, slv->eeprom.strings[i]);
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        (S)  string %2" PRIu32 ", length %2d : %s\n", i, string_len, slv->eeprom.strings[i]);
                             }
                             
                             if (local_offset > (cat_len * 2u)) {
@@ -603,7 +603,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     slv->fmmu[fmmu_idx].type = tmp[i];
                                     slv->eeprom.fmmus[fmmu_idx].type = tmp[i];
 
-                                    do_eeprom_log(10, "EEPROM_FMMU", "          fmmu%d, type %d\n", fmmu_idx, tmp[i]);
+                                    do_eeprom_log(10, "EEPROM_FMMU", "          fmmu%" PRIu32 ", type %d\n", fmmu_idx, tmp[i]);
                                 }
 
                                 i++;
@@ -615,7 +615,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_SM: {
-                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %u\n", 
+                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %" PRIu32 "\n",
                                 slave, (osal_uint32_t)(cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u)));
 
                         // skip cat type and len
@@ -644,16 +644,16 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                 slv->sm[j].flags = (tmp_sms.activate << 16) | tmp_sms.ctrl_reg;
 
                                 do_eeprom_log(10, "EEPROM_SM", 
-                                        "          sm%d adr 0x%X, len %d, flags "
-                                        "0x%X\n", j, slv->sm[j].adr, slv->sm[j].len, 
+                                        "          sm%" PRIu32 " adr 0x%X, len %" PRIi16 ", flags "
+                                        "0x%" PRIx32 "\n", j, slv->sm[j].adr, slv->sm[j].len,
                                         slv->sm[j].flags);
                             } else {
-                                do_eeprom_log(10, "EEPROM_SM", "          sm%d adr "
+                                do_eeprom_log(10, "EEPROM_SM", "          sm%" PRIu32 " adr "
                                         "0x%X, len %d, flags 0x%X\n", j, 
                                         tmp_sms.adr, tmp_sms.len, (tmp_sms.activate << 16) | tmp_sms.ctrl_reg);
 
                                 do_eeprom_log(10, "EEPROM_SM", 
-                                        "          sm%d already set by user\n", j);
+                                        "          sm%" PRIu32 " already set by user\n", j);
                             }
 
                             if (j < LEC_MAX_EEPROM_CAT_SM) {
@@ -705,13 +705,13 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                                     if (j >= LEC_MAX_EEPROM_CAT_PDO_ENTRIES) {
                                         do_eeprom_log(10, "EEPROM_TXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X (not stored)\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X (not stored)\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     } else {
                                         tmp_pdo.entries[j] = entry;
 
                                         do_eeprom_log(10, "EEPROM_TXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     }
                                 }
@@ -768,13 +768,13 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                                     if (j >= LEC_MAX_EEPROM_CAT_PDO_ENTRIES) {
                                         do_eeprom_log(10, "EEPROM_RXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X (not stored)\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X (not stored)\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     } else {
                                         tmp_pdo.entries[j] = entry;
 
                                         do_eeprom_log(10, "EEPROM_RXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     }
                                 }
@@ -811,8 +811,8 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                             (void)ec_eepromread_len(pec, slave, local_offset, (osal_uint8_t *)&tmp_dc, EC_EEPROM_CAT_DC_LEN);
                             local_offset += (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
 
-                            do_eeprom_log(10, "EEPROM_DC", "          cycle_time_0 %d, "
-                                    "shift_time_0 %d, shift_time_1 %d, "
+                            do_eeprom_log(10, "EEPROM_DC", "          cycle_time_0 %" PRIu32 ", "
+                                    "shift_time_0 %" PRIu32 ", shift_time_1 %" PRIu32 ", "
                                     "sync_0_cycle_factor %d, sync_1_cycle_factor %d, "
                                     "assign_active %d\n", 
                                     tmp_dc.cycle_time_0, tmp_dc.shift_time_0, 

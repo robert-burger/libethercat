@@ -52,7 +52,7 @@
 #include <stdio.h>
 
 // get a message from a message pool
-static int ec_async_loop_get(ec_message_pool_t *ppool,
+int ec_async_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, osal_timer_t *timeout) {
     int ret = EC_OK;
 
@@ -83,7 +83,7 @@ static int ec_async_loop_get(ec_message_pool_t *ppool,
 }
 
 // return a message to message pool
-static int ec_async_loop_put(ec_message_pool_t *ppool, 
+int ec_async_loop_put(ec_message_pool_t *ppool,
         ec_message_entry_t *msg) {
     assert(ppool != NULL);
     assert(msg != NULL);
@@ -99,7 +99,7 @@ static int ec_async_loop_put(ec_message_pool_t *ppool,
 }
 
 // check slave expected state 
-static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
+void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
     ec_state_t state = 0;
     osal_uint16_t alstatcode = 0;
     

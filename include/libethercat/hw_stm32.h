@@ -48,7 +48,8 @@
 
 typedef struct hw_stm32 {
     struct hw_common common;
-    
+
+    int frames_sent;
     ETH_TxPacketConfig TxConfig;
 
     osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.

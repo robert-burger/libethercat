@@ -145,8 +145,13 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     }
 }
 
-//! internal tx func
-static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
+//! Start sending queued ethrecat datagrams from specified pool.
+/*!
+ * \param[in] phw           Hardware handle.
+ * \param[in] pool_type     Type of pool to sent.
+ * \return 0 or error code
+ */
+void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     assert(phw != NULL);
 
     osal_bool_t sent = OSAL_FALSE;

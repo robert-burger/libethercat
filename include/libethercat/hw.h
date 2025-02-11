@@ -56,6 +56,10 @@
 #include <drv/sbuf_hdr.h>
 #endif
 
+#ifndef htons
+#define htons(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+#endif
+
 #define container_of(ptr, type, member) ({ \
         __typeof__( ((type *)0)->member ) *__mptr = (void *)(ptr); \
         (type *)( (char *)__mptr - offsetof(type,member) );})
@@ -171,6 +175,14 @@ int hw_close(struct hw_common *phw);
  * \return 0 or error code
  */
 int hw_tx_low(struct hw_common *phw);
+
+//! Start sending queued ethrecat datagrams from specified pool.
+/*!
+ * \param[in] phw           Hardware handle.
+ * \param[in] pool_type     Type of pool to sent.
+ * \return 0 or error code
+ */
+void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type);
 
 //! start sending queued ethercat datagrams
 /*!
