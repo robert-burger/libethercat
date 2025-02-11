@@ -216,7 +216,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
 
     // Invalidate if cache is enabled
     if ((SCB->CCR & SCB_CCR_DC_Msk) != 0U) {
-        SCB_CleanDCache_by_Addr((uint32_t*)pframe, pframe->len);
+        SCB_CleanDCache_by_Addr((void*)pframe, pframe->len);
     }
 
     DECLARE_CRITICAL_SECTION();
