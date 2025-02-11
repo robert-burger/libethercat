@@ -177,10 +177,48 @@ void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
     }
 }
 
+// Execute one async check step.
+/*!
+ * This function is usually called by Async loop thread.
+ * \param[in] paml  Handle to async message loop.
+ */
+void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *to) {
+    ec_message_entry_t *me = NULL;
+
+    int ret = ec_async_loop_get(&paml->exec, &me, &timeout);
+    if (ret != EC_OK) {
+        continue; // e.g. timeout
+    }
+
+    switch (me->msg.id) {
+        default: 
+            break;
+        case EC_MSG_CHECK_GROUP: {
+            // do something
+            osal_uint16_t slave;
+            for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
+                if (paml->pec->slaves[slave].assigned_pd_group != (int)me->msg.payload) {
+                    continue;
+                }
+
+                ec_async_check_slave(paml, slave);
+            }
+            break;
+        }
+        case EC_MSG_CHECK_SLAVE:
+            ec_async_check_slave(paml, me->msg.payload);
+            break;
+    };
+
+    // return message to pool
+    if (ec_async_loop_put(&paml->avail, me) == 0) {};
+}
+
 // async loop thread
 static void *ec_async_loop_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     ec_async_loop_t *paml = (ec_async_loop_t *)arg;
+    osal_timer_t timeout;
     
     assert(paml != NULL);
     assert(paml->pec != NULL);
@@ -188,37 +226,8 @@ static void *ec_async_loop_thread(void *arg) {
     ec_log(10, "ASYNC_LOOP", "async loop thread running\n");
 
     while (paml->loop_running == 1) {
-        osal_timer_t timeout;
-        osal_timer_init(&timeout, 100000000 );
-        ec_message_entry_t *me = NULL;
-
-        int ret = ec_async_loop_get(&paml->exec, &me, &timeout);
-        if (ret != EC_OK) {
-            continue; // e.g. timeout
-        }
-
-        switch (me->msg.id) {
-            default: 
-                break;
-            case EC_MSG_CHECK_GROUP: {
-                // do something
-                osal_uint16_t slave;
-                for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
-                    if (paml->pec->slaves[slave].assigned_pd_group != (int)me->msg.payload) {
-                        continue;
-                    }
-
-                    ec_async_check_slave(paml, slave);
-                }
-                break;
-            }
-            case EC_MSG_CHECK_SLAVE:
-                ec_async_check_slave(paml, me->msg.payload);
-                break;
-        };
-
-        // return message to pool
-        if (ec_async_loop_put(&paml->avail, me) == 0) {};
+        osal_timer_init(&timeout, 100000000);
+        ec_async_loop_step(&timeout);
     }
     
     ec_log(10, "ASYNC_LOOP", "async loop thread exited\n");
