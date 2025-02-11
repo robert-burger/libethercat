@@ -138,7 +138,7 @@ void ec_async_check_all(ec_async_loop_t *paml);
  * This function is usually called by Async loop thread.
  * \param[in] paml  Handle to async message loop.
  */
-void ec_async_loop_step(ec_async_loop_t *paml);
+void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *to);
 
 #ifdef __cplusplus
 }
