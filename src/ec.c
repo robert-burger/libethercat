@@ -754,6 +754,8 @@ static void ec_scan(ec_t *pec) {
                 ec_log(100, "MASTER_SCAN", "slave %2d: auto inc %3d, fixed %d\n", 
                         i, auto_inc, fixed);
 
+                memset(&pec->slaves[i], 0, sizeof(ec_slave_t));
+
                 pec->slaves[i].slave = i;
                 pec->slaves[i].assigned_pd_group = -1;
                 pec->slaves[i].auto_inc_address = auto_inc;
