@@ -86,9 +86,6 @@ void hw_device_stm32_send_finished(struct hw_common *phw);
 int hw_device_stm32_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
 int hw_device_stm32_close(struct hw_common *phw);
 
-//static void hw_device_stm32_recv_internal(struct hw_stm32 *phw_stm32);
-//static void *hw_device_stm32_rx_thread(void *arg);
-
 // Opens EtherCAT hw device.
 int hw_device_stm32_open(struct hw_stm32 *phw_stm32, struct ec *pec) {
     int ret = EC_OK;
@@ -105,6 +102,7 @@ int hw_device_stm32_open(struct hw_stm32 *phw_stm32, struct ec *pec) {
     phw_stm32->common.close = hw_device_stm32_close;
     phw_stm32->common.mtu_size = 1480;
 
+    phw_stm32->frames_sent = 0;
     memset(&phw_stm32->TxConfig, 0 , sizeof(ETH_TxPacketConfig));
     phw_stm32->TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
     phw_stm32->TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
@@ -125,16 +123,7 @@ int hw_device_stm32_open(struct hw_stm32 *phw_stm32, struct ec *pec) {
  * \return 0 or negative error code
  */
 int hw_device_stm32_close(struct hw_common *phw) {
-    int ret = 0;
-
-    struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
-
-    (void)phw_stm32;
-    //phw_stm32->rxthreadrunning = 0;
-    //osal_task_join(&phw_stm32->rxthread, NULL);
-
-    //(void)close(phw_stm32->fd);
-
+    int ret = EC_OK;
     return ret;
 }
 
@@ -149,13 +138,27 @@ int hw_device_stm32_recv(struct hw_common *phw) {
     assert(phw != NULL);
 
     // new code MB
+    HAL_StatusTypeDef status;
     void *app_buff;
-    if (	(HAL_ETH_ReadData(&heth, &app_buff) == HAL_OK) && // func in ...hal_eth.c
-    		(app_buff != NULL) )
-    {
-        hw_process_rx_frame(phw, app_buff);
-        return EC_OK;
-    }
+    osal_timer_t to;
+    osal_timer_init(&to, 100000);
+
+    DECLARE_CRITICAL_SECTION();
+    do {
+        ENTER_CRITICAL_SECTION();
+        status = HAL_ETH_ReadData(&heth, &app_buff);
+        LEAVE_CRITICAL_SECTION();
+
+        if ((status == HAL_OK) && (app_buff != NULL)) {
+            // Invalidate if cache is enabled
+            if ((SCB->CCR & SCB_CCR_DC_Msk) != 0U) {
+                SCB_InvalidateDCache_by_Addr((uint32_t *)app_buff, ((ec_frame_t *)app_buff)->len);
+            }
+
+            hw_process_rx_frame(phw, app_buff);
+            return EC_OK;
+        }
+    } while (osal_timer_expired(&to) != OSAL_ERR_TIMEOUT);
 
     return EC_ERROR_UNAVAILABLE; // maybe write some other ERROR code in the error_code.h!?
 }
@@ -174,7 +177,7 @@ int hw_device_stm32_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) {
     int ret = EC_OK;
     ec_frame_t *pframe = NULL;
     struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
-    
+
     // cppcheck-suppress misra-c2012-11.3
     pframe = (ec_frame_t *)phw_stm32->send_frame;
 
@@ -187,6 +190,8 @@ int hw_device_stm32_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) {
 
     return ret;
 }
+
+extern ETH_BufferTypeDef Txbuffer[ETH_TX_DESC_CNT];
 
 //! Send a frame from an EtherCAT hw device.
 /*!
@@ -206,10 +211,16 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
     struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
 
     int errval = ETH_OK;
-    ETH_BufferTypeDef Txbuffer[ETH_TX_DESC_CNT];
+
     size_t frame_len = ec_frame_length(pframe);
+
     // Invalidate if cache is enabled
-//    SCB_CleanDCache_by_Addr((uint32_t*) frame, frame_len);
+    if ((SCB->CCR & SCB_CCR_DC_Msk) != 0U) {
+        SCB_CleanDCache_by_Addr((uint32_t*)pframe, pframe->len);
+    }
+
+    DECLARE_CRITICAL_SECTION();
+    ENTER_CRITICAL_SECTION();
 
     Txbuffer[0].buffer = (uint8_t *)(pframe);
     Txbuffer[0].len = frame_len;
@@ -221,7 +232,6 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
 
     do {
         if (HAL_ETH_Transmit(&heth, &(phw_stm32->TxConfig), ETH_TX_TIMEOUT) == HAL_OK) {
-            HAL_ETH_ReleaseTxPacket(&heth); // func in ...hal_eth.c
             errval = ETH_OK;
         } else {
             if (HAL_ETH_GetError(&heth) & HAL_ETH_ERROR_BUSY) {
@@ -238,6 +248,9 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
     } while (errval == ETH_ERR_NO_BUFFER);
 
     phw_stm32->common.bytes_sent += frame_len;
+    phw_stm32->frames_sent++;
+
+    LEAVE_CRITICAL_SECTION();
 
     return ret;
 }
@@ -248,21 +261,19 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
  */
 void hw_device_stm32_send_finished(struct hw_common *phw) {
     assert(phw != NULL);
-    // maybe if phw==NULL --> insert tx_frame_brd to send a brd frame!?
 
     struct hw_stm32 *phw_stm32 = container_of(phw, struct hw_stm32, common);
-    
+
     // in case of polling do receive now
-    //if (phw_stm32->polling_mode == OSAL_TRUE) {
-        // sleep a little bit (at least packet-on-wire-duration)
-        // 10 [ns] per bit on 100 Mbit/s Ethernet.
-        //uint64_t packet_time = 10 * 8 * phw->bytes_sent; 
-        //osal_sleep(packet_time * 0.4);
+    while (phw_stm32->frames_sent > 0) {
         phw_stm32->common.bytes_last_sent = phw_stm32->common.bytes_sent;
         phw_stm32->common.bytes_sent = 0;
 
-        (void)hw_device_stm32_recv(phw);
-        //hw_device_stm32_recv_internal(phw_stm32);
-    //}
+        if (hw_device_stm32_recv(phw) == EC_ERROR_UNAVAILABLE) {
+            break;
+        }
+
+        phw_stm32->frames_sent--;
+    }
 }
 

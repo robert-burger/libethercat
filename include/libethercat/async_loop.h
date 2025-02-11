@@ -133,6 +133,13 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid);
  */
 void ec_async_check_all(ec_async_loop_t *paml);
 
+// Execute one async check step.
+/*!
+ * This function is usually called by Async loop thread.
+ * \param[in] paml  Handle to async message loop.
+ */
+void ec_async_loop_step(ec_async_loop_t *paml);
+
 #ifdef __cplusplus
 }
 #endif

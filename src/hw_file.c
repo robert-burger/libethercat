@@ -194,7 +194,7 @@ void *hw_device_file_rx_thread(void *arg) {
         rx_prio = 0;
     }
 
-    ec_log(10, "HW_FILE_RX", "receive thread running (prio %d)\n", rx_prio);
+    ec_log(10, "HW_FILE_RX", "receive thread running (prio %" PRIu32 ")\n", rx_prio);
 
     while (phw_file->rxthreadrunning != 0) {
         hw_device_file_recv_internal(phw_file);
