@@ -853,6 +853,22 @@ static osal_bool_t check_null(osal_uint8_t *ptr, osal_size_t len) {
 }
 #endif
 
+// issue hardware reset of slave
+void ec_slave_reset(ec_t *pec, osal_uint16_t slave) {
+    osal_uint16_t wkc;
+    ec_slave_ptr(slv, pec, slave);
+
+    ec_log(10, __func__, "slave %2d: try to reset PDI\n", slave);
+    osal_uint8_t reset_vals[] = { (osal_uint8_t)'R', (osal_uint8_t)'E', (osal_uint8_t)'S' };
+    for (int i = 0; i < 3; ++i) {
+        (void)ec_fpwr(pec, slv->fixed_address, 0x41, &reset_vals[i], 1, &wkc);
+    }
+    ec_log(10, __func__, "slave %2d: try to reset ESC\n", slave);
+    for (int i = 0; i < 3; ++i) {
+        (void)ec_fpwr(pec, slv->fixed_address, 0x40, &reset_vals[i], 1, &wkc);
+    }
+}
+
 // state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     osal_uint16_t wkc;
