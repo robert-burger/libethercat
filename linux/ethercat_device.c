@@ -44,7 +44,7 @@
 #include <linux/netdevice.h>
 
 MODULE_AUTHOR("Robert Burger <robert.burger@dlr.de>");
-MODULE_DESCRIPTION("libethercat char device driver");
+MODULE_DESCRIPTION("ethercat char device driver");
 MODULE_LICENSE("GPL");
 
 
@@ -288,7 +288,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     int ret = 0;
     unsigned i = 0;
 
-    debug_pr_info("libethercat: creating EtherCAT character device...\n");
+    debug_pr_info("ethercat: creating EtherCAT character device...\n");
 
     ecat_dev = kmalloc(sizeof(struct ethercat_device), GFP_KERNEL);
     if (!ecat_dev) {
@@ -319,7 +319,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     }
 
     snprintf(net_dev->name, IFNAMSIZ, "ecat%d", ecat_dev->minor);
-    debug_pr_info("libethercat: created device file %s.\n", net_dev->name);
+    debug_pr_info("ethercat: created device file %s.\n", net_dev->name);
     
     // init wait queue
     init_swait_queue_head(&ecat_dev->ir_queue);
@@ -437,7 +437,7 @@ void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data,
     memcpy(skb->data, data, size);
     skb->len = size;
     
-    debug_print_frame("libethercat char dev driver: received", skb->data, skb->len);
+    debug_print_frame("ethercat char dev driver: received", skb->data, skb->len);
 
     ecat_dev->rx_skb_index_last_recv = next_index;
 
@@ -464,7 +464,7 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
     int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
     ecat_dev = (void *)container_of(inode->i_cdev, struct ethercat_device, cdev);
 
-    debug_pr_info("libethercat char dev driver: open called\n");
+    debug_pr_info("ethercat char dev driver: open called\n");
     
     ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
@@ -521,10 +521,6 @@ static int ethercat_device_release(struct inode *inode, struct file *filp) {
     // free allocated user struct memory
     kfree(user);
 
-    ethercat_monitor_destroy(ecat_dev);
-    
-    ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
-
     return 0;
 }
 
@@ -554,7 +550,7 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
     if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
 #endif
 
-    debug_pr_info("libethercat char dev driver: read called\n");
+    debug_pr_info("ethercat char dev driver: read called\n");
 
     if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
         if (filp->f_flags & O_NONBLOCK) {
@@ -619,7 +615,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
     
-    debug_pr_info("libethercat char dev driver: write called\n");
+    debug_pr_info("ethercat char dev driver: write called\n");
     
     skb = ecat_dev->tx_skb[ecat_dev->tx_skb_index_next++];
     if (ecat_dev->tx_skb_index_next >= EC_TX_RING_SIZE) {
@@ -638,7 +634,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
             ret = -EINVAL;
         } else {
             netdev_tx_t local_ret = 0;
-            debug_print_frame("libethercat char dev driver: sending", skb->data, skb->len);
+            debug_print_frame("ethercat char dev driver: sending", skb->data, skb->len);
             
             ethercat_monitor_frame(ecat_dev, skb->data, len);
 
@@ -669,7 +665,7 @@ static unsigned int ethercat_device_poll(struct file *filp, struct poll_table_st
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
 
-    debug_pr_info("libethercat char dev driver: poll called\n");
+    debug_pr_info("ethercat char dev driver: poll called\n");
 
 //    poll_wait(filp, &ecat_dev->ir_queue, poll_table);
     mask = ecat_dev->poll_mask;
@@ -755,11 +751,11 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
     return ret;
 }
 
-//! initializing libethercat module
+//! initializing ethercat module
 /*! 
  */
-int  libethercat_init(void) {
-    pr_info("libethercat char dev driver: init\n");
+int  ethercat_init(void) {
+    pr_info("ethercat char dev driver: init\n");
 
     /* init hardware driver */
     ethercat_device_init();
@@ -767,15 +763,15 @@ int  libethercat_init(void) {
     return 0;
 }
 
-//! exiting libethercat module
+//! exiting ethercat module
 /*!
  */
-void  libethercat_exit(void) {
-    pr_info("libethercat char dev driver: exit\n");
+void  ethercat_exit(void) {
+    pr_info("ethercat char dev driver: exit\n");
 
     ethercat_device_exit();
 }
 
-module_init(libethercat_init);
-module_exit(libethercat_exit);
+module_init(ethercat_init);
+module_exit(ethercat_exit);
 
