@@ -797,7 +797,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                         // allocating new dcs
                         osal_uint8_t dcs_cnt = cat_len / (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
-                        if (slv->eeprom.dcs_cnt > LEC_MAX_EEPROM_CAT_DC) {
+                        if (dcs_cnt > LEC_MAX_EEPROM_CAT_DC) {
                             ec_log(5, "EEPROM_DC", "slave %2d: can only store %" PRIu64 " dc settings but got %d!\n", 
                                     slave, LEC_MAX_EEPROM_CAT_DC, dcs_cnt);
                             slv->eeprom.dcs_cnt = LEC_MAX_EEPROM_CAT_DC;

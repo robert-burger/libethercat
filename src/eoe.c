@@ -33,6 +33,8 @@
 
 #include <libethercat/config.h>
 
+#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
+
 #include "libethercat/ec.h"
 #include "libethercat/eoe.h"
 #include "libethercat/error_codes.h"
@@ -804,3 +806,4 @@ void ec_eoe_destroy_tun(ec_t *pec) {
     }
 }
 
+#endif /* LIBETHERCAT_MBX_SUPPORT_EOE == 1 */

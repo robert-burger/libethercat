@@ -38,6 +38,9 @@
  */
 
 #include <libethercat/config.h>
+
+#if LIBETHERCAT_BUILD_DEVICE_FILE == 1
+
 #include <libethercat/hw_file.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
@@ -402,3 +405,4 @@ void hw_device_file_send_finished(struct hw_common *phw) {
     }
 }
 
+#endif /* LIBETHERCAT_BUILD_DEVICE_FILE == 1 */
