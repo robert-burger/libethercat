@@ -5402,7 +5402,7 @@ static void r8169_watchdog_task(struct work_struct *work)
 	u32 status = rtl_get_events(tp);
 	if (status & LinkChg) {
 		phy_mac_interrupt(tp->phydev);
-	    rtl_ack_events(tp, LinkChg);
+		rtl_ack_events(tp, LinkChg);
 	}
 
 	mod_timer(&tp->watchdog_timer, round_jiffies(jiffies + HZ));
