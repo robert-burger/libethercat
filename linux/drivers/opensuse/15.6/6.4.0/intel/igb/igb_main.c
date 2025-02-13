@@ -2223,8 +2223,6 @@ void igb_down(struct igb_adapter *adapter)
 	if (!adapter->is_ecat) {
 		netif_carrier_off(netdev);
 		netif_tx_stop_all_queues(netdev);
-
-		ethercat_device_set_link(adapter->ecat_dev, 0);
 	}
 
 	/* disable transmits in the hardware */
