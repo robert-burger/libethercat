@@ -4249,8 +4249,10 @@ static int __igb_open(struct net_device *netdev, bool resuming)
 	if (!resuming)
 		pm_runtime_get_sync(&pdev->dev);
 
-	if (!adapter->is_ecat) {
-		netif_carrier_off(netdev);
+	netif_carrier_off(netdev);
+	
+	if (adapter->ecat_dev) {
+		ethercat_device_set_link(adapter->ecat_dev, 0);
 	}
 
 	/* allocate transmit descriptors */
@@ -5645,24 +5647,6 @@ static void igb_watchdog_task(struct work_struct *work)
 
 	link = igb_has_link(adapter);
 
-	if (likely(adapter->is_ecat)) {
-		if (adapter->ecat_dev) {
-			ethercat_device_set_link(adapter->ecat_dev, link);
-		}
-	
-		if (!test_bit(__IGB_DOWN, &adapter->state)) {
-			mod_timer(&adapter->watchdog_timer, round_jiffies(jiffies + HZ));
-		}
-
-		adapter->link_speed = SPEED_100;
-	
-		spin_lock(&adapter->stats64_lock);
-		igb_update_stats(adapter);
-		spin_unlock(&adapter->stats64_lock);
-
-		return;
-	}
-
 	if (adapter->flags & IGB_FLAG_NEED_LINK_UPDATE) {
 		if (time_after(jiffies, (adapter->link_check_timeout + HZ)))
 			adapter->flags &= ~IGB_FLAG_NEED_LINK_UPDATE;
@@ -5815,6 +5799,14 @@ no_wait:
 		}
 	}
 
+	if (adapter->ecat_dev) {
+		if (!netif_carrier_ok(netdev)) {
+			ethercat_device_set_link(adapter->ecat_dev, 0);
+		} else {
+			ethercat_device_set_link(adapter->ecat_dev, 1);
+		}
+	}
+
 	spin_lock(&adapter->stats64_lock);
 	igb_update_stats(adapter);
 	spin_unlock(&adapter->stats64_lock);
@@ -5839,15 +5831,17 @@ no_wait:
 		set_bit(IGB_RING_FLAG_TX_DETECT_HANG, &tx_ring->flags);
 	}
 
-	/* Cause software interrupt to ensure Rx ring is cleaned */
-	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
-		u32 eics = 0;
+	if (!adapter->ecat_dev || !ethercat_polling) {
+		/* Cause software interrupt to ensure Rx ring is cleaned */
+		if (adapter->flags & IGB_FLAG_HAS_MSIX) {
+			u32 eics = 0;
 
-		for (i = 0; i < adapter->num_q_vectors; i++)
-			eics |= adapter->q_vector[i]->eims_value;
-		wr32(E1000_EICS, eics);
-	} else {
-		wr32(E1000_ICS, E1000_ICS_RXDMT0);
+			for (i = 0; i < adapter->num_q_vectors; i++)
+				eics |= adapter->q_vector[i]->eims_value;
+			wr32(E1000_EICS, eics);
+		} else {
+			wr32(E1000_ICS, E1000_ICS_RXDMT0);
+		}
 	}
 
 	igb_spoof_check(adapter);
