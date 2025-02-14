@@ -213,6 +213,8 @@ module_param_array(ethercat_mac_addr, charp, &ethercat_mac_addr_count,  0660);
 MODULE_PARM_DESC(ethercat_mac_addr, "List of MAC addresses to use as EtherCAT device");
 
 static unsigned int ethercat_polling;
+module_param(ethercat_polling, uint, 0);
+MODULE_PARM_DESC(ethercat_polling, "Set interface to polling mode (no interrupt) for EtherCAT case");
 
 static pci_ers_result_t igb_io_error_detected(struct pci_dev *,
 		     pci_channel_state_t);
