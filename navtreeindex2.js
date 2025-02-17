@@ -56,6 +56,7 @@ var NAVTREEINDEX2 =
 "group__regs__group.html#ggabed82baf7f470b522273a3e37c24c600afa2326d01e6c07bf0984d5e13c6988c0":[1,10,77,4],
 "group__slave__group.html":[1,11],
 "group__slave__group.html#ga07dd3a968c535cd1881b419b2f1be4e3":[1,11,45],
+"group__slave__group.html#ga10ba7541e889e40f81f4274be2d608c9":[1,11,48],
 "group__slave__group.html#ga13145c4fb1e32c6308ed690bc13c7277":[1,11,19],
 "group__slave__group.html#ga14127b7679ba805862f6436d5671b981":[1,11,11],
 "group__slave__group.html#ga1c2662f279a7be490da55ca74eb8e17a":[1,11,17],
@@ -70,7 +71,7 @@ var NAVTREEINDEX2 =
 "group__slave__group.html#ga48256779c3cc60b25a9b173890c587de":[1,11,26],
 "group__slave__group.html#ga4ee28661e82496d72c73d23cfaaf0f29":[1,11,33],
 "group__slave__group.html#ga5dc8166b6e60640b0577d53c0afe3627":[1,11,40],
-"group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94":[1,11,48],
+"group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94":[1,11,49],
 "group__slave__group.html#ga63236884589d4c0ec600201c38e2f2e9":[1,11,35],
 "group__slave__group.html#ga64723cd2366586c11a72deabefbfb38a":[1,11,29],
 "group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793":[1,11,41],
@@ -91,8 +92,8 @@ var NAVTREEINDEX2 =
 "group__slave__group.html#gac8d87ad36f2c6d7a425a7a1a73808cc6":[1,11,32],
 "group__slave__group.html#gacb9f29b91506d9e09fad1b1ab925d925":[1,11,18],
 "group__slave__group.html#gad10537b40174a3db2d330c43a8c87734":[1,11,43],
-"group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746":[1,11,50],
-"group__slave__group.html#gade31717a7d8d528f538806c4e248a504":[1,11,49],
+"group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746":[1,11,51],
+"group__slave__group.html#gade31717a7d8d528f538806c4e248a504":[1,11,50],
 "group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57":[1,11,47],
 "group__slave__group.html#gae8cccdc1489cc14642fe74f97964efdd":[1,11,13],
 "group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0":[1,11,46],
@@ -248,6 +249,5 @@ var NAVTREEINDEX2 =
 "structec__dc__info.html#a27cd75af9a2da15d2187e49d1abeb748":[2,0,8,9],
 "structec__dc__info.html#a29db37a7cc92815b1e010d01f45d034d":[2,0,8,3],
 "structec__dc__info.html#a49992c42e2bbd58d992c35e4e27c06d3":[2,0,8,4],
-"structec__dc__info.html#a5f7677879ffc0f7356c7c326e910bf00":[2,0,8,2],
-"structec__dc__info.html#a63fcccb22bcde8d441784f8be6658194":[2,0,8,7]
+"structec__dc__info.html#a5f7677879ffc0f7356c7c326e910bf00":[2,0,8,2]
 };

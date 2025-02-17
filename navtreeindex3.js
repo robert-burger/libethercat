@@ -1,5 +1,6 @@
 var NAVTREEINDEX3 =
 {
+"structec__dc__info.html#a63fcccb22bcde8d441784f8be6658194":[2,0,8,7],
 "structec__dc__info.html#a85048f2d3b5aa37c7058781d625bb69e":[2,0,8,0],
 "structec__dc__info.html#aef0820a407c8c658abaca711153e8e51":[2,0,8,6],
 "structec__dc__info__slave.html":[2,0,9],
@@ -248,6 +249,5 @@ var NAVTREEINDEX3 =
 "structeeprom__info.html#a3d7c013ec77516cd78ac4823e22405e0":[1,3,6,23],
 "structeeprom__info.html#a48116e94078dff54cec5e2629b2dd1e2":[1,3,6,10],
 "structeeprom__info.html#a4a58a56d30951fe3f467bc1d9916b1b0":[1,3,6,19],
-"structeeprom__info.html#a59c7671107cfaff0c503668c8aeaa992":[1,3,6,21],
-"structeeprom__info.html#a764bdc9dbd06e687471a2b8bc4cf8c02":[1,3,6,2]
+"structeeprom__info.html#a59c7671107cfaff0c503668c8aeaa992":[1,3,6,21]
 };

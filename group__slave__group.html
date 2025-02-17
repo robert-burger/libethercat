@@ -284,6 +284,9 @@ Functions</h2></td></tr>
 <tr class="separator:ga07dd3a968c535cd1881b419b2f1be4e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabdc007f8e505203a919bc145ad68c41b" id="r_gabdc007f8e505203a919bc145ad68c41b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#gabdc007f8e505203a919bc145ad68c41b">ec_slave_free</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave)</td></tr>
 <tr class="separator:gabdc007f8e505203a919bc145ad68c41b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga10ba7541e889e40f81f4274be2d608c9" id="r_ga10ba7541e889e40f81f4274be2d608c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#ga10ba7541e889e40f81f4274be2d608c9">ec_slave_reset</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint16_t slave)</td></tr>
+<tr class="memdesc:ga10ba7541e889e40f81f4274be2d608c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">issue hardware reset of slave  <br /></td></tr>
+<tr class="separator:ga10ba7541e889e40f81f4274be2d608c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gade31717a7d8d528f538806c4e248a504" id="r_gade31717a7d8d528f538806c4e248a504"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__slave__group.html#gade31717a7d8d528f538806c4e248a504">ec_slave_set_state</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, ec_state_t state)</td></tr>
 <tr class="memdesc:gade31717a7d8d528f538806c4e248a504"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set EtherCAT state on slave.  <br /></td></tr>
 <tr class="separator:gade31717a7d8d528f538806c4e248a504"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -693,6 +696,43 @@ const osal_char_t *&#160;</td><td class="memItemRight" valign="bottom"><b>al_sta
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Working counter of the used commands, should be 1 if it was successfull. </dd></dl>
+
+</div>
+</div>
+<a id="ga10ba7541e889e40f81f4274be2d608c9" name="ga10ba7541e889e40f81f4274be2d608c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga10ba7541e889e40f81f4274be2d608c9">&#9670;&#160;</a></span>ec_slave_reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ec_slave_reset </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *&#160;</td>
+          <td class="paramname"><em>pec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">osal_uint16_t&#160;</td>
+          <td class="paramname"><em>slave</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>issue hardware reset of slave </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

@@ -298,61 +298,64 @@ $(document).ready(function(){initNavTree('slave_8h_source.html',''); initResizab
 <div class="line"><a id="l00379" name="l00379"></a><span class="lineno"><a class="line" href="group__slave__group.html#gabdc007f8e505203a919bc145ad68c41b">  379</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#gabdc007f8e505203a919bc145ad68c41b">ec_slave_free</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave);</div>
 <div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span> </div>
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span> </div>
-<div class="line"><a id="l00395" name="l00395"></a><span class="lineno"><a class="line" href="group__slave__group.html#gade31717a7d8d528f538806c4e248a504">  395</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gade31717a7d8d528f538806c4e248a504">ec_slave_set_state</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, ec_state_t state);</div>
-<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span> </div>
-<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span> </div>
-<div class="line"><a id="l00414" name="l00414"></a><span class="lineno"><a class="line" href="group__slave__group.html#gaeaa337cd1b0ebf6564da3819d28f894f">  414</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gaeaa337cd1b0ebf6564da3819d28f894f">ec_slave_get_state</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
-<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>        ec_state_t *state, osal_uint16_t *alstatcode);</div>
-<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span> </div>
-<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span> </div>
-<div class="line"><a id="l00431" name="l00431"></a><span class="lineno"><a class="line" href="group__slave__group.html#gad10537b40174a3db2d330c43a8c87734">  431</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gad10537b40174a3db2d330c43a8c87734">ec_slave_generate_mapping</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave);</div>
-<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span> </div>
-<div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span> </div>
-<div class="line"><a id="l00449" name="l00449"></a><span class="lineno"><a class="line" href="group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57">  449</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57">ec_slave_prepare_state_transition</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
-<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>        ec_state_t state);</div>
-<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span> </div>
-<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span> </div>
-<div class="line"><a id="l00466" name="l00466"></a><span class="lineno"><a class="line" href="group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746">  466</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746">ec_slave_state_transition</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
-<div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>        ec_state_t state);</div>
-<div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span> </div>
-<div class="line"><a id="l00470" name="l00470"></a><span class="lineno">  470</span> </div>
-<div class="line"><a id="l00484" name="l00484"></a><span class="lineno"><a class="line" href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">  484</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">ec_slave_mailbox_coe_init_cmd_init</a>(<a class="code hl_struct" href="structec__init__cmd.html">ec_init_cmd_t</a> *cmd,</div>
-<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>        <span class="keywordtype">int</span> transition, <span class="keywordtype">int</span> <span class="keywordtype">id</span>, <span class="keywordtype">int</span> si_el, <span class="keywordtype">int</span> ca_atn,</div>
-<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>        osal_char_t *data, osal_size_t datalen);</div>
-<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span> </div>
-<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span><span class="preprocessor">#if LIBETHERCAT_MBX_SUPPORT_SOE == 1</span></div>
-<div class="line"><a id="l00490" name="l00490"></a><span class="lineno">  490</span> </div>
-<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span><span class="keywordtype">void</span> ec_slave_mailbox_soe_init_cmd_init(<a class="code hl_struct" href="structec__init__cmd.html">ec_init_cmd_t</a> *cmd,</div>
-<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span>        <span class="keywordtype">int</span> transition, <span class="keywordtype">int</span> <span class="keywordtype">id</span>, <span class="keywordtype">int</span> si_el, <span class="keywordtype">int</span> ca_atn,</div>
-<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>        osal_char_t *data, osal_size_t datalen);</div>
-<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span> </div>
-<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span> </div>
-<div class="line"><a id="l00520" name="l00520"></a><span class="lineno"><a class="line" href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">  520</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">ec_slave_add_init_cmd</a>(<a class="code hl_struct" href="structec.html">ec_t</a> *pec, osal_uint16_t slave, <a class="code hl_struct" href="structec__init__cmd.html">ec_init_cmd_t</a> *cmd);</div>
-<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span> </div>
-<div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span> </div>
-<div class="line"><a id="l00539" name="l00539"></a><span class="lineno"><a class="line" href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">  539</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">ec_slave_set_dc_config</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
-<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span>        <span class="keywordtype">int</span> use_dc, <span class="keywordtype">int</span> type, osal_uint32_t cycle_time_0, </div>
-<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>        osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);</div>
-<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span> </div>
-<div class="line"><a id="l00543" name="l00543"></a><span class="lineno">  543</span><span class="preprocessor">#if LIBETHERCAT_MBX_SUPPORT_EOE == 1</span></div>
-<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span> </div>
-<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span><span class="keywordtype">void</span> ec_slave_set_eoe_settings(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave,</div>
-<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>        osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, </div>
-<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>        osal_uint8_t *dns, osal_char_t *dns_name);</div>
-<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span> </div>
-<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span><span class="keyword">const</span> osal_char_t *al_status_code_2_string(<span class="keywordtype">int</span> code);</div>
-<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span> </div>
-<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span><span class="preprocessor">#if 0 </span></div>
-<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>{</div>
-<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span><span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>}</div>
-<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span> </div>
-<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span><span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_SLAVE_H</span></div>
-<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span> </div>
+<div class="line"><a id="l00389" name="l00389"></a><span class="lineno"><a class="line" href="group__slave__group.html#ga10ba7541e889e40f81f4274be2d608c9">  389</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#ga10ba7541e889e40f81f4274be2d608c9">ec_slave_reset</a>(<a class="code hl_struct" href="structec.html">ec_t</a> *pec, osal_uint16_t slave);</div>
+<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span> </div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span> </div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno"><a class="line" href="group__slave__group.html#gade31717a7d8d528f538806c4e248a504">  405</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gade31717a7d8d528f538806c4e248a504">ec_slave_set_state</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, ec_state_t state);</div>
+<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span> </div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span> </div>
+<div class="line"><a id="l00424" name="l00424"></a><span class="lineno"><a class="line" href="group__slave__group.html#gaeaa337cd1b0ebf6564da3819d28f894f">  424</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gaeaa337cd1b0ebf6564da3819d28f894f">ec_slave_get_state</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
+<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>        ec_state_t *state, osal_uint16_t *alstatcode);</div>
+<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span> </div>
+<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span> </div>
+<div class="line"><a id="l00441" name="l00441"></a><span class="lineno"><a class="line" href="group__slave__group.html#gad10537b40174a3db2d330c43a8c87734">  441</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gad10537b40174a3db2d330c43a8c87734">ec_slave_generate_mapping</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave);</div>
+<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span> </div>
+<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span> </div>
+<div class="line"><a id="l00459" name="l00459"></a><span class="lineno"><a class="line" href="group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57">  459</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gae52a9b36266876b5b9a0127748d8cf57">ec_slave_prepare_state_transition</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
+<div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span>        ec_state_t state);</div>
+<div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span> </div>
+<div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span> </div>
+<div class="line"><a id="l00476" name="l00476"></a><span class="lineno"><a class="line" href="group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746">  476</a></span><span class="keywordtype">int</span> <a class="code hl_function" href="group__slave__group.html#gadbb01b5cf951b73864d6ce14db685746">ec_slave_state_transition</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
+<div class="line"><a id="l00477" name="l00477"></a><span class="lineno">  477</span>        ec_state_t state);</div>
+<div class="line"><a id="l00478" name="l00478"></a><span class="lineno">  478</span> </div>
+<div class="line"><a id="l00480" name="l00480"></a><span class="lineno">  480</span> </div>
+<div class="line"><a id="l00494" name="l00494"></a><span class="lineno"><a class="line" href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">  494</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#gae9aa3505dec963178bd665bc907b46f0">ec_slave_mailbox_coe_init_cmd_init</a>(<a class="code hl_struct" href="structec__init__cmd.html">ec_init_cmd_t</a> *cmd,</div>
+<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>        <span class="keywordtype">int</span> transition, <span class="keywordtype">int</span> <span class="keywordtype">id</span>, <span class="keywordtype">int</span> si_el, <span class="keywordtype">int</span> ca_atn,</div>
+<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>        osal_char_t *data, osal_size_t datalen);</div>
+<div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span> </div>
+<div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span><span class="preprocessor">#if LIBETHERCAT_MBX_SUPPORT_SOE == 1</span></div>
+<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span> </div>
+<div class="line"><a id="l00514" name="l00514"></a><span class="lineno">  514</span><span class="keywordtype">void</span> ec_slave_mailbox_soe_init_cmd_init(<a class="code hl_struct" href="structec__init__cmd.html">ec_init_cmd_t</a> *cmd,</div>
+<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>        <span class="keywordtype">int</span> transition, <span class="keywordtype">int</span> <span class="keywordtype">id</span>, <span class="keywordtype">int</span> si_el, <span class="keywordtype">int</span> ca_atn,</div>
+<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>        osal_char_t *data, osal_size_t datalen);</div>
+<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span> </div>
+<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span> </div>
+<div class="line"><a id="l00530" name="l00530"></a><span class="lineno"><a class="line" href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">  530</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#ga7c6de79e7358dba8794f6f9ceb31e793">ec_slave_add_init_cmd</a>(<a class="code hl_struct" href="structec.html">ec_t</a> *pec, osal_uint16_t slave, <a class="code hl_struct" href="structec__init__cmd.html">ec_init_cmd_t</a> *cmd);</div>
+<div class="line"><a id="l00531" name="l00531"></a><span class="lineno">  531</span> </div>
+<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span> </div>
+<div class="line"><a id="l00549" name="l00549"></a><span class="lineno"><a class="line" href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">  549</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">ec_slave_set_dc_config</a>(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave, </div>
+<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>        <span class="keywordtype">int</span> use_dc, <span class="keywordtype">int</span> type, osal_uint32_t cycle_time_0, </div>
+<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>        osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);</div>
+<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span> </div>
+<div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span><span class="preprocessor">#if LIBETHERCAT_MBX_SUPPORT_EOE == 1</span></div>
+<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span> </div>
+<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span><span class="keywordtype">void</span> ec_slave_set_eoe_settings(<span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec, osal_uint16_t slave,</div>
+<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>        osal_uint8_t *mac, osal_uint8_t *ip_address, osal_uint8_t *subnet, osal_uint8_t *gateway, </div>
+<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span>        osal_uint8_t *dns, osal_char_t *dns_name);</div>
+<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span> </div>
+<div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span><span class="keyword">const</span> osal_char_t *al_status_code_2_string(<span class="keywordtype">int</span> code);</div>
+<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span> </div>
+<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span><span class="preprocessor">#if 0 </span></div>
+<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>{</div>
+<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span><span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>}</div>
+<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span> </div>
+<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span><span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_SLAVE_H</span></div>
+<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span> </div>
 <div class="ttc" id="acommon_8h_html"><div class="ttname"><a href="common_8h.html">common.h</a></div><div class="ttdoc">ethercat master common stuff</div></div>
 <div class="ttc" id="acommon_8h_html_a0233037da2db1b4439555aa0aba8370b"><div class="ttname"><a href="common_8h.html#a0233037da2db1b4439555aa0aba8370b">LEC_MAX_SLAVE_FMMU</a></div><div class="ttdeci">#define LEC_MAX_SLAVE_FMMU</div><div class="ttdoc">Maximum number of slave FMMUs.</div><div class="ttdef"><b>Definition</b> common.h:95</div></div>
 <div class="ttc" id="acommon_8h_html_a5b1569c5c4da429dd26c99af9fd75f5e"><div class="ttname"><a href="common_8h.html#a5b1569c5c4da429dd26c99af9fd75f5e">LEC_MAX_SLAVE_SM</a></div><div class="ttdeci">#define LEC_MAX_SLAVE_SM</div><div class="ttdoc">Maximum number of slave sync managers.</div><div class="ttdef"><b>Definition</b> common.h:103</div></div>
@@ -361,6 +364,7 @@ $(document).ready(function(){initNavTree('slave_8h_source.html',''); initResizab
 <div class="ttc" id="adc_8h_html"><div class="ttname"><a href="dc_8h.html">dc.h</a></div><div class="ttdoc">ethercat distributed clocks support.</div></div>
 <div class="ttc" id="aeeprom_8h_html"><div class="ttname"><a href="eeprom_8h.html">eeprom.h</a></div><div class="ttdoc">EtherCAT eeprom access fuctions.</div></div>
 <div class="ttc" id="agroup__slave__group_html_ga07dd3a968c535cd1881b419b2f1be4e3"><div class="ttname"><a href="group__slave__group.html#ga07dd3a968c535cd1881b419b2f1be4e3">ec_slave_init</a></div><div class="ttdeci">void ec_slave_init(struct ec *pec, osal_uint16_t slave)</div></div>
+<div class="ttc" id="agroup__slave__group_html_ga10ba7541e889e40f81f4274be2d608c9"><div class="ttname"><a href="group__slave__group.html#ga10ba7541e889e40f81f4274be2d608c9">ec_slave_reset</a></div><div class="ttdeci">void ec_slave_reset(ec_t *pec, osal_uint16_t slave)</div><div class="ttdoc">issue hardware reset of slave</div></div>
 <div class="ttc" id="agroup__slave__group_html_ga411d27a721c60f19c9c3cd383e74b783"><div class="ttname"><a href="group__slave__group.html#ga411d27a721c60f19c9c3cd383e74b783">ec_slave_subdev_t</a></div><div class="ttdeci">struct ec_slave_subdev ec_slave_subdev_t</div><div class="ttdoc">EtherCAT sub device.</div></div>
 <div class="ttc" id="agroup__slave__group_html_ga5dc8166b6e60640b0577d53c0afe3627"><div class="ttname"><a href="group__slave__group.html#ga5dc8166b6e60640b0577d53c0afe3627">worker_arg_t</a></div><div class="ttdeci">struct worker_arg worker_arg_t</div><div class="ttdoc">Worker thread argument structure.</div></div>
 <div class="ttc" id="agroup__slave__group_html_ga625acf0f390c93a7d76a111632dc7e94"><div class="ttname"><a href="group__slave__group.html#ga625acf0f390c93a7d76a111632dc7e94">ec_slave_set_dc_config</a></div><div class="ttdeci">void ec_slave_set_dc_config(struct ec *pec, osal_uint16_t slave, int use_dc, int type, osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift)</div><div class="ttdoc">Set Distributed Clocks config to slave.</div></div>
