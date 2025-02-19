@@ -206,6 +206,24 @@ static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
  * \param phw hardware handle
  * \return 0 or error code
  */
+int hw_tx_high(struct hw_common *phw) {
+    assert(phw != NULL);
+
+    int ret = EC_OK;
+
+    osal_mutex_lock(&phw->hw_lock);
+    osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
+    hw_tx_pool(phw, POOL_HIGH);
+    osal_mutex_unlock(&phw->hw_lock);
+
+    return ret;
+}
+
+//! start sending queued ethercat datagrams (low prio queue)
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
 int hw_tx_low(struct hw_common *phw) {
     assert(phw != NULL);
 
