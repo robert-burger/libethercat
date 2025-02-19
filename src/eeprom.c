@@ -483,7 +483,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
         slv->eeprom.read_eeprom = 1;
 
-        size = (osal_uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 125u); // convert kbit to byte
+        size = (osal_uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 128u); // convert kbit to byte
         if (size > 128u) {
             osal_uint16_t cat_type;
             osal_uint32_t free_pdo_index = 0;
