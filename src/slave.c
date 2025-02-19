@@ -957,13 +957,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             case INIT_2_SAFEOP:
             case INIT_2_OP: {
                 // init to preop stuff
-                ec_log(10, get_transition_string(transition), 
-                        "slave %2d, vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
-                        slave, 
-                        slv->eeprom.vendor_id, 
-                        slv->eeprom.product_code, 
-                        slv->eeprom.mbx_supported);
-
                 // configure mailboxes if any supported
                 if (slv->eeprom.mbx_supported != 0u) {
                     // read mailbox

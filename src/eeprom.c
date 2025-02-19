@@ -466,6 +466,8 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
         ec_eepromread_len(pec, slave, (adr), (osal_uint8_t *)&(mem), sizeof(mem));
 #define do_eeprom_log(...) \
         if (pec->eeprom_log != 0) { ec_log(__VA_ARGS__); }
+#define eeprom_log(...) \
+        if (pec->eeprom_log != 0) { ec_log(10, "EEPROM", __VA_ARGS__); }
 
         // read soem eeprom values
         (void)ec_read_eeprom(EC_EEPROM_ADR_VENDOR_ID, slv->eeprom.vendor_id);
@@ -481,14 +483,43 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
         (void)ec_read_eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_OFF, slv->eeprom.boot_mbx_send_offset);
         (void)ec_read_eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE, slv->eeprom.boot_mbx_send_size);
 
+        char mbx_supported_buf[128] = {};
+        size_t mbx_supported_buf_pos = 0;
+
+#define ADD_MBX_SUPP_TEXT(flag, text) \
+        if (slv->eeprom.mbx_supported & (flag)) { \
+            if (mbx_supported_buf_pos == 0) { mbx_supported_buf_pos += snprintf(&mbx_supported_buf[mbx_supported_buf_pos], 128 - mbx_supported_buf_pos, "%s", (text)); } \
+            else { mbx_supported_buf_pos += snprintf(&mbx_supported_buf[mbx_supported_buf_pos], 128 - mbx_supported_buf_pos, ", %s", (text)); } \
+        }
+
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_AOE, "AoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_EOE, "EoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_COE, "CoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_FOE, "FoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_SOE, "SoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_VOE, "VoE");
+#undef ADD_MBX_SUPP_TEXT
+
+        eeprom_log("slave %2d: Vendor 0x%08X, ProductCode 0x%08X, SupportedMbx %s\n", slave, slv->eeprom.vendor_id, slv->eeprom.product_code, mbx_supported_buf);
+        eeprom_log("          Mbx Receive 0x%04X/%u, Send 0x%04X/%u\n", 
+                slv->eeprom.mbx_receive_offset, slv->eeprom.mbx_receive_size,
+                slv->eeprom.mbx_send_offset, slv->eeprom.mbx_send_size);
+        eeprom_log("          Boot Mbx Receive 0x%04X/%u, Send 0x%04X/%u\n", 
+                slv->eeprom.boot_mbx_receive_offset, slv->eeprom.boot_mbx_receive_size,
+                slv->eeprom.boot_mbx_send_offset, slv->eeprom.boot_mbx_send_size);
+
         slv->eeprom.read_eeprom = 1;
 
         size = (osal_uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 128u); // convert kbit to byte
+
+        eeprom_log("          EEPROM size %u bytes (value %u)\n", size, value32 & 0x0000FFFFu); 
+
         if (size > 128u) {
             osal_uint16_t cat_type;
             osal_uint32_t free_pdo_index = 0;
             do {
                 int ret = ec_read_eeprom(cat_offset, value32);
+                printf("ret %d\n", ret);
                 if (ret != 0) {
                     break;
                 }
@@ -496,6 +527,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                 cat_type = (osal_uint16_t)(value32 & 0x0000FFFFu);
                 osal_uint16_t cat_len  = (osal_uint16_t)((value32 & 0xFFFF0000u) >> 16u);
 
+                printf("cat type %X, len %d\n", cat_type, cat_len);
                 switch (cat_type) {
                     default: 
                     case EC_EEPROM_CAT_END:
