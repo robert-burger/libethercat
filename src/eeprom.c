@@ -105,7 +105,8 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     }
 
     if (ret == EC_OK) {
-        int retry_cnt = 100;
+        osal_timer_t timeout;
+        osal_timer_init(&timeout, 100000000); // 100ms
 
         do {
             SII_REG(rd, EC_REG_EEPCFG, eepcfgstat);
@@ -120,11 +121,12 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
 
             osal_sleep(1000000);
 
-        } while (--retry_cnt > 0);
-
-        if (retry_cnt <= 0) {
-            ec_log(10, "EEPROM_TO_EC", "slave %2d: failed setting eeprom to EtherCAT: eepcfgstat %04X\n", slave, eepcfgstat);
-        }
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
+                ec_log(10, "EEPROM_TO_EC", "slave %2d: failed setting eeprom to EtherCAT: eepcfgstat %04X\n", slave, eepcfgstat);
+                ret = EC_ERROR_EEPROM_CONTROL_TO_EC;
+                break;
+            }
+        } while (1);
     }
 
     return ret;
@@ -137,9 +139,9 @@ int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uin
     assert(data != NULL);
    
     int ret = EC_OK;
-    int retry_cnt = 100;
     osal_uint16_t wkc = 0;
     osal_uint16_t eepcsr = 0x0100; // read access
+    osal_timer_t timeout; 
     
     ret = ec_eeprom_to_ec(pec, slave);
     
@@ -147,13 +149,13 @@ int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uin
     // cleared (0x0502[15]=0) and the EEPROM interface is not busy, 
     // otherwise wait until the EEPROM interface is not busy anymore.
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_READ", "reading eepctl failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_READ_ERROR;
             }
@@ -182,14 +184,14 @@ int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uin
 
     // 7. Wait until the Busy bit of the EEPROM Status register is cleared
     if (ret == EC_OK) {
-        retry_cnt = 100;
+        osal_timer_init(&timeout, 100000000);
+
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_READ", "reading eepctl failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_READ_ERROR;
             }
@@ -240,24 +242,24 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
     assert(data != NULL);
 
     int ret = EC_OK;
-    int retry_cnt = 100;
     osal_uint16_t wkc = 0;
     osal_uint16_t eepcsr = 0x0100; // write access
+    osal_timer_t timeout;
     
     ret = ec_eeprom_to_ec(pec, slave);
     
     // 1. Check if the Busy bit of the EEPROM Status register is 
     // cleared (0x0502[15]=0) and the EEPROM interface is not busy, 
     // otherwise wait until the EEPROM interface is not busy anymore.
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
+
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "waiting for eeprom !busy failed, "
                         "wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
@@ -286,14 +288,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
     }
 
     // 3. Write EEPROM word address to EEPROM Address register
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPADR,
                     (osal_uint8_t *)&eepadr, sizeof(eepadr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "writing eepadr failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_WRITE_IN_PROGRESS;
             }
@@ -302,14 +303,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
 
     // 4. Write command only: put write data into EEPROM Data register 
     // (1 word/2 byte only).
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPDAT,
                     (osal_uint8_t *)data, sizeof(*data), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "writing data failed\n");
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
             }
@@ -324,14 +324,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
     // same frame and self-clearing afterwards. The Write enable bit needs 
     // not to be written from PDI if it controls the EEPROM interface.
     eepcsr = 0x0201;
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "wirting eepctl failed\n");
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
             }
@@ -343,14 +342,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
 
     // 7. Wait until the Busy bit of the EEPROM Status register is cleared
     if (ret == EC_OK) {
-        retry_cnt = 100;
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "reading eepctl failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
             }
