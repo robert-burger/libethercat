@@ -517,7 +517,6 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
             osal_uint32_t free_pdo_index = 0;
             do {
                 int ret = ec_read_eeprom(cat_offset, value32);
-                printf("ret %d\n", ret);
                 if (ret != 0) {
                     break;
                 }
@@ -525,7 +524,6 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                 cat_type = (osal_uint16_t)(value32 & 0x0000FFFFu);
                 osal_uint16_t cat_len  = (osal_uint16_t)((value32 & 0xFFFF0000u) >> 16u);
 
-                printf("cat type %X, len %d\n", cat_type, cat_len);
                 switch (cat_type) {
                     default: 
                     case EC_EEPROM_CAT_END:
