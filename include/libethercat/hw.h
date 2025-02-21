@@ -167,6 +167,13 @@ int hw_close(struct hw_common *phw);
  * \param phw hardware handle
  * \return 0 or error code
  */
+int hw_tx_high(struct hw_common *phw);
+
+//! start sending queued ethercat datagrams
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
 int hw_tx_low(struct hw_common *phw);
 
 //! start sending queued ethercat datagrams
