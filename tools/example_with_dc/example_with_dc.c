@@ -392,7 +392,7 @@ int main(int argc, char **argv) {
     osal_uint64_t tx_duration_med = 0, tx_duration_avg_jit = 0, tx_duration_max_jit = 0;
     osal_uint64_t roundtrip_duration_med = 0, roundtrip_duration_avg_jit = 0, roundtrip_duration_max_jit = 0;
 
-	for (;;) {
+    for (;;) {
         osal_timer_t to;
         osal_timer_init(&to, 10000000000);
         osal_trace_timedwait(roundtrip_duration, &to);
@@ -400,17 +400,28 @@ int main(int argc, char **argv) {
         osal_trace_analyze(tx_start, &tx_timer_med, &tx_timer_avg_jit, &tx_timer_max_jit);
         osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
-        
+
 #define to_us(x)    ((double)(x)/1000.)
-        no_verbose_log(&ec, 0, 
-                "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
-                ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
-                to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
-                to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
-                to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit), to_us(ec.dc.act_diff), ec.dc.control.diffsum, act_cycle_rate);
-	}
+        if (dc_mode != dc_mode_ref_clock) {
+            no_verbose_log(&ec, 0, 
+                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                    "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                    "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
+                    ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
+                    to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
+                    to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
+                    to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
+        } else {
+            no_verbose_log(&ec, 0, 
+                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                    "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
+                    "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
+                    ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
+                    to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
+                    to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
+                    to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit), to_us(ec.dc.act_diff), ec.dc.control.diffsum, act_cycle_rate);
+        }
+    }
 
     osal_task_join(&cyclic_task_hdl, NULL);
 
