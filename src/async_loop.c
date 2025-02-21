@@ -259,7 +259,7 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
         osal_timer_init(&timeout, 1000);
         ec_message_entry_t *me = NULL;
         int ret = ec_async_loop_get(&paml->avail, &me, &timeout);
-        if (ret == -1) {
+        if (ret != EC_OK) {
             // got no message buffer
         } else {
             me->msg.id = EC_MSG_CHECK_GROUP;

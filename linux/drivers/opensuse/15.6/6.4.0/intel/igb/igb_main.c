@@ -213,8 +213,6 @@ module_param_array(ethercat_mac_addr, charp, &ethercat_mac_addr_count,  0660);
 MODULE_PARM_DESC(ethercat_mac_addr, "List of MAC addresses to use as EtherCAT device");
 
 static unsigned int ethercat_polling;
-module_param(ethercat_polling, uint, 0);
-MODULE_PARM_DESC(ethercat_polling, "Set interface to polling mode (no interrupt) for EtherCAT case");
 
 static pci_ers_result_t igb_io_error_detected(struct pci_dev *,
 		     pci_channel_state_t);
@@ -6685,22 +6683,22 @@ netdev_tx_t igb_xmit_frame_ring(struct sk_buff *skb,
 				adapter->tx_hwtstamp_skipped++;
 			}
 		}
-
-		if (skb_vlan_tag_present(skb)) {
-			tx_flags |= IGB_TX_FLAGS_VLAN;
-			tx_flags |= (skb_vlan_tag_get(skb) << IGB_TX_FLAGS_VLAN_SHIFT);
-		}
-
-		/* record initial flags and protocol */
-		first->tx_flags = tx_flags;
-		first->protocol = protocol;
-
-		tso = igb_tso(tx_ring, first, &hdr_len);
-		if (tso < 0)
-			goto out_drop;
-		else if (!tso)
-			igb_tx_csum(tx_ring, first);
 	}
+
+	if (skb_vlan_tag_present(skb)) {
+		tx_flags |= IGB_TX_FLAGS_VLAN;
+		tx_flags |= (skb_vlan_tag_get(skb) << IGB_TX_FLAGS_VLAN_SHIFT);
+	}
+
+	/* record initial flags and protocol */
+	first->tx_flags = tx_flags;
+	first->protocol = protocol;
+
+	tso = igb_tso(tx_ring, first, &hdr_len);
+	if (tso < 0)
+		goto out_drop;
+	else if (!tso)
+		igb_tx_csum(tx_ring, first);
 
 	if (igb_tx_map(tx_ring, first, hdr_len))
 		goto cleanup_tx_tstamp;
@@ -6714,6 +6712,7 @@ out_drop:
 	}
 cleanup_tx_tstamp:
 	if (unlikely(!adapter->is_ecat && (tx_flags & IGB_TX_FLAGS_TSTAMP))) {
+
 		dev_kfree_skb_any(adapter->ptp_tx_skb);
 		adapter->ptp_tx_skb = NULL;
 		if (adapter->hw.mac.type == e1000_82576)
