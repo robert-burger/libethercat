@@ -1,9 +1,70 @@
+libethercat (0.6.6) unstable; urgency=low
+
+  * add: abort_code to log message
+  * Merge branch 'master' of https://rmc-github.robotic.dlr.de/common/libethercat
+  * fix: log messages in example when not using ref clock dc
+  * Merge pull request #24 from common/feat/eeprom_timeouts
+  * Merge branch 'feat/eeprom_timeouts' of rmc-github.robotic.dlr.de:common/libethercat into feat/eeprom_timeouts
+  * fix: removed debug eeprom log messages
+  * change: example sending high and low dg's
+  * fix: trying to ignore if eeprom does not respond on switch to EC
+  * Merge branch 'master' into feat/eeprom_timeouts
+  * change: reworked eeprom retry_cnt with timeouts
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * fix: use correct define for return type check
+  * fix: using netif_receive_skb instead of netif_rx
+  * add: eeprom log messages
+  * fix: eeprom size
+  * add: hw_tx_high func
+  * fix: sending on bullseye
+  * fix: using netif_receive_skb in monitor device
+  * fix: reverted some harmfull changes
+  * add: symlink bullseye 5.10.0-32-rt-amd64 to 5.10.0-27-rt-amd64
+  * fix: softdep name
+  * fix: debian driver kernel version
+  * fix: missing includes, symlink of bullseye kernel
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * fix: more igb driver link state fixes
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * Merge pull request #23 from bens-im/fix/coe_error_messages_assignment
+  * fix: corrected extraction of sdo error code
+  * fix: on normal mode, don't try to set ethercat link down
+  * fix: reworked link detection on igb, osl15.6
+  * chore: indent fix
+  * add: watchdog_[timer/task] for polling mode to check link state
+  * fix: r8169 module name
+  * fix: ethercat_device_release
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * add: slave hardware reset func
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * add: compile guard for coe and foe
+  * add: compile guard to in- or exclude optional files
+  * change: initial zeroing of slave structures
+  * Merge branch 'master' of https://rmc-github.robotic.dlr.de/common/libethercat
+  * fix: dc count check fixes #22
+  * Merge pull request #25 from marcfir/feat/custom_dc_rtc
+  * Add forward decl for ec_send_distributed_clocks_sync_intern. Pass osal_timer_gettime_nsec in ec_send_distributed_clocks_sync
+  * feat: Add ec_send_distributed_clocks_sync_with_rtc to enable a custom rtc clock source
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * chore: conan2 port
+  * add: log message when init_cmd sending is finished
+  * add: symlink bullseye 5.10.0-33-rt-amd64 to 5.10.0-27-rt-amd64
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 21 Feb 2025 09:36:51 +0100
+
 libethercat (0.6.5) unstable; urgency=low
 
+  * bump: version to 0.6.5
+  * update: debian changelog
   * fix: foe_tool on file read error
   * fix: abort when reading file to write failed!
+  * t Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * bump: debian version to 0.6.4
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * fix: device closing
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 22 Jan 2025 15:59:33 +0100
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 22 Jan 2025 16:08:41 +0100
 
 libethercat (0.6.4) unstable; urgency=low
 
