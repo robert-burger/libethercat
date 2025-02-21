@@ -6572,22 +6572,24 @@ netdev_tx_t igb_xmit_frame_ring(struct sk_buff *skb,
 				adapter->tx_hwtstamp_skipped++;
 			}
 		}
-	}
 
-	if (skb_vlan_tag_present(skb)) {
-		tx_flags |= IGB_TX_FLAGS_VLAN;
-		tx_flags |= (skb_vlan_tag_get(skb) << IGB_TX_FLAGS_VLAN_SHIFT);
+		if (skb_vlan_tag_present(skb)) {
+			tx_flags |= IGB_TX_FLAGS_VLAN;
+			tx_flags |= (skb_vlan_tag_get(skb) << IGB_TX_FLAGS_VLAN_SHIFT);
+		}
 	}
 
 	/* record initial flags and protocol */
 	first->tx_flags = tx_flags;
 	first->protocol = protocol;
 
-	tso = igb_tso(tx_ring, first, &hdr_len);
-	if (tso < 0)
-		goto out_drop;
-	else if (!tso)
-		igb_tx_csum(tx_ring, first);
+	if (unlikely(!adapter->is_ecat)) { 
+		tso = igb_tso(tx_ring, first, &hdr_len);
+		if (tso < 0)
+			goto out_drop;
+		else if (!tso)
+			igb_tx_csum(tx_ring, first);
+	}
 
 	if (igb_tx_map(tx_ring, first, hdr_len))
 		goto cleanup_tx_tstamp;
