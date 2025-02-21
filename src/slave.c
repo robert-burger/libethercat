@@ -779,8 +779,8 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                             int local_ret = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, cmd->ca_atn, buf, buf_len, &abort_code);
                             if (local_ret != EC_OK) {
                                 ec_log(10, get_transition_string(transition), 
-                                        "slave %2d: writing sdo failed: error code 0x%X!\n", 
-                                        slave, local_ret);
+                                        "slave %2d: writing sdo failed: error code 0x%X, abort_code 0x%X!\n", 
+                                        slave, local_ret, abort_code);
                             } 
                             break;
                         }
