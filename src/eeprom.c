@@ -84,7 +84,7 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     osal_uint16_t wkc;
     osal_uint16_t cnt = 10;
     osal_uint16_t eepcfgstat = 2;
-    
+
     SII_REG(rd, EC_REG_EEPCFG, eepcfgstat);
     if ((ret != EC_OK) || (cnt == 0u)) {
         ec_log(1, "EEPROM_TO_EC", "slave %2d: unable to get eeprom config/control\n", slave);
@@ -122,8 +122,8 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
             osal_sleep(1000000);
 
             if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
-                ec_log(10, "EEPROM_TO_EC", "slave %2d: failed setting eeprom to EtherCAT: eepcfgstat %04X\n", slave, eepcfgstat);
-                ret = EC_ERROR_EEPROM_CONTROL_TO_EC;
+                ec_log(10, "EEPROM_TO_EC", "slave %2d: failed setting eeprom to EtherCAT: eepcfgstat %04X, trying to ignore ...\n", slave, eepcfgstat);
+                //ret = EC_ERROR_EEPROM_CONTROL_TO_EC;
                 break;
             }
         } while (1);
