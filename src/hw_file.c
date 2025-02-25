@@ -239,8 +239,10 @@ int hw_device_file_close(struct hw_common *phw) {
 
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
 
-    phw_file->rxthreadrunning = 0;
-    osal_task_join(&phw_file->rxthread, NULL);
+    if (phw_file->polling_mode == OSAL_FALSE) {
+        phw_file->rxthreadrunning = 0;
+        osal_task_join(&phw_file->rxthread, NULL);
+    }
 
     (void)close(phw_file->fd);
 
