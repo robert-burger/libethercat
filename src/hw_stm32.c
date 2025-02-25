@@ -214,7 +214,7 @@ int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t p
 
     size_t frame_len = ec_frame_length(pframe);
 
-    // Invalidate if cache is enabled
+    // Clean if cache is enabled
     if ((SCB->CCR & SCB_CCR_DC_Msk) != 0U) {
         SCB_CleanDCache_by_Addr((void*)pframe, pframe->len);
     }
