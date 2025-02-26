@@ -86,8 +86,8 @@
 #define EC_ERROR_MAILBOX_MASK                   (0x00100000)                                //!< \brief General mailbox error mask.
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_AOE)        //!< \brief Mailbox AoE not supported.
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_EOE)        //!< \brief Mailbox EoE not supported.
-#define EC_ERROR_MAILBOX_NOT_SUPPORTED_COE      (EC_ERROR_MAILBOX_MASK | EC_MBX_FOE)        //!< \brief Mailbox CoE not supported.
-#define EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_COE)        //!< \brief Mailbox FoE not supported.
+#define EC_ERROR_MAILBOX_NOT_SUPPORTED_COE      (EC_ERROR_MAILBOX_MASK | EC_MBX_COE)        //!< \brief Mailbox CoE not supported.
+#define EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_FOE)        //!< \brief Mailbox FoE not supported.
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_SOE)        //!< \brief Mailbox SoE not supported.
 #define EC_ERROR_MAILBOX_NOT_SUPPORTED_VOE      (EC_ERROR_MAILBOX_MASK | EC_MBX_VOE)        //!< \brief Mailbox VoE not supported.
 
