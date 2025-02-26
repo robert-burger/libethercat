@@ -1,5 +1,12 @@
+libethercat (0.6.7) unstable; urgency=low
+
+  * fix: cleanup hw_file
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 25 Feb 2025 15:20:08 +0100
+
 libethercat (0.6.6) unstable; urgency=low
 
+  * prep: 0.6.6
   * add: abort_code to log message
   * Merge branch 'master' of https://rmc-github.robotic.dlr.de/common/libethercat
   * fix: log messages in example when not using ref clock dc
@@ -51,7 +58,7 @@ libethercat (0.6.6) unstable; urgency=low
   * add: log message when init_cmd sending is finished
   * add: symlink bullseye 5.10.0-33-rt-amd64 to 5.10.0-27-rt-amd64
 
- -- Robert Burger <robert.burger@dlr.de>  Fri, 21 Feb 2025 09:36:51 +0100
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 21 Feb 2025 10:36:21 +0100
 
 libethercat (0.6.5) unstable; urgency=low
 
