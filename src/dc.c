@@ -194,6 +194,12 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
 
+        
+        if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+            // correct rtc time 
+            pec->dc.rtc_time = (int64_t)osal_timer_gettime_nsec() - pec->dc.rtc_sto;
+        }
+
         // Calculate DC start time as a sum of the actual EtherCAT master time,
         // the generic first sync delay and the cycle shift. the first sync delay 
         // has to be a multiple of cycle time.  
@@ -405,7 +411,14 @@ int ec_dc_config(struct ec *pec) {
     }
 
     osal_uint64_t temp_dc = 0;
-    check_ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
+
+    if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+        check_ec_bwr(pec, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
+    } else {
+        check_ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
+    }
+
+    ec_log(10, "DC_CONFIG", "sent first dc sync frame to sync with dc_master_clock: %" PRIu64 "\n", temp_dc);
 
     return EC_OK;
 }
