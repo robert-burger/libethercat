@@ -286,8 +286,8 @@ int ec_dc_config(struct ec *pec) {
         slv->dc.available_ports = slv->active_ports;
 
         if ((slv->dc.use_dc == 0) || ((slv->features & EC_REG_ESCSUP__DC_SUPP) == 0u)) {
-            ec_log(100, "DC_CONFIG", "slave %2d: not using DC (use %d, features 0x%X)\n", 
-                    slave, slv->dc.use_dc, slv->features);
+            ec_log(100, "DC_CONFIG", "slave %2d: not using DC (use %d, supported %X)\n", 
+                    slave, slv->dc.use_dc, slv->features & EC_REG_ESCSUP__DC_SUPP);
 
             // dc not available or not activated
             slv->dc.use_dc = 0;
@@ -369,8 +369,9 @@ int ec_dc_config(struct ec *pec) {
         }
 
         // find parent with active distributed clocks
-        for (parent = slv->parent; parent > 0; parent = pec->slaves[parent].parent) {
-            ec_log(100, "DC_CONFIG", "slave %2d: checking parent %d, dc 0x%X\n", slave, parent, pec->slaves[parent].features);
+        for (parent = slv->parent; parent >= 0; parent = pec->slaves[parent].parent) {
+            ec_log(100, "DC_CONFIG", "slave %2d: checking parent %d, dc %X\n", slave, parent, 
+                    pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP);
             if ((pec->slaves[parent].dc.use_dc) && (pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP)) {
                 break;
             }
