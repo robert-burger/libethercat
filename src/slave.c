@@ -41,6 +41,7 @@
 
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
+#include "libosal/types.h"
 
 #if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
@@ -561,7 +562,6 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
             (void)ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTAT, &act_state, sizeof(act_state), &wkc);
 
             if ((wkc != 0u) && !(act_state & EC_STATE_ERROR)) {
-                ec_log(1, get_transition_string(transition), "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
                 break;
             }
         } while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT);
@@ -573,7 +573,7 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
 
         osal_timer_t timeout;
         osal_timer_init(&timeout, 10000000000); // 10 second timeout
-
+        osal_uint16_t last_logged_value = 0u;
         do {
             if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) == EC_OK) { 
                 act_state = 0;
@@ -582,9 +582,11 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
                 if ((act_state & EC_STATE_ERROR) != 0u) {
                     if (ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
                         if (value != 0u) {
-                            ec_log(10, get_transition_string(transition), "slave %2d: state switch to %d failed, "
+                            if (value != last_logged_value){
+                                ec_log(1, get_transition_string(transition), "slave %2d: state switch to %d failed. Reset and try again, "
                                     "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
-
+                                last_logged_value = value;
+                            }
                             (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
                         }
                     }
@@ -908,8 +910,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             osal_timer_t error_reset_timeout;
             osal_timer_init(&error_reset_timeout, 1000000000);
 
+            ec_log(10, "SLAVE_TRANSITION", "slave %2d is in ERROR (AL status 0x%04X, AL status code 0x%04X), resetting first.\n", slave, act_state, al_status_code);
             do {
-                ec_log(10, "SLAVE_TRANSITION", "slave %2d is in ERROR (AL status 0x%04X, AL status code 0x%04X), resetting first.\n", slave, act_state, al_status_code);
                 (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
                 act_state = 0;
                 al_status_code = 0;
