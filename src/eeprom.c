@@ -640,12 +640,13 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                             if (slv->sm[j].adr == 0u) {
                                 slv->sm[j].adr = tmp_sms.adr;
                                 slv->sm[j].len = tmp_sms.len;
-                                slv->sm[j].flags = (tmp_sms.activate << 16) | tmp_sms.ctrl_reg;
+                                slv->sm[j].enable_sm = tmp_sms.activate;
+                                slv->sm[j].control_register = tmp_sms.ctrl_reg;
 
                                 do_eeprom_log(10, "EEPROM_SM", 
-                                        "          sm%d adr 0x%X, len %d, flags "
-                                        "0x%X\n", j, slv->sm[j].adr, slv->sm[j].len, 
-                                        slv->sm[j].flags);
+                                        "          sm%d adr 0x%X, len %d, enable_sm "
+                                        "0x%X, control_register 0x%X\n", j, slv->sm[j].adr, slv->sm[j].len, 
+                                        slv->sm[j].enable_sm, slv->sm[j].control_register);
                             } else {
                                 do_eeprom_log(10, "EEPROM_SM", "          sm%d adr "
                                         "0x%X, len %d, flags 0x%X\n", j, 
