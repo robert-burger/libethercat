@@ -1,4 +1,5 @@
 //! ethercat example with distributed clocks
+//
 /*!
  * author: Robert Burger
  *
@@ -95,9 +96,12 @@ static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
 osal_retval_t (*wait_time)(osal_uint64_t) = osal_sleep_until_nsec;
 
+osal_uint64_t last_sent;
 osal_trace_t *tx_start;
 osal_trace_t *tx_duration;
 osal_trace_t *roundtrip_duration;
+
+osal_size_t bytes_last_sent = 0;
 
 //! Cyclic (high priority realtime) task for sending EtherCAT datagrams.
 static osal_bool_t cyclic_task_running = OSAL_FALSE;
@@ -105,7 +109,6 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     ec_t *pec = (ec_t *)param;
     osal_uint64_t abs_timeout = osal_timer_gettime_nsec();
     osal_uint64_t time_start = 0u;
-    osal_uint64_t time_end = 0u;
 
     no_verbose_log(pec, 0, "cyclic_task: running endless loop, cycle rate is %lu\n", cycle_rate);
 
@@ -113,20 +116,18 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         abs_timeout += act_cycle_rate;
         (void)wait_time(abs_timeout);
 
-        if ((pec->master_state != EC_STATE_SAFEOP) && (pec->master_state != EC_STATE_OP)) {
-            continue;
-        }
-
+        last_sent = abs_timeout;
         time_start = osal_trace_point(tx_start);
 
         // execute one EtherCAT cycle
-        ec_send_distributed_clocks_sync(pec);
+        ec_send_distributed_clocks_sync_with_rtc(pec, abs_timeout);
         ec_send_process_data(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
         hw_tx_high(pec->phw);
 
         osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
+        bytes_last_sent = ec.phw->bytes_last_sent;
         
         hw_tx_low(pec->phw);
     }
@@ -145,9 +146,11 @@ int main(int argc, char **argv) {
 #endif
     int disable_overlapping = 0;
     int disable_lrw = 0;
-    double dc_kp = 0.1;
-    double dc_ki = 0.01;
+    double dc_kp = 10.;
+    double dc_ki = 1.;
     ec_t *pec = &ec;
+
+    osal_timer_set_clock_source(CLOCK_MONOTONIC);
 
     for (i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0)) {
@@ -158,7 +161,7 @@ int main(int argc, char **argv) {
                 intf = argv[i];
         } else if ((strcmp(argv[i], "-v") == 0) || 
                 (strcmp(argv[i], "--verbose") == 0)) {
-            max_print_level = 100;
+            max_print_level = 200;
         } 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
         else if ((strcmp(argv[i], "-e") == 0) || 
@@ -345,17 +348,12 @@ int main(int argc, char **argv) {
                     if (dc_mode == dc_mode_ref_clock) {
                         act_cycle_rate = cycle_rate + ec.dc.timer_correction;
                     }
-
-                    osal_uint64_t time_end = osal_timer_gettime_nsec();
-                    osal_uint64_t time_start = osal_trace_get_last_time(tx_start);
-
-                    osal_trace_time(roundtrip_duration, time_end - time_start);
                 } &anon_cb; }), NULL);
 
     int cycle_rate_hz = 1. / (cycle_rate * 1E-9);
     ec.dc.control.kp = dc_kp / cycle_rate_hz;
     ec.dc.control.ki = dc_ki / (cycle_rate_hz * cycle_rate_hz);
-    ec.dc.control.diffsum_limit = cycle_rate / 10000.;
+    ec.dc.control.diffsum_limit = cycle_rate / 1000.;
     //ec_configure_dc_settling_time(&ec, 50000000000);
 //    ec_configure_dc_settling_threshold(&ec, 5000, 10000); // 1000 cycles below 5000ns
 
@@ -377,9 +375,9 @@ int main(int argc, char **argv) {
     // configure slave settings.
     for (int i = 0; i < ec.slave_cnt; ++i) {
         ec.slaves[i].assigned_pd_group = 0;
-        ec_slave_set_dc_config(&ec, i, 1, EC_DC_ACTIVATION_REG_SYNC0, cycle_rate, 0, 0);
+        ec_slave_set_dc_config(&ec, i, 1, EC_DC_ACTIVATION_REG_SYNC0, cycle_rate, 0, -50000);
     }
-
+        
     cyclic_task_running = OSAL_TRUE;
     osal_task_attr_t cyclic_task_attr = { "cyclic_task", OSAL_SCHED_POLICY_FIFO, base_prio, base_affinity };
     osal_task_t cyclic_task_hdl;
@@ -395,11 +393,13 @@ int main(int argc, char **argv) {
     for (;;) {
         osal_timer_t to;
         osal_timer_init(&to, 10000000000);
-        osal_trace_timedwait(roundtrip_duration, &to);
+        osal_trace_timedwait(tx_duration, &to);
 
         osal_trace_analyze(tx_start, &tx_timer_med, &tx_timer_avg_jit, &tx_timer_max_jit);
         osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
+
+        no_verbose_log(&ec, 0, "rtc_time %" PRIu64 ", last %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, last_sent, ec.dc.dc_time);
 
 #define to_us(x)    ((double)(x)/1000.)
         if (dc_mode != dc_mode_ref_clock) {
@@ -407,7 +407,7 @@ int main(int argc, char **argv) {
                     "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                     "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                     "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
-                    ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
+                    bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
                     to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
                     to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
                     to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
@@ -416,7 +416,7 @@ int main(int argc, char **argv) {
                     "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                     "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
                     "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
-                    ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
+                    bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
                     to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
                     to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
                     to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit), to_us(ec.dc.act_diff), ec.dc.control.diffsum, act_cycle_rate);
