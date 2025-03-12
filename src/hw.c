@@ -85,7 +85,8 @@ int hw_open(struct hw_common *phw, struct ec *pec) {
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
 
-    osal_mutex_init(&phw->hw_lock, NULL);
+    osal_mutex_attr_t hw_lock_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&phw->hw_lock, &hw_lock_attr);
 
     return ret;
 }
