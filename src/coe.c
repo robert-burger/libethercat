@@ -439,7 +439,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                 } else {
                     ec_coe_print_msg(1, "COE_SDO_READ", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
-                    ret = EC_ERROR_MAILBOX_READ;
+                    //ret = EC_ERROR_MAILBOX_READ;
                 }
 
                 ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
@@ -1179,7 +1179,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     continue;
                 }
 
-                ec_log(100, "COE_MAPPING", "slave %2" PRIu16 ": 0x%04" PRIu32 "/%d mapped pdo 0x%04X\n",
+                ec_log(100, "COE_MAPPING", "slave %2" PRIu16 ": 0x%04" PRIx32 "/%d mapped pdo 0x%04X\n",
                         slave, idx, i, entry_idx);
 
                 // read entry subindex with mapped value
@@ -1219,10 +1219,10 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     bit_len += entry & 0x000000FFu;
 
                     ec_log(100, "COE_MAPPING", "                "
-                            "mapped entry 0x%04" PRIu32 "/ %" PRIu32 "-> %" PRIu32 "bits\n",
-                            (entry & 0xFFFF0000u) >> 16u, 
-                            (entry & 0x0000FF00u) >> 8u, 
-                            (entry & 0x000000FFu));
+                            "mapped entry 0x%04" PRIx16 "/ %" PRIx8 "-> %" PRIx8 "bits\n",
+                            (uint16_t)((entry & 0xFFFF0000u) >> 16u),
+                            (uint8_t)((entry & 0x0000FF00u) >> 8u),
+                            (uint8_t)((entry & 0x000000FFu)));
                 }                        
             }
 
