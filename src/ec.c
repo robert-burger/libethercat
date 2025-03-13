@@ -129,13 +129,12 @@ void (*ec_log_func)(int lvl, void *user, const osal_char_t *format, ...) __attri
 void ec_log(int lvl, const osal_char_t *pre, const osal_char_t *format, ...) {
     if (ec_log_func != NULL) {
         osal_char_t buf[512];
-        osal_char_t *tmp = &buf[0];
 
         // format argument list
         va_list args;                   // cppcheck-suppress misra-c2012-17.1
         va_start(args, format);         // cppcheck-suppress misra-c2012-17.1
-        int ret = snprintf(tmp, 512, "%-20.20s: ", pre);
-        (void)vsnprintf(&tmp[ret], 512-ret, format, args);
+        int ret = snprintf(&buf[0], 512, "%-20.20s: ", pre);
+        (void)vsnprintf(&buf[ret], 512-ret, format, args);
         va_end(args);                   // cppcheck-suppress misra-c2012-17.1
 
         ec_log_func(lvl, ec_log_func_user, "%s", buf);
