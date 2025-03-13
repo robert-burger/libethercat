@@ -263,6 +263,7 @@ int ec_dc_config(struct ec *pec) {
     osal_uint16_t wkc;
 
     pec->dc.have_dc = 0;
+    pec->dc.have_64bit = 1;
     pec->dc.master_address = 0;
 
     // latch DC receive time on slaves (ET1100, Section 1, 9.1.8)
@@ -300,6 +301,7 @@ int ec_dc_config(struct ec *pec) {
             // first slave with enabled dc's
             pec->dc.master_address = slv->fixed_address;
             pec->dc.have_dc = 1;
+            pec->dc.have_64bit = (slv->features & 0x0008u) != 0u;
             pec->dc.rtc_time = 0;
             pec->dc.next = slave;
             slv->dc.prev = -1;                

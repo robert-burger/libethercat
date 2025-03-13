@@ -105,6 +105,35 @@ static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
     return (tmp_a > tmp_b) ? (int64_t)abs_diff : -(int64_t)abs_diff;
 }
 
+//! calculate signed difference of 32-bit unsigned int's
+/*!
+ * \param[in]   a       Minuend.
+ * \param[in]   b       Subtrahend.
+ *
+ * \return Difference 
+ */
+static int32_t signed32_diff(osal_uint32_t a, osal_uint32_t b) {
+    osal_uint32_t tmp_a = a;
+    osal_uint32_t tmp_b = b;
+    osal_uint32_t abs_diff = (a - b);
+    if (a < b) { abs_diff = (b - a); }
+
+    if (abs_diff > (osal_uint32_t)INT_MAX) {
+        if (a > (osal_uint32_t)INT_MAX) {
+            tmp_a = UINT_MAX - a;
+            tmp_b = b;
+        } else if (b > (osal_uint32_t)INT_MAX) {
+            tmp_a = a;
+            tmp_b = UINT_MAX - b;
+        } else {
+        }
+            
+        abs_diff = (tmp_a - tmp_b);
+        if (tmp_a < tmp_b) { abs_diff = (tmp_b - tmp_a); }
+    }
+    return (tmp_a > tmp_b) ? (int32_t)abs_diff : -(int32_t)abs_diff;
+}
+
 void default_log_func(ec_t *pec, int lvl, const osal_char_t *format, ...) {
     (void)pec;
     (void)lvl;
@@ -1779,9 +1808,14 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
     if (wkc != 0u) {
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
 
-        // get clock difference
-        pec->dc.act_diff = signed64_diff(pec->dc.rtc_time, pec->dc.dc_time); 
-
+        if (pec->dc.have_64bit == 0) { // we only have 32-bit dc ...
+            // get clock difference
+            pec->dc.act_diff = signed32_diff(pec->dc.rtc_time % UINT_MAX, pec->dc.dc_time); 
+        } else {
+            // get clock difference
+            pec->dc.act_diff = signed64_diff(pec->dc.rtc_time % UINT64_MAX, pec->dc.dc_time); 
+        }
+            
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
             double p_part = pec->dc.control.kp * pec->dc.act_diff;
