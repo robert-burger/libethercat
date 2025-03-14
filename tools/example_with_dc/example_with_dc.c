@@ -110,7 +110,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     osal_uint64_t abs_timeout = osal_timer_gettime_nsec();
     osal_uint64_t time_start = 0u;
 
-    no_verbose_log(pec, 0, "cyclic_task: running endless loop, cycle rate is %lu\n", cycle_rate);
+    ec_log(100, "CYCLIC_TASK", "running endless loop, cycle rate is %lu\n", cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
         abs_timeout += act_cycle_rate;
@@ -132,7 +132,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         hw_tx_low(pec->phw);
     }
 
-    no_verbose_log(pec, 0, "cyclic_task: exiting!\n");
+    ec_log(100, "CYCLIC_TASK", "exiting!\n");
 }
 
 int main(int argc, char **argv) {
@@ -146,6 +146,8 @@ int main(int argc, char **argv) {
 #endif
     int disable_overlapping = 0;
     int disable_lrw = 0;
+    int eeprom_dump = 0;
+    int threaded_startup = 0;
     double dc_kp = 10.;
     double dc_ki = 1.;
     ec_t *pec = &ec;
@@ -176,6 +178,10 @@ int main(int argc, char **argv) {
             disable_overlapping = 1;
         } else if (strcmp(argv[i], "--disable-lrw") == 0) {
             disable_lrw = 1;
+        } else if (strcmp(argv[i], "--eeprom-dump") == 0) {
+            eeprom_dump = 1;
+        } else if (strcmp(argv[i], "--threaded-startup") == 0) {
+            threaded_startup = 1;
         } else if ((strcmp(argv[i], "-p") == 0) || 
                 (strcmp(argv[i], "--prio") == 0)) {
             if (++i < argc)
@@ -231,7 +237,6 @@ int main(int argc, char **argv) {
         return usage(argc, argv);
 
     int num_samples = 1. / (cycle_rate * 1E-9);
-    printf("NUM_SAMPLES: %d\n", num_samples);
     osal_trace_alloc(&tx_start, num_samples);
     osal_trace_alloc(&tx_duration, num_samples);
     osal_trace_alloc(&roundtrip_duration, num_samples);
@@ -310,12 +315,12 @@ int main(int argc, char **argv) {
         goto hw_exit;
     }
 
-    ret = ec_open(&ec, phw, 1);
+    ret = ec_open(&ec, phw, eeprom_dump);
     if (ret != EC_OK) {
         goto exit;
     }
 
-    ec.threaded_startup = 0;
+    ec.threaded_startup = threaded_startup;
     
     ec_set_state(&ec, EC_STATE_INIT);
 
@@ -399,23 +404,23 @@ int main(int argc, char **argv) {
         osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
 
-        no_verbose_log(&ec, 0, "rtc_time %" PRIu64 ", last %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, last_sent, ec.dc.dc_time);
+        ec_log(10, "MAIN", "rtc_time %" PRIu64 ", last %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, last_sent, ec.dc.dc_time);
 
 #define to_us(x)    ((double)(x)/1000.)
         if (dc_mode != dc_mode_ref_clock) {
-            no_verbose_log(&ec, 0, 
-                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                    "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                    "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
+            ec_log(10, "MAIN", 
+                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Duration %+5.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Round trip %+5.1fus (avg %+5.1fus, max %+5.1fus)\n", 
                     bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
                     to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
                     to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
                     to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
         } else {
-            no_verbose_log(&ec, 0, 
-                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                    "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                    "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
+            ec_log(10, "MAIN",
+                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Duration %+5.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Round trip %+5.1fus (avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
                     bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
                     to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
                     to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 

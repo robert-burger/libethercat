@@ -86,7 +86,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->mbx.handler_running == 0) {
-        ec_log(10, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
+        ec_log(100, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
 
         slv->mbx.seq_counter = 1;
         slv->mbx.sm_state = &slv->mbx.mbx_state; // this may be overwritten by logical mapping
@@ -150,7 +150,7 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->mbx.handler_running != 0) {
-        ec_log(10, "MAILBOX_DEINIT", "slave %2d: deinitilizing mailbox\n", slave);
+        ec_log(100, "MAILBOX_DEINIT", "slave %2d: deinitilizing mailbox\n", slave);
 
         slv->mbx.handler_running = 0;
         osal_task_join(&slv->mbx.handler_tid, NULL);
@@ -635,7 +635,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_log(10, "MAILBOX_HANDLE", "slave %2d: started mailbox handler\n", slave);
+    ec_log(100, "MAILBOX_HANDLE", "slave %2d: started mailbox handler\n", slave);
 
     while (slv->mbx.handler_running != 0) {
         int ret;
@@ -667,7 +667,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
         ec_mbx_do_handle(pec, slave);
     }
 
-    ec_log(10, "MAILBOX_HANDLE", "slave %2d: stopped mailbox handler\n", slave);
+    ec_log(100, "MAILBOX_HANDLE", "slave %2d: stopped mailbox handler\n", slave);
 }
 
 //! \brief Get free mailbox send buffer from slaves send message pool.

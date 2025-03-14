@@ -280,7 +280,7 @@ int ec_dc_config(struct ec *pec) {
     check_ec_bwr(pec, EC_REG_DCSYSDELAY, &dcsysdelay, sizeof(dcsysdelay), &wkc);
 
     osal_uint64_t packet_duration = get_packet_duration(pec);
-    ec_log(100, "DC_CONFIG", "master packet duration %" PRIu64 "\n", packet_duration);
+    ec_log(100, "DC_CONFIG", "master   : packet duration %" PRIu64 "\n", packet_duration);
 
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
         ec_slave_ptr(slv, pec, slave);
@@ -367,7 +367,7 @@ int ec_dc_config(struct ec *pec) {
         if (pec->dc.master_address == slv->fixed_address) {
             pec->dc.dc_sto = 0; // we did a reset 5 lines above
             pec->dc.rtc_sto = osal_timer_gettime_nsec();
-            ec_log(100, "DC_CONFIG", "initial dc_sto %" PRId64 ", rtc_sto %" PRId64 "\n", pec->dc.dc_sto, pec->dc.rtc_sto);
+            ec_log(100, "DC_CONFIG", "master  : initial dc_sto %" PRId64 ", rtc_sto %" PRId64 "\n", pec->dc.dc_sto, pec->dc.rtc_sto);
         }
 
         // find parent with active distributed clocks
@@ -428,7 +428,7 @@ int ec_dc_config(struct ec *pec) {
         check_ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
     }
 
-    ec_log(10, "DC_CONFIG", "sent first dc sync frame to sync with dc_master_clock: %" PRIu64 "\n", temp_dc);
+    ec_log(100, "DC_CONFIG", "master  : sent first dc sync frame to sync with dc_master_clock: %" PRIu64 "\n", temp_dc);
 
     return EC_OK;
 }

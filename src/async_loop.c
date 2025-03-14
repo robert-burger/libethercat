@@ -186,7 +186,7 @@ static void *ec_async_loop_thread(void *arg) {
     assert(paml != NULL);
     assert(paml->pec != NULL);
 
-    ec_log(10, "ASYNC_LOOP", "async loop thread running\n");
+    ec_log(100, "ASYNC_LOOP", "async loop thread running\n");
 
     while (paml->loop_running == 1) {
         osal_timer_t timeout;
@@ -227,7 +227,7 @@ static void *ec_async_loop_thread(void *arg) {
         if (ec_async_loop_put(&paml->avail, me) == 0) {};
     }
     
-    ec_log(10, "ASYNC_LOOP", "async loop thread exited\n");
+    ec_log(100, "ASYNC_LOOP", "async loop thread exited\n");
 
     return NULL;
 }
