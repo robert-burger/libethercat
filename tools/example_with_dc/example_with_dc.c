@@ -99,6 +99,8 @@ osal_trace_t *tx_start;
 osal_trace_t *tx_duration;
 osal_trace_t *roundtrip_duration;
 
+osal_size_t bytes_last_sent = 0;
+
 //! Cyclic (high priority realtime) task for sending EtherCAT datagrams.
 static osal_bool_t cyclic_task_running = OSAL_FALSE;
 static osal_void_t* cyclic_task(osal_void_t* param) {
@@ -127,6 +129,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         hw_tx_high(pec->phw);
 
         osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
+        bytes_last_sent = ec.phw->bytes_last_sent;
         
         hw_tx_low(pec->phw);
     }
@@ -406,7 +409,7 @@ int main(int argc, char **argv) {
         osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
 
-        ec_log(10, "MAIN", "rtc_time %" PRIu64 ", last %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, last_sent, ec.dc.dc_time);
+        ec_log(10, "MAIN", "rtc_time %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, ec.dc.dc_time);
 
 #define to_us(x)    ((double)(x)/1000.)
         if (dc_mode != dc_mode_ref_clock) {
