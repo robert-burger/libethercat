@@ -289,11 +289,6 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
         pd->pd_lrw_len += max_len;
     }
 
-    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes, lrw window %3" PRIu64 " bytes\n", 
-            group, pd->log, pd->pdout_len, pd->log + pd->pdout_len, 
-            pd->pdin_len, pd->pd_lrw_len);
-
     pd->log_len = max(pd->pdout_len, pd->pdin_len);
 
     osal_uint8_t *pdout = &pd->pd[0];
@@ -412,10 +407,12 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
         pdout = &pdout[max(slv->pdin.len, slv->pdout.len)];
         log_base = max(log_base_in, log_base_out);
         pd->wkc_expected_lrw += wkc_expected_lrw;
-    
-        ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: expected working counter %d\n",
-                group, pd->wkc_expected_lrw);
     }
+    
+    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
+            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes, lrw window %3" PRIu64 " bytes, expected wkc %d\n", 
+            group, pd->log, pd->pdout_len, pd->log + pd->pdout_len, 
+            pd->pdin_len, pd->pd_lrw_len, pd->wkc_expected_lrw);
 
     pd->log_mbx_state_len = (log_base_mbx_state_bitlen + 7u) / 8u;
     
@@ -736,7 +733,7 @@ static void ec_scan(ec_t *pec) {
     // allocating slave structures
     int ret = ec_brd(pec, EC_REG_TYPE, (osal_uint8_t *)&val, sizeof(val), &wkc); 
     if (ret != EC_OK) {
-        ec_log(1, "MASTER_SCAN", "broadcast read of slave types failed with %d\n", ret);
+        ec_log(1, "MASTER_SCAN", "master  : broadcast read of slave types failed with %d\n", ret);
     } else {
         assert(wkc < LEC_MAX_SLAVES);
 
@@ -785,11 +782,11 @@ static void ec_scan(ec_t *pec) {
 
                 fixed++;
             } else {
-                ec_log(1, "MASTER_SCAN", "ec_aprd %d returned %d\n", auto_inc, local_ret);
+                ec_log(1, "MASTER_SCAN", "master  : ec_aprd %d returned %d\n", auto_inc, local_ret);
             }
         }
 
-        ec_log(10, "MASTER_SCAN", "found %d ethercat slaves\n", i);
+        ec_log(10, "MASTER_SCAN", "master  : found %d ethercat slaves\n", i);
 
         for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
             ec_slave_ptr(slv, pec, slave); 
@@ -877,7 +874,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
     assert(pec != NULL);
     int ret = EC_OK;
 
-    ec_log(10, "MASTER_SET_STATE", "switching from %s to %s\n", 
+    ec_log(10, "MASTER_SET_STATE", "master  : switching from %s to %s\n", 
             get_state_string(pec->master_state), get_state_string(state));
 
     pec->state_transition_pending = 1;
@@ -927,7 +924,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             ret = ec_dc_config(pec);
             if (ret != EC_OK) {
                 ec_log(1, get_state_string(pec->master_state),
-                        "configuring distributed clocks failed with %d\n", ret);
+                        "master  : configuring distributed clocks failed with %d\n", ret);
             }
 
             ec_prepare_state_transition_loop(pec, EC_STATE_SAFEOP);
@@ -949,11 +946,11 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
 
                 if (pec->pd_groups[group].overlapping != 0) {
                     ec_log(10, get_state_string(pec->master_state), "group %2d: using LRW, "
-                            "support from all slaves in group\n", group);
+                            "master  : support from all slaves in group\n", group);
                     ec_create_logical_mapping_overlapping(pec, group);
                 } else {
                     ec_log(10, get_state_string(pec->master_state), "group %2d: using LRD/LWR, "
-                            "not all slaves support LRW in group or disabled\n", group);
+                            "master  : not all slaves support LRW in group or disabled\n", group);
                     ec_create_logical_mapping(pec, group);
                 }
             }
@@ -974,7 +971,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case OP_2_INIT:
         case OP_2_PREOP:
         case OP_2_SAFEOP:
-            ec_log(10, get_state_string(pec->master_state), "switching to SAFEOP\n");
+            ec_log(10, get_state_string(pec->master_state), "msater  : switching to SAFEOP\n");
             ec_state_transition_loop(pec, EC_STATE_SAFEOP, 0);
     
             pec->master_state = EC_STATE_SAFEOP;
@@ -986,7 +983,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case SAFEOP_2_BOOT:
         case SAFEOP_2_INIT:
         case SAFEOP_2_PREOP:
-            ec_log(10, get_state_string(pec->master_state), "switching to PREOP\n");
+            ec_log(10, get_state_string(pec->master_state), "master  : switching to PREOP\n");
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
 
             // reset dc
@@ -1043,10 +1040,10 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
             // cppcheck-suppress misra-c2012-16.3
         case PREOP_2_BOOT:
         case PREOP_2_INIT:
-            ec_log(10, get_state_string(pec->master_state), "switching to INIT\n");
+            ec_log(10, get_state_string(pec->master_state), "master  : switching to INIT\n");
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             pec->master_state = EC_STATE_INIT;
-            ec_log(10, get_state_string(pec->master_state), "doing rescan\n");
+            ec_log(10, get_state_string(pec->master_state), "master  : doing rescan\n");
             ec_scan(pec);
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
 
@@ -1130,27 +1127,27 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
         ret = ec_async_loop_create(&pec->async_loop, pec);
     }
 
-    ec_log(10, "MASTER_OPEN", "libethercat version          : %s\n", LIBETHERCAT_VERSION);
-    ec_log(10, "MASTER_OPEN", "  MAX_SLAVES                 : %" PRIi64 "\n", LEC_MAX_SLAVES);
-    ec_log(10, "MASTER_OPEN", "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
-    ec_log(10, "MASTER_OPEN", "  MAX_PDLEN                  : %" PRIi64 "\n", LEC_MAX_PDLEN);
-    ec_log(10, "MASTER_OPEN", "  MAX_MBX_ENTRIES            : %" PRIi64 "\n", LEC_MAX_MBX_ENTRIES);
-    ec_log(10, "MASTER_OPEN", "  MAX_INIT_CMD_DATA          : %" PRIi64 "\n", LEC_MAX_INIT_CMD_DATA);
-    ec_log(10, "MASTER_OPEN", "  MAX_SLAVE_FMMU             : %" PRIi64 "\n", LEC_MAX_SLAVE_FMMU);
-    ec_log(10, "MASTER_OPEN", "  MAX_SLAVE_SM               : %" PRIi64 "\n", LEC_MAX_SLAVE_SM);
-    ec_log(10, "MASTER_OPEN", "  MAX_DATAGRAMS              : %" PRIi64 "\n", LEC_MAX_DATAGRAMS);
-    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_SM          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_SM); 
-    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_FMMU        : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_FMMU);
-    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO         : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO);
-    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO_ENTRIES : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
-    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_STRINGS     : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_STRINGS);
-    ec_log(10, "MASTER_OPEN", "  MAX_EEPROM_CAT_DC          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_DC);
-    ec_log(10, "MASTER_OPEN", "  MAX_STRING_LEN             : %" PRIi64 "\n", LEC_MAX_STRING_LEN);
-    ec_log(10, "MASTER_OPEN", "  MAX_DATA                   : %" PRIi64 "\n", LEC_MAX_DATA);
-    ec_log(10, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
-    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
-    ec_log(10, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
-    ec_log(10, "MASTER_OPEN", "Master struct needs %" PRIu64 " bytes\n", (osal_uint64_t)sizeof(ec_t));
+    ec_log(10,  "MASTER_OPEN", "libethercat version          : %s\n", LIBETHERCAT_VERSION);
+    ec_log(100, "MASTER_OPEN", "  MAX_SLAVES                 : %" PRIi64 "\n", LEC_MAX_SLAVES);
+    ec_log(100, "MASTER_OPEN", "  MAX_GROUPS                 : %" PRIi64 "\n", LEC_MAX_GROUPS);
+    ec_log(100, "MASTER_OPEN", "  MAX_PDLEN                  : %" PRIi64 "\n", LEC_MAX_PDLEN);
+    ec_log(100, "MASTER_OPEN", "  MAX_MBX_ENTRIES            : %" PRIi64 "\n", LEC_MAX_MBX_ENTRIES);
+    ec_log(100, "MASTER_OPEN", "  MAX_INIT_CMD_DATA          : %" PRIi64 "\n", LEC_MAX_INIT_CMD_DATA);
+    ec_log(100, "MASTER_OPEN", "  MAX_SLAVE_FMMU             : %" PRIi64 "\n", LEC_MAX_SLAVE_FMMU);
+    ec_log(100, "MASTER_OPEN", "  MAX_SLAVE_SM               : %" PRIi64 "\n", LEC_MAX_SLAVE_SM);
+    ec_log(100, "MASTER_OPEN", "  MAX_DATAGRAMS              : %" PRIi64 "\n", LEC_MAX_DATAGRAMS);
+    ec_log(100, "MASTER_OPEN", "  MAX_EEPROM_CAT_SM          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_SM); 
+    ec_log(100, "MASTER_OPEN", "  MAX_EEPROM_CAT_FMMU        : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_FMMU);
+    ec_log(100, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO         : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO);
+    ec_log(100, "MASTER_OPEN", "  MAX_EEPROM_CAT_PDO_ENTRIES : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_PDO_ENTRIES);
+    ec_log(100, "MASTER_OPEN", "  MAX_EEPROM_CAT_STRINGS     : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_STRINGS);
+    ec_log(100, "MASTER_OPEN", "  MAX_EEPROM_CAT_DC          : %" PRIi64 "\n", LEC_MAX_EEPROM_CAT_DC);
+    ec_log(100, "MASTER_OPEN", "  MAX_STRING_LEN             : %" PRIi64 "\n", LEC_MAX_STRING_LEN);
+    ec_log(100, "MASTER_OPEN", "  MAX_DATA                   : %" PRIi64 "\n", LEC_MAX_DATA);
+    ec_log(100, "MASTER_OPEN", "  MAX_DS402_SUBDEVS          : %" PRIi64 "\n", LEC_MAX_DS402_SUBDEVS);
+    ec_log(100, "MASTER_OPEN", "  MAX_COE_EMERGENCIES        : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCIES);
+    ec_log(100, "MASTER_OPEN", "  MAX_COE_EMERGENCY_MSG_LEN  : %" PRIi64 "\n", LEC_MAX_COE_EMERGENCY_MSG_LEN);
+    ec_log(100, "MASTER_OPEN", "Master struct needs %" PRIu64 " bytes\n", (osal_uint64_t)sizeof(ec_t));
 
     if (ret != EC_OK) {
         if (pec != NULL) {

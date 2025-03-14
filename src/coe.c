@@ -253,7 +253,7 @@ void ec_coe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_log(10, "COE_INIT", "slave %2d: initializing CoE mailbox.\n", slave);
+    ec_log(100, "COE_INIT", "slave %2d: initializing CoE mailbox.\n", slave);
 
     ec_slave_ptr(slv, pec, slave);
     (void)pool_open(&slv->mbx.coe.recv_pool, 0, NULL);
