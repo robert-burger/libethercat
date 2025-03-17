@@ -84,12 +84,16 @@ int usage(int argc, char **argv) {
 }
 
 int max_print_level = 10;
+osal_uint64_t prog_start_time;
 
 // only log level <= 10 
 void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) __attribute__(( format(printf, 3, 4)));
 void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) {
     if (lvl > max_print_level)
         return;
+
+    osal_uint64_t print_time = osal_timer_gettime_nsec() - prog_start_time;
+    fprintf(stderr, "%7d.%09d -> ", print_time / 1000000000, print_time % 1000000000);
 
     va_list ap;
     va_start(ap, format);
@@ -116,7 +120,7 @@ static osal_bool_t cyclic_task_running = OSAL_FALSE;
 static osal_void_t* cyclic_task(osal_void_t* param) {
     ec_t *pec = (ec_t *)param;
     osal_uint64_t abs_timeout = osal_timer_gettime_nsec();
-    abs_timeout = (abs_timeout / 1000000) * 1000000;
+    abs_timeout = (abs_timeout / pec->main_cycle_interval) * pec->main_cycle_interval;
     osal_uint64_t time_start = 0u;
 
     ec_log(100, "CYCLIC_TASK", "running endless loop, cycle rate is %lu\n", cycle_rate);
@@ -162,6 +166,8 @@ int main(int argc, char **argv) {
     ec_t *pec = &ec;
 
     osal_timer_set_clock_source(CLOCK_MONOTONIC);
+
+    prog_start_time = osal_timer_gettime_nsec();
 
     for (i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0)) {
@@ -415,27 +421,25 @@ int main(int argc, char **argv) {
         osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
 
-        ec_log(10, "MAIN", "rtc_time %" PRIu64 ", last %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, last_sent, ec.dc.dc_time);
 
 #define to_us(x)    ((double)(x)/1000.)
         if (dc_mode != dc_mode_ref_clock) {
-            ec_log(10, "MAIN", 
-                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (avg %+5.1fus, max %+5.1fus), "
-                    "Duration %+5.1fus (avg %+5.1fus, max %+5.1fus), "
-                    "Round trip %+5.1fus (avg %+5.1fus, max %+5.1fus)\n", 
-                    bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
-                    to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
-                    to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
-                    to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
+            ec_log(10, "", "=====================================================================================================\n");
+            ec_log(10, "Times", "RTC %15.9fs, Last Sent %15.9fs, DC %15.9fs\n", ec.dc.rtc_time/1E9, last_sent/1E9, ec.dc.dc_time/1E9);
+            ec_log(10, "Frame", "Length %" PRIu64 " bytes, Time @ 100 MBit/s %7.1fus\n", bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.);
+            ec_log(10, "Mean (Stddev,Maxdev)", "Timer %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), TX %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), "
+                    "Roundtrip %5.1fus (%4" PRId64 "ns/%4" PRId64 "ns)\n", to_us(tx_timer_med), tx_timer_avg_jit, tx_timer_max_jit, 
+                    to_us(tx_duration_med), tx_duration_avg_jit, tx_duration_max_jit, 
+                    to_us(roundtrip_duration_med), roundtrip_duration_avg_jit, roundtrip_duration_max_jit);
         } else {
-            ec_log(10, "MAIN",
-                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (avg %+5.1fus, max %+5.1fus), "
-                    "Duration %+5.1fus (avg %+5.1fus, max %+5.1fus), "
-                    "Round trip %+5.1fus (avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
-                    bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
-                    to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
-                    to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
-                    to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit), to_us(ec.dc.act_diff), ec.dc.control.diffsum, act_cycle_rate);
+            ec_log(10, "", "=====================================================================================================\n");
+            ec_log(10, "Times", "RTC %15.9fs, Last Sent %15.9fs, DC %15.9fs\n", ec.dc.rtc_time/1E9, last_sent/1E9, ec.dc.dc_time/1E9);
+            ec_log(10, "Frame", "Length %" PRIu64 " bytes, Time @ 100 MBit/s %7.1fus\n", bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.);
+            ec_log(10, "Mean (Stddev,Maxdev)", "Timer %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), TX %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), "
+                    "Roundtrip %5.1fus (%4" PRId64 "ns/%4" PRId64 "ns)\n", to_us(tx_timer_med), tx_timer_avg_jit, tx_timer_max_jit, 
+                    to_us(tx_duration_med), tx_duration_avg_jit, tx_duration_max_jit, 
+                    to_us(roundtrip_duration_med), roundtrip_duration_avg_jit, roundtrip_duration_max_jit);
+            ec_log(10, "DC", "Diff %4" PRId64 "ns, diffsum %+7.1fns, cylce_rate %ldns\n", ec.dc.act_diff, ec.dc.control.diffsum, act_cycle_rate);
         }
     }
 
