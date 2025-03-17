@@ -1804,15 +1804,16 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
     if (wkc != 0u) {
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
+        int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
 
         if (pec->dc.have_64bit == 0) { // we only have 32-bit dc ...
             // get clock difference
-            pec->dc.act_diff = signed32_diff(pec->dc.rtc_time % UINT_MAX, pec->dc.dc_time); 
+            pec->dc.act_diff = signed32_diff((pec->dc.rtc_time % UINT_MAX + tx_time_to_dc_master), pec->dc.dc_time); 
         } else {
             // get clock difference
-            pec->dc.act_diff = signed64_diff(pec->dc.rtc_time % UINT64_MAX, pec->dc.dc_time); 
+            pec->dc.act_diff = signed64_diff((pec->dc.rtc_time % UINT64_MAX + tx_time_to_dc_master), pec->dc.dc_time); 
         }
-            
+
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
             double p_part = pec->dc.control.kp * pec->dc.act_diff;
@@ -1934,8 +1935,12 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
                 }   
             } else {
                 pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
-            
+
                 if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                    // add time to first dc capable slave to rtc time
+                    int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
+                    pec->dc.rtc_time += tx_time_to_dc_master;
+            
                     (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
                 }
             }
