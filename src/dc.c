@@ -224,10 +224,10 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
 
         if (dc_active != 0u) {
             ec_log(10, "DC_SYNC", "slave %2d: dc_systime %" PRIu64 ".%09" PRIu64 " s, dc_start "
-                    "%" PRId64 ".%09" PRIu64 " s, slv dc_time %" PRId64 ".%09" PRIu64 " s\n", slave, 
+                    "%" PRId64 ".%09" PRIu64 " s, slv dc_time %" PRId64 ".%09" PRIu64 " s, pdelay %d\n", slave, 
                     pec->dc.dc_time/1000000000, pec->dc.dc_time%1000000000, 
                     dc_start/1000000000, dc_start%1000000000, 
-                    dc_time/1000000000, dc_time%1000000000);
+                    dc_time/1000000000, dc_time%1000000000, slv->pdelay);
             ec_log(10, "DC_SYNC", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
                     "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
         } else {
