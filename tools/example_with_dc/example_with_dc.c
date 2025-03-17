@@ -108,6 +108,7 @@ static osal_bool_t cyclic_task_running = OSAL_FALSE;
 static osal_void_t* cyclic_task(osal_void_t* param) {
     ec_t *pec = (ec_t *)param;
     osal_uint64_t abs_timeout = osal_timer_gettime_nsec();
+    abs_timeout = (abs_timeout / 1000000) * 1000000;
     osal_uint64_t time_start = 0u;
 
     ec_log(100, "CYCLIC_TASK", "running endless loop, cycle rate is %lu\n", cycle_rate);
