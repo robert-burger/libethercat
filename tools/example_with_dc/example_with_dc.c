@@ -406,7 +406,7 @@ int main(int argc, char **argv) {
     osal_uint64_t tx_duration_med = 0, tx_duration_avg_jit = 0, tx_duration_max_jit = 0;
     osal_uint64_t roundtrip_duration_med = 0, roundtrip_duration_avg_jit = 0, roundtrip_duration_max_jit = 0;
 
-    for (;;) {
+    for (;keep_running == 1;) {
         osal_timer_t to;
         osal_timer_init(&to, 10000000000);
         osal_trace_timedwait(tx_duration, &to);
@@ -438,10 +438,6 @@ int main(int argc, char **argv) {
                     to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit), to_us(ec.dc.act_diff), ec.dc.control.diffsum, act_cycle_rate);
         }
     }
-
-    osal_task_join(&cyclic_task_hdl, NULL);
-
-    int j, fd;
 
 exit:
     ec_set_state(&ec, EC_STATE_PREOP);
