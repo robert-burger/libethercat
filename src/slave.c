@@ -1074,10 +1074,14 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                         "cycle_times %d/%d, cycle_shift %d\n", 
                         slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
                         slv->dc.cycle_time_1, slv->dc.cycle_shift);
-                    ec_dc_sync(pec, slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
+                    ret = ec_dc_sync(pec, slave, slv->dc.activation_reg, slv->dc.cycle_time_0, 
                             slv->dc.cycle_time_1, slv->dc.cycle_shift); 
                 } else {
-                    ec_dc_sync(pec, slave, 0, 0, 0, 0);
+                    ret = ec_dc_sync(pec, slave, 0, 0, 0, 0);
+                }
+
+                if (ret == EC_ERROR_CYCLIC_LOOP) {
+                    break; // setting dc was not successfull !
                 }
 
                 int start_sm = slv->eeprom.mbx_supported ? 2 : 0;

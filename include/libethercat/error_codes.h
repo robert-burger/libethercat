@@ -62,6 +62,7 @@
 #define EC_ERROR_TIMEOUT                        (EC_ERROR_GENERAL_MASK | 0x00000040)        //!< \brief Timeout occured.
 #define EC_ERROR_UNAVAILABLE                    (EC_ERROR_GENERAL_MASK | 0x00000080)        //!< \brief Resource currently unavailable.
 #define EC_ERROR_HW_SEND                        (EC_ERROR_GENERAL_MASK | 0x00000100)        //!< \brief Hardware send error.
+#define EC_ERROR_CYCLIC_LOOP                    (EC_ERROR_GENERAL_MASK | 0x00000200)        //!< \brief No cyclic loop running.
 
 
 #define EC_ERROR_SLAVE_MASK                     (0x00020000)                                //!< \brief Slave error mask.

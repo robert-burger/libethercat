@@ -160,8 +160,10 @@ int ec_dc_config(struct ec *pec);
  * \param[in]   cycle_time_0    Cycle time to program to fire sync0 in [ns].
  * \param[in]   cycle_time_1    Cycle time to program to fire sync1 in [ns].
  * \param[in]   cycle_shift     Shift of first sync0 start in [ns].
+ *
+ * \return EC_OK or EC_UNAVAILABLE, EC_ERROR_CYCLIC_LOOP
  */
-void ec_dc_sync(struct ec *pec, osal_uint16_t slave, osal_uint8_t dc_active, 
+int ec_dc_sync(struct ec *pec, osal_uint16_t slave, osal_uint8_t dc_active, 
         osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
 
 #ifdef __cplusplus
