@@ -444,8 +444,13 @@ int main(int argc, char **argv) {
     int j, fd;
 
 exit:
-    ec_close(&ec);
+    ec_set_state(&ec, EC_STATE_PREOP);
     
+    cyclic_task_running = OSAL_FALSE;
+    osal_task_join(&cyclic_task_hdl, NULL);
+    
+    ec_close(&ec);
+
 hw_exit:
     osal_trace_free(tx_start);
     osal_trace_free(tx_duration);
