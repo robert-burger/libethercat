@@ -54,6 +54,14 @@ static struct hw_sock_raw hw_sock_raw;
 static struct hw_sock_raw_mmaped hw_sock_raw_mmaped;
 #endif
 
+#include <signal.h>
+
+static volatile sig_atomic_t keep_running = 1;
+
+void sig_handler(int sig) {
+  keep_running = 0;
+}
+
 void no_log(int lvl, void *user, const char *format, ...) 
 {};
 
@@ -390,6 +398,8 @@ int main(int argc, char **argv) {
     osal_task_create(&cyclic_task_hdl, &cyclic_task_attr, cyclic_task, &ec);
     ec_set_state(&ec, EC_STATE_SAFEOP);
     ec_set_state(&ec, EC_STATE_OP);
+
+    signal(SIGINT, sig_handler);
 
     // wait here
     osal_uint64_t tx_timer_med = 0, tx_timer_avg_jit = 0, tx_timer_max_jit = 0;
