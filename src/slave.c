@@ -1188,14 +1188,14 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             // cppcheck-suppress misra-c2012-16.3
             case BOOT_2_INIT:
             case INIT_2_INIT: {
-                ec_log(10, get_transition_string(transition), "slave %2d rewriting fixed address\n", slave);
+                ec_log(100, get_transition_string(transition), "slave %2d: rewriting fixed address to %d\n", slave, slv->fixed_address);
 
                 // rewrite fixed address
                 (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                         (osal_uint8_t *)&slv->fixed_address, 
                         sizeof(slv->fixed_address), &wkc); 
 
-                ec_log(10, get_transition_string(transition), "slave %2d disable dcs\n", slave);
+                ec_log(100, get_transition_string(transition), "slave %2d: disable dcs\n", slave);
 
                 // disable ditributed clocks
                 osal_uint8_t dc_active = 0;
@@ -1205,12 +1205,12 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // free resources
                 ec_slave_free(pec, slave);
 
-                ec_log(10, get_transition_string(transition), "slave %2d get number of sm\n", slave);
+                ec_log(100, get_transition_string(transition), "slave %2d: get number of sm\n", slave);
 
                 // get number of sync managers
                 ec_reg_read(EC_REG_SM_CH, &slv->sm_ch, 1);
                 if (slv->sm_ch > LEC_MAX_SLAVE_SM) {
-                    ec_log(10, get_transition_string(transition), "slave %2d got %d sync manager, but can only use %" PRId64 "\n",
+                    ec_log(10, get_transition_string(transition), "slave %2d: got %d sync manager, but can only use %" PRId64 "\n",
                             slave, slv->sm_ch, LEC_MAX_SLAVE_SM);
 
                     slv->sm_ch = LEC_MAX_SLAVE_SM;
@@ -1224,12 +1224,12 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                     }
                 }
                 
-                ec_log(10, get_transition_string(transition), "slave %2d get number of fmmu\n", slave);
+                ec_log(100, get_transition_string(transition), "slave %2d: get number of fmmu\n", slave);
 
                 // get number of fmmus
                 ec_reg_read(EC_REG_FMMU_CH, &slv->fmmu_ch, 1);
                 if (slv->fmmu_ch > LEC_MAX_SLAVE_FMMU) {
-                    ec_log(10, get_transition_string(transition), "slave %2d got %d fmmus, but can only use %" PRId64 "\n",
+                    ec_log(10, get_transition_string(transition), "slave %2d: got %d fmmus, but can only use %" PRId64 "\n",
                             slave, slv->fmmu_ch, LEC_MAX_SLAVE_FMMU);
 
                     slv->fmmu_ch = LEC_MAX_SLAVE_FMMU;
@@ -1290,8 +1290,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 }
 
                 ec_log(10, get_transition_string(transition), 
-                        "slave %2d: vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
-                        slave, slv->eeprom.vendor_id, slv->eeprom.product_code, 
+                        "slave %2d: fixed address %d, vendor 0x%08X, product 0x%08X, mbx 0x%04X\n",
+                        slave, slv->fixed_address, slv->eeprom.vendor_id, slv->eeprom.product_code, 
                         slv->eeprom.mbx_supported);
             }
             // cppcheck-suppress misra-c2012-16.3

@@ -211,7 +211,7 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
 
         // Calculate DC start time as a sum of the actual EtherCAT DC master time,
         // the generic first sync delay and the cycle shift. 
-        dc_start = pec->dc.dc_time + cycle_shift + ONE_SEC/10;
+        dc_start = ((pec->dc.dc_time / pec->main_cycle_interval) * pec->main_cycle_interval) + cycle_shift + ONE_SEC;
 
         // program first trigger time and cycle time
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
@@ -224,10 +224,10 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
 
         if (dc_active != 0u) {
             ec_log(10, "DC_SYNC", "slave %2d: dc_systime %" PRIu64 ".%09" PRIu64 " s, dc_start "
-                    "%" PRId64 ".%09" PRIu64 " s, slv dc_time %" PRId64 ".%09" PRIu64 " s\n", slave, 
+                    "%" PRId64 ".%09" PRIu64 " s, slv dc_time %" PRId64 ".%09" PRIu64 " s, pdelay %d\n", slave, 
                     pec->dc.dc_time/1000000000, pec->dc.dc_time%1000000000, 
                     dc_start/1000000000, dc_start%1000000000, 
-                    dc_time/1000000000, dc_time%1000000000);
+                    dc_time/1000000000, dc_time%1000000000, slv->pdelay);
             ec_log(10, "DC_SYNC", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
                     "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
         } else {
@@ -263,6 +263,7 @@ int ec_dc_config(struct ec *pec) {
     osal_uint16_t wkc;
 
     pec->dc.have_dc = 0;
+    pec->dc.have_64bit = 1;
     pec->dc.master_address = 0;
 
     // latch DC receive time on slaves (ET1100, Section 1, 9.1.8)
@@ -300,6 +301,7 @@ int ec_dc_config(struct ec *pec) {
             // first slave with enabled dc's
             pec->dc.master_address = slv->fixed_address;
             pec->dc.have_dc = 1;
+            pec->dc.have_64bit = (slv->features & 0x0008u) != 0u;
             pec->dc.rtc_time = 0;
             pec->dc.next = slave;
             slv->dc.prev = -1;                
@@ -364,7 +366,7 @@ int ec_dc_config(struct ec *pec) {
         // store our system time offsets if we got the dc master clock
         if (pec->dc.master_address == slv->fixed_address) {
             pec->dc.dc_sto = 0; // we did a reset 5 lines above
-            pec->dc.rtc_sto = osal_timer_gettime_nsec();
+            pec->dc.rtc_sto = (osal_timer_gettime_nsec() / pec->main_cycle_interval) * pec->main_cycle_interval;
             ec_log(100, "DC_CONFIG", "master  : initial dc_sto %" PRId64 ", rtc_sto %" PRId64 "\n", pec->dc.dc_sto, pec->dc.rtc_sto);
         }
 
@@ -403,11 +405,6 @@ int ec_dc_config(struct ec *pec) {
             } else {
                 slv->pdelay = slv_parent->pdelay + (abs(times_slave[slv->entry_port] - times_slave[0] + t_diff) / 2);
             }
-        } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-            slv->dc.t_delay_with_childs = packet_duration;
-            slv->dc.t_delay_slave = abs(slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2;
-            slv->dc.t_delay_parent_previous = 0;
-            slv->pdelay = slv->dc.t_delay_slave;
         }
         
         ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, delay_slave %d, delay_parent_previous_slaves %d, delay_with_childs %d\n", 
@@ -416,14 +413,6 @@ int ec_dc_config(struct ec *pec) {
         // write propagation delay
         ec_log(100, "DC_CONFIG", "slave %2d: sysdelay %d\n", slave, slv->pdelay);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSDELAY, &slv->pdelay, sizeof(slv->pdelay), &wkc);
-    }
-
-    osal_uint64_t temp_dc = 0;
-
-    if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-        check_ec_bwr(pec, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
-    } else {
-        check_ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
     }
 
     return EC_OK;

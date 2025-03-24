@@ -146,7 +146,7 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
 }
 
 //! internal tx func
-static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
+static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     assert(phw != NULL);
 
     osal_bool_t sent = OSAL_FALSE;
@@ -196,10 +196,8 @@ static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
             phw->tx_send[p_entry_dg->idx] = p_entry;
         }
     } while (len > 0);
-    
-    if (sent == OSAL_TRUE) {
-        phw->send_finished(phw);
-    }
+
+    return sent;
 }
 
 //! start sending queued ethercat datagrams (low prio queue)
@@ -213,8 +211,15 @@ int hw_tx_high(struct hw_common *phw) {
     int ret = EC_OK;
 
     osal_mutex_lock(&phw->hw_lock);
+    osal_uint64_t tx_start = osal_timer_gettime_nsec();
     osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
-    hw_tx_pool(phw, POOL_HIGH);
+    osal_bool_t sent = hw_tx_pool(phw, POOL_HIGH);
+    phw->last_tx_duration_ns = osal_timer_gettime_nsec() - tx_start;
+    
+    if (sent == OSAL_TRUE) {
+        phw->send_finished(phw);
+    }
+   
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;
@@ -231,7 +236,12 @@ int hw_tx_low(struct hw_common *phw) {
     int ret = EC_OK;
 
     osal_mutex_lock(&phw->hw_lock);
-    hw_tx_pool(phw, POOL_LOW);
+    osal_bool_t sent = hw_tx_pool(phw, POOL_LOW);
+    
+    if (sent == OSAL_TRUE) {
+        phw->send_finished(phw);
+    }
+   
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;
@@ -250,9 +260,13 @@ int hw_tx(struct hw_common *phw) {
     osal_mutex_lock(&phw->hw_lock);
 
     osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
-    hw_tx_pool(phw, POOL_HIGH);
-    hw_tx_pool(phw, POOL_LOW);
+    osal_bool_t sent = hw_tx_pool(phw, POOL_HIGH);
+    sent |= hw_tx_pool(phw, POOL_LOW);
 
+    if (sent == OSAL_TRUE) {
+        phw->send_finished(phw);
+    }
+   
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;

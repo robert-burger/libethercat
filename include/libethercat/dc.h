@@ -94,6 +94,7 @@ typedef struct ec_dc_info {
     int have_dc;                    //!< \brief At least one slave is using DCs.
     int next;                       
     int prev;
+    int have_64bit;
 
     osal_uint64_t dc_time;          //!< \brief Time from DC master clock.
     osal_int64_t dc_sto;            //!< \brief System time offset of DC master clock.

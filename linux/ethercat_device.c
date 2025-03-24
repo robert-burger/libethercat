@@ -485,7 +485,7 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
             int not_cleaned = 1;
             // consume frames ...
             do {
-                not_cleaned = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
+                not_cleaned = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX);
             } while (not_cleaned != 0);
         }
     }
@@ -563,7 +563,7 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
 
                 if (ndo_do_ioctl) {
                     do {
-                        (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
+                        (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX);
 
                         if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
                             break;
@@ -644,6 +644,29 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
             } else {
                 ret = -EBUSY;
             }
+
+            if (ecat_dev->ethercat_polling) {
+                int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
+                ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+                if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
+#endif
+
+                s64 act_time = ktime_to_ns(ktime_get_raw());
+                s64 end_time = act_time + ecat_dev->rx_timeout_ns;
+
+                if (ndo_do_ioctl) {
+                    do {
+                        int local_ret = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
+                        if (local_ret == 1) {
+                            break;
+                        }
+
+                        act_time = ktime_to_ns(ktime_get_raw());
+                    } while (act_time < end_time);
+                }
+            }
+
         }
     }
 
