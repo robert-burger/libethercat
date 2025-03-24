@@ -388,6 +388,8 @@ void hw_device_file_send_finished(struct hw_common *phw) {
 
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
     
+    osal_uint64_t rx_start = osal_timer_gettime_nsec();
+
     // in case of polling do receive now
     if (phw_file->polling_mode == OSAL_TRUE) {
         while (phw_file->frames_send > 0) {
@@ -405,6 +407,8 @@ void hw_device_file_send_finished(struct hw_common *phw) {
             phw_file->frames_send--;
         }
     }
+
+    phw->last_rx_duration_ns = osal_timer_gettime_nsec() - rx_start;
 }
 
 #endif /* LIBETHERCAT_BUILD_DEVICE_FILE == 1 */

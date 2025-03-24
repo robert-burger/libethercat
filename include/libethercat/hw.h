@@ -140,6 +140,9 @@ typedef struct hw_common {
     hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
     hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
     hw_device_close_t close;                    //!< \brief Function to close hw layer.
+                                                
+    osal_uint64_t last_tx_duration_ns;
+    osal_uint64_t last_rx_duration_ns;
 } hw_common_t;                 //!< \brief Hardware struct type. 
 
 #ifdef __cplusplus
