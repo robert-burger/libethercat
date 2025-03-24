@@ -251,17 +251,23 @@ int hw_device_file_close(struct hw_common *phw) {
 
 osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file) {
     osal_bool_t ret = OSAL_FALSE;
+    ec_frame_t *pframe;
+    osal_ssize_t bytesrx;
+
+    osal_uint64_t rx_start = osal_timer_gettime_nsec();
 
     // cppcheck-suppress misra-c2012-11.3
-    ec_frame_t *pframe = (ec_frame_t *) &phw_file->recv_frame;
+    pframe = (ec_frame_t *) &phw_file->recv_frame;
 
     // using tradional recv function
-    osal_ssize_t bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
+    bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
 
     if (bytesrx > 0) {
         hw_process_rx_frame(&phw_file->common, pframe);
         ret = OSAL_TRUE;
     }
+    
+    phw_file->common.last_rx_duration_ns = osal_timer_gettime_nsec() - rx_start;
 
     return ret;
 }
@@ -388,8 +394,6 @@ void hw_device_file_send_finished(struct hw_common *phw) {
 
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
     
-    osal_uint64_t rx_start = osal_timer_gettime_nsec();
-
     // in case of polling do receive now
     if (phw_file->polling_mode == OSAL_TRUE) {
         while (phw_file->frames_send > 0) {
@@ -407,8 +411,6 @@ void hw_device_file_send_finished(struct hw_common *phw) {
             phw_file->frames_send--;
         }
     }
-
-    phw->last_rx_duration_ns = osal_timer_gettime_nsec() - rx_start;
 }
 
 #endif /* LIBETHERCAT_BUILD_DEVICE_FILE == 1 */
