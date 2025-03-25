@@ -1127,11 +1127,11 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
         pec->dc.dc_time         = 0;
         pec->dc.rtc_time        = 0;
         pec->dc.act_diff        = 0;
-        pec->dc.control.diffsum = 0;
-        pec->dc.control.diffsum_limit = 10.;
-        pec->dc.control.kp      = 1;
-        pec->dc.control.ki      = 0.1;
-        pec->dc.control.v_part_old = 0.0;
+        pec->dc.control.p_part  = 0;
+        pec->dc.control.i_part  = 0;
+        pec->dc.control.i_part_limit = 100.;
+        pec->dc.control.kp      = 0.001;
+        pec->dc.control.ki      = 0.00001;
 
         pec->tun_fd             = 0;
         pec->tun_ip             = 0;
@@ -1816,20 +1816,19 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
-            double p_part = pec->dc.control.kp * pec->dc.act_diff;
-            pec->dc.control.v_part_old = p_part;
+            pec->dc.control.p_part = pec->dc.control.kp * pec->dc.act_diff;
 
             // sum it up for integral part
-            pec->dc.control.diffsum += pec->dc.control.ki * pec->dc.act_diff;
+            pec->dc.control.i_part += pec->dc.control.ki * pec->dc.act_diff;
 
-            // limit diffsum
-            if (pec->dc.control.diffsum > pec->dc.control.diffsum_limit) { 
-                pec->dc.control.diffsum = pec->dc.control.diffsum_limit; 
-            } else if (pec->dc.control.diffsum < (-1 * pec->dc.control.diffsum_limit)) { 
-                pec->dc.control.diffsum = -1 * pec->dc.control.diffsum_limit; 
+            // limit i_part
+            if (pec->dc.control.i_part > pec->dc.control.i_part_limit) { 
+                pec->dc.control.i_part = pec->dc.control.i_part_limit; 
+            } else if (pec->dc.control.i_part < (-1 * pec->dc.control.i_part_limit)) { 
+                pec->dc.control.i_part = -1 * pec->dc.control.i_part_limit; 
             } else {}
 
-            pec->dc.timer_correction = p_part + pec->dc.control.diffsum;
+            pec->dc.timer_correction = pec->dc.control.p_part + pec->dc.control.i_part;
         } else if (pec->dc.mode == dc_mode_master_clock) {
             // sending offset compensation value to dc master clock
             pool_entry_t *p_entry_dc_sto;

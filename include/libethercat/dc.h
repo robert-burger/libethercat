@@ -106,13 +106,13 @@ typedef struct ec_dc_info {
     double timer_correction;        //!< \brief Correction value for EtherCAT master timer in [ns].
     
     struct {
-        double diffsum;
-        double diffsum_limit;
+        double p_part;
+        double i_part;
+        double i_part_limit;
 
         double kp;
         double ki;
-
-        double v_part_old;
+        double kd;
     } control;                   //!< \brief PI-controller to adjust EtherCAT master timer value.
 
     osal_uint64_t sent_time_nsec;
