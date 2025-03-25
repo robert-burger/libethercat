@@ -421,6 +421,7 @@ int main(int argc, char **argv) {
         osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
 
+        ec_log(10, "MAIN", "rtc_time %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, ec.dc.dc_time);
 
 #define to_us(x)    ((double)(x)/1000.)
         if (dc_mode != dc_mode_ref_clock) {
