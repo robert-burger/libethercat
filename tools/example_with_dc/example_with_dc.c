@@ -56,6 +56,8 @@ static struct hw_sock_raw_mmaped hw_sock_raw_mmaped;
 
 #include <signal.h>
 
+#include <sys/resource.h>
+
 static volatile sig_atomic_t keep_running = 1;
 
 void sig_handler(int sig) {
@@ -93,7 +95,7 @@ void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) {
         return;
 
     osal_uint64_t print_time = osal_timer_gettime_nsec() - prog_start_time;
-    fprintf(stderr, "%7d.%09d -> ", print_time / 1000000000, print_time % 1000000000);
+    fprintf(stderr, "%7" PRIu64 ".%09" PRIu64 " -> ", print_time / 1000000000, print_time % 1000000000);
 
     va_list ap;
     va_start(ap, format);
@@ -111,7 +113,9 @@ osal_retval_t (*wait_time)(osal_uint64_t) = osal_sleep_until_nsec;
 osal_uint64_t last_sent;
 osal_trace_t *tx_start;
 osal_trace_t *tx_duration;
+osal_trace_t *rx_duration;
 osal_trace_t *roundtrip_duration;
+osal_trace_t *dc_diff;
 
 osal_size_t bytes_last_sent = 0;
 
@@ -123,7 +127,9 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     abs_timeout = (abs_timeout / pec->main_cycle_interval) * pec->main_cycle_interval;
     osal_uint64_t time_start = 0u;
 
-    ec_log(100, "CYCLIC_TASK", "running endless loop, cycle rate is %lu\n", cycle_rate);
+    osal_task_sched_priority_t prio;
+    osal_task_get_priority(NULL, &prio);
+    ec_log(10, "CYCLIC_TASK", "running endless loop (prio %d), cycle rate is %lu\n", prio, cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
         abs_timeout += act_cycle_rate;
@@ -131,6 +137,8 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
 
         last_sent = abs_timeout;
         time_start = osal_trace_point(tx_start);
+        
+        osal_trace_time(rx_duration, pec->phw->last_rx_duration_ns);
 
         // execute one EtherCAT cycle
         ec_send_distributed_clocks_sync_with_rtc(pec, abs_timeout);
@@ -139,7 +147,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         // transmit cyclic packets (and also acyclic if there are any)
         hw_tx_high(pec->phw);
 
-        osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
+        osal_trace_time(tx_duration, pec->phw->last_tx_duration_ns);
         bytes_last_sent = ec.phw->bytes_last_sent;
         
         hw_tx_low(pec->phw);
@@ -201,6 +209,14 @@ int main(int argc, char **argv) {
                 (strcmp(argv[i], "--prio") == 0)) {
             if (++i < argc)
                 base_prio = strtoul(argv[i], NULL, 10);
+        } else if (
+                (strcmp(argv[i], "--cycle-rate") == 0)) {
+            if (++i < argc) {
+                cycle_rate = strtoul(argv[i], NULL, 10); // should be [Hz]
+                printf("got cycle rate %lu\n", cycle_rate);
+                act_cycle_rate = cycle_rate;
+            }
+
         } else if ((strcmp(argv[i], "-f") == 0) || 
                 (strcmp(argv[i], "--cycle-frequency") == 0)) {
             if (++i < argc)
@@ -251,10 +267,22 @@ int main(int argc, char **argv) {
     if ((argc == 1) || (intf == NULL))
         return usage(argc, argv);
 
+#ifdef __linux__
+    struct rlimit rlim;
+    int ret2 = getrlimit(RLIMIT_RTPRIO, &rlim);
+
+    if (ret2 == 0) {
+        rlim.rlim_cur = rlim.rlim_max;
+        setrlimit(RLIMIT_RTPRIO, &rlim);
+    }
+#endif
+
     int num_samples = 1. / (cycle_rate * 1E-9);
     osal_trace_alloc(&tx_start, num_samples);
     osal_trace_alloc(&tx_duration, num_samples);
+    osal_trace_alloc(&rx_duration, num_samples);
     osal_trace_alloc(&roundtrip_duration, num_samples);
+    osal_trace_alloc(&dc_diff, num_samples);
 
     // use our log function
     pec->ec_log_func_user = NULL;
@@ -269,7 +297,7 @@ int main(int argc, char **argv) {
         }
 
         ec_log(10, "HW_OPEN", "Opening interface as device file: %s\n", intf);
-        ret = hw_device_file_open(&hw_file, &ec, intf, base_prio - 1, base_affinity);
+        ret = hw_device_file_open(&hw_file, &ec, intf, base_prio, base_affinity);
 
         if (ret == 0) {
             phw = &hw_file.common;
@@ -293,7 +321,7 @@ int main(int argc, char **argv) {
         intf = &intf[7];
 
         ec_log(10, "HW_OPEN", "Opening interface as pikeos: %s\n", intf);
-        ret = hw_device_pikeos_open(&hw_pikeos, intf, base_prio - 1, base_affinity);
+        ret = hw_device_pikeos_open(&hw_pikeos, intf, base_prio, base_affinity);
 
         if (ret == 0) {
             phw = &hw_pikeos.common;
@@ -305,7 +333,7 @@ int main(int argc, char **argv) {
         intf = &intf[9];
         
         ec_log(10, "HW_OPEN", "Opening interface as SOCK_RAW: %s\n", intf);
-        ret = hw_device_sock_raw_open(&hw_sock_raw, &ec, intf, base_prio - 1, base_affinity);
+        ret = hw_device_sock_raw_open(&hw_sock_raw, &ec, intf, base_prio, base_affinity);
 
         if (ret == 0) {
             phw = &hw_sock_raw.common;
@@ -317,7 +345,7 @@ int main(int argc, char **argv) {
         intf = &intf[16];
 
         ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", intf);
-        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, pec, intf, base_prio - 1, base_affinity);
+        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, pec, intf, base_prio, base_affinity);
 
         if (ret == 0) {
             phw = &hw_sock_raw_mmaped.common;
@@ -367,13 +395,15 @@ int main(int argc, char **argv) {
                 void anon_cb(void *arg, int num) { 
                     if (dc_mode == dc_mode_ref_clock) {
                         act_cycle_rate = cycle_rate + ec.dc.timer_correction;
+
+                        osal_trace_time(dc_diff, ec.dc.act_diff);
                     }
                 } &anon_cb; }), NULL);
 
     int cycle_rate_hz = 1. / (cycle_rate * 1E-9);
     ec.dc.control.kp = dc_kp / cycle_rate_hz;
     ec.dc.control.ki = dc_ki / (cycle_rate_hz * cycle_rate_hz);
-    ec.dc.control.diffsum_limit = cycle_rate / 1000.;
+    ec.dc.control.i_part_limit = cycle_rate / 1000.;
     //ec_configure_dc_settling_time(&ec, 50000000000);
 //    ec_configure_dc_settling_threshold(&ec, 5000, 10000); // 1000 cycles below 5000ns
 
@@ -382,11 +412,14 @@ int main(int argc, char **argv) {
     ec_create_pd_groups(&ec, 1);
     ec_configure_pd_group(&ec, 0, 1, ({
                 void anon_cb(void *arg, int num) { 
+                    struct ec *pec = (struct ec *)arg;
+
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
                     osal_uint64_t time_start = osal_trace_get_last_time(tx_start);
 
                     osal_trace_time(roundtrip_duration, time_end - time_start);
-                } &anon_cb; }), NULL);
+                    //osal_trace_time(roundtrip_duration, pec->dc.packet_duration);//time_end - time_start);
+                } &anon_cb; }), &ec);
         
     ec.pd_groups[0].use_lrw = disable_lrw == 0 ? 1 : 0;
     ec.pd_groups[0].overlapping = disable_overlapping == 0 ? 1 : 0;
@@ -399,48 +432,76 @@ int main(int argc, char **argv) {
     }
         
     cyclic_task_running = OSAL_TRUE;
-    osal_task_attr_t cyclic_task_attr = { "cyclic_task", OSAL_SCHED_POLICY_FIFO, base_prio, base_affinity };
+    ec_log(10, "MAIN", "starting cyclic task with prio %d\n", base_prio);
+    osal_task_attr_t cyclic_task_attr = { "cyclic_task", OSAL_SCHED_POLICY_FIFO, base_prio - 1, base_affinity };
     osal_task_t cyclic_task_hdl;
     osal_task_create(&cyclic_task_hdl, &cyclic_task_attr, cyclic_task, &ec);
+
     ec_set_state(&ec, EC_STATE_SAFEOP);
     ec_set_state(&ec, EC_STATE_OP);
 
     signal(SIGINT, sig_handler);
 
     // wait here
-    osal_uint64_t tx_timer_med = 0, tx_timer_avg_jit = 0, tx_timer_max_jit = 0;
-    osal_uint64_t tx_duration_med = 0, tx_duration_avg_jit = 0, tx_duration_max_jit = 0;
-    osal_uint64_t roundtrip_duration_med = 0, roundtrip_duration_avg_jit = 0, roundtrip_duration_max_jit = 0;
+    osal_uint64_t tx_timer_med = 0, tx_timer_avg_jit = 0, tx_timer_max_jit = 0, tx_timer_min, tx_timer_max, tx_timer_min_ever = 0, tx_timer_max_ever = 0;
+    osal_uint64_t tx_duration_med = 0, tx_duration_avg_jit = 0, tx_duration_max_jit = 0, tx_duration_min, tx_duration_max, tx_duration_min_ever = 0, tx_duration_max_ever = 0;
+    osal_uint64_t rx_duration_med = 0, rx_duration_avg_jit = 0, rx_duration_max_jit = 0, rx_duration_min, rx_duration_max, rx_duration_min_ever = 0, rx_duration_max_ever = 0;
+    osal_uint64_t roundtrip_duration_med = 0, roundtrip_duration_avg_jit = 0, roundtrip_duration_max_jit = 0, roundtrip_duration_min, roundtrip_duration_max;
+
+    osal_uint64_t roundtrip_max_ever = 0;
+    osal_uint64_t roundtrip_min_ever = 0;
 
     for (;keep_running == 1;) {
         osal_timer_t to;
         osal_timer_init(&to, 10000000000);
-        osal_trace_timedwait(tx_duration, &to);
+        osal_trace_timedwait(roundtrip_duration, &to);
 
-        osal_trace_analyze(tx_start, &tx_timer_med, &tx_timer_avg_jit, &tx_timer_max_jit);
-        osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
-        osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
+        if (dc_mode == dc_mode_ref_clock) 
+            osal_trace_timedwait(dc_diff, &to);
 
-        ec_log(10, "MAIN", "rtc_time %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, ec.dc.dc_time);
+        osal_trace_analyze_min_max(tx_start, &tx_timer_med, &tx_timer_avg_jit, &tx_timer_max_jit, &tx_timer_min, &tx_timer_max);
+        osal_trace_analyze_rel_min_max(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit, &tx_duration_min, &tx_duration_max);
+        osal_trace_analyze_rel_min_max(rx_duration, &rx_duration_med, &rx_duration_avg_jit, &rx_duration_max_jit, &rx_duration_min, &rx_duration_max);
+        osal_trace_analyze_rel_min_max(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit, &roundtrip_duration_min, &roundtrip_duration_max);
+
+        static int skip_first = 1;
+        if (skip_first > 0) {
+            skip_first = 0;
+            continue;
+        }
+
+        if (!roundtrip_min_ever || (roundtrip_min_ever > roundtrip_duration_min))
+            roundtrip_min_ever = roundtrip_duration_min;
+        if (!roundtrip_max_ever || (roundtrip_max_ever < roundtrip_duration_max))
+            roundtrip_max_ever = roundtrip_duration_max;
+        if (!rx_duration_min_ever || (rx_duration_min_ever > rx_duration_min))
+            rx_duration_min_ever = rx_duration_min;
+        if (!rx_duration_max_ever || (rx_duration_max_ever < rx_duration_max))
+            rx_duration_max_ever = rx_duration_max;
+        if (!tx_duration_min_ever || (tx_duration_min_ever > tx_duration_min))
+            tx_duration_min_ever = tx_duration_min;
+        if (!tx_duration_max_ever || (tx_duration_max_ever < tx_duration_max))
+            tx_duration_max_ever = tx_duration_max;
+        if (!tx_timer_min_ever || (tx_timer_min_ever > tx_timer_min))
+            tx_timer_min_ever = tx_timer_min;
+        if (!tx_timer_max_ever || (tx_timer_max_ever < tx_timer_max))
+            tx_timer_max_ever = tx_timer_max;
 
 #define to_us(x)    ((double)(x)/1000.)
-        if (dc_mode != dc_mode_ref_clock) {
-            ec_log(10, "", "=====================================================================================================\n");
-            ec_log(10, "Times", "RTC %15.9fs, Last Sent %15.9fs, DC %15.9fs\n", ec.dc.rtc_time/1E9, last_sent/1E9, ec.dc.dc_time/1E9);
-            ec_log(10, "Frame", "Length %" PRIu64 " bytes, Time @ 100 MBit/s %7.1fus\n", bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.);
-            ec_log(10, "Mean (Stddev,Maxdev)", "Timer %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), TX %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), "
-                    "Roundtrip %5.1fus (%4" PRId64 "ns/%4" PRId64 "ns)\n", to_us(tx_timer_med), tx_timer_avg_jit, tx_timer_max_jit, 
-                    to_us(tx_duration_med), tx_duration_avg_jit, tx_duration_max_jit, 
-                    to_us(roundtrip_duration_med), roundtrip_duration_avg_jit, roundtrip_duration_max_jit);
-        } else {
-            ec_log(10, "", "=====================================================================================================\n");
-            ec_log(10, "Times", "RTC %15.9fs, Last Sent %15.9fs, DC %15.9fs\n", ec.dc.rtc_time/1E9, last_sent/1E9, ec.dc.dc_time/1E9);
-            ec_log(10, "Frame", "Length %" PRIu64 " bytes, Time @ 100 MBit/s %7.1fus\n", bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.);
-            ec_log(10, "Mean (Stddev,Maxdev)", "Timer %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), TX %7.1fus (%4" PRId64 "ns/%4" PRId64 "ns), "
-                    "Roundtrip %5.1fus (%4" PRId64 "ns/%4" PRId64 "ns)\n", to_us(tx_timer_med), tx_timer_avg_jit, tx_timer_max_jit, 
-                    to_us(tx_duration_med), tx_duration_avg_jit, tx_duration_max_jit, 
-                    to_us(roundtrip_duration_med), roundtrip_duration_avg_jit, roundtrip_duration_max_jit);
-            ec_log(10, "DC", "Diff %4" PRId64 "ns, diffsum %+7.1fns, cylce_rate %ldns\n", ec.dc.act_diff, ec.dc.control.diffsum, act_cycle_rate);
+        ec_log(10, "", "=====================================================================================================\n");
+        ec_log(10, "Times", "RTC %15.9fs, Last Sent %15.9fs, DC %15.9fs, Cyclerate %ldns\n", ec.dc.rtc_time/1E9, last_sent/1E9, ec.dc.dc_time/1E9, act_cycle_rate);
+        ec_log(10, "Frame", "Length %" PRIu64 " bytes, Time @ 100 MBit/s %7.1fus\n", bytes_last_sent + 7 + 4, (10 * 8 * (bytes_last_sent + 7 + 4)) / 1000.); // preamble, fcs
+        ec_log(10, "Timer", "Avg %7.1fus (stddev %4" PRId64 "ns / maxdev %4" PRId64 "ns, min %8" PRId64 "ns / max %8" PRId64 "ns, min ever %8"PRId64"ns / max ever %8"PRId64"ns)\n",  
+                to_us(tx_timer_med), tx_timer_avg_jit, tx_timer_max_jit, tx_timer_min, tx_timer_max, tx_timer_min_ever, tx_timer_max_ever);
+        ec_log(10, "TX", "Avg %7.1fus (stddev %4" PRId64 "ns / maxdev %4" PRId64 "ns, min %8" PRId64 "ns / max %8" PRId64 "ns, min ever %8"PRId64"ns / max ever %8"PRId64"ns)\n", 
+                to_us(tx_duration_med), tx_duration_avg_jit, tx_duration_max_jit, tx_duration_min, tx_duration_max, tx_duration_min_ever, tx_duration_max_ever);
+        ec_log(10, "RX", "Avg %7.1fus (stddev %4" PRId64 "ns / maxdev %4" PRId64 "ns, min %8" PRId64 "ns / max %8" PRId64 "ns, min ever %8"PRId64"ns / max ever %8"PRId64"ns)\n", 
+                to_us(rx_duration_med), rx_duration_avg_jit, rx_duration_max_jit, rx_duration_min, rx_duration_max, rx_duration_min_ever, rx_duration_max_ever);
+        ec_log(10, "Rounttrip", "Avg %7.1fus (stddev %4" PRId64 "ns / maxdev %4" PRId64 "ns, min %8" PRId64 "ns / max %8" PRId64 "ns, min ever %8"PRId64"ns / max ever %8"PRId64"ns)\n", 
+                to_us(roundtrip_duration_med), roundtrip_duration_avg_jit, roundtrip_duration_max_jit, roundtrip_duration_min, roundtrip_duration_max, roundtrip_min_ever, roundtrip_max_ever);
+
+        if (dc_mode == dc_mode_ref_clock) {
+            ec_log(10, "DC", "Diff %4" PRId64 "ns, i_part %+7.1fns\n", ec.dc.act_diff, ec.dc.control.i_part);
         }
     }
 
