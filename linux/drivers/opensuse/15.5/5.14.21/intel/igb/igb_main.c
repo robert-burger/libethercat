@@ -8425,6 +8425,9 @@ static bool igb_clean_tx_irq(struct igb_q_vector *q_vector, int napi_budget)
 	union e1000_adv_tx_desc *tx_desc;
 	unsigned int total_bytes = 0, total_packets = 0;
 	unsigned int budget = q_vector->tx.work_limit;
+	if ((adapter->is_ecat == 1) && (ethercat_polling == 1)) {
+		budget = -1; // only clean one tx
+	}	
 	unsigned int i = tx_ring->next_to_clean;
 
 	if (test_bit(__IGB_DOWN, &adapter->state))
@@ -9388,10 +9391,9 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return igb_ptp_get_ts_config(netdev, ifr);
 	case SIOCSHWTSTAMP:
 		return igb_ptp_set_ts_config(netdev, ifr);
-	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX: {
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		struct igb_q_vector *q_vector = adapter->q_vector[0];
-		int budget = 64;
 		bool clean_complete = true;
 
 		if (!adapter->is_ecat) {
@@ -9399,7 +9401,22 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		}
 
 		if (q_vector->tx.ring) {
-			clean_complete = igb_clean_tx_irq(q_vector, budget);
+			clean_complete = igb_clean_tx_irq(q_vector, 1);
+		}
+
+		if (!clean_complete) 
+			return 1;
+
+		return 0;
+	}
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		struct igb_q_vector *q_vector = adapter->q_vector[0];
+		int budget = 64;
+		bool clean_complete = true;
+
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
 		}
 
 		if (q_vector->rx.ring) {

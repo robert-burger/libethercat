@@ -5165,7 +5165,10 @@ static void rtl_remove_one(struct pci_dev *pdev)
 static int rtl_do_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd) 
 {
 	switch (cmd) {
-		case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
+		case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX: {
+			return 1;
+		}
+		case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX: {
 			struct rtl8169_private *tp = netdev_priv(netdev);
 			struct net_device *dev = tp->dev;
 			int work_done;
