@@ -271,7 +271,7 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
         osal_size_t slv_pdout_len = 0u;
 
         for (k = start_sm; k < slv->sm_ch; ++k) {
-            if ((slv->sm[k].flags & 0x00000004u) != 0u) {
+            if ((slv->sm[k].control_register & 0x04u) != 0u) {
                 slv_pdout_len += slv->sm[k].len; // outputs
             } else  {
                 slv_pdin_len += slv->sm[k].len;  // inputs
@@ -326,7 +326,7 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
                 continue; // empty 
             }
 
-            if ((slv->sm[k].flags & 0x00000004u) != 0u) {
+            if ((slv->sm[k].control_register & 0x04u) != 0u) {
                 if (fmmu_next < slv->fmmu_ch) {
                     slv->fmmu[fmmu_next].log = log_base_out;
                     slv->fmmu[fmmu_next].log_len = slv->sm[k].len;
@@ -448,7 +448,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
         }
 
         for (k = start_sm; k < slv->sm_ch; ++k) {
-            if ((slv->sm[k].flags & 0x00000004u) != 0u) {
+            if ((slv->sm[k].control_register & 0x04u) != 0u) {
                 pd->pdout_len += slv->sm[k].len; // outputs
             } else  {
                 pd->pdin_len += slv->sm[k].len;  // inputs
@@ -488,7 +488,7 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
                 continue; // empty 
             }
 
-            if ((slv->sm[k].flags & 0x00000004u) != 0u) {
+            if ((slv->sm[k].control_register & 0x04u) != 0u) {
                 if (fmmu_next < slv->fmmu_ch) {
                     slv->fmmu[fmmu_next].log = log_base_out;
                     slv->fmmu[fmmu_next].log_len = slv->sm[k].len;
