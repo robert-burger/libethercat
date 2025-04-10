@@ -8,6 +8,8 @@ var eeprom_8h =
     [ "EC_EEPROM_ADR_CAT_OFFSET", "group__eeprom__group.html#gab4e03cd489ff190bef082cd6309e3111", null ],
     [ "EC_EEPROM_ADR_MBX_SUPPORTED", "group__eeprom__group.html#ga8ea05f668060ac3b528dede1219bbefe", null ],
     [ "EC_EEPROM_ADR_PRODUCT_CODE", "group__eeprom__group.html#gabc89ea05424adfd9e1643c6aa9d8e9b9", null ],
+    [ "EC_EEPROM_ADR_REVISION_NUMBER", "group__eeprom__group.html#ga5c62850f1e5ee79f9aeb5972e2ff9535", null ],
+    [ "EC_EEPROM_ADR_SERIAL_NUMBER", "group__eeprom__group.html#ga669b144973b3ad54dd879e0253d283bd", null ],
     [ "EC_EEPROM_ADR_SIZE", "group__eeprom__group.html#gaa9207135af76f9f741800aaba7b3ecef", null ],
     [ "EC_EEPROM_ADR_STD_MBX_RECV_OFF", "group__eeprom__group.html#gaae6dc8189bbda816fc55bc3cc4927a36", null ],
     [ "EC_EEPROM_ADR_STD_MBX_RECV_SIZE", "group__eeprom__group.html#ga3ef658ee11e4224222c9449a48d85f3b", null ],

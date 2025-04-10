@@ -15,11 +15,12 @@ var searchData=
   ['reserved2_12',['reserved2',['../structec__soe__idn__attribute.html#a469cb17a6e9adcf973873178964e1826',1,'ec_soe_idn_attribute']]],
   ['reserved_5f1_13',['reserved_1',['../structec__reg__dl__status.html#aaa501986bddd126d1923a107e0a4c84e',1,'ec_reg_dl_status']]],
   ['reserverd_14',['reserverd',['../structec__slave__fmmu.html#abea70736a61cfed45a64ac1b66389e56',1,'ec_slave_fmmu']]],
-  ['rtc_5fsto_15',['rtc_sto',['../structec__dc__info.html#a63fcccb22bcde8d441784f8be6658194',1,'ec_dc_info']]],
-  ['rtc_5ftime_16',['rtc_time',['../structec__dc__info.html#a274591b56c2f24f9e1195b1afcb37c6c',1,'ec_dc_info']]],
-  ['rx_5fring_17',['rx_ring',['../structhw__sock__raw__mmaped.html#a3fcca512615e0f11ddedba2f0f44d7eb',1,'hw_sock_raw_mmaped']]],
-  ['rx_5fring_5foffset_18',['rx_ring_offset',['../structhw__sock__raw__mmaped.html#a65d06214b064c408249133b0972571b6',1,'hw_sock_raw_mmaped']]],
-  ['rxpdos_19',['rxpdos',['../structeeprom__info.html#ac4423f0cfc83fac1df2adef6c1d55c35',1,'eeprom_info']]],
-  ['rxthread_20',['rxthread',['../structhw__file.html#aaee75c624ccfa052be38e67e9b06a5fd',1,'hw_file::rxthread'],['../structhw__pikeos.html#af5cc1d9e89d29b028b49f9f5c9f66b98',1,'hw_pikeos::rxthread'],['../structhw__sock__raw.html#a0be7519e04f0f9437f377745d625965d',1,'hw_sock_raw::rxthread'],['../structhw__sock__raw__mmaped.html#ac015a1bcd1dbe3ec0bdfd84b79ae882c',1,'hw_sock_raw_mmaped::rxthread']]],
-  ['rxthreadrunning_21',['rxthreadrunning',['../structhw__file.html#aea011b9a5211f2b90c7b1f140ba79006',1,'hw_file::rxthreadrunning'],['../structhw__pikeos.html#a8a45b168ce19b7c492cebd37b0a14694',1,'hw_pikeos::rxthreadrunning'],['../structhw__sock__raw.html#a432a52811d8847613ada933bcc3c25b8',1,'hw_sock_raw::rxthreadrunning'],['../structhw__sock__raw__mmaped.html#abd0e93d3dcf2f11f744dadf8db1e0f95',1,'hw_sock_raw_mmaped::rxthreadrunning']]]
+  ['revision_5fnumer_15',['revision_numer',['../structeeprom__info.html#a35d484b3178ac8e5aa73b49f7a3b4fb6',1,'eeprom_info']]],
+  ['rtc_5fsto_16',['rtc_sto',['../structec__dc__info.html#a63fcccb22bcde8d441784f8be6658194',1,'ec_dc_info']]],
+  ['rtc_5ftime_17',['rtc_time',['../structec__dc__info.html#a274591b56c2f24f9e1195b1afcb37c6c',1,'ec_dc_info']]],
+  ['rx_5fring_18',['rx_ring',['../structhw__sock__raw__mmaped.html#a3fcca512615e0f11ddedba2f0f44d7eb',1,'hw_sock_raw_mmaped']]],
+  ['rx_5fring_5foffset_19',['rx_ring_offset',['../structhw__sock__raw__mmaped.html#a65d06214b064c408249133b0972571b6',1,'hw_sock_raw_mmaped']]],
+  ['rxpdos_20',['rxpdos',['../structeeprom__info.html#ac4423f0cfc83fac1df2adef6c1d55c35',1,'eeprom_info']]],
+  ['rxthread_21',['rxthread',['../structhw__file.html#aaee75c624ccfa052be38e67e9b06a5fd',1,'hw_file::rxthread'],['../structhw__pikeos.html#af5cc1d9e89d29b028b49f9f5c9f66b98',1,'hw_pikeos::rxthread'],['../structhw__sock__raw.html#a0be7519e04f0f9437f377745d625965d',1,'hw_sock_raw::rxthread'],['../structhw__sock__raw__mmaped.html#ac015a1bcd1dbe3ec0bdfd84b79ae882c',1,'hw_sock_raw_mmaped::rxthread']]],
+  ['rxthreadrunning_22',['rxthreadrunning',['../structhw__file.html#aea011b9a5211f2b90c7b1f140ba79006',1,'hw_file::rxthreadrunning'],['../structhw__pikeos.html#a8a45b168ce19b7c492cebd37b0a14694',1,'hw_pikeos::rxthreadrunning'],['../structhw__sock__raw.html#a432a52811d8847613ada933bcc3c25b8',1,'hw_sock_raw::rxthreadrunning'],['../structhw__sock__raw__mmaped.html#abd0e93d3dcf2f11f744dadf8db1e0f95',1,'hw_sock_raw_mmaped::rxthreadrunning']]]
 ];

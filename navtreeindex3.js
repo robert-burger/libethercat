@@ -1,5 +1,7 @@
 var NAVTREEINDEX3 =
 {
+"structec__dc__info.html#a49992c42e2bbd58d992c35e4e27c06d3":[2,0,8,4],
+"structec__dc__info.html#a5f7677879ffc0f7356c7c326e910bf00":[2,0,8,2],
 "structec__dc__info.html#a63fcccb22bcde8d441784f8be6658194":[2,0,8,7],
 "structec__dc__info.html#a85048f2d3b5aa37c7058781d625bb69e":[2,0,8,0],
 "structec__dc__info.html#aef0820a407c8c658abaca711153e8e51":[2,0,8,6],
@@ -244,10 +246,8 @@ var NAVTREEINDEX3 =
 "structeeprom__info.html#a133537bf4b5900cfb634d6d4427c8834":[1,3,6,3],
 "structeeprom__info.html#a15a862c2f72b092c85534a587600c70a":[1,3,6,14],
 "structeeprom__info.html#a2938ef6c72c7b0b4f3b896c2178f874f":[1,3,6,9],
-"structeeprom__info.html#a3618b9013a83199e40064141c4541a5c":[1,3,6,24],
+"structeeprom__info.html#a35d484b3178ac8e5aa73b49f7a3b4fb6":[1,3,6,18],
+"structeeprom__info.html#a3618b9013a83199e40064141c4541a5c":[1,3,6,26],
 "structeeprom__info.html#a36ab49296fa8807005d5ae5c45595f6c":[1,3,6,5],
-"structeeprom__info.html#a3d7c013ec77516cd78ac4823e22405e0":[1,3,6,23],
-"structeeprom__info.html#a48116e94078dff54cec5e2629b2dd1e2":[1,3,6,10],
-"structeeprom__info.html#a4a58a56d30951fe3f467bc1d9916b1b0":[1,3,6,19],
-"structeeprom__info.html#a59c7671107cfaff0c503668c8aeaa992":[1,3,6,21]
+"structeeprom__info.html#a3d7c013ec77516cd78ac4823e22405e0":[1,3,6,25]
 };
