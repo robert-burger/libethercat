@@ -441,7 +441,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                 } else {
                     ec_coe_print_msg(pec, 1, "COE_SDO_READ", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
-                    //ret = EC_ERROR_MAILBOX_READ;
+                    ret = EC_ERROR_MAILBOX_READ;
                 }
 
                 ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
