@@ -51,6 +51,10 @@
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 
+// forward decls
+static int ec_async_loop_get(ec_message_pool_t *ppool,
+        ec_message_entry_t **msg, osal_timer_t *timeout);
+
 // get a message from a message pool
 int ec_async_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, osal_timer_t *timeout) {
