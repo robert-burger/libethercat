@@ -44,7 +44,10 @@
 #include <libosal/types.h>
 #include <libosal/mutex.h>
 
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
+
 #include <libethercat/pool.h>
 #include <libethercat/datagram.h>
 
@@ -64,7 +67,7 @@
  * @{
  */
 
-#define ETH_P_ECAT      (0x88A4)        //!< \brief Ethertype for EtherCAT.
+#define ETH_P_ECAT      ((osal_uint16_t)0x88A4u)        //!< \brief Ethertype for EtherCAT.
 
 // forward decl
 struct ec;

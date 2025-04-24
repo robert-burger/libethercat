@@ -43,7 +43,12 @@
 
 #include <libosal/types.h>
 
+#ifdef HAVE_CONFIG_H
 #include "libethercat/config.h"
+#endif
+
+#include <assert.h>
+
 #include "libethercat/common.h"
 #include "libethercat/eeprom.h"
 #include "libethercat/dc.h"

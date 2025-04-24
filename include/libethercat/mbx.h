@@ -286,6 +286,17 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
 #define ec_mbx_return_free_recv_buffer(pec, slave, entry) \
     pool_put(&(pec)->mbx_message_pool_recv_free, (entry))
 
+//! \brief Handle slaves mailbox.
+/*!
+ * This function is usually called by the mbx handler thread.
+ *
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ */
+void ec_mbx_do_handle(ec_t *pec, uint16_t slave);
 
 #ifdef __cplusplus
 }
