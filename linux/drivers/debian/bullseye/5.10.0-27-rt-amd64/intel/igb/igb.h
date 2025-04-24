@@ -22,6 +22,7 @@
 #include <net/xdp.h>
 
 #include "ethercat_device.h"
+#include "ethercat_device_ioctl.h"
 
 struct igb_adapter;
 

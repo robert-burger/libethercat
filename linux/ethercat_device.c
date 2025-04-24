@@ -28,6 +28,7 @@
  */
 
 #include "ethercat_device.h"
+#include "ethercat_device_ioctl.h"
 
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -43,7 +44,7 @@
 #include <linux/netdevice.h>
 
 MODULE_AUTHOR("Robert Burger <robert.burger@dlr.de>");
-MODULE_DESCRIPTION("libethercat char device driver");
+MODULE_DESCRIPTION("ethercat char device driver");
 MODULE_LICENSE("GPL");
 
 
@@ -172,7 +173,11 @@ static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
         ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
         *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
 
-        memcpy(ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+        dev_addr_mod(ecat_dev->monitor_dev, 0, ecat_dev->net_dev->dev_addr, ETH_ALEN);
+#else
+        memcpy((void *)ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
+#endif
 
         if ((ret = register_netdev(ecat_dev->monitor_dev))) {
             pr_err("error registering monitor net device!\n");
@@ -229,7 +234,7 @@ static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8
     skb->protocol = eth_type_trans(skb, ecat_dev->monitor_dev);
     skb->ip_summed = CHECKSUM_UNNECESSARY;
 
-    netif_rx_ni(skb);
+    netif_receive_skb(skb);
 }
 
 //================================================================================================
@@ -244,7 +249,11 @@ static int ethercat_device_init(void) {
 	int ret = 0;
 
 	// create driver class and character devices
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+	ecat_chr_class = class_create("ecat");
+#else
 	ecat_chr_class = class_create(THIS_MODULE, "ecat");
+#endif
 	if ((ret = alloc_chrdev_region(&ecat_chr_dev, 0, ecat_chr_cnt, "ecat")) < 0) {
 		pr_info("cannot obtain major nr!\n");
 		return ret;
@@ -278,10 +287,8 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     struct ethhdr *eth;
     int ret = 0;
     unsigned i = 0;
-    //char monitor_name[64];
-    int local_ret;
 
-    debug_pr_info("libethercat: creating EtherCAT character device...\n");
+    debug_pr_info("ethercat: creating EtherCAT character device...\n");
 
     ecat_dev = kmalloc(sizeof(struct ethercat_device), GFP_KERNEL);
     if (!ecat_dev) {
@@ -312,7 +319,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     }
 
     snprintf(net_dev->name, IFNAMSIZ, "ecat%d", ecat_dev->minor);
-    debug_pr_info("libethercat: created device file %s.\n", net_dev->name);
+    debug_pr_info("ethercat: created device file %s.\n", net_dev->name);
     
     // init wait queue
     init_swait_queue_head(&ecat_dev->ir_queue);
@@ -343,15 +350,8 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
             goto error_exit;
         }
     }
-
+    
     ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
-
-    ecat_dev->ethercat_polling = false;
-    local_ret = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(
-            ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
-    if (local_ret > 0) {
-        ecat_dev->ethercat_polling = true;
-    }
 
     (void)ethercat_monitor_create(ecat_dev);
 
@@ -381,7 +381,7 @@ EXPORT_SYMBOL(ethercat_device_create);
 
 int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     int i = 0;
-
+    
     ethercat_monitor_destroy(ecat_dev);
     
     ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
@@ -437,7 +437,7 @@ void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data,
     memcpy(skb->data, data, size);
     skb->len = size;
     
-    debug_print_frame("libethercat char dev driver: received", skb->data, skb->len);
+    debug_print_frame("ethercat char dev driver: received", skb->data, skb->len);
 
     ecat_dev->rx_skb_index_last_recv = next_index;
 
@@ -458,19 +458,36 @@ EXPORT_SYMBOL(ethercat_device_receive);
  * @param return 0
  */
 static int ethercat_device_open(struct inode *inode, struct file *filp) {
+    int local_ret = 0;
     struct ethercat_device_user *user;
     struct ethercat_device *ecat_dev;
+    int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
     ecat_dev = (void *)container_of(inode->i_cdev, struct ethercat_device, cdev);
 
-    debug_pr_info("libethercat char dev driver: open called\n");
+    debug_pr_info("ethercat char dev driver: open called\n");
+    
+    ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+    if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
+#endif
 
-    if (ecat_dev->ethercat_polling) {
-        int not_cleaned = 1;
-        // consume frames ...
-        do {
-            not_cleaned = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev,
-                    NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
-        } while (not_cleaned != 0);
+    ecat_dev->ethercat_polling = false;
+    
+    if (ndo_do_ioctl) {
+        local_ret = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
+        if (local_ret > 0) {
+            ecat_dev->ethercat_polling = true;
+        }
+    }
+
+    if (ndo_do_ioctl) {
+        if (ecat_dev->ethercat_polling) {
+            int not_cleaned = 1;
+            // consume frames ...
+            do {
+                not_cleaned = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
+            } while (not_cleaned != 0);
+        }
     }
     
     ecat_dev->tx_skb_index_next = 0;
@@ -495,7 +512,9 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
  */
 static int ethercat_device_release(struct inode *inode, struct file *filp) {
     struct ethercat_device_user *user;
+    struct ethercat_device *ecat_dev;
     user = (struct ethercat_device_user *)filp->private_data;
+    ecat_dev = user->ecat_dev;
     
     debug_pr_info("libetherat char dev driver: release called\n");
 
@@ -521,11 +540,17 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
     struct ethercat_device *ecat_dev;
     struct sk_buff *skb;
     size_t copy_len;
+    int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
 
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
 
-    debug_pr_info("libethercat char dev driver: read called\n");
+    ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+    if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
+#endif
+
+    debug_pr_info("ethercat char dev driver: read called\n");
 
     if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
         if (filp->f_flags & O_NONBLOCK) {
@@ -533,16 +558,20 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
             return -EWOULDBLOCK; 
         } else {
             if (ecat_dev->ethercat_polling) {
-                unsigned long wait_jiffies = jiffies + HZ;
+                s64 act_time = ktime_to_ns(ktime_get_raw());
+                s64 end_time = act_time + ecat_dev->rx_timeout_ns;
 
-                do {
-                    (void)ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, 
-                            NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
+                if (ndo_do_ioctl) {
+                    do {
+                        (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL);
 
-                    if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
-                        break;
-                    }
-                } while (time_before(jiffies, wait_jiffies));
+                        if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
+                            break;
+                        }
+
+                        act_time = ktime_to_ns(ktime_get_raw());
+                    } while (act_time < end_time);
+                }
 
                 if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
                     return -EAGAIN;
@@ -586,7 +615,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
     
-    debug_pr_info("libethercat char dev driver: write called\n");
+    debug_pr_info("ethercat char dev driver: write called\n");
     
     skb = ecat_dev->tx_skb[ecat_dev->tx_skb_index_next++];
     if (ecat_dev->tx_skb_index_next >= EC_TX_RING_SIZE) {
@@ -605,7 +634,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
             ret = -EINVAL;
         } else {
             netdev_tx_t local_ret = 0;
-            debug_print_frame("libethercat char dev driver: sending", skb->data, skb->len);
+            debug_print_frame("ethercat char dev driver: sending", skb->data, skb->len);
             
             ethercat_monitor_frame(ecat_dev, skb->data, len);
 
@@ -636,7 +665,7 @@ static unsigned int ethercat_device_poll(struct file *filp, struct poll_table_st
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
 
-    debug_pr_info("libethercat char dev driver: poll called\n");
+    debug_pr_info("ethercat char dev driver: poll called\n");
 
 //    poll_wait(filp, &ecat_dev->ir_queue, poll_table);
     mask = ecat_dev->poll_mask;
@@ -656,14 +685,61 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
     long ret = 0;
     struct ethercat_device_user *user;
     struct ethercat_device *ecat_dev;
-    
+    int	(*ndo_do_ioctl)(struct net_device *dev, struct ifreq *ifr, int cmd);
+
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
-
+    
+    ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+    if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
+#endif
+    
     switch (num) {
+        case ETHERCAT_DEVICE_SET_POLLING_RX_TIMEOUT: {
+            if (__copy_from_user(&ecat_dev->rx_timeout_ns, (void *)arg, sizeof(uint64_t))) {
+                ret = -EFAULT;
+            }
+
+            pr_info("set rx_timeout_ns to %lld\n", ecat_dev->rx_timeout_ns);
+            break;
+        }
+        case ETHERCAT_DEVICE_SET_POLLING: { 
+            uint32_t set_polling;
+            if (__copy_from_user(&set_polling, (void *)arg, sizeof(uint32_t))) {
+                ret = -EFAULT;
+            }
+
+            if ((ret == 0) && ndo_do_ioctl) {
+                int local_ret;
+
+                if (set_polling) {
+                    (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING);
+                } else {
+                    (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING);
+                }
+        
+                local_ret = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
+                if (local_ret > 0) {
+                    ecat_dev->ethercat_polling = true;
+                } else {
+                    ecat_dev->ethercat_polling = false;
+                }
+            } else {
+                ret = -EFAULT;
+            }
+
+            break;
+        }
         case ETHERCAT_DEVICE_GET_POLLING: {
-            unsigned int val = ecat_dev->ethercat_polling == false ? 0 : 1;
-            if (__copy_to_user((void *)arg, &val, sizeof(unsigned int))) {
+            uint32_t val = ecat_dev->ethercat_polling == false ? 0 : 1;
+            if (__copy_to_user((void *)arg, &val, sizeof(uint32_t))) {
+                ret = -EFAULT;
+            }
+            break;
+        }
+        case ETHERCAT_DEVICE_GET_LINK_STATE: {
+            if (__copy_to_user((void *)arg, &ecat_dev->link_state, sizeof(uint8_t))) {
                 ret = -EFAULT;
             }
             break;
@@ -675,11 +751,11 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
     return ret;
 }
 
-//! initializing libethercat module
+//! initializing ethercat module
 /*! 
  */
-int  libethercat_init(void) {
-    pr_info("libethercat char dev driver: init\n");
+int  ethercat_init(void) {
+    pr_info("ethercat char dev driver: init\n");
 
     /* init hardware driver */
     ethercat_device_init();
@@ -687,15 +763,15 @@ int  libethercat_init(void) {
     return 0;
 }
 
-//! exiting libethercat module
+//! exiting ethercat module
 /*!
  */
-void  libethercat_exit(void) {
-    pr_info("libethercat char dev driver: exit\n");
+void  ethercat_exit(void) {
+    pr_info("ethercat char dev driver: exit\n");
 
     ethercat_device_exit();
 }
 
-module_init(libethercat_init);
-module_exit(libethercat_exit);
+module_init(ethercat_init);
+module_exit(ethercat_exit);
 

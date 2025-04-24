@@ -2,6 +2,7 @@ context: conan
 configurations:
 - imports:
   - linux_defaults_build_profile
+- debian11-x86_64
 - build_profile:osl154-x86_64 pikeos4.2-armv7hf-gcc5:
     hw_device_file: False
     hw_device_sock_raw: False

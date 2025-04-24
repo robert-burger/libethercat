@@ -37,6 +37,8 @@
 #include <libethercat/config.h>
 #endif
 
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
+
 #include "libethercat/ec.h"
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
@@ -222,7 +224,7 @@ typedef struct {
 
 #define MSG_BUF_LEN     256u
 
-static void ec_coe_print_msg(int level, const osal_char_t *ctx, int slave, const osal_char_t *msg, osal_uint8_t *buf, osal_size_t buflen) {
+static void ec_coe_print_msg(ec_t *pec, int level, const osal_char_t *ctx, int slave, const osal_char_t *msg, osal_uint8_t *buf, osal_size_t buflen) {
     static osal_char_t msg_buf[MSG_BUF_LEN];
 
     osal_char_t *tmp = msg_buf;
@@ -254,7 +256,7 @@ void ec_coe_init(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
-    ec_log(10, "COE_INIT", "slave %2" PRIu16 ": initializing CoE mailbox.\n", slave);
+    ec_log(100, "COE_INIT", "slave %2" PRIu16 ": initializing CoE mailbox.\n", slave);
 
     ec_slave_ptr(slv, pec, slave);
     (void)pool_open(&slv->mbx.coe.recv_pool, 0, NULL);
@@ -437,7 +439,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                         }
                     }
                 } else {
-                    ec_coe_print_msg(1, "COE_SDO_READ", slave, "got unexpected mailbox message", 
+                    ec_coe_print_msg(pec, 1, "COE_SDO_READ", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     //ret = EC_ERROR_MAILBOX_READ;
                 }
@@ -534,7 +536,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
                     // everthing is fine
                     ret = EC_OK;
                 } else {
-                    ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
+                    ec_coe_print_msg(pec, 5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
                             (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
@@ -640,7 +642,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                 } else {
                     ec_log(5, "COE_SDO_WRITE", "slave %2" PRIu16 ": got unexpected mailbox message (service 0x%X, command 0x%X)\n",
                             slave, read_buf->coe_hdr.service, read_buf->sdo_hdr.command);
-                    ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "message was: ", (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
+                    ec_coe_print_msg(pec, 5, "COE_SDO_WRITE", slave, "message was: ", (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
@@ -717,7 +719,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                                 // everthing is fine
                                 ret = EC_OK;
                             } else {
-                                ec_coe_print_msg(5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
+                                ec_coe_print_msg(pec, 5, "COE_SDO_WRITE", slave, "got unexpected mailbox message", 
                                         (osal_uint8_t *)(p_entry->data), 6u + read_buf->mbx_hdr.length);
                                 ret = EC_ERROR_MAILBOX_READ;
                             }
@@ -924,7 +926,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
             ec_sdo_desc_req_t *write_buf = (ec_sdo_desc_req_t *)(p_entry->data);
 
             // mailbox header
-            write_buf->mbx_hdr.length       = 12; // (mbxhdr - length) + coehdr + sdohdr
+            write_buf->mbx_hdr.length       = 8; // (mbxhdr - length) + coehdr + sdohdr
             write_buf->mbx_hdr.mbxtype      = EC_MBX_COE;
             write_buf->mbx_hdr.counter      = counter;
             // coe header
@@ -951,7 +953,13 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
 
                         ret = EC_OK;
                     } else if (read_buf->sdo_info_hdr.opcode == EC_COE_SDO_INFO_ERROR_REQUEST) {
-                        osal_uint32_t ecode = read_buf->sdo_info_data[0];
+                        ec_sdo_info_error_resp_t *read_buf_error = (void *)(p_entry->data);
+
+                        osal_uint32_t ecode = (
+                            (osal_uint32_t)read_buf_error->sdo_info_data[0]        |
+                            (osal_uint32_t)read_buf_error->sdo_info_data[1] << 8u  |
+                            (osal_uint32_t)read_buf_error->sdo_info_data[2] << 16u |
+                            (osal_uint32_t)read_buf_error->sdo_info_data[3] << 24u );
 
                         ec_log(5, "COE_SDO_DESC_READ", "slave %2" PRIu16 ": got sdo info error request on idx %#X, "
                                 "error_code %"  PRIu32 ", message %s\n", slave, index, ecode, get_sdo_info_error_string(ecode));
@@ -964,7 +972,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     } else {}
                 } else {
                     // not our answer, print out this message
-                    ec_coe_print_msg(5, "COE_SDO_DESC_READ", slave, "unexpected coe answer", 
+                    ec_coe_print_msg(pec, 5, "COE_SDO_DESC_READ", slave, "unexpected coe answer", 
                             (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                     (void)memset(desc, 0, sizeof(ec_coe_sdo_desc_t));
                     ret = EC_ERROR_MAILBOX_READ;
@@ -1090,7 +1098,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                     } else {}
                 } else {
                     // not our answer, print out this message
-                    ec_coe_print_msg(5, "COE_SDO_ENTRY_DESC_READ", slave, "unexpected coe answer", 
+                    ec_coe_print_msg(pec, 5, "COE_SDO_ENTRY_DESC_READ", slave, "unexpected coe answer", 
                             (osal_uint8_t *)read_buf, 6u + read_buf->mbx_hdr.length);
                     (void)memset(desc, 0, sizeof(ec_coe_sdo_entry_desc_t));
                     ret = EC_ERROR_MAILBOX_READ;
@@ -1155,7 +1163,7 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     ret = 0u;
                 } else {
                     ec_log(5, "COE_MAPPING", "slave %2" PRIu16 ": sm%" PRIu32 " reading "
-                            "0x%04" PRIu32 "/%d failed, error code 0x%X\n", slave, sm_idx, idx, 0, ret);
+                            "0x%04" PRIu32 "/%d failed, error code 0x%X, abort code 0x%X\n", slave, sm_idx, idx, 0, ret, abort_code);
                 }
 
                 continue;
@@ -1174,8 +1182,8 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 ret = ec_coe_sdo_read(pec, slave, idx, i, 0, buf, &entry_size, &abort_code);
                 if (ret != 0) {
                     ec_log(5, "COE_MAPPING", "            "
-                            "pdo: reading 0x%04"  PRIu32 "/%d failed, error code 0x%X\n",
-                            idx, i, ret);
+                            "pdo: reading 0x%04"  PRIu32 "/%d failed, error code 0x%X, abort code 0x%X\n",
+                            idx, i, ret, abort_code);
                     continue;
                 }
 
@@ -1196,8 +1204,8 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                 ret = ec_coe_sdo_read(pec, slave, entry_idx, 0, 0, buf, &entry_cnt_size, &abort_code);
                 if (ret != 0) {
                     ec_log(5, "COE_MAPPING", "             "
-                            "pdo: reading 0x%04X/%d failed, error code 0x%X\n", 
-                            entry_idx, 0, ret);
+                            "pdo: reading 0x%04X/%d failed, error code 0x%X, abort code 0x%X\n", 
+                            entry_idx, 0, ret, abort_code);
                     continue;
                 }
 
@@ -1211,8 +1219,8 @@ int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
                     ret = ec_coe_sdo_read(pec, slave, entry_idx, j, 0, buf, &entry_size, &abort_code);
                     if (ret != 0) {
                         ec_log(5, "COE_MAPPING", "                "
-                                "reading 0x%04X/%d failed, error code 0x%X\n", 
-                                entry_idx, j, ret);
+                                "reading 0x%04X/%d failed, error code 0x%X, abort code 0x%X\n", 
+                                entry_idx, j, ret, abort_code);
                         continue;
                     }
 
@@ -1326,4 +1334,6 @@ int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_m
 
     return ret;
 }
+
+#endif /* LIBETHERCAT_MBX_SUPPORT_COE */
 

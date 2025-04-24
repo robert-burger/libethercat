@@ -40,6 +40,8 @@
 #include <libethercat/config.h>
 #endif
 
+#if LIBETHERCAT_BUILD_DEVICE_BPF == 1
+
 #include <libethercat/hw.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
@@ -244,4 +246,6 @@ int hw_device_bpf_recv(hw_t *phw, ec_frame_t *pframe) {
 void hw_device_bpf_send_finished(hw_t *phw) {
 }
 
+
+#endif /* LIBETHERCAT_BUILD_DEVICE_BPF == 1 */
 

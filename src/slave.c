@@ -42,6 +42,7 @@
 
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
+#include "libosal/types.h"
 
 #if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
@@ -562,18 +563,18 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
             (void)ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTAT, &act_state, sizeof(act_state), &wkc);
 
             if ((wkc != 0u) && !(act_state & EC_STATE_ERROR)) {
-                ec_log(1, get_transition_string(transition), "slave %2d: resetting seems to have succeeded, wkc %d\n", slave, wkc);
                 break;
             }
         } while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT);
     } else {
         ec_log(10, get_transition_string(transition), "slave %2d: %s state requested\n", slave, ecat_state_2_string(state));
-
+    
+        pec->slaves[slave].transition_active = OSAL_TRUE;
         pec->slaves[slave].expected_state = state;
 
         osal_timer_t timeout;
         osal_timer_init(&timeout, 10000000000); // 10 second timeout
-
+        osal_uint16_t last_logged_value = 0u;
         do {
             if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) == EC_OK) { 
                 act_state = 0;
@@ -582,9 +583,11 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
                 if ((act_state & EC_STATE_ERROR) != 0u) {
                     if (ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_ALSTATCODE, &value, sizeof(value), &wkc) == EC_OK) {
                         if (value != 0u) {
-                            ec_log(10, get_transition_string(transition), "slave %2d: state switch to %d failed, "
+                            if (value != last_logged_value){
+                                ec_log(1, get_transition_string(transition), "slave %2d: state switch to %d failed. Reset and try again, "
                                     "alstatcode 0x%04X : %s\n", slave, state, value, al_status_code_2_string(value));
-
+                                last_logged_value = value;
+                            }
                             (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
                         }
                     }
@@ -612,6 +615,8 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
 
             pec->slaves[slave].act_state = act_state;
         }
+        
+        pec->slaves[slave].transition_active = OSAL_FALSE;
     }
 
     return ret;
@@ -752,58 +757,62 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                 break;
             case INIT_2_SAFEOP:
             case PREOP_2_SAFEOP:
-                ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds\n", slave);
+                if (!LIST_EMPTY(&slv->init_cmds)) {
+                    ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds\n", slave);
 
-                ec_init_cmd_t *cmd;
-                LIST_FOREACH(cmd, &slv->init_cmds, le) {
-                    if (cmd->transition != 0x24) { // cppcheck-suppress uninitvar
-                        continue;
-                    }
-
-                    switch (cmd->type) {
-                        default:
-                            break;
-#if LIBETHERCAT_MBX_SUPPORT_COE == 1
-                        case EC_MBX_COE: {
-                            ec_log(10, get_transition_string(transition), 
-                                    "slave %2d: sending CoE init cmd 0x%04X:%d, "
-                                    "ca %d, datalen %" PRIu64 ", datap %p\n", slave, cmd->id, 
-                                    cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
-
-                            osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
-                            osal_size_t buf_len = cmd->datalen;
-                            osal_uint32_t abort_code = 0;
-
-                            int local_ret = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, cmd->ca_atn, buf, buf_len, &abort_code);
-                            if (local_ret != EC_OK) {
-                                ec_log(10, get_transition_string(transition), 
-                                        "slave %2d: writing sdo failed: error code 0x%X!\n", 
-                                        slave, local_ret);
-                            } 
-                            break;
+                    ec_init_cmd_t *cmd;
+                    LIST_FOREACH(cmd, &slv->init_cmds, le) {
+                        if (cmd->transition != 0x24) { // cppcheck-suppress uninitvar
+                            continue;
                         }
+
+                        switch (cmd->type) {
+                            default:
+                                break;
+#if LIBETHERCAT_MBX_SUPPORT_COE == 1
+                            case EC_MBX_COE: {
+                                ec_log(10, get_transition_string(transition), 
+                                        "slave %2d: sending CoE init cmd 0x%04X:%d, "
+                                        "ca %d, datalen %" PRIu64 ", datap %p\n", slave, cmd->id, 
+                                        cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
+
+                                osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
+                                osal_size_t buf_len = cmd->datalen;
+                                osal_uint32_t abort_code = 0;
+
+                                int local_ret = ec_coe_sdo_write(pec, slave, cmd->id, cmd->si_el, cmd->ca_atn, buf, buf_len, &abort_code);
+                                if (local_ret != EC_OK) {
+                                    ec_log(10, get_transition_string(transition), 
+                                            "slave %2d: writing sdo failed: error code 0x%X, abort_code 0x%X!\n", 
+                                            slave, local_ret, abort_code);
+                                } 
+                                break;
+                            }
 #endif
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
-                        case EC_MBX_SOE: {
-                            ec_log(10, get_transition_string(transition), 
-                                    "slave %2d: sending SoE init cmd 0x%04X:%d, "
-                                    "atn %d, datalen %" PRIu64 ", datap %p\n", slave, cmd->id, 
-                                    cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
-
-                            osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
-                            osal_size_t buf_len = cmd->datalen;
-
-                            int local_ret = ec_soe_write(pec, slave, cmd->ca_atn, cmd->id, cmd->si_el, buf, buf_len);
-
-                            if (local_ret != EC_OK) {
+                            case EC_MBX_SOE: {
                                 ec_log(10, get_transition_string(transition), 
-                                        "slave %2d: writing SoE failed: error code 0x%X!\n", 
-                                        slave, local_ret);
-                            } 
-                            break;
-                        }
+                                        "slave %2d: sending SoE init cmd 0x%04X:%d, "
+                                        "atn %d, datalen %" PRIu64 ", datap %p\n", slave, cmd->id, 
+                                        cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
+
+                                osal_uint8_t *buf = (osal_uint8_t *)cmd->data;
+                                osal_size_t buf_len = cmd->datalen;
+
+                                int local_ret = ec_soe_write(pec, slave, cmd->ca_atn, cmd->id, cmd->si_el, buf, buf_len);
+
+                                if (local_ret != EC_OK) {
+                                    ec_log(10, get_transition_string(transition), 
+                                            "slave %2d: writing SoE failed: error code 0x%X!\n", 
+                                            slave, local_ret);
+                                } 
+                                break;
+                            }
 #endif
+                        }
                     }
+
+                    ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds done\n", slave);
                 }
 
                 break;
@@ -851,6 +860,22 @@ static osal_bool_t check_null(osal_uint8_t *ptr, osal_size_t len) {
 }
 #endif
 
+// issue hardware reset of slave
+void ec_slave_reset(ec_t *pec, osal_uint16_t slave) {
+    osal_uint16_t wkc;
+    ec_slave_ptr(slv, pec, slave);
+
+    ec_log(10, __func__, "slave %2d: try to reset PDI\n", slave);
+    osal_uint8_t reset_vals[] = { (osal_uint8_t)'R', (osal_uint8_t)'E', (osal_uint8_t)'S' };
+    for (int i = 0; i < 3; ++i) {
+        (void)ec_fpwr(pec, slv->fixed_address, 0x41, &reset_vals[i], 1, &wkc);
+    }
+    ec_log(10, __func__, "slave %2d: try to reset ESC\n", slave);
+    for (int i = 0; i < 3; ++i) {
+        (void)ec_fpwr(pec, slv->fixed_address, 0x40, &reset_vals[i], 1, &wkc);
+    }
+}
+
 // state transition on ethercat slave
 int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     osal_uint16_t wkc;
@@ -888,8 +913,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             osal_timer_t error_reset_timeout;
             osal_timer_init(&error_reset_timeout, 1000000000);
 
+            ec_log(10, "SLAVE_TRANSITION", "slave %2d is in ERROR (AL status 0x%04X, AL status code 0x%04X), resetting first.\n", slave, act_state, al_status_code);
             do {
-                ec_log(10, "SLAVE_TRANSITION", "slave %2d is in ERROR (AL status 0x%04X, AL status code 0x%04X), resetting first.\n", slave, act_state, al_status_code);
                 (void)ec_slave_set_state(pec, slave, (act_state & EC_STATE_MASK) | EC_STATE_RESET);
                 act_state = 0;
                 al_status_code = 0;
@@ -925,7 +950,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
         ec_state_transition_t transition = ((act_state & EC_STATE_MASK) << 8u) | 
             (state & EC_STATE_MASK); 
 
-        ec_log(10, get_transition_string(transition), "slave %2d executing transition %X\n", slave, transition);
+        ec_log(100, get_transition_string(transition), "slave %2d executing transition %X\n", slave, transition);
 
         switch (transition) {
             case BOOT_2_PREOP:
@@ -937,13 +962,6 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
             case INIT_2_SAFEOP:
             case INIT_2_OP: {
                 // init to preop stuff
-                ec_log(10, get_transition_string(transition), 
-                        "slave %2d, vendor 0x%08" PRIu32 ", product 0x%08" PRIu32 ", mbx 0x%04X\n",
-                        slave, 
-                        slv->eeprom.vendor_id, 
-                        slv->eeprom.product_code, 
-                        slv->eeprom.mbx_supported);
-
                 // configure mailboxes if any supported
                 if (slv->eeprom.mbx_supported != 0u) {
                     // read mailbox

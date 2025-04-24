@@ -54,7 +54,14 @@ typedef struct hw_file {
     // receiver thread settings in non-polling mode
     osal_task_t rxthread;                   //!< receiver thread handle
     int rxthreadrunning;                    //!< receiver thread running flag
+                                            
+    int frames_send;
+
 } hw_file_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //! Opens EtherCAT hw device.
 /*!
@@ -66,6 +73,10 @@ typedef struct hw_file {
  * \return 0 or negative error code
  */
 int hw_device_file_open(struct hw_file *phw, struct ec *pec, const osal_char_t *devname, int prio, int cpu_mask);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LIBETHERCAT_HW_FILE_H
 

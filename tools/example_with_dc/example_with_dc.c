@@ -80,8 +80,8 @@ int usage(int argc, char **argv) {
 int max_print_level = 10;
 
 // only log level <= 10 
-void no_verbose_log(int lvl, void *user, const char *format, ...) __attribute__(( format(printf, 3, 4)));
-void no_verbose_log(int lvl, void *user, const char *format, ...) {
+void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) __attribute__(( format(printf, 3, 4)));
+void no_verbose_log(ec_t *pec, int lvl, const char *format, ...) {
     if (lvl > max_print_level)
         return;
 
@@ -93,6 +93,7 @@ void no_verbose_log(int lvl, void *user, const char *format, ...) {
 
 static ec_t ec;
 static osal_uint64_t cycle_rate = 1000000;
+static osal_uint64_t act_cycle_rate = 1000000;
 static ec_dc_mode_t dc_mode = dc_mode_master_as_ref_clock;
 
 osal_retval_t (*wait_time)(osal_uint64_t) = osal_sleep_until_nsec;
@@ -100,6 +101,8 @@ osal_retval_t (*wait_time)(osal_uint64_t) = osal_sleep_until_nsec;
 osal_trace_t *tx_start;
 osal_trace_t *tx_duration;
 osal_trace_t *roundtrip_duration;
+
+osal_size_t bytes_last_sent = 0;
 
 //! Cyclic (high priority realtime) task for sending EtherCAT datagrams.
 static osal_bool_t cyclic_task_running = OSAL_FALSE;
@@ -109,11 +112,16 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     osal_uint64_t time_start = 0u;
     osal_uint64_t time_end = 0u;
 
-    no_verbose_log(0, NULL, "cyclic_task: running endless loop, cycle rate is %lu\n", cycle_rate);
+    ec_log(100, "CYCLIC_TASK", "running endless loop, cycle rate is %lu\n", cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
-        abs_timeout += cycle_rate;
+        abs_timeout += act_cycle_rate;
         (void)wait_time(abs_timeout);
+
+        if ((pec->master_state != EC_STATE_SAFEOP) && (pec->master_state != EC_STATE_OP)) {
+            continue;
+        }
+
         time_start = osal_trace_point(tx_start);
 
         // execute one EtherCAT cycle
@@ -121,12 +129,15 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         ec_send_process_data(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
-        hw_tx(pec->phw);
+        hw_tx_high(pec->phw);
 
         osal_trace_time(tx_duration, osal_timer_gettime_nsec() - time_start);
+        bytes_last_sent = ec.phw->bytes_last_sent;
+        
+        hw_tx_low(pec->phw);
     }
 
-    no_verbose_log(0, NULL, "cyclic_task: exiting!\n");
+    ec_log(100, "CYCLIC_TASK", "exiting!\n");
 }
 
 int main(int argc, char **argv) {
@@ -140,8 +151,11 @@ int main(int argc, char **argv) {
 #endif
     int disable_overlapping = 0;
     int disable_lrw = 0;
-    double dc_kp = 0.1;
-    double dc_ki = 0.01;
+    int eeprom_dump = 0;
+    int threaded_startup = 0;
+    double dc_kp = 10.;
+    double dc_ki = 1.;
+    ec_t *pec = &ec;
 
     for (i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0)) {
@@ -167,6 +181,10 @@ int main(int argc, char **argv) {
             disable_overlapping = 1;
         } else if (strcmp(argv[i], "--disable-lrw") == 0) {
             disable_lrw = 1;
+        } else if (strcmp(argv[i], "--eeprom-dump") == 0) {
+            eeprom_dump = 1;
+        } else if (strcmp(argv[i], "--threaded-startup") == 0) {
+            threaded_startup = 1;
         } else if ((strcmp(argv[i], "-p") == 0) || 
                 (strcmp(argv[i], "--prio") == 0)) {
             if (++i < argc)
@@ -222,14 +240,13 @@ int main(int argc, char **argv) {
         return usage(argc, argv);
 
     int num_samples = 1. / (cycle_rate * 1E-9);
-    printf("NUM_SAMPLES: %d\n", num_samples);
     osal_trace_alloc(&tx_start, num_samples);
     osal_trace_alloc(&tx_duration, num_samples);
     osal_trace_alloc(&roundtrip_duration, num_samples);
 
     // use our log function
-    ec_log_func_user = NULL;
-    ec_log_func = &no_verbose_log;
+    pec->ec_log_func_user = NULL;
+    pec->ec_log_func = &no_verbose_log;
     struct hw_common *phw = NULL;
             
 #if LIBETHERCAT_BUILD_DEVICE_FILE == 1
@@ -288,7 +305,7 @@ int main(int argc, char **argv) {
         intf = &intf[16];
 
         ec_log(10, "HW_OPEN", "Opening interface as mmaped SOCK_RAW: %s\n", intf);
-        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, intf, base_prio - 1, base_affinity);
+        ret = hw_device_sock_raw_mmaped_open(&hw_sock_raw_mmaped, pec, intf, base_prio - 1, base_affinity);
 
         if (ret == 0) {
             phw = &hw_sock_raw_mmaped.common;
@@ -298,15 +315,15 @@ int main(int argc, char **argv) {
 
     if (phw == NULL) {
         ec_log(10, "HW_OPEN", "Hardware device layer failure!\n");
-        goto exit;
+        goto hw_exit;
     }
 
-    ret = ec_open(&ec, phw, 1);
+    ret = ec_open(&ec, phw, eeprom_dump);
     if (ret != EC_OK) {
         goto exit;
     }
 
-    ec.threaded_startup = 0;
+    ec.threaded_startup = threaded_startup;
     
     ec_set_state(&ec, EC_STATE_INIT);
 
@@ -334,12 +351,10 @@ int main(int argc, char **argv) {
 
     ec_set_state(&ec, EC_STATE_PREOP);
 
-    ec.dc.control.kp = dc_kp;
-    ec.dc.control.ki = dc_ki;
     ec_configure_dc(&ec, cycle_rate, dc_mode, ({
                 void anon_cb(void *arg, int num) { 
                     if (dc_mode == dc_mode_ref_clock) {
-                        cycle_rate += ec.dc.timer_correction;
+                        act_cycle_rate = cycle_rate + ec.dc.timer_correction;
                     }
 
                     osal_uint64_t time_end = osal_timer_gettime_nsec();
@@ -347,6 +362,13 @@ int main(int argc, char **argv) {
 
                     osal_trace_time(roundtrip_duration, time_end - time_start);
                 } &anon_cb; }), NULL);
+
+    int cycle_rate_hz = 1. / (cycle_rate * 1E-9);
+    ec.dc.control.kp = dc_kp / cycle_rate_hz;
+    ec.dc.control.ki = dc_ki / (cycle_rate_hz * cycle_rate_hz);
+    ec.dc.control.diffsum_limit = cycle_rate / 10000.;
+    //ec_configure_dc_settling_time(&ec, 50000000000);
+//    ec_configure_dc_settling_threshold(&ec, 5000, 10000); // 1000 cycles below 5000ns
 
     // -----------------------------------------------------------
     // creating process data groups
@@ -381,7 +403,7 @@ int main(int argc, char **argv) {
     osal_uint64_t tx_duration_med = 0, tx_duration_avg_jit = 0, tx_duration_max_jit = 0;
     osal_uint64_t roundtrip_duration_med = 0, roundtrip_duration_avg_jit = 0, roundtrip_duration_max_jit = 0;
 
-	for (;;) {
+    for (;;) {
         osal_timer_t to;
         osal_timer_init(&to, 10000000000);
         osal_trace_timedwait(roundtrip_duration, &to);
@@ -389,17 +411,30 @@ int main(int argc, char **argv) {
         osal_trace_analyze(tx_start, &tx_timer_med, &tx_timer_avg_jit, &tx_timer_max_jit);
         osal_trace_analyze_rel(tx_duration, &tx_duration_med, &tx_duration_avg_jit, &tx_duration_max_jit);
         osal_trace_analyze_rel(roundtrip_duration, &roundtrip_duration_med, &roundtrip_duration_avg_jit, &roundtrip_duration_max_jit);
-        
+
+        ec_log(10, "MAIN", "rtc_time %" PRIu64 ", dc_time %" PRIu64 "\n", ec.dc.rtc_time, ec.dc.dc_time);
+
 #define to_us(x)    ((double)(x)/1000.)
-        no_verbose_log(0, NULL, 
-                "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                "Duration %+5.1fus (jitter avg %+5.1fus, max %+5.1fus), "
-                "Round trip %+5.1fus (jitter avg %+5.1fus, max %+5.1fus)\n", 
-                ec.phw->bytes_last_sent, (10 * 8 * ec.phw->bytes_last_sent) / 1000.,
-                to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
-                to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
-                to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
-	}
+        if (dc_mode != dc_mode_ref_clock) {
+            ec_log(10, "MAIN", 
+                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Duration %+5.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Round trip %+5.1fus (avg %+5.1fus, max %+5.1fus)\n", 
+                    bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
+                    to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
+                    to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
+                    to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit));
+        } else {
+            ec_log(10, "MAIN",
+                    "Frame len %" PRIu64 " bytes/%7.1fus, Timer %+7.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Duration %+5.1fus (avg %+5.1fus, max %+5.1fus), "
+                    "Round trip %+5.1fus (avg %+5.1fus, max %+5.1fus), DC Diff %+7.1fus, diffsum %+7.1fns, cylce_rate %ldns\n", 
+                    bytes_last_sent, (10 * 8 * bytes_last_sent) / 1000.,
+                    to_us(tx_timer_med), to_us(tx_timer_avg_jit), to_us(tx_timer_max_jit), 
+                    to_us(tx_duration_med), to_us(tx_duration_avg_jit), to_us(tx_duration_max_jit), 
+                    to_us(roundtrip_duration_med), to_us(roundtrip_duration_avg_jit), to_us(roundtrip_duration_max_jit), to_us(ec.dc.act_diff), ec.dc.control.diffsum, act_cycle_rate);
+        }
+    }
 
     osal_task_join(&cyclic_task_hdl, NULL);
 
@@ -408,6 +443,7 @@ int main(int argc, char **argv) {
 exit:
     ec_close(&ec);
     
+hw_exit:
     osal_trace_free(tx_start);
     osal_trace_free(tx_duration);
     osal_trace_free(roundtrip_duration);

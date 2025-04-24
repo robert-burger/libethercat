@@ -383,6 +383,16 @@ void ec_slave_init(struct ec *pec, osal_uint16_t slave);
  */
 void ec_slave_free(struct ec *pec, osal_uint16_t slave);
 
+//! issue hardware reset of slave
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] slave     Number of ethercat slave. this depends on 
+ *                      the physical order of the ethercat slaves 
+ *                      (usually the n'th slave attached).
+ */
+void ec_slave_reset(ec_t *pec, osal_uint16_t slave);
+
 //! Set EtherCAT state on slave.
 /*!
  * This call tries to set the EtherCAT slave to the requested state. If 

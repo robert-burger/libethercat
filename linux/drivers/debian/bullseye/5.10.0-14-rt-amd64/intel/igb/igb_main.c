@@ -42,7 +42,7 @@
 #define MIN 4
 #define BUILD 0
 #define DRV_VERSION __stringify(MAJ) "." __stringify(MIN) "." \
-__stringify(BUILD) "-k-libethercat"
+__stringify(BUILD) "-k-ethercat"
 
 enum queue_mode {
 	QUEUE_MODE_STRICT_PRIORITY,
@@ -54,7 +54,7 @@ enum tx_queue_prio {
 	TX_QUEUE_PRIO_LOW,
 };
 
-char igb_driver_name[] = "igb-libethercat";
+char igb_driver_name[] = "igb-ethercat";
 char igb_driver_version[] = DRV_VERSION;
 static const char igb_driver_string[] =
 				"Intel(R) Gigabit Ethernet Network Driver (EtherCAT enabled)";
@@ -218,8 +218,6 @@ module_param_array(ethercat_mac_addr, charp, &ethercat_mac_addr_count,  0660);
 MODULE_PARM_DESC(ethercat_mac_addr, "List of MAC addresses to use as EtherCAT device");
 
 static unsigned int ethercat_polling;
-module_param(ethercat_polling, uint, 0);
-MODULE_PARM_DESC(ethercat_polling, "Set interface to polling mode (no interrupt) for EtherCAT case");
 static pci_ers_result_t igb_io_error_detected(struct pci_dev *,
 		     pci_channel_state_t);
 static pci_ers_result_t igb_io_slot_reset(struct pci_dev *);
@@ -250,7 +248,7 @@ MODULE_AUTHOR("Intel Corporation, <e1000-devel@lists.sourceforge.net>");
 MODULE_DESCRIPTION("Intel(R) Gigabit Ethernet Network Driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(DRV_VERSION);
-MODULE_SOFTDEP("pre: libethercat");
+MODULE_SOFTDEP("pre: ethercat_chardev");
 
 #define DEFAULT_MSG_ENABLE (NETIF_MSG_DRV|NETIF_MSG_PROBE|NETIF_MSG_LINK)
 static int debug = -1;

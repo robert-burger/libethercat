@@ -41,51 +41,53 @@ class MainProject(ConanFile):
         "mbx_support_foe" : [ True, False ],
         "mbx_support_soe" : [ True, False ],
     }
-    default_options = {
-        "shared": True, 
-        "max_slaves": 256, 
-        "max_groups": 8, 
-        "max_pdlen": 3036, 
-        "max_mbx_entries": 16, 
-        "max_init_cmd_data": 2048,
-        "max_slave_fmmu": 8,
-        "max_slave_sm": 8,
-        "max_datagrams": 100,
-        "max_eeprom_cat_sm": 8,
-        "max_eeprom_cat_fmmu": 8,
-        "max_eeprom_cat_pdo": 128,
-        "max_eeprom_cat_pdo_entries": 32,
-        "max_eeprom_cat_strings": 128,
-        "max_eeprom_cat_dc": 8,
-        "max_string_len": 128,
-        "max_data": 4096,
-        "max_ds402_subdevs": 4,
-        "max_coe_emergencies": 10,
-        "max_coe_emergency_msg_len": 32,
-        "hw_device_file": True,
-        "hw_device_sock_raw": True,
-        "hw_device_sock_raw_mmaped": True,
-        "hw_device_bpf": False,
-        "hw_device_pikeos": False,
-        "mbx_support_eoe": True,
-        "mbx_support_coe": True,
-        "mbx_support_foe": True,
-        "mbx_support_soe": True,
-    }
 
-    requires = [ "libosal/[>=0.0.3]@common/stable", ]
+    requires = [ "libosal/[>=0.0.6]@common/unstable", ]
     generators = "PkgConfigDeps"
 
-    def generate(self):
-        tc = AutotoolsToolchain(self)
-        tc.autoreconf_args = [ "--install" ]
+    def config_options(self):
+        self.options.shared = True
+        self.options.max_slaves = 256
+        self.options.max_groups = 8
+        self.options.max_pdlen = 3036
+        self.options.max_mbx_entries = 16
+        self.options.max_init_cmd_data = 2048
+        self.options.max_slave_fmmu = 8
+        self.options.max_slave_sm = 8
+        self.options.max_datagrams = 100
+        self.options.max_eeprom_cat_sm = 8
+        self.options.max_eeprom_cat_fmmu = 8
+        self.options.max_eeprom_cat_pdo = 128
+        self.options.max_eeprom_cat_pdo_entries = 32
+        self.options.max_eeprom_cat_strings = 128
+        self.options.max_eeprom_cat_dc = 8
+        self.options.max_string_len = 128
+        self.options.max_data = 4096
+        self.options.max_ds402_subdevs = 4
+        self.options.max_coe_emergencies = 10
+        self.options.max_coe_emergency_msg_len = 32
+        self.options.mbx_support_eoe = True
+        self.options.mbx_support_coe = True
+        self.options.mbx_support_foe = True
+        self.options.mbx_support_soe = True
+
         if self.settings.os == "pikeos":
             self.options.hw_device_file = False
             self.options.hw_device_sock_raw = False
             self.options.hw_device_sock_raw_mmaped = False
             self.options.hw_device_bpf = False
             self.options.hw_device_pikeos = True
+        else:
+            self.options.hw_device_file = True
+            self.options.hw_device_sock_raw = True
+            self.options.hw_device_sock_raw_mmaped = True
+            self.options.hw_device_bpf = False
+            self.options.hw_device_pikeos = False
 
+    def generate(self):
+        tc = AutotoolsToolchain(self)
+        tc.autoreconf_args = [ "--install" ]
+        if self.settings.os == "pikeos":
             tc.update_configure_args({
                 "--host": "%s-%s" % (self.settings.arch, self.settings.os),  # update flag '--host=my-gnu-triplet
             })

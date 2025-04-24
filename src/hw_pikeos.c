@@ -40,6 +40,8 @@
 #include <libethercat/config.h>
 #endif
 
+#if LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1
+
 #include <libethercat/hw.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
@@ -74,13 +76,14 @@ void *hw_device_pikeos_rx_thread(void *arg);
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   pec         Pointer to master struct.
  * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
  * \param[in]   prio        Priority for receiver thread.
  * \param[in]   cpu_mask    CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname, int prio, int cpumask) {
+int hw_device_pikeos_open(struct hw_pikeos *phw, ec_t *pec, const osal_char_t *devname, int prio, int cpumask) {
     assert(phw != NULL);
     assert(devname != NULL);
 
@@ -90,6 +93,7 @@ int hw_device_pikeos_open(struct hw_pikeos *phw, const osal_char_t *devname, int
     P4_e_t local_retval;
     P4_address_t vaddr;
 
+    phw->common.pec             = pec;
     phw->common.send            = hw_device_pikeos_send;
     phw->common.recv            = hw_device_pikeos_recv;
     phw->common.send_finished   = hw_device_pikeos_send_finished;
@@ -213,6 +217,7 @@ int hw_device_pikeos_close(struct hw_common *phw) {
 void *hw_device_pikeos_rx_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     struct hw_pikeos *phw_pikeos = (struct hw_pikeos *) arg;
+    ec_t *pec = phw_pikeos->common.pec;
 
     assert(phw_pikeos != NULL);
     
@@ -381,3 +386,4 @@ void hw_device_pikeos_send_finished(struct hw_common *phw) {
     (void)phw;
 }
 
+#endif /* LIBETHERCAT_BUILD_DEVICE_PIKEOS == 1 */

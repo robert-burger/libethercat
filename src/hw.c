@@ -87,7 +87,8 @@ int hw_open(struct hw_common *phw, struct ec *pec) {
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
 
-    osal_mutex_init(&phw->hw_lock, NULL);
+    osal_mutex_attr_t hw_lock_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&phw->hw_lock, &hw_lock_attr);
 
     return ret;
 }
@@ -122,6 +123,7 @@ int hw_close(struct hw_common *phw) {
 void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
+    ec_t *pec = phw->pec;
 
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
@@ -205,6 +207,24 @@ void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     if (sent == OSAL_TRUE) {
         phw->send_finished(phw);
     }
+}
+
+//! start sending queued ethercat datagrams (low prio queue)
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_tx_high(struct hw_common *phw) {
+    assert(phw != NULL);
+
+    int ret = EC_OK;
+
+    osal_mutex_lock(&phw->hw_lock);
+    osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
+    hw_tx_pool(phw, POOL_HIGH);
+    osal_mutex_unlock(&phw->hw_lock);
+
+    return ret;
 }
 
 //! start sending queued ethercat datagrams (low prio queue)

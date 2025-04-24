@@ -41,6 +41,8 @@
 #include <libethercat/config.h>
 #endif
 
+#if LIBETHERCAT_MBX_SUPPORT_SOE == 1
+
 #include "libethercat/slave.h"
 #include "libethercat/ec.h"
 #include "libethercat/soe.h"
@@ -573,4 +575,6 @@ int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
 
     return ret;
 }
+
+#endif /* LIBETHERCAT_MBX_SUPPORT_SOE == 1 */
 

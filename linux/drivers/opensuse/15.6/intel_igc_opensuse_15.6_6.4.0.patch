@@ -1,0 +1,966 @@
+diff -rup /home_local/burger_r/opensuse/kernel/drivers/net/ethernet/intel/igc/igc.h 6.4.0/intel/igc/igc.h
+--- /home_local/burger_r/opensuse/kernel/drivers/net/ethernet/intel/igc/igc.h	2024-11-28 06:57:33.117781519 +0100
++++ 6.4.0/intel/igc/igc.h	2024-11-28 09:34:19.855150593 +0100
+@@ -19,6 +19,9 @@
+ 
+ #include "igc_hw.h"
+ 
++#include "ethercat_device.h"
++#include "ethercat_device_ioctl.h"
++
+ void igc_ethtool_set_ops(struct net_device *);
+ 
+ /* Transmit and receive queues */
+@@ -295,6 +298,9 @@ struct igc_adapter {
+ 		struct timespec64 start;
+ 		struct timespec64 period;
+ 	} perout[IGC_N_PEROUT];
++	
++	bool is_ecat;
++	struct ethercat_device *ecat_dev;
+ };
+ 
+ void igc_up(struct igc_adapter *adapter);
+Only in 6.4.0/intel/igc/: igc.h.orig
+diff -rup /home_local/burger_r/opensuse/kernel/drivers/net/ethernet/intel/igc/igc_main.c 6.4.0/intel/igc/igc_main.c
+--- /home_local/burger_r/opensuse/kernel/drivers/net/ethernet/intel/igc/igc_main.c	2024-11-28 06:57:33.121781579 +0100
++++ 6.4.0/intel/igc/igc_main.c	2024-11-28 09:34:19.921150580 +0100
+@@ -20,7 +20,7 @@
+ #include "igc_tsn.h"
+ #include "igc_xdp.h"
+ 
+-#define DRV_SUMMARY	"Intel(R) 2.5G Ethernet Linux Driver"
++#define DRV_SUMMARY	"Intel(R) 2.5G Ethernet Linux Driver (EtherCAT enabled)"
+ 
+ #define DEFAULT_MSG_ENABLE (NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_LINK)
+ 
+@@ -34,10 +34,19 @@ static int debug = -1;
+ MODULE_AUTHOR("Intel Corporation, <linux.nics@intel.com>");
+ MODULE_DESCRIPTION(DRV_SUMMARY);
+ MODULE_LICENSE("GPL v2");
++MODULE_SOFTDEP("pre: ethercat_chrdev");
+ module_param(debug, int, 0);
+ MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
+ 
+-char igc_driver_name[] = "igc";
++#define ETHERCAT_MAC_ADDR_SIZE 10
++static char * ethercat_mac_addr[ETHERCAT_MAC_ADDR_SIZE];
++static int ethercat_mac_addr_count;
++module_param_array(ethercat_mac_addr, charp, &ethercat_mac_addr_count,  0660);
++MODULE_PARM_DESC(ethercat_mac_addr, "List of MAC addresses to use as EtherCAT device");
++
++static unsigned int ethercat_polling = 0;
++
++char igc_driver_name[] = "igc-ethercat";
+ static const char igc_driver_string[] = DRV_SUMMARY;
+ static const char igc_copyright[] =
+ 	"Copyright(c) 2018 Intel Corporation.";
+@@ -110,8 +119,10 @@ void igc_reset(struct igc_adapter *adapt
+ 	/* Re-establish EEE setting */
+ 	igc_set_eee_i225(hw, true, true, true);
+ 
+-	if (!netif_running(adapter->netdev))
+-		igc_power_down_phy_copper_base(&adapter->hw);
++	if (!adapter->is_ecat) {
++		if (!netif_running(adapter->netdev))
++			igc_power_down_phy_copper_base(&adapter->hw);
++	}
+ 
+ 	/* Enable HW to recognize an 802.1Q VLAN Ethernet packet */
+ 	wr32(IGC_VET, ETH_P_8021Q);
+@@ -196,6 +207,7 @@ static void igc_clean_tx_ring(struct igc
+ 	u16 i = tx_ring->next_to_clean;
+ 	struct igc_tx_buffer *tx_buffer = &tx_ring->tx_buffer_info[i];
+ 	u32 xsk_frames = 0;
++	struct igc_adapter *adapter = netdev_priv(tx_ring->netdev);
+ 
+ 	while (i != tx_ring->next_to_use) {
+ 		union igc_adv_tx_desc *eop_desc, *tx_desc;
+@@ -205,11 +217,17 @@ static void igc_clean_tx_ring(struct igc
+ 			xsk_frames++;
+ 			break;
+ 		case IGC_TX_BUFFER_TYPE_XDP:
+-			xdp_return_frame(tx_buffer->xdpf);
++			if (unlikely(!adapter->is_ecat)) {
++				/* buffer is reused in EtherCAT TX operation */
++				xdp_return_frame(tx_buffer->xdpf);
++			}
+ 			igc_unmap_tx_buffer(tx_ring->dev, tx_buffer);
+ 			break;
+ 		case IGC_TX_BUFFER_TYPE_SKB:
+-			dev_kfree_skb_any(tx_buffer->skb);
++			if (unlikely(!adapter->is_ecat)) {
++				/* skb is reused in EtherCAT TX operation */
++				dev_kfree_skb_any(tx_buffer->skb);
++			}
+ 			igc_unmap_tx_buffer(tx_ring->dev, tx_buffer);
+ 			break;
+ 		default:
+@@ -1222,8 +1240,11 @@ no_csum:
+ static int __igc_maybe_stop_tx(struct igc_ring *tx_ring, const u16 size)
+ {
+ 	struct net_device *netdev = tx_ring->netdev;
++	struct igc_adapter *adapter = netdev_priv(netdev);
+ 
+-	netif_stop_subqueue(netdev, tx_ring->queue_index);
++	if (!adapter->is_ecat) {
++		netif_stop_subqueue(netdev, tx_ring->queue_index);
++	}
+ 
+ 	/* memory barriier comment */
+ 	smp_mb();
+@@ -1235,7 +1256,9 @@ static int __igc_maybe_stop_tx(struct ig
+ 		return -EBUSY;
+ 
+ 	/* A reprieve! */
+-	netif_wake_subqueue(netdev, tx_ring->queue_index);
++	if (!adapter->is_ecat) {
++		netif_wake_subqueue(netdev, tx_ring->queue_index);
++	}
+ 
+ 	u64_stats_update_begin(&tx_ring->tx_syncp2);
+ 	tx_ring->tx_stats.restart_queue2++;
+@@ -1326,6 +1349,7 @@ static int igc_tx_map(struct igc_ring *t
+ 	unsigned int data_len, size;
+ 	dma_addr_t dma;
+ 	u32 cmd_type;
++	struct igc_adapter *adapter = netdev_priv(tx_ring->netdev);
+ 
+ 	cmd_type = igc_tx_cmd_type(skb, tx_flags);
+ 	tx_desc = IGC_TX_DESC(tx_ring, i);
+@@ -1393,7 +1417,9 @@ static int igc_tx_map(struct igc_ring *t
+ 	cmd_type |= size | IGC_TXD_DCMD;
+ 	tx_desc->read.cmd_type_len = cpu_to_le32(cmd_type);
+ 
+-	netdev_tx_sent_queue(txring_txq(tx_ring), first->bytecount);
++	if (unlikely(!adapter->is_ecat)) {
++		netdev_tx_sent_queue(txring_txq(tx_ring), first->bytecount);
++	}
+ 
+ 	/* set the timestamp */
+ 	first->time_stamp = jiffies;
+@@ -1421,8 +1447,13 @@ static int igc_tx_map(struct igc_ring *t
+ 	/* Make sure there is space in the ring for the next send. */
+ 	igc_maybe_stop_tx(tx_ring, DESC_NEEDED);
+ 
+-	if (netif_xmit_stopped(txring_txq(tx_ring)) || !netdev_xmit_more()) {
++	if (likely(adapter->is_ecat)) {
+ 		writel(i, tx_ring->tail);
++		wmb();
++	} else {
++		if (netif_xmit_stopped(txring_txq(tx_ring)) || !netdev_xmit_more()) {
++			writel(i, tx_ring->tail);
++		}
+ 	}
+ 
+ 	return 0;
+@@ -1443,8 +1474,10 @@ dma_error:
+ 	if (dma_unmap_len(tx_buffer, len))
+ 		igc_unmap_tx_buffer(tx_ring->dev, tx_buffer);
+ 
+-	dev_kfree_skb_any(tx_buffer->skb);
+-	tx_buffer->skb = NULL;
++	if (!adapter->is_ecat) {
++		dev_kfree_skb_any(tx_buffer->skb);
++		tx_buffer->skb = NULL;
++	}
+ 
+ 	tx_ring->next_to_use = i;
+ 
+@@ -1596,7 +1629,7 @@ static netdev_tx_t igc_xmit_frame_ring(s
+ 		return NETDEV_TX_BUSY;
+ 	}
+ 
+-	if (!tx_ring->launchtime_enable)
++	if (likely(adapter->is_ecat) || !tx_ring->launchtime_enable)
+ 		goto done;
+ 
+ 	txtime = skb->tstamp;
+@@ -1640,38 +1673,40 @@ done:
+ 		goto out_drop;
+ 	}
+ 
+-	if (unlikely(test_bit(IGC_RING_FLAG_TX_HWTSTAMP, &tx_ring->flags) &&
+-		     skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP)) {
+-		unsigned long flags;
+-		u32 tstamp_flags;
+-
+-		spin_lock_irqsave(&adapter->ptp_tx_lock, flags);
+-		if (igc_request_tx_tstamp(adapter, skb, &tstamp_flags)) {
+-			skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
+-			tx_flags |= IGC_TX_FLAGS_TSTAMP | tstamp_flags;
+-			if (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP_USE_CYCLES)
+-				tx_flags |= IGC_TX_FLAGS_TSTAMP_TIMER_1;
+-		} else {
+-			adapter->tx_hwtstamp_skipped++;
+-		}
++	if (unlikely(!adapter->is_ecat)) {
++		if (unlikely(test_bit(IGC_RING_FLAG_TX_HWTSTAMP, &tx_ring->flags) &&
++					skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP)) {
++			unsigned long flags;
++			u32 tstamp_flags;
++
++			spin_lock_irqsave(&adapter->ptp_tx_lock, flags);
++			if (igc_request_tx_tstamp(adapter, skb, &tstamp_flags)) {
++				skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
++				tx_flags |= IGC_TX_FLAGS_TSTAMP | tstamp_flags;
++				if (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP_USE_CYCLES)
++					tx_flags |= IGC_TX_FLAGS_TSTAMP_TIMER_1;
++			} else {
++				adapter->tx_hwtstamp_skipped++;
++			}
+ 
+-		spin_unlock_irqrestore(&adapter->ptp_tx_lock, flags);
+-	}
++			spin_unlock_irqrestore(&adapter->ptp_tx_lock, flags);
++		}
+ 
+-	if (skb_vlan_tag_present(skb)) {
+-		tx_flags |= IGC_TX_FLAGS_VLAN;
+-		tx_flags |= (skb_vlan_tag_get(skb) << IGC_TX_FLAGS_VLAN_SHIFT);
+-	}
++		if (skb_vlan_tag_present(skb)) {
++			tx_flags |= IGC_TX_FLAGS_VLAN;
++			tx_flags |= (skb_vlan_tag_get(skb) << IGC_TX_FLAGS_VLAN_SHIFT);
++		}
+ 
+-	/* record initial flags and protocol */
+-	first->tx_flags = tx_flags;
+-	first->protocol = protocol;
++		/* record initial flags and protocol */
++		first->tx_flags = tx_flags;
++		first->protocol = protocol;
+ 
+-	tso = igc_tso(tx_ring, first, launch_time, first_flag, &hdr_len);
+-	if (tso < 0)
+-		goto out_drop;
+-	else if (!tso)
+-		igc_tx_csum(tx_ring, first, launch_time, first_flag);
++		tso = igc_tso(tx_ring, first, launch_time, first_flag, &hdr_len);
++		if (tso < 0)
++			goto out_drop;
++		else if (!tso)
++			igc_tx_csum(tx_ring, first, launch_time, first_flag);
++	}
+ 
+ 	igc_tx_map(tx_ring, first, hdr_len);
+ 
+@@ -1977,8 +2012,11 @@ static struct sk_buff *igc_construct_skb
+ 	net_prefetch(xdp->data_meta);
+ 
+ 	/* allocate a skb to store the frags */
+-	skb = napi_alloc_skb(&rx_ring->q_vector->napi,
+-			     IGC_RX_HDR_LEN + metasize);
++	if (likely(rx_ring->q_vector->adapter->is_ecat)) {
++		skb = dev_alloc_skb(IGC_RX_HDR_LEN + metasize);
++	} else {
++		skb = napi_alloc_skb(&rx_ring->q_vector->napi, IGC_RX_HDR_LEN + metasize);
++	}
+ 	if (unlikely(!skb))
+ 		return NULL;
+ 
+@@ -2620,54 +2658,68 @@ static int igc_clean_rx_irq(struct igc_q
+ 			size -= IGC_TS_HDR_LEN;
+ 		}
+ 
+-		if (!skb) {
+-			xdp_init_buff(&ctx.xdp, truesize, &rx_ring->xdp_rxq);
+-			xdp_prepare_buff(&ctx.xdp, pktbuf - igc_rx_offset(rx_ring),
+-					 igc_rx_offset(rx_ring) + pkt_offset,
+-					 size, true);
+-			xdp_buff_clear_frags_flag(&ctx.xdp);
+-			ctx.rx_desc = rx_desc;
++		if (likely(adapter->is_ecat)) {
++			if (size > 0) {
++				prefetch(pktbuf);
++				ethercat_device_receive(adapter->ecat_dev, pktbuf, size);
++			}
++			igc_reuse_rx_page(rx_ring, rx_buffer);
++		} else {
++			if (!skb) {
++				xdp_init_buff(&ctx.xdp, truesize, &rx_ring->xdp_rxq);
++				xdp_prepare_buff(&ctx.xdp, pktbuf - igc_rx_offset(rx_ring),
++						igc_rx_offset(rx_ring) + pkt_offset,
++						size, true);
++				xdp_buff_clear_frags_flag(&ctx.xdp);
++				ctx.rx_desc = rx_desc;
+ 
+-			skb = igc_xdp_run_prog(adapter, &ctx.xdp);
+-		}
++				skb = igc_xdp_run_prog(adapter, &ctx.xdp);
++			}
+ 
+-		if (IS_ERR(skb)) {
+-			unsigned int xdp_res = -PTR_ERR(skb);
++			if (IS_ERR(skb)) {
++				unsigned int xdp_res = -PTR_ERR(skb);
+ 
+-			switch (xdp_res) {
+-			case IGC_XDP_CONSUMED:
++				switch (xdp_res) {
++					case IGC_XDP_CONSUMED:
++						rx_buffer->pagecnt_bias++;
++						break;
++					case IGC_XDP_TX:
++					case IGC_XDP_REDIRECT:
++						igc_rx_buffer_flip(rx_buffer, truesize);
++						xdp_status |= xdp_res;
++						break;
++				}
++
++				total_packets++;
++				total_bytes += size;
++			} else if (skb)
++				igc_add_rx_frag(rx_ring, rx_buffer, skb, size);
++			else if (ring_uses_build_skb(rx_ring))
++				skb = igc_build_skb(rx_ring, rx_buffer, &ctx.xdp);
++			else
++				skb = igc_construct_skb(rx_ring, rx_buffer, &ctx);
++
++			/* exit if we failed to retrieve a buffer */
++			if (!skb) {
++				rx_ring->rx_stats.alloc_failed++;
+ 				rx_buffer->pagecnt_bias++;
+ 				break;
+-			case IGC_XDP_TX:
+-			case IGC_XDP_REDIRECT:
+-				igc_rx_buffer_flip(rx_buffer, truesize);
+-				xdp_status |= xdp_res;
+-				break;
+ 			}
+ 
+-			total_packets++;
+-			total_bytes += size;
+-		} else if (skb)
+-			igc_add_rx_frag(rx_ring, rx_buffer, skb, size);
+-		else if (ring_uses_build_skb(rx_ring))
+-			skb = igc_build_skb(rx_ring, rx_buffer, &ctx.xdp);
+-		else
+-			skb = igc_construct_skb(rx_ring, rx_buffer, &ctx);
+-
+-		/* exit if we failed to retrieve a buffer */
+-		if (!skb) {
+-			rx_ring->rx_stats.alloc_failed++;
+-			rx_buffer->pagecnt_bias++;
+-			break;
++			igc_put_rx_buffer(rx_ring, rx_buffer, rx_buffer_pgcnt);
+ 		}
+-
+-		igc_put_rx_buffer(rx_ring, rx_buffer, rx_buffer_pgcnt);
+ 		cleaned_count++;
+ 
+ 		/* fetch next buffer in frame if non-eop */
+ 		if (igc_is_non_eop(rx_ring, rx_desc))
+ 			continue;
+ 
++		if (likely(adapter->is_ecat)) {
++			total_bytes += size;
++			total_packets++;
++			continue;
++		}
++
+ 		/* verify the packet layout is correct */
+ 		if (igc_cleanup_headers(rx_ring, rx_desc, skb)) {
+ 			skb = NULL;
+@@ -2987,11 +3039,15 @@ static bool igc_clean_tx_irq(struct igc_
+ 			xsk_frames++;
+ 			break;
+ 		case IGC_TX_BUFFER_TYPE_XDP:
+-			xdp_return_frame(tx_buffer->xdpf);
++			if (unlikely(!adapter->is_ecat)) {
++				xdp_return_frame(tx_buffer->xdpf);
++			}
+ 			igc_unmap_tx_buffer(tx_ring->dev, tx_buffer);
+ 			break;
+ 		case IGC_TX_BUFFER_TYPE_SKB:
+-			napi_consume_skb(tx_buffer->skb, napi_budget);
++			if (unlikely(!adapter->is_ecat)) {
++				napi_consume_skb(tx_buffer->skb, napi_budget);
++			}
+ 			igc_unmap_tx_buffer(tx_ring->dev, tx_buffer);
+ 			break;
+ 		default:
+@@ -3048,7 +3104,8 @@ static bool igc_clean_tx_irq(struct igc_
+ 		igc_xdp_xmit_zc(tx_ring);
+ 	}
+ 
+-	if (test_bit(IGC_RING_FLAG_TX_DETECT_HANG, &tx_ring->flags)) {
++	if (unlikely(!adapter->is_ecat) &&
++			test_bit(IGC_RING_FLAG_TX_DETECT_HANG, &tx_ring->flags)) {
+ 		struct igc_hw *hw = &adapter->hw;
+ 
+ 		/* Detect a transmit hang in hardware, this serializes the
+@@ -3092,7 +3149,7 @@ static bool igc_clean_tx_irq(struct igc_
+ 	}
+ 
+ #define TX_WAKE_THRESHOLD (DESC_NEEDED * 2)
+-	if (unlikely(total_packets &&
++	if (unlikely(!adapter->is_ecat && total_packets &&
+ 		     netif_carrier_ok(tx_ring->netdev) &&
+ 		     igc_desc_unused(tx_ring) >= TX_WAKE_THRESHOLD)) {
+ 		/* Make sure that anybody stopping the queue after this
+@@ -4162,7 +4219,9 @@ static void igc_reset_q_vector(struct ig
+ 	if (q_vector->rx.ring)
+ 		adapter->rx_ring[q_vector->rx.ring->queue_index] = NULL;
+ 
+-	netif_napi_del(&q_vector->napi);
++	if (unlikely(!adapter->is_ecat)) {
++		netif_napi_del(&q_vector->napi);
++	}
+ }
+ 
+ /**
+@@ -4451,7 +4510,10 @@ static void igc_update_ring_itr(struct i
+ 	switch (adapter->link_speed) {
+ 	case SPEED_10:
+ 	case SPEED_100:
+-		new_val = IGC_4K_ITR;
++		if (adapter->is_ecat) 
++			new_val = IGC_20K_ITR;
++		else
++			new_val = IGC_4K_ITR;
+ 		goto set_itr_val;
+ 	default:
+ 		break;
+@@ -4584,7 +4646,7 @@ static int igc_poll(struct napi_struct *
+ 	/* Exit the polling mode, but don't re-enable interrupts if stack might
+ 	 * poll us due to busy-polling
+ 	 */
+-	if (likely(napi_complete_done(napi, work_done)))
++	if (likely(q_vector->adapter->is_ecat) || likely(napi_complete_done(napi, work_done)))
+ 		igc_ring_irq_enable(q_vector);
+ 
+ 	return min(work_done, budget - 1);
+@@ -4627,8 +4689,10 @@ static int igc_alloc_q_vector(struct igc
+ 	if (!q_vector)
+ 		return -ENOMEM;
+ 
+-	/* initialize NAPI */
+-	netif_napi_add(adapter->netdev, &q_vector->napi, igc_poll);
++	if (unlikely(!adapter->is_ecat)) {
++		/* initialize NAPI */
++		netif_napi_add(adapter->netdev, &q_vector->napi, igc_poll);
++	}
+ 
+ 	/* tie q_vector and adapter together */
+ 	adapter->q_vector[v_idx] = q_vector;
+@@ -4858,8 +4922,10 @@ void igc_up(struct igc_adapter *adapter)
+ 
+ 	clear_bit(__IGC_DOWN, &adapter->state);
+ 
+-	for (i = 0; i < adapter->num_q_vectors; i++)
+-		napi_enable(&adapter->q_vector[i]->napi);
++	if (unlikely(!adapter->is_ecat)) {
++		for (i = 0; i < adapter->num_q_vectors; i++)
++			napi_enable(&adapter->q_vector[i]->napi);
++	}
+ 
+ 	if (adapter->msix_entries)
+ 		igc_configure_msix(adapter);
+@@ -4870,7 +4936,9 @@ void igc_up(struct igc_adapter *adapter)
+ 	rd32(IGC_ICR);
+ 	igc_irq_enable(adapter);
+ 
+-	netif_tx_start_all_queues(adapter->netdev);
++	if (unlikely(!adapter->is_ecat)) {
++		netif_tx_start_all_queues(adapter->netdev);
++	}
+ 
+ 	/* start the watchdog. */
+ 	hw->mac.get_link_status = true;
+@@ -5068,8 +5136,10 @@ void igc_down(struct igc_adapter *adapte
+ 	/* set trans_start so we don't get spurious watchdogs during reset */
+ 	netif_trans_update(netdev);
+ 
+-	netif_carrier_off(netdev);
+-	netif_tx_stop_all_queues(netdev);
++	if (unlikely(!adapter->is_ecat)) {
++		netif_carrier_off(netdev);
++		netif_tx_stop_all_queues(netdev);
++	}
+ 
+ 	if (pci_device_is_present(adapter->pdev)) {
+ 		/* disable transmits in the hardware */
+@@ -5085,10 +5155,12 @@ void igc_down(struct igc_adapter *adapte
+ 
+ 	adapter->flags &= ~IGC_FLAG_NEED_LINK_UPDATE;
+ 
+-	for (i = 0; i < adapter->num_q_vectors; i++) {
+-		if (adapter->q_vector[i]) {
+-			napi_synchronize(&adapter->q_vector[i]->napi);
+-			napi_disable(&adapter->q_vector[i]->napi);
++	if (unlikely(!adapter->is_ecat)) {
++		for (i = 0; i < adapter->num_q_vectors; i++) {
++			if (adapter->q_vector[i]) {
++				napi_synchronize(&adapter->q_vector[i]->napi);
++				napi_disable(&adapter->q_vector[i]->napi);
++			}
+ 		}
+ 	}
+ 
+@@ -5415,11 +5487,16 @@ static void igc_write_itr(struct igc_q_v
+ static irqreturn_t igc_msix_ring(int irq, void *data)
+ {
+ 	struct igc_q_vector *q_vector = data;
++	struct igc_adapter *adapter = q_vector->adapter;
+ 
+ 	/* Write the ITR value calculated from the previous interrupt. */
+ 	igc_write_itr(q_vector);
+ 
+-	napi_schedule(&q_vector->napi);
++	if (likely(adapter->is_ecat)) {
++		igc_poll(&q_vector->napi, 64);
++	} else {
++		napi_schedule(&q_vector->napi);
++	}
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -5436,9 +5513,13 @@ static int igc_request_msix(struct igc_a
+ 	unsigned int num_q_vectors = adapter->num_q_vectors;
+ 	int i = 0, err = 0, vector = 0, free_vector = 0;
+ 	struct net_device *netdev = adapter->netdev;
++	unsigned long irq_flags = 0;
++	if (adapter->is_ecat) {
++		irq_flags = IRQF_NO_THREAD;
++	}
+ 
+ 	err = request_irq(adapter->msix_entries[vector].vector,
+-			  &igc_msix_other, 0, netdev->name, adapter);
++			  &igc_msix_other, irq_flags, netdev->name, adapter);
+ 	if (err)
+ 		goto err_out;
+ 
+@@ -5468,7 +5549,7 @@ static int igc_request_msix(struct igc_a
+ 			sprintf(q_vector->name, "%s-unused", netdev->name);
+ 
+ 		err = request_irq(adapter->msix_entries[vector].vector,
+-				  igc_msix_ring, 0, q_vector->name,
++				  igc_msix_ring, irq_flags, q_vector->name,
+ 				  q_vector);
+ 		if (err)
+ 			goto err_free;
+@@ -5569,6 +5650,24 @@ static void igc_watchdog_task(struct wor
+ 
+ 	link = igc_has_link(adapter);
+ 
++	if (likely(adapter->is_ecat)) {
++		if (adapter->ecat_dev) {
++			ethercat_device_set_link(adapter->ecat_dev, link);
++		}
++	
++		if (!test_bit(__IGC_DOWN, &adapter->state)) {
++			mod_timer(&adapter->watchdog_timer, round_jiffies(jiffies + HZ));
++		}
++
++		adapter->link_speed = SPEED_100;
++	
++		spin_lock(&adapter->stats64_lock);
++		igc_update_stats(adapter);
++		spin_unlock(&adapter->stats64_lock);
++
++		return;
++	}
++
+ 	if (adapter->flags & IGC_FLAG_NEED_LINK_UPDATE) {
+ 		if (time_after(jiffies, (adapter->link_check_timeout + HZ)))
+ 			adapter->flags &= ~IGC_FLAG_NEED_LINK_UPDATE;
+@@ -5759,7 +5858,11 @@ static irqreturn_t igc_intr_msi(int irq,
+ 	if (icr & IGC_ICR_TS)
+ 		igc_tsync_interrupt(adapter);
+ 
+-	napi_schedule(&q_vector->napi);
++	if (likely(adapter->is_ecat)) {
++		igc_poll(&q_vector->napi, 64);
++	} else {
++		napi_schedule(&q_vector->napi);
++	}
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -5805,13 +5908,21 @@ static irqreturn_t igc_intr(int irq, voi
+ 	if (icr & IGC_ICR_TS)
+ 		igc_tsync_interrupt(adapter);
+ 
+-	napi_schedule(&q_vector->napi);
++	if (likely(adapter->is_ecat)) {
++		igc_poll(&q_vector->napi, 64);
++	} else {
++		napi_schedule(&q_vector->napi);
++	}
+ 
+ 	return IRQ_HANDLED;
+ }
+ 
+ static void igc_free_irq(struct igc_adapter *adapter)
+ {
++	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
++		return;
++	}
++
+ 	if (adapter->msix_entries) {
+ 		int vector = 0, i;
+ 
+@@ -5837,8 +5948,16 @@ static int igc_request_irq(struct igc_ad
+ 	struct net_device *netdev = adapter->netdev;
+ 	struct pci_dev *pdev = adapter->pdev;
+ 	int err = 0;
++	unsigned long irq_flags = 0;
++	if (adapter->is_ecat) {
++		irq_flags = IRQF_NO_THREAD;
++	}
+ 
+ 	if (adapter->flags & IGC_FLAG_HAS_MSIX) {
++		if ((adapter->is_ecat) && (ethercat_polling != 0)) {
++			goto request_done;
++		}
++
+ 		err = igc_request_msix(adapter);
+ 		if (!err)
+ 			goto request_done;
+@@ -5857,8 +5976,12 @@ static int igc_request_irq(struct igc_ad
+ 
+ 	igc_assign_vector(adapter->q_vector[0], 0);
+ 
++	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
++		goto request_done;
++	}
++
+ 	if (adapter->flags & IGC_FLAG_HAS_MSI) {
+-		err = request_irq(pdev->irq, &igc_intr_msi, 0,
++		err = request_irq(pdev->irq, &igc_intr_msi, irq_flags,
+ 				  netdev->name, adapter);
+ 		if (!err)
+ 			goto request_done;
+@@ -5867,8 +5990,12 @@ static int igc_request_irq(struct igc_ad
+ 		igc_reset_interrupt_capability(adapter);
+ 		adapter->flags &= ~IGC_FLAG_HAS_MSI;
+ 	}
++	
++	if (!adapter->is_ecat) {
++		irq_flags = IRQF_SHARED;
++	}
+ 
+-	err = request_irq(pdev->irq, &igc_intr, IRQF_SHARED,
++	err = request_irq(pdev->irq, &igc_intr, irq_flags,
+ 			  netdev->name, adapter);
+ 
+ 	if (err)
+@@ -5909,7 +6036,9 @@ static int __igc_open(struct net_device
+ 	if (!resuming)
+ 		pm_runtime_get_sync(&pdev->dev);
+ 
+-	netif_carrier_off(netdev);
++	if (!adapter->is_ecat) {
++		netif_carrier_off(netdev);
++	}
+ 
+ 	/* allocate transmit descriptors */
+ 	err = igc_setup_all_tx_resources(adapter);
+@@ -5929,19 +6058,23 @@ static int __igc_open(struct net_device
+ 	if (err)
+ 		goto err_req_irq;
+ 
+-	/* Notify the stack of the actual queue counts. */
+-	err = netif_set_real_num_tx_queues(netdev, adapter->num_tx_queues);
+-	if (err)
+-		goto err_set_queues;
++	if (!adapter->is_ecat) {
++		/* Notify the stack of the actual queue counts. */
++		err = netif_set_real_num_tx_queues(netdev, adapter->num_tx_queues);
++		if (err)
++			goto err_set_queues;
+ 
+-	err = netif_set_real_num_rx_queues(netdev, adapter->num_rx_queues);
+-	if (err)
+-		goto err_set_queues;
++		err = netif_set_real_num_rx_queues(netdev, adapter->num_rx_queues);
++		if (err)
++			goto err_set_queues;
++	}
+ 
+ 	clear_bit(__IGC_DOWN, &adapter->state);
+ 
+-	for (i = 0; i < adapter->num_q_vectors; i++)
+-		napi_enable(&adapter->q_vector[i]->napi);
++	if (unlikely(!adapter->is_ecat)) {
++		for (i = 0; i < adapter->num_q_vectors; i++)
++			napi_enable(&adapter->q_vector[i]->napi);
++	}
+ 
+ 	/* Clear any pending interrupts. */
+ 	rd32(IGC_ICR);
+@@ -5950,7 +6083,9 @@ static int __igc_open(struct net_device
+ 	if (!resuming)
+ 		pm_runtime_put(&pdev->dev);
+ 
+-	netif_tx_start_all_queues(netdev);
++	if (!adapter->is_ecat) {
++		netif_tx_start_all_queues(netdev);
++	}
+ 
+ 	/* start the watchdog. */
+ 	hw->mac.get_link_status = true;
+@@ -6010,6 +6145,9 @@ static int __igc_close(struct net_device
+ 	igc_free_all_tx_resources(adapter);
+ 	igc_free_all_rx_resources(adapter);
+ 
++	if (adapter->is_ecat)
++		igc_reset(adapter);
++
+ 	if (!suspending)
+ 		pm_runtime_put_sync(&pdev->dev);
+ 
+@@ -6018,7 +6156,9 @@ static int __igc_close(struct net_device
+ 
+ int igc_close(struct net_device *netdev)
+ {
+-	if (netif_device_present(netdev) || netdev->dismantle)
++	struct igc_adapter *adapter = netdev_priv(netdev);
++
++	if (adapter->is_ecat || netif_device_present(netdev) || netdev->dismantle)
+ 		return __igc_close(netdev, false);
+ 	return 0;
+ }
+@@ -6036,6 +6176,79 @@ static int igc_ioctl(struct net_device *
+ 		return igc_ptp_get_ts_config(netdev, ifr);
+ 	case SIOCSHWTSTAMP:
+ 		return igc_ptp_set_ts_config(netdev, ifr);
++	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
++		struct igc_adapter *adapter = netdev_priv(netdev);
++		struct igc_q_vector *q_vector = adapter->q_vector[0];
++		int budget = 64;
++		bool clean_complete = true;
++
++		if (!adapter->is_ecat) {
++			return -EOPNOTSUPP;
++		}
++
++		if (q_vector->tx.ring) {
++			clean_complete = igc_clean_tx_irq(q_vector, budget);
++		}
++
++		if (q_vector->rx.ring) {
++			int cleaned = igc_clean_rx_irq(q_vector, budget);
++
++			if (cleaned >= budget) 
++				clean_complete = false;
++		}
++		if (!clean_complete) 
++			return 1;
++
++		return 0;
++	}
++	case ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING: {
++		int do_reopen = ethercat_polling != 1;
++		struct igc_adapter *adapter = netdev_priv(netdev);
++		if (!adapter->is_ecat) {
++			return -EOPNOTSUPP;
++		}
++
++		if (do_reopen) {
++			igc_close(netdev);
++		}
++
++		ethercat_polling = 1;
++
++		if (do_reopen) {
++			igc_open(netdev);
++		}
++		return 1;
++	}
++	case ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING: {
++		int do_reopen = ethercat_polling != 0;
++		struct igc_adapter *adapter = netdev_priv(netdev);
++		if (!adapter->is_ecat) {
++			return -EOPNOTSUPP;
++		}
++
++		if (do_reopen) {
++			igc_close(netdev);
++		}
++
++		ethercat_polling = 0;
++
++		if (do_reopen) {
++			igc_open(netdev);
++		}
++		return 1;
++	}
++	case ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING: {
++		struct igc_adapter *adapter = netdev_priv(netdev);
++		if (!adapter->is_ecat) {
++			return -EOPNOTSUPP;
++		}
++
++		if (ethercat_polling == 0) {
++			return 0;
++		} 
++
++		return 1;
++	}
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+@@ -6733,6 +6946,35 @@ static enum hrtimer_restart igc_qbv_sche
+ 	return HRTIMER_NORESTART;
+ }
+ 
++static int parse_macaddr(const char *macstr, char *dev_addr)
++{
++	int i, h, l;
++
++	for (i = 0; i < 6; i++) {
++		h = hex_to_bin(*macstr);
++		if (h == -1)
++			goto err;
++		macstr++;
++
++		l = hex_to_bin(*macstr);
++		if (l == -1)
++			goto err;
++		macstr++;
++
++		if (i != 5) {
++			if (*macstr != ':')
++				goto err;
++			macstr++;
++		}
++		dev_addr[i] = (h << 4) + l;
++	}
++	if (is_valid_ether_addr(dev_addr))
++		return 0;
++
++err:
++	return -EINVAL;
++}
++
+ /**
+  * igc_probe - Device Initialization Routine
+  * @pdev: PCI device information struct
+@@ -6752,6 +6994,7 @@ static int igc_probe(struct pci_dev *pde
+ 	struct igc_hw *hw;
+ 	const struct igc_info *ei = igc_info_tbl[ent->driver_data];
+ 	int err;
++	int cnt = 0;
+ 
+ 	err = pci_enable_device_mem(pdev);
+ 	if (err)
+@@ -6787,6 +7030,8 @@ static int igc_probe(struct pci_dev *pde
+ 	adapter = netdev_priv(netdev);
+ 	adapter->netdev = netdev;
+ 	adapter->pdev = pdev;
++	adapter->is_ecat = false;
++	adapter->ecat_dev = NULL;
+ 	hw = &adapter->hw;
+ 	hw->back = adapter;
+ 	adapter->port_num = hw->bus.func;
+@@ -6944,13 +7189,54 @@ static int igc_probe(struct pci_dev *pde
+ 	 */
+ 	igc_get_hw_control(adapter);
+ 
+-	strscpy(netdev->name, "eth%d", sizeof(netdev->name));
+-	err = register_netdev(netdev);
+-	if (err)
+-		goto err_register;
+ 
+-	 /* carrier off reporting is important to ethtool even BEFORE open */
+-	netif_carrier_off(netdev);
++	/* check if we should use this one as EtherCAT device 
++	*/ 
++	if (ethercat_mac_addr_count > 0) {
++		for (cnt = 0; cnt < ethercat_mac_addr_count; ++cnt) {
++			char ethercat_dev_addr[6];
++			parse_macaddr(ethercat_mac_addr[cnt], ethercat_dev_addr);
++
++			if (ether_addr_equal(netdev->dev_addr, ethercat_dev_addr)) {
++				int i = 0;
++
++				dev_info(&pdev->dev, "attaching as EtherCAT interface\n");
++				adapter->is_ecat = true;
++				adapter->ecat_dev = ethercat_device_create(netdev);
++
++				/* set low ITR values */
++				adapter->rx_itr_setting = 0;
++				adapter->tx_itr_setting = 0;
++
++				/* If ITR is disabled, disable DMAC */
++				if (adapter->flags & IGC_FLAG_DMAC)
++					adapter->flags &= ~IGC_FLAG_DMAC;
++
++				for (i = 0; i < adapter->num_q_vectors; i++) {
++					struct igc_q_vector *q_vector = adapter->q_vector[i];
++					q_vector->tx.work_limit = adapter->tx_work_limit;
++					if (q_vector->rx.ring)
++						q_vector->itr_val = adapter->rx_itr_setting;
++					else
++						q_vector->itr_val = adapter->tx_itr_setting;
++ 
++					/* configure q_vector to set itr on next interrupt */
++					q_vector->set_itr = 1;
++				}
++				break;
++			}
++		}
++	}
++
++	if (!adapter->is_ecat) {
++		strscpy(netdev->name, "eth%d", sizeof(netdev->name));
++		err = register_netdev(netdev);
++		if (err)
++			goto err_register;
++
++		/* carrier off reporting is important to ethtool even BEFORE open */
++		netif_carrier_off(netdev);
++	}
+ 
+ 	/* Check if Media Autosense is enabled */
+ 	adapter->ei = *ei;
+@@ -7001,6 +7287,10 @@ static void igc_remove(struct pci_dev *p
+ 	struct net_device *netdev = pci_get_drvdata(pdev);
+ 	struct igc_adapter *adapter = netdev_priv(netdev);
+ 
++	if (adapter->ecat_dev) {
++		ethercat_device_destroy(adapter->ecat_dev);
++	}
++
+ 	pm_runtime_get_noresume(&pdev->dev);
+ 
+ 	igc_flush_nfc_rules(adapter);
+@@ -7023,7 +7313,10 @@ static void igc_remove(struct pci_dev *p
+ 	 * would have already happened in close and is redundant.
+ 	 */
+ 	igc_release_hw_control(adapter);
+-	unregister_netdev(netdev);
++
++	if (!adapter->is_ecat) {
++		unregister_netdev(netdev);
++	}
+ 
+ 	igc_clear_interrupt_scheme(adapter);
+ 	pci_iounmap(pdev, adapter->io_addr);
+@@ -7047,7 +7340,7 @@ static int __igc_shutdown(struct pci_dev
+ 	rtnl_lock();
+ 	netif_device_detach(netdev);
+ 
+-	if (netif_running(netdev))
++	if (adapter->is_ecat || netif_running(netdev))
+ 		__igc_close(netdev, true);
+ 
+ 	igc_ptp_suspend(adapter);
+diff -rup /home_local/burger_r/opensuse/kernel/drivers/net/ethernet/intel/igc/Makefile 6.4.0/intel/igc/Makefile
+--- /home_local/burger_r/opensuse/kernel/drivers/net/ethernet/intel/igc/Makefile	2024-11-28 06:18:28.238435376 +0100
++++ 6.4.0/intel/igc/Makefile	2024-11-28 09:34:19.837150596 +0100
+@@ -5,7 +5,10 @@
+ # Intel(R) I225-LM/I225-V 2.5G Ethernet Controller
+ #
+ 
+-obj-$(CONFIG_IGC) += igc.o
++obj-m += igc-ethercat.o
+ 
+-igc-objs := igc_main.o igc_mac.o igc_i225.o igc_base.o igc_nvm.o igc_phy.o \
++igc-ethercat-objs := igc_main.o igc_mac.o igc_i225.o igc_base.o igc_nvm.o igc_phy.o \
+ igc_diag.o igc_ethtool.o igc_ptp.o igc_dump.o igc_tsn.o igc_xdp.o
++
++EXTRA_CFLAGS=-I$(src)/../../../../../../
++KBUILD_EXTRA_SYMBOLS=$(src)/../../../../../../Module.symvers
