@@ -74,11 +74,6 @@
     ((a) > (b) ? (a) : (b))
 #endif
 
-//convert integers into strings for printing the values defined in config.h
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
-
 //#define LIBETHERCAT_DEBUG
 
 // forward declaration
