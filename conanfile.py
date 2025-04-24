@@ -42,7 +42,7 @@ class MainProject(ConanFile):
         "mbx_support_soe" : [ True, False ],
     }
 
-    requires = [ "libosal/[>=0.0.6]@common/stable", ]
+    requires = [ "libosal/[>=0.1.0]@common/unstable", ]
     generators = "PkgConfigDeps"
 
     def config_options(self):
