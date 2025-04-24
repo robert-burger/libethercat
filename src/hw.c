@@ -36,8 +36,10 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
+
 #include <libethercat/hw.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
@@ -66,6 +68,16 @@
 #ifdef LIBETHERCAT_HAVE_NET_UTIL_INET_H
 #include <net/util/inet.h>
 #endif
+
+// forward decls
+
+//! Start sending queued ethrecat datagrams from specified pool.
+/*!
+ * \param[in] phw           Hardware handle.
+ * \param[in] pool_type     Type of pool to sent.
+ * \return 0 or error code
+ */
+static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type);
 
 //! open a new hw
 /*!
@@ -145,8 +157,13 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     }
 }
 
-//! internal tx func
-static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
+//! Start sending queued ethrecat datagrams from specified pool.
+/*!
+ * \param[in] phw           Hardware handle.
+ * \param[in] pool_type     Type of pool to sent.
+ * \return 0 or error code
+ */
+void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     assert(phw != NULL);
 
     osal_bool_t sent = OSAL_FALSE;

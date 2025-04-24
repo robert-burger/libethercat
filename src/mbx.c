@@ -36,8 +36,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include "libethercat/mbx.h"
 #include "libethercat/ec.h"
@@ -509,7 +510,7 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave) {
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
  */
-static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
+void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 

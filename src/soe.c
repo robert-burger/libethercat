@@ -37,8 +37,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 
