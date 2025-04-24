@@ -54,6 +54,8 @@
 // forward decls
 static int ec_async_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, osal_timer_t *timeout);
+static int ec_async_loop_put(ec_message_pool_t *ppool,
+        ec_message_entry_t *msg);
 
 // get a message from a message pool
 int ec_async_loop_get(ec_message_pool_t *ppool,
