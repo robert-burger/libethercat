@@ -179,14 +179,6 @@ int hw_tx_high(struct hw_common *phw);
  */
 int hw_tx_low(struct hw_common *phw);
 
-//! Start sending queued ethrecat datagrams from specified pool.
-/*!
- * \param[in] phw           Hardware handle.
- * \param[in] pool_type     Type of pool to sent.
- * \return 0 or error code
- */
-void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type);
-
 //! start sending queued ethercat datagrams
 /*!
  * \param phw hardware handle

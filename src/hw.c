@@ -69,6 +69,16 @@
 #include <net/util/inet.h>
 #endif
 
+// forward decls
+
+//! Start sending queued ethrecat datagrams from specified pool.
+/*!
+ * \param[in] phw           Hardware handle.
+ * \param[in] pool_type     Type of pool to sent.
+ * \return 0 or error code
+ */
+static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type);
+
 //! open a new hw
 /*!
  * \param[in]   phw         Pointer to hw structure.
