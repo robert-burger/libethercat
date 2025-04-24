@@ -189,12 +189,12 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
  * This function is usually called by Async loop thread.
  * \param[in] paml  Handle to async message loop.
  */
-void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *to) {
+void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *timeout) {
     ec_message_entry_t *me = NULL;
 
-    int ret = ec_async_loop_get(&paml->exec, &me, &timeout);
+    int ret = ec_async_loop_get(&paml->exec, &me, timeout);
     if (ret != EC_OK) {
-        continue; // e.g. timeout
+        return; // e.g. timeout
     }
 
     switch (me->msg.id) {
@@ -204,11 +204,9 @@ void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *to) {
             // do something
             osal_uint16_t slave;
             for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
-                if (paml->pec->slaves[slave].assigned_pd_group != (int)me->msg.payload) {
-                    continue;
-                }
-
-                if (paml->pec->slaves[slave].transition_active == OSAL_FALSE) {
+                if ((paml->pec->slaves[slave].assigned_pd_group == (int)me->msg.payload) &&
+                    (paml->pec->slaves[slave].transition_active == OSAL_FALSE))
+                {
                     ec_async_check_slave(paml, slave);
                 }
             }
