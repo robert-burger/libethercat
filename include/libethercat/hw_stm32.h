@@ -62,6 +62,11 @@ typedef struct hw_stm32 {
 #define htons(x) (((x) << 8) | ((x) >> 8))
 #endif
 
+#ifndef htons
+#define htons(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+#endif
+
+
 //! Opens EtherCAT hw device.
 /*!
  * \param[in]   phw         Pointer to hw handle. 

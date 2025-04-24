@@ -56,10 +56,6 @@
 #include <drv/sbuf_hdr.h>
 #endif
 
-#ifndef htons
-#define htons(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
-#endif
-
 #define container_of(ptr, type, member) ({ \
         __typeof__( ((type *)0)->member ) *__mptr = (void *)(ptr); \
         (type *)( (char *)__mptr - offsetof(type,member) );})
