@@ -626,6 +626,9 @@ struct rtl8169_private {
 		struct work_struct work;
 	} wk;
 
+	struct work_struct watchdog_task;
+	struct timer_list watchdog_timer;
+
 	unsigned supports_gmii:1;
 	unsigned aspm_manageable:1;
 	dma_addr_t counters_phys_addr;
@@ -4750,10 +4753,17 @@ static void r8169_phylink_handler(struct net_device *ndev)
 {
 	struct rtl8169_private *tp = netdev_priv(ndev);
 
-	if (likely(tp->ecat_dev) || netif_carrier_ok(ndev)) {
+	if (netif_carrier_ok(ndev)) {
+		if (tp->ecat_dev) {
+			ethercat_device_set_link(tp->ecat_dev, 1);
+		}
 		rtl_link_chg_patch(tp);
 		pm_request_resume(&tp->pci_dev->dev);
 	} else {
+		if (tp->ecat_dev) {
+			ethercat_device_set_link(tp->ecat_dev, 0);
+		}
+
 		pm_runtime_idle(&tp->pci_dev->dev);
 	}
 
@@ -4788,6 +4798,8 @@ static void rtl8169_down(struct rtl8169_private *tp)
 	/* Clear all task flags */
 	bitmap_zero(tp->wk.flags, RTL_FLAG_MAX);
 
+	del_timer_sync(&tp->watchdog_timer);
+
 	phy_stop(tp->phydev);
 
 	rtl8169_update_counters(tp);
@@ -4813,6 +4825,10 @@ static void rtl8169_up(struct rtl8169_private *tp)
 	rtl_reset_work(tp);
 
 	phy_start(tp->phydev);
+
+	if (tp->ecat_dev) {
+		schedule_work(&tp->watchdog_task);
+	}
 }
 
 static int rtl8169_close(struct net_device *dev)
@@ -4830,7 +4846,13 @@ static int rtl8169_close(struct net_device *dev)
 
 	cancel_work_sync(&tp->wk.work);
 
-	free_irq(pci_irq_vector(pdev, 0), tp);
+	if (tp->ecat_dev) {
+		cancel_work_sync(&tp->watchdog_task);
+	} 
+
+	if (!tp->ecat_dev || !ethercat_polling) {
+		free_irq(pci_irq_vector(pdev, 0), tp);
+	}
 
 	phy_disconnect(tp->phydev);
 
@@ -5116,6 +5138,9 @@ static void rtl_remove_one(struct pci_dev *pdev)
 	
 	if (tp->ecat_dev) {
 		ethercat_device_destroy(tp->ecat_dev);
+
+		del_timer_sync(&tp->watchdog_timer);
+		cancel_work_sync(&tp->watchdog_task);
 	}
 
 	if (pci_dev_run_wake(pdev))
@@ -5138,8 +5163,8 @@ static int rtl_do_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 {
 	switch (cmd) {
 		case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX: {
-			    return 1;
-			}
+			return 1;
+		}
 		case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX: {
 			struct rtl8169_private *tp = netdev_priv(netdev);
 			struct net_device *dev = tp->dev;
@@ -5358,6 +5383,28 @@ static int r8169_mdio_register(struct rtl8169_private *tp)
 	phy_suspend(tp->phydev);
 
 	return 0;
+}
+
+static void r8169_watchdog(struct timer_list *t)
+{
+	struct rtl8169_private *tp = from_timer(tp, t, watchdog_timer);
+
+	/* Do the rest outside of interrupt context */
+	schedule_work(&tp->watchdog_task);
+}
+
+static void r8169_watchdog_task(struct work_struct *work)
+{
+	struct rtl8169_private *tp =
+		container_of(work, struct rtl8169_private, watchdog_task);
+
+	u32 status = rtl_get_events(tp);
+	if (status & LinkChg) {
+		phy_mac_interrupt(tp->phydev);
+		rtl_ack_events(tp, LinkChg);
+	}
+
+	mod_timer(&tp->watchdog_timer, round_jiffies(jiffies + HZ));
 }
 
 static void rtl_hw_init_8168g(struct rtl8169_private *tp)
@@ -5717,6 +5764,9 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 		
 				RTL_W32(tp, RxConfig, RTL_R32(tp, RxConfig) |
 						AcceptBroadcast | AcceptMulticast | AcceptMyPhys | AcceptRunt);
+	
+				timer_setup(&tp->watchdog_timer, r8169_watchdog, 0);
+				INIT_WORK(&tp->watchdog_task, r8169_watchdog_task);
 				break;
 			}
 		}
