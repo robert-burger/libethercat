@@ -406,8 +406,8 @@ void hw_device_file_send_finished(struct hw_common *phw) {
             phw_file->common.bytes_sent = 0;
 
             if (hw_device_file_recv_internal(phw_file) == OSAL_FALSE) {
-                if (    (pec->master_state != EC_STATE_SAFEOP) &&
-                        (pec->master_state != EC_STATE_OP) &&
+                if (    (phw->pec->master_state != EC_STATE_SAFEOP) &&
+                        (phw->pec->master_state != EC_STATE_OP) &&
                         (phw_file->frames_send > 0)) {
 
                     if (--retry_cnt > 0) {
