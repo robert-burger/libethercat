@@ -1326,7 +1326,10 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             pec->phw->tx_send[p_dg->idx] = NULL;
 
             if (local_ret == OSAL_ERR_TIMEOUT) {
-                ec_log(1, "MASTER_TRANSCEIVE", "timeout on cmd 0x%X, adr 0x%X\n", cmd, adr);
+                ec_log(1, "MASTER_TRANSCEIVE", 
+                        "Timeout on cmd 0x%X, adr 0x%X\n"
+                        "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
+                        "There's either something wrong with your configuration or there is a hardware issue on your bus topology!\n", cmd, adr);
             } else {
                 ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
                         local_ret, cmd, adr);
