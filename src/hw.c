@@ -137,7 +137,7 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
                         "Received idx %d, but it is not marked as sent.\n"
                         "This could be caused by:\n"
                         "- The receive timeout is too short and the reception was of the frame was too late.\n"
-                        "- An other process is sending EtherCAT frames over the same interface.", d->idx);
+                        "- An other process is sending EtherCAT frames over the same interface.\n", d->idx);
             } else {
                 if ((entry->user_cb) != NULL) {
                     (*entry->user_cb)(phw->pec, entry, d);

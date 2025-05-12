@@ -418,7 +418,7 @@ void hw_device_file_send_finished(struct hw_common *phw) {
                     "This could mean:\n"
                     "- The receive timeout is too short.\n"
                     "- The frame was lost on the wire (REALLY BAD!).\n"
-                    "Clearing sent frames counter now.");
+                    "Clearing sent frames counter now.\n");
 
             phw_file->frames_send = 0;
         }
