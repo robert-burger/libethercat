@@ -410,6 +410,18 @@ void hw_device_file_send_finished(struct hw_common *phw) {
 
             phw_file->frames_send--;
         }
+
+        if (phw_file->frames_send > 0) {
+            ec_t *pec = phw->pec;
+            ec_log(1, "HW_RX", 
+                    "There were still frames left waiting for reception.\n"
+                    "This could mean:\n"
+                    "- The receive timeout is too short.\n"
+                    "- The frame was lost on the wire (REALLY BAD!).\n"
+                    "Clearing sent frames counter now.");
+
+            phw_file->frames_send = 0;
+        }
     }
 }
 

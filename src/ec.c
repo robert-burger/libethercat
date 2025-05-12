@@ -1322,6 +1322,9 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         osal_timer_init(&to, 100000000);
         int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
         if (local_ret != OSAL_OK) {
+            // remove sent mark
+            pec->phw->tx_send[p_dg->idx] = NULL;
+
             if (local_ret == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "MASTER_TRANSCEIVE", "timeout on cmd 0x%X, adr 0x%X\n", cmd, adr);
             } else {

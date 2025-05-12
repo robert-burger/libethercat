@@ -133,7 +133,11 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
             phw->tx_send[d->idx] = NULL;
 
             if (!entry) {
-                ec_log(1, "HW_RX", "received idx %d, but we did not send one?\n", d->idx);
+                ec_log(1, "HW_RX", 
+                        "Received idx %d, but it is not marked as sent.\n"
+                        "This could be caused by:\n"
+                        "- The receive timeout is too short and the reception was of the frame was too late.\n"
+                        "- An other process is sending EtherCAT frames over the same interface.", d->idx);
             } else {
                 if ((entry->user_cb) != NULL) {
                     (*entry->user_cb)(phw->pec, entry, d);
