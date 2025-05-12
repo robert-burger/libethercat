@@ -1322,14 +1322,22 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         osal_timer_init(&to, 100000000);
         int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
         if (local_ret != OSAL_OK) {
+            osal_bool_t was_sent = pec->phw->tx_send[p_dg->idx] == NULL ? OSAL_FALSE : OSAL_TRUE;
+            
             // remove sent mark
             pec->phw->tx_send[p_dg->idx] = NULL;
 
             if (local_ret == OSAL_ERR_TIMEOUT) {
-                ec_log(1, "MASTER_TRANSCEIVE", 
-                        "Timeout on cmd 0x%X, adr 0x%X\n"
-                        "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
-                        "There's either something wrong with your configuration or there is a hardware issue on your bus topology!\n", cmd, adr);
+                if (was_sent == OSAL_FALSE) {
+                    ec_log(1, "MASTER_TRANSCEIVE", 
+                            "Timeout on cmd 0x%X, adr 0x%X but it looks like it was never sent.\n"
+                            "There seems to be something wrong with your configuration as e.g. scheduling prevents the sender from being executed!\n", cmd, adr);
+                } else {
+                    ec_log(1, "MASTER_TRANSCEIVE", 
+                            "Timeout on cmd 0x%X, adr 0x%X\n"
+                            "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
+                            "There's either something wrong with your configuration or there is a hardware issue on your bus topology!\n", cmd, adr);
+                }
             } else {
                 ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
                         local_ret, cmd, adr);
