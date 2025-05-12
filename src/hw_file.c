@@ -393,6 +393,7 @@ void hw_device_file_send_finished(struct hw_common *phw) {
     assert(phw != NULL);
     int retry_cnt = 10;
 
+    ec_t *pec = phw->pec;
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
     
     // in case of polling do receive now
@@ -406,8 +407,8 @@ void hw_device_file_send_finished(struct hw_common *phw) {
             phw_file->common.bytes_sent = 0;
 
             if (hw_device_file_recv_internal(phw_file) == OSAL_FALSE) {
-                if (    (phw->pec->master_state != EC_STATE_SAFEOP) &&
-                        (phw->pec->master_state != EC_STATE_OP) &&
+                if (    (pec->master_state != EC_STATE_SAFEOP) &&
+                        (pec->master_state != EC_STATE_OP) &&
                         (phw_file->frames_send > 0)) {
 
                     if (--retry_cnt > 0) {
@@ -423,7 +424,6 @@ void hw_device_file_send_finished(struct hw_common *phw) {
         }
 
         if (phw_file->frames_send > 0) {
-            ec_t *pec = phw->pec;
             ec_log(1, "HW_RX", 
                     "There were still frames left waiting for reception.\n"
                     "This could mean:\n"
