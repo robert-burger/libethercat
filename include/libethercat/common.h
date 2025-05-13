@@ -224,5 +224,8 @@ typedef osal_uint16_t ec_state_t;
 #define EC_STATE_ERROR       ((osal_uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR
 #define EC_STATE_RESET       ((osal_uint16_t)(0x0010u))       //!< \brief EtherCAT ERROR reset
 
+#define EC_TIMEOUT_FRAME     ((osal_uint64_t) 2000000u)        //!< \brief EtherCAT frame timeout in [ns].
+#define EC_TIMEOUT_LOW_PRIO  ((osal_uint64_t)50000000u)        //!< \brief Timeout for low-priority tranceive frames, will be re-send on loss.
+
 #endif // LIBETHERCAT_COMMON_H
 

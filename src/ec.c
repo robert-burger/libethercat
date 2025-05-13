@@ -1297,60 +1297,69 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         p_entry->p_idx = p_idx;
         p_entry->user_cb = cb_block;
 
-        // queue frame and trigger tx
-        pool_put(&pec->phw->tx_low, p_entry);
+        // allow frames to be sent 10 times if lost on wire (should not happen).
+        osal_timer_t to_transceive;
+        osal_timer_init(&to_transceive, EC_TIMEOUT_LOW_PRIO);
 
-        // send frame immediately if in sync mode
-        if (    (pec->master_state != EC_STATE_SAFEOP) &&
-                (pec->master_state != EC_STATE_OP)) {
-            if (hw_tx_low(pec->phw) != EC_OK) {
-                ec_log(1, "MASTER_TRANSCEIVE", "hw_tx failed!\n");
-            }
-        } else {
-            osal_timer_t test;
-            // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
-            osal_timer_init(&test, (10 * 8 * pec->phw->mtu_size) * 1.5);  
-            if (osal_timer_cmp(&test, &pec->phw->next_cylce_start, <)) {
+        do {
+            // queue frame and trigger tx
+            pool_put(&pec->phw->tx_low, p_entry);
+
+            // send frame immediately if in sync mode
+            if (    (pec->master_state != EC_STATE_SAFEOP) &&
+                    (pec->master_state != EC_STATE_OP)) {
                 if (hw_tx_low(pec->phw) != EC_OK) {
-                    ec_log(1, "MASTER_TRANSCEIVE", "hw_tx_low failed!\n");
-                } 
-            }
-        }
-
-        // wait for completion
-        osal_timer_t to;
-        osal_timer_init(&to, 100000000);
-        int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
-        if (local_ret != OSAL_OK) {
-            osal_bool_t was_sent = pec->phw->tx_send[p_dg->idx] == NULL ? OSAL_FALSE : OSAL_TRUE;
-            
-            // remove sent mark
-            pec->phw->tx_send[p_dg->idx] = NULL;
-
-            if (local_ret == OSAL_ERR_TIMEOUT) {
-                if (was_sent == OSAL_FALSE) {
-                    ec_log(1, "MASTER_TRANSCEIVE", 
-                            "Timeout on cmd 0x%X, adr 0x%X but it looks like it was never sent.\n"
-                            "There seems to be something wrong with your configuration as e.g. scheduling prevents the sender from being executed!\n", cmd, adr);
-                } else {
-                    ec_log(1, "MASTER_TRANSCEIVE", 
-                            "Timeout on cmd 0x%X, adr 0x%X\n"
-                            "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
-                            "There's either something wrong with your configuration or there is a hardware issue on your bus topology!\n", cmd, adr);
+                    ec_log(1, "MASTER_TRANSCEIVE", "hw_tx failed!\n");
                 }
             } else {
-                ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
-                        local_ret, cmd, adr);
+                osal_timer_t test;
+                // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
+                osal_timer_init(&test, (10 * 8 * pec->phw->mtu_size) * 1.5);  
+                if (osal_timer_cmp(&test, &pec->phw->next_cylce_start, <)) {
+                    if (hw_tx_low(pec->phw) != EC_OK) {
+                        ec_log(1, "MASTER_TRANSCEIVE", "hw_tx_low failed!\n");
+                    } 
+                }
             }
 
-            *wkc = 0u;
-            ret = EC_ERROR_TIMEOUT;
-        } else {
-            *wkc = ec_datagram_wkc(p_dg);
-            if ((*wkc) != 0u) {
-                (void)memcpy(data, ec_datagram_payload(p_dg), datalen);
+            // wait for completion
+            osal_timer_t to;
+            osal_timer_init(&to, EC_TIMEOUT_FRAME);
+            int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
+            if (local_ret != OSAL_OK) {
+                osal_bool_t was_sent = pec->phw->tx_send[p_dg->idx] == NULL ? OSAL_FALSE : OSAL_TRUE;
+
+                // remove sent mark
+                pec->phw->tx_send[p_dg->idx] = NULL;
+
+                if (local_ret == OSAL_ERR_TIMEOUT) {
+                    if (was_sent == OSAL_FALSE) {
+                        ec_log(1, "MASTER_TRANSCEIVE", 
+                                "Timeout on cmd 0x%X, adr 0x%X but it looks like it was never sent.\n"
+                                "There seems to be something wrong with your configuration as e.g. scheduling prevents the sender from being executed!\n", cmd, adr);
+                    } else {
+                        ec_log(1, "MASTER_TRANSCEIVE", 
+                                "Timeout on cmd 0x%X, adr 0x%X\n"
+                                "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
+                                "There's either something wrong with your configuration or there is a hardware issue on your bus topology!\n", cmd, adr);
+                    }
+                } else {
+                    ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
+                            local_ret, cmd, adr);
+                }
+
+                *wkc = 0u;
+                ret = EC_ERROR_TIMEOUT;
+            } else {
+                *wkc = ec_datagram_wkc(p_dg);
+                if ((*wkc) != 0u) {
+                    (void)memcpy(data, ec_datagram_payload(p_dg), datalen);
+                }
+
+                ret = EC_OK;
+                break;
             }
-        }
+        } while (osal_timer_expired(&to_transceive) != OSAL_ERR_TIMEOUT);
 
         pool_put(&pec->pool, p_entry);
         ec_index_put(&pec->idx_q, p_idx);
