@@ -39,8 +39,6 @@
 
 #if LIBETHERCAT_MBX_SUPPORT_COE == 1
 
-#if LIBETHERCAT_MBX_SUPPORT_COE == 1
-
 #include "libethercat/ec.h"
 #include "libethercat/mbx.h"
 #include "libethercat/coe.h"
