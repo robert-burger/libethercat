@@ -1307,6 +1307,8 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         do {
             osal_timer_t enqueue_timestamp;
             // queue frame and trigger tx
+        
+            pec->phw->tx_send[p_entry->p_idx->idx] = NULL;
             hw_enqueue(pec->phw, p_entry, POOL_LOW);
             osal_timer_gettime(&enqueue_timestamp);
 
@@ -1332,15 +1334,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             osal_timer_init(&to, EC_TIMEOUT_FRAME);
             int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
             if (local_ret != OSAL_OK) {
-                osal_bool_t was_sent = pec->phw->tx_send[p_dg->idx] == NULL ? OSAL_FALSE : OSAL_TRUE;
-
                 if (local_ret == OSAL_ERR_TIMEOUT) {
-                    if (was_sent == OSAL_TRUE) {
-                        ec_log(1, "MASTER_TRANSCEIVE", 
-                                "Timeout on cmd 0x%X, adr 0x%X\n"
-                                "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
-                                "There's either something wrong with your configuration or there is a hardware issue on your bus topology!\n", cmd, adr);
-                    }
                 } else {
                     ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
                             local_ret, cmd, adr);
@@ -1362,8 +1356,11 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         } while (to_transceive_expired != OSAL_ERR_TIMEOUT);
                 
         if (to_transceive_expired == OSAL_ERR_TIMEOUT) {
-            ec_log(1, "MASTER_TRANSCEIVE",
-                    "Lost datagram during transceive though it was sent multiple times! Check your configuration!\n");
+            ec_log(1, "MASTER_TRANSCEIVE", 
+                    "Timeout on cmd 0x%X, adr 0x%X\n"
+                    "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
+                    "There's either something wrong with your configuration or there is a hardware issue on your bus topology!\n"
+                    "Lost datagram during transceive though it was sent multiple times! Check your configuration!\n", cmd, adr);
 
             // remove sent mark
             pec->phw->tx_send[p_dg->idx] = NULL;

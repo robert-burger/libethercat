@@ -413,7 +413,7 @@ void hw_device_file_send_finished(struct hw_common *phw) {
                         (phw_file->frames_send > 0)) {
 
                     if (--retry_cnt > 0) {
-                        ec_log(1, "HW_RX", "Timeout on receive, retrying (%d) ...\n", retry_cnt);
+                        ec_log(100, "HW_RX", "Timeout on receive, retrying (%d) ...\n", retry_cnt);
                         continue;
                     }
                 }

@@ -54,6 +54,7 @@
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef LIBETHERCAT_HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -151,6 +152,15 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     assert(pframe != NULL);
     ec_t *pec = phw->pec;
 
+    static int miss = 0;
+    // Find the random number in the range [min, max]
+    static int rd_num = 1234;
+    if (++miss > rd_num) {
+        miss = 0;
+        rd_num = rand() % (10000 - 10 + 1) + 10;
+        return;
+    }
+
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
         ec_log(1, "HW_RX", "received non-ethercat frame! (type 0x%X)\n", pframe->type);
@@ -200,6 +210,7 @@ static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
         if (p_entry !=  NULL) {
             // cppcheck-suppress misra-c2012-11.3
             p_entry_dg = (ec_datagram_t *)p_entry->data;
+            
             len = ec_datagram_length(p_entry_dg);
         } else { len = 0u; }
 
