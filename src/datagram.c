@@ -38,7 +38,9 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include <string.h>
 #include <assert.h>
@@ -54,7 +56,8 @@
  * \return EC_OK on success, otherwise error code.
  */
 int ec_cyclic_datagram_init(ec_cyclic_datagram_t *cdg, osal_uint64_t recv_timeout) {
-    osal_mutex_init(&cdg->lock, NULL);
+    osal_mutex_attr_t lock_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&cdg->lock, &lock_attr);
     cdg->p_entry = NULL;
     cdg->p_idx = NULL;
     cdg->recv_timeout_ns = recv_timeout;

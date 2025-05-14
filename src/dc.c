@@ -41,7 +41,9 @@
  */
 
 /* autoconf header goes first */
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 /* system includes */
 #include <assert.h>
@@ -176,35 +178,46 @@ static inline osal_uint8_t get_and_consume_next_available_port(ec_slave_t *slv, 
  * \param cycle_time_0 cycle time to program to fire sync0 in [ns]
  * \param cycle_time_1 cycle time to program to fire sync1 in [ns]
  * \param cycle_shift shift of first sync0 start in [ns]
+ *
+ * \return EC_OK or EC_ERROR_UNAVAILABLE
  */
-void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active, 
+int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active, 
         osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift) 
 {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
+    int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
 
-    if ((slv->features & EC_REG_ESCSUP__DC_SUPP) != 0u) { // dc available
+    if ((slv->features & EC_REG_ESCSUP__DC_SUPP) == 0u) { // dc not available
+        ret = EC_ERROR_UNAVAILABLE;
+    }
+
+    if (ret == EC_OK) { 
+        if ((active != 0u) && (pec->dc.dc_time == 0u)) {
+            ec_log(1, "DC_SYNC", "slave %2d: ERROR calculating start time because there's no cyclic "
+                    "loop running right now! DC will not work correctly!\n", slave);
+
+            ret = EC_ERROR_CYCLIC_LOOP;
+        } 
+    }
+
+    if (ret == EC_OK) {
         osal_uint8_t dc_cuc = 0u;
         osal_uint8_t dc_active = 0u;
         osal_uint16_t wkc = 0u;
         osal_int64_t dc_start = 0;
         osal_int64_t dc_time = 0;
-        osal_int64_t tmp_time = 0;
 
         // deactivate DC generation, enable write access of dc's, read local time
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCCUC, &dc_cuc, sizeof(dc_cuc), &wkc);
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSYSTIME, &dc_time, sizeof(dc_time), &wkc);
 
-        // Calculate DC start time as a sum of the actual EtherCAT master time,
-        // the generic first sync delay and the cycle shift. the first sync delay 
-        // has to be a multiple of cycle time.  
-        tmp_time = ((dc_time - (osal_int64_t)pec->dc.rtc_time) / (osal_int64_t)pec->main_cycle_interval) + 100;
-        if (tmp_time < 0) tmp_time = 100;
-        dc_start = (osal_int64_t)pec->dc.rtc_time + (tmp_time * (osal_int64_t)pec->main_cycle_interval) + cycle_shift;
-        dc_start = (osal_int64_t)pec->dc.rtc_time + cycle_shift + ONE_SEC;
+        // Calculate DC start time as a sum of the actual EtherCAT DC master time,
+        // the generic first sync delay and the cycle shift. 
+        dc_start = ((pec->dc.dc_time / pec->main_cycle_interval) * pec->main_cycle_interval) + cycle_shift + ONE_SEC;
 
         // program first trigger time and cycle time
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSTART0, &dc_start, sizeof(dc_start), &wkc);
@@ -216,18 +229,20 @@ void ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYNCACT, &dc_active, sizeof(dc_active), &wkc);
 
         if (dc_active != 0u) {
-            ec_log(10, "DC_SYNC", "slave %2d: dc_systime %" PRIu64 ".%" PRIu64 " s, dc_start "
-                    "%" PRId64 ".%" PRIu64 " s, slv dc_time %" PRId64 ".%" PRIu64 " s\n", slave, 
-                    pec->dc.rtc_time/1000000000, pec->dc.rtc_time%1000000000, 
+            ec_log(10, "DC_SYNC", "slave %2d: dc_systime %" PRIu64 ".%09" PRIu64 " s, dc_start "
+                    "%" PRId64 ".%09" PRIu64 " s, slv dc_time %" PRId64 ".%09" PRIu64 " s, pdelay %d\n", slave, 
+                    pec->dc.dc_time/1000000000, pec->dc.dc_time%1000000000, 
                     dc_start/1000000000, dc_start%1000000000, 
-                    dc_time/1000000000, dc_time%1000000000);
-            ec_log(10, "DC_SYNC", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
+                    dc_time/1000000000, dc_time%1000000000, slv->pdelay);
+            ec_log(10, "DC_SYNC", "slave %2d: cycletime_0 %" PRIu32 ", cycletime_1 %" PRIu32 ", "
                     "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
         } else {
             // if not active, the DC's stay inactive
             ec_log(100, "DC_SYNC", "slave %2hu: disabled distributed clocks\n", slave);
         }
     }
+
+    return ret;
 }
 
 //! Prepare EtherCAT master and slaves for distributed clocks
@@ -254,6 +269,7 @@ int ec_dc_config(struct ec *pec) {
     osal_uint16_t wkc;
 
     pec->dc.have_dc = 0;
+    pec->dc.have_64bit = 1;
     pec->dc.master_address = 0;
 
     // latch DC receive time on slaves (ET1100, Section 1, 9.1.8)
@@ -270,15 +286,15 @@ int ec_dc_config(struct ec *pec) {
     check_ec_bwr(pec, EC_REG_DCSYSDELAY, &dcsysdelay, sizeof(dcsysdelay), &wkc);
 
     osal_uint64_t packet_duration = get_packet_duration(pec);
-    ec_log(100, "DC_CONFIG", "master packet duration %" PRIu64 "\n", packet_duration);
+    ec_log(100, "DC_CONFIG", "master   : packet duration %" PRIu64 " ns\n", packet_duration);
 
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
         ec_slave_ptr(slv, pec, slave);
         slv->dc.available_ports = slv->active_ports;
 
         if ((slv->dc.use_dc == 0) || ((slv->features & EC_REG_ESCSUP__DC_SUPP) == 0u)) {
-            ec_log(100, "DC_CONFIG", "slave %2d: not using DC (use %d, features 0x%X)\n", 
-                    slave, slv->dc.use_dc, slv->features);
+            ec_log(100, "DC_CONFIG", "slave %2d: not using DC (use %d, supported %X)\n", 
+                    slave, slv->dc.use_dc, slv->features & EC_REG_ESCSUP__DC_SUPP);
 
             // dc not available or not activated
             slv->dc.use_dc = 0;
@@ -291,6 +307,7 @@ int ec_dc_config(struct ec *pec) {
             // first slave with enabled dc's
             pec->dc.master_address = slv->fixed_address;
             pec->dc.have_dc = 1;
+            pec->dc.have_64bit = (slv->features & 0x0008u) != 0u;
             pec->dc.rtc_time = 0;
             pec->dc.next = slave;
             slv->dc.prev = -1;                
@@ -311,7 +328,7 @@ int ec_dc_config(struct ec *pec) {
                     slv->entry_port = i; 
                 }
 
-                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", slave, i, slv->dc.receive_times[i]);
+                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %" PRIu32 " is %" PRIu32 "\n", slave, i, slv->dc.receive_times[i]);
             }
         }
 
@@ -329,7 +346,7 @@ int ec_dc_config(struct ec *pec) {
                 check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
                 check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0, &slv->dc.receive_times[0], 4 * sizeof(slv->dc.receive_times[0]), &wkc);
                 for (i = 0u; i < 4u; ++i) {
-                    ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", 
+                    ec_log(100, "DC_CONFIG", "slave %2d: receive time port %" PRIu32 " is %" PRIu32 "\n",
                             slave, i, slv->dc.receive_times[i]);
                 }
             }
@@ -355,13 +372,14 @@ int ec_dc_config(struct ec *pec) {
         // store our system time offsets if we got the dc master clock
         if (pec->dc.master_address == slv->fixed_address) {
             pec->dc.dc_sto = 0; // we did a reset 5 lines above
-            pec->dc.rtc_sto = osal_timer_gettime_nsec();
-            ec_log(100, "DC_CONFIG", "initial dc_sto %" PRId64 ", rtc_sto %" PRId64 "\n", pec->dc.dc_sto, pec->dc.rtc_sto);
+            pec->dc.rtc_sto = (osal_timer_gettime_nsec() / pec->main_cycle_interval) * pec->main_cycle_interval;
+            ec_log(100, "DC_CONFIG", "master  : initial dc_sto %" PRId64 ", rtc_sto %" PRId64 "\n", pec->dc.dc_sto, pec->dc.rtc_sto);
         }
 
         // find parent with active distributed clocks
-        for (parent = slv->parent; parent > 0; parent = pec->slaves[parent].parent) {
-            ec_log(100, "DC_CONFIG", "slave %2d: checking parent %d, dc 0x%X\n", slave, parent, pec->slaves[parent].features);
+        for (parent = slv->parent; parent >= 0; parent = pec->slaves[parent].parent) {
+            ec_log(100, "DC_CONFIG", "slave %2d: checking parent %d, dc %X\n", slave, parent, 
+                    pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP);
             if ((pec->slaves[parent].dc.use_dc) && (pec->slaves[parent].features & EC_REG_ESCSUP__DC_SUPP)) {
                 break;
             }
@@ -393,23 +411,15 @@ int ec_dc_config(struct ec *pec) {
             } else {
                 slv->pdelay = slv_parent->pdelay + (abs((osal_int32_t)times_slave[slv->entry_port] - (osal_int32_t)times_slave[0] + t_diff) / 2);
             }
-        } else if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-            slv->dc.t_delay_with_childs = packet_duration;
-            slv->dc.t_delay_slave = abs(slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2;
-            slv->dc.t_delay_parent_previous = 0;
-            slv->pdelay = slv->dc.t_delay_slave;
         }
         
-        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, delay_slave %d, delay_parent_previous_slaves %d, delay_with_childs %d\n", 
+        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %" PRIi32 ", delay_slave %" PRIi32 ", delay_parent_previous_slaves %" PRIi32 ", delay_with_childs %" PRIi32 "\n",
                 slave, slv->dc.t_delay_childs, slv->dc.t_delay_slave, slv->dc.t_delay_parent_previous, slv->dc.t_delay_with_childs);
 
         // write propagation delay
-        ec_log(100, "DC_CONFIG", "slave %2d: sysdelay %d\n", slave, slv->pdelay);
+        ec_log(100, "DC_CONFIG", "slave %2d: sysdelay %" PRIi32 "\n", slave, slv->pdelay);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSDELAY, &slv->pdelay, sizeof(slv->pdelay), &wkc);
     }
-
-    osal_uint64_t temp_dc = 0;
-    check_ec_frmw(pec, pec->dc.master_address, EC_REG_DCSYSTIME, &temp_dc, 8, &wkc);
 
     return EC_OK;
 }

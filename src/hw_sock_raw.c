@@ -36,8 +36,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
 

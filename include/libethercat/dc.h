@@ -94,6 +94,7 @@ typedef struct ec_dc_info {
     int have_dc;                    //!< \brief At least one slave is using DCs.
     int next;                       
     int prev;
+    int have_64bit;
 
     osal_uint64_t dc_time;          //!< \brief Time from DC master clock.
     osal_int64_t dc_sto;            //!< \brief System time offset of DC master clock.
@@ -105,13 +106,13 @@ typedef struct ec_dc_info {
     double timer_correction;        //!< \brief Correction value for EtherCAT master timer in [ns].
     
     struct {
-        double diffsum;
-        double diffsum_limit;
+        double p_part;
+        double i_part;
+        double i_part_limit;
 
         double kp;
         double ki;
-
-        double v_part_old;
+        double kd;
     } control;                   //!< \brief PI-controller to adjust EtherCAT master timer value.
 
     osal_uint64_t sent_time_nsec;
@@ -160,8 +161,10 @@ int ec_dc_config(struct ec *pec);
  * \param[in]   cycle_time_0    Cycle time to program to fire sync0 in [ns].
  * \param[in]   cycle_time_1    Cycle time to program to fire sync1 in [ns].
  * \param[in]   cycle_shift     Shift of first sync0 start in [ns].
+ *
+ * \return EC_OK or EC_UNAVAILABLE, EC_ERROR_CYCLIC_LOOP
  */
-void ec_dc_sync(struct ec *pec, osal_uint16_t slave, osal_uint8_t dc_active, 
+int ec_dc_sync(struct ec *pec, osal_uint16_t slave, osal_uint8_t dc_active, 
         osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
 
 #ifdef __cplusplus

@@ -44,7 +44,10 @@
 #include <libosal/types.h>
 #include <libosal/mutex.h>
 
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
+
 #include <libethercat/pool.h>
 #include <libethercat/datagram.h>
 
@@ -64,7 +67,7 @@
  * @{
  */
 
-#define ETH_P_ECAT      (0x88A4)        //!< \brief Ethertype for EtherCAT.
+#define ETH_P_ECAT      ((osal_uint16_t)0x88A4u)        //!< \brief Ethertype for EtherCAT.
 
 // forward decl
 struct ec;
@@ -140,6 +143,9 @@ typedef struct hw_common {
     hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
     hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
     hw_device_close_t close;                    //!< \brief Function to close hw layer.
+                                                
+    osal_uint64_t last_tx_duration_ns;
+    osal_uint64_t last_rx_duration_ns;
 } hw_common_t;                 //!< \brief Hardware struct type. 
 
 #ifdef __cplusplus
@@ -161,6 +167,13 @@ int hw_open(struct hw_common *phw, struct ec *pec);
  * \return 0 or negative error code
  */
 int hw_close(struct hw_common *phw);
+
+//! start sending queued ethercat datagrams
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_tx_high(struct hw_common *phw);
 
 //! start sending queued ethercat datagrams
 /*!

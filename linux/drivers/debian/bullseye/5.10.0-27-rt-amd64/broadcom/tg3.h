@@ -3135,6 +3135,7 @@ struct tg3_firmware_hdr {
 #define TG3_FW_HDR_LEN         (sizeof(struct tg3_firmware_hdr))
 
 #include "ethercat_device.h"
+#include "ethercat_device_ioctl.h"
 
 struct tg3 {
 	/* begin "general, frequently-used members" cacheline section */

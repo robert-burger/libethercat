@@ -37,8 +37,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include "libethercat/pool.h"
 #include "libethercat/common.h"
@@ -63,7 +64,8 @@ int pool_open(pool_t *pp, osal_size_t cnt, pool_entry_t *entries) {
     assert(pp != NULL);
     int ret = EC_OK;
 
-    osal_mutex_init(&pp->_pool_lock, NULL);
+    osal_mutex_attr_t pool_lock_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&pp->_pool_lock, &pool_lock_attr);
     osal_mutex_lock(&pp->_pool_lock);
 
     osal_semaphore_init(&pp->avail_cnt, 0, cnt);

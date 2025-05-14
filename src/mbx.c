@@ -36,8 +36,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include "libethercat/mbx.h"
 #include "libethercat/ec.h"
@@ -86,7 +87,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->mbx.handler_running == 0) {
-        ec_log(10, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
+        ec_log(100, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
 
         slv->mbx.seq_counter = 1;
         slv->mbx.sm_state = &slv->mbx.mbx_state; // this may be overwritten by logical mapping
@@ -150,7 +151,7 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
     ec_slave_ptr(slv, pec, slave);
 
     if (slv->mbx.handler_running != 0) {
-        ec_log(10, "MAILBOX_DEINIT", "slave %2d: deinitilizing mailbox\n", slave);
+        ec_log(100, "MAILBOX_DEINIT", "slave %2d: deinitilizing mailbox\n", slave);
 
         slv->mbx.handler_running = 0;
         osal_task_join(&slv->mbx.handler_tid, NULL);
@@ -509,7 +510,7 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave) {
  *                      the physical order of the ethercat slaves 
  *                      (usually the n'th slave attached).
  */
-static void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
+void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -635,7 +636,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
 
-    ec_log(10, "MAILBOX_HANDLE", "slave %2d: started mailbox handler\n", slave);
+    ec_log(100, "MAILBOX_HANDLE", "slave %2d: started mailbox handler\n", slave);
 
     while (slv->mbx.handler_running != 0) {
         int ret;
@@ -667,7 +668,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
         ec_mbx_do_handle(pec, slave);
     }
 
-    ec_log(10, "MAILBOX_HANDLE", "slave %2d: stopped mailbox handler\n", slave);
+    ec_log(100, "MAILBOX_HANDLE", "slave %2d: stopped mailbox handler\n", slave);
 }
 
 //! \brief Get free mailbox send buffer from slaves send message pool.

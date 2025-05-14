@@ -242,7 +242,7 @@ static struct pci_driver igb_driver = {
 MODULE_AUTHOR("Intel Corporation, <e1000-devel@lists.sourceforge.net>");
 MODULE_DESCRIPTION("Intel(R) Gigabit Ethernet Network Driver");
 MODULE_LICENSE("GPL v2");
-MODULE_SOFTDEP("pre: ethercat_chrdev");
+MODULE_SOFTDEP("pre: ethercat_chardev");
 
 #define DEFAULT_MSG_ENABLE (NETIF_MSG_DRV|NETIF_MSG_PROBE|NETIF_MSG_LINK)
 static int debug = -1;
@@ -4249,8 +4249,10 @@ static int __igb_open(struct net_device *netdev, bool resuming)
 	if (!resuming)
 		pm_runtime_get_sync(&pdev->dev);
 
-	if (!adapter->is_ecat) {
-		netif_carrier_off(netdev);
+	netif_carrier_off(netdev);
+	
+	if (adapter->ecat_dev) {
+		ethercat_device_set_link(adapter->ecat_dev, 0);
 	}
 
 	/* allocate transmit descriptors */
@@ -5645,24 +5647,6 @@ static void igb_watchdog_task(struct work_struct *work)
 
 	link = igb_has_link(adapter);
 
-	if (likely(adapter->is_ecat)) {
-		if (adapter->ecat_dev) {
-			ethercat_device_set_link(adapter->ecat_dev, link);
-		}
-	
-		if (!test_bit(__IGB_DOWN, &adapter->state)) {
-			mod_timer(&adapter->watchdog_timer, round_jiffies(jiffies + HZ));
-		}
-
-		adapter->link_speed = SPEED_100;
-	
-		spin_lock(&adapter->stats64_lock);
-		igb_update_stats(adapter);
-		spin_unlock(&adapter->stats64_lock);
-
-		return;
-	}
-
 	if (adapter->flags & IGB_FLAG_NEED_LINK_UPDATE) {
 		if (time_after(jiffies, (adapter->link_check_timeout + HZ)))
 			adapter->flags &= ~IGB_FLAG_NEED_LINK_UPDATE;
@@ -5815,6 +5799,14 @@ no_wait:
 		}
 	}
 
+	if (adapter->ecat_dev) {
+		if (!netif_carrier_ok(netdev)) {
+			ethercat_device_set_link(adapter->ecat_dev, 0);
+		} else {
+			ethercat_device_set_link(adapter->ecat_dev, 1);
+		}
+	}
+
 	spin_lock(&adapter->stats64_lock);
 	igb_update_stats(adapter);
 	spin_unlock(&adapter->stats64_lock);
@@ -5839,15 +5831,17 @@ no_wait:
 		set_bit(IGB_RING_FLAG_TX_DETECT_HANG, &tx_ring->flags);
 	}
 
-	/* Cause software interrupt to ensure Rx ring is cleaned */
-	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
-		u32 eics = 0;
+	if (!adapter->ecat_dev || !ethercat_polling) {
+		/* Cause software interrupt to ensure Rx ring is cleaned */
+		if (adapter->flags & IGB_FLAG_HAS_MSIX) {
+			u32 eics = 0;
 
-		for (i = 0; i < adapter->num_q_vectors; i++)
-			eics |= adapter->q_vector[i]->eims_value;
-		wr32(E1000_EICS, eics);
-	} else {
-		wr32(E1000_ICS, E1000_ICS_RXDMT0);
+			for (i = 0; i < adapter->num_q_vectors; i++)
+				eics |= adapter->q_vector[i]->eims_value;
+			wr32(E1000_EICS, eics);
+		} else {
+			wr32(E1000_ICS, E1000_ICS_RXDMT0);
+		}
 	}
 
 	igb_spoof_check(adapter);
@@ -8431,6 +8425,9 @@ static bool igb_clean_tx_irq(struct igb_q_vector *q_vector, int napi_budget)
 	union e1000_adv_tx_desc *tx_desc;
 	unsigned int total_bytes = 0, total_packets = 0;
 	unsigned int budget = q_vector->tx.work_limit;
+	if ((adapter->is_ecat == 1) && (ethercat_polling == 1)) {
+		budget = -1; // only clean one tx
+	}	
 	unsigned int i = tx_ring->next_to_clean;
 
 	if (test_bit(__IGB_DOWN, &adapter->state))
@@ -9394,10 +9391,9 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return igb_ptp_get_ts_config(netdev, ifr);
 	case SIOCSHWTSTAMP:
 		return igb_ptp_set_ts_config(netdev, ifr);
-	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX: {
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		struct igb_q_vector *q_vector = adapter->q_vector[0];
-		int budget = 64;
 		bool clean_complete = true;
 
 		if (!adapter->is_ecat) {
@@ -9405,7 +9401,22 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		}
 
 		if (q_vector->tx.ring) {
-			clean_complete = igb_clean_tx_irq(q_vector, budget);
+			clean_complete = igb_clean_tx_irq(q_vector, 1);
+		}
+
+		if (!clean_complete) 
+			return 1;
+
+		return 0;
+	}
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		struct igb_q_vector *q_vector = adapter->q_vector[0];
+		int budget = 64;
+		bool clean_complete = true;
+
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
 		}
 
 		if (q_vector->rx.ring) {

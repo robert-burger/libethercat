@@ -38,8 +38,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include "libethercat/eeprom.h"
 #include "libethercat/ec.h"
@@ -84,7 +85,7 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     osal_uint16_t wkc;
     osal_uint16_t cnt = 10;
     osal_uint16_t eepcfgstat = 2;
-    
+
     SII_REG(rd, EC_REG_EEPCFG, eepcfgstat);
     if ((ret != EC_OK) || (cnt == 0u)) {
         ec_log(1, "EEPROM_TO_EC", "slave %2d: unable to get eeprom config/control\n", slave);
@@ -105,7 +106,8 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     }
 
     if (ret == EC_OK) {
-        int retry_cnt = 100;
+        osal_timer_t timeout;
+        osal_timer_init(&timeout, 100000000); // 100ms
 
         do {
             SII_REG(rd, EC_REG_EEPCFG, eepcfgstat);
@@ -120,11 +122,12 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
 
             osal_sleep(1000000);
 
-        } while (--retry_cnt > 0);
-
-        if (retry_cnt <= 0) {
-            ec_log(10, "EEPROM_TO_EC", "slave %2d: failed setting eeprom to EtherCAT: eepcfgstat %04X\n", slave, eepcfgstat);
-        }
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
+                ec_log(10, "EEPROM_TO_EC", "slave %2d: failed setting eeprom to EtherCAT: eepcfgstat %04X, trying to ignore ...\n", slave, eepcfgstat);
+                //ret = EC_ERROR_EEPROM_CONTROL_TO_EC;
+                break;
+            }
+        } while (1);
     }
 
     return ret;
@@ -137,9 +140,9 @@ int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uin
     assert(data != NULL);
    
     int ret = EC_OK;
-    int retry_cnt = 100;
     osal_uint16_t wkc = 0;
     osal_uint16_t eepcsr = 0x0100; // read access
+    osal_timer_t timeout; 
     
     ret = ec_eeprom_to_ec(pec, slave);
     
@@ -147,13 +150,13 @@ int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uin
     // cleared (0x0502[15]=0) and the EEPROM interface is not busy, 
     // otherwise wait until the EEPROM interface is not busy anymore.
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_READ", "reading eepctl failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_READ_ERROR;
             }
@@ -182,14 +185,14 @@ int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uin
 
     // 7. Wait until the Busy bit of the EEPROM Status register is cleared
     if (ret == EC_OK) {
-        retry_cnt = 100;
+        osal_timer_init(&timeout, 100000000);
+
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_READ", "reading eepctl failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_READ_ERROR;
             }
@@ -240,24 +243,24 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
     assert(data != NULL);
 
     int ret = EC_OK;
-    int retry_cnt = 100;
     osal_uint16_t wkc = 0;
     osal_uint16_t eepcsr = 0x0100; // write access
+    osal_timer_t timeout;
     
     ret = ec_eeprom_to_ec(pec, slave);
     
     // 1. Check if the Busy bit of the EEPROM Status register is 
     // cleared (0x0502[15]=0) and the EEPROM interface is not busy, 
     // otherwise wait until the EEPROM interface is not busy anymore.
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
+
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "waiting for eeprom !busy failed, "
                         "wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
@@ -286,14 +289,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
     }
 
     // 3. Write EEPROM word address to EEPROM Address register
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPADR,
                     (osal_uint8_t *)&eepadr, sizeof(eepadr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "writing eepadr failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_WRITE_IN_PROGRESS;
             }
@@ -302,14 +304,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
 
     // 4. Write command only: put write data into EEPROM Data register 
     // (1 word/2 byte only).
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPDAT,
                     (osal_uint8_t *)data, sizeof(*data), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "writing data failed\n");
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
             }
@@ -324,14 +325,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
     // same frame and self-clearing afterwards. The Write enable bit needs 
     // not to be written from PDI if it controls the EEPROM interface.
     eepcsr = 0x0201;
-    retry_cnt = 100;
     if (ret == EC_OK) {
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             ret = ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "wirting eepctl failed\n");
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
             }
@@ -343,14 +343,13 @@ int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_ui
 
     // 7. Wait until the Busy bit of the EEPROM Status register is cleared
     if (ret == EC_OK) {
-        retry_cnt = 100;
+        osal_timer_init(&timeout, 100000000); // 100 ms
         do {
             eepcsr = 0;
             ret = ec_fprd(pec, pec->slaves[slave].fixed_address, EC_REG_EEPCTL,
                     (osal_uint8_t *)&eepcsr, sizeof(eepcsr), &wkc);
 
-            retry_cnt--;
-            if ((ret == EC_OK) && (retry_cnt == 0)) {
+            if (osal_timer_expired(&timeout) == OSAL_ERR_TIMEOUT) {
                 ec_log(1, "EEPROM_WRITE", "reading eepctl failed, wkc %d\n", wkc);
                 ret = EC_ERROR_EEPROM_WRITE_ERROR;
             }
@@ -466,6 +465,8 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
         ec_eepromread_len(pec, slave, (adr), (osal_uint8_t *)&(mem), sizeof(mem));
 #define do_eeprom_log(...) \
         if (pec->eeprom_log != 0) { ec_log(__VA_ARGS__); }
+#define eeprom_log(...) \
+        if (pec->eeprom_log != 0) { ec_log(10, "EEPROM", __VA_ARGS__); }
 
         // read soem eeprom values
         (void)ec_read_eeprom(EC_EEPROM_ADR_VENDOR_ID, slv->eeprom.vendor_id);
@@ -481,9 +482,37 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
         (void)ec_read_eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_OFF, slv->eeprom.boot_mbx_send_offset);
         (void)ec_read_eeprom(EC_EEPROM_ADR_BOOT_MBX_SEND_SIZE, slv->eeprom.boot_mbx_send_size);
 
+        char mbx_supported_buf[128] = {};
+        size_t mbx_supported_buf_pos = 0;
+
+#define ADD_MBX_SUPP_TEXT(flag, text) \
+        if (slv->eeprom.mbx_supported & (flag)) { \
+            if (mbx_supported_buf_pos == 0) { mbx_supported_buf_pos += snprintf(&mbx_supported_buf[mbx_supported_buf_pos], 128 - mbx_supported_buf_pos, "%s", (text)); } \
+            else { mbx_supported_buf_pos += snprintf(&mbx_supported_buf[mbx_supported_buf_pos], 128 - mbx_supported_buf_pos, ", %s", (text)); } \
+        }
+
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_AOE, "AoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_EOE, "EoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_COE, "CoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_FOE, "FoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_SOE, "SoE");
+        ADD_MBX_SUPP_TEXT(EC_EEPROM_MBX_VOE, "VoE");
+#undef ADD_MBX_SUPP_TEXT
+
+        eeprom_log("slave %2d: Vendor 0x%08X, ProductCode 0x%08X, SupportedMbx %s\n", slave, slv->eeprom.vendor_id, slv->eeprom.product_code, mbx_supported_buf);
+        eeprom_log("          Mbx Receive 0x%04X/%u, Send 0x%04X/%u\n", 
+                slv->eeprom.mbx_receive_offset, slv->eeprom.mbx_receive_size,
+                slv->eeprom.mbx_send_offset, slv->eeprom.mbx_send_size);
+        eeprom_log("          Boot Mbx Receive 0x%04X/%u, Send 0x%04X/%u\n", 
+                slv->eeprom.boot_mbx_receive_offset, slv->eeprom.boot_mbx_receive_size,
+                slv->eeprom.boot_mbx_send_offset, slv->eeprom.boot_mbx_send_size);
+
         slv->eeprom.read_eeprom = 1;
 
-        size = (osal_uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 125u); // convert kbit to byte
+        size = (osal_uint16_t)(((value32 & 0x0000FFFFu) + 1u) * 128u); // convert kbit to byte
+
+        eeprom_log("          EEPROM size %u bytes (value %u)\n", size, value32 & 0x0000FFFFu); 
+
         if (size > 128u) {
             osal_uint16_t cat_type;
             osal_uint32_t free_pdo_index = 0;
@@ -540,14 +569,14 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                 local_offset += string_len;
                                 tmp[read_string_len] = '\0';
                             
-                                do_eeprom_log(10, "EEPROM_STRINGS", "        (-)  string %2d, length %2d : %s\n", i, string_len, tmp);
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        (-)  string %2" PRIu32 ", length %2d : %s\n", i, string_len, tmp);
                             } else {
                                 (void)strncpy(&slv->eeprom.strings[i][0], (osal_char_t *)&ec_eeprom_buf[local_offset], read_string_len);
                                 local_offset += string_len;
 
                                 slv->eeprom.strings[i][read_string_len] = '\0';
 
-                                do_eeprom_log(10, "EEPROM_STRINGS", "        (S)  string %2d, length %2d : %s\n", i, string_len, slv->eeprom.strings[i]);
+                                do_eeprom_log(10, "EEPROM_STRINGS", "        (S)  string %2" PRIu32 ", length %2d : %s\n", i, string_len, slv->eeprom.strings[i]);
                             }
                             
                             if (local_offset > (cat_len * 2u)) {
@@ -602,7 +631,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                     slv->fmmu[fmmu_idx].type = tmp[i];
                                     slv->eeprom.fmmus[fmmu_idx].type = tmp[i];
 
-                                    do_eeprom_log(10, "EEPROM_FMMU", "          fmmu%d, type %d\n", fmmu_idx, tmp[i]);
+                                    do_eeprom_log(10, "EEPROM_FMMU", "          fmmu%" PRIu32 ", type %d\n", fmmu_idx, tmp[i]);
                                 }
 
                                 i++;
@@ -614,7 +643,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                         break;
                     }
                     case EC_EEPROM_CAT_SM: {
-                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %u\n", 
+                        do_eeprom_log(10, "EEPROM_SM", "slave %2d: entries %" PRIu32 "\n",
                                 slave, (osal_uint32_t)(cat_len/(sizeof(ec_eeprom_cat_sm_t)/2u)));
 
                         // skip cat type and len
@@ -643,16 +672,16 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                                 slv->sm[j].flags = (tmp_sms.activate << 16) | tmp_sms.ctrl_reg;
 
                                 do_eeprom_log(10, "EEPROM_SM", 
-                                        "          sm%d adr 0x%X, len %d, flags "
-                                        "0x%X\n", j, slv->sm[j].adr, slv->sm[j].len, 
+                                        "          sm%" PRIu32 " adr 0x%X, len %" PRIi16 ", flags "
+                                        "0x%" PRIx32 "\n", j, slv->sm[j].adr, slv->sm[j].len,
                                         slv->sm[j].flags);
                             } else {
-                                do_eeprom_log(10, "EEPROM_SM", "          sm%d adr "
+                                do_eeprom_log(10, "EEPROM_SM", "          sm%" PRIu32 " adr "
                                         "0x%X, len %d, flags 0x%X\n", j, 
                                         tmp_sms.adr, tmp_sms.len, (tmp_sms.activate << 16) | tmp_sms.ctrl_reg);
 
                                 do_eeprom_log(10, "EEPROM_SM", 
-                                        "          sm%d already set by user\n", j);
+                                        "          sm%" PRIu32 " already set by user\n", j);
                             }
 
                             if (j < LEC_MAX_EEPROM_CAT_SM) {
@@ -704,13 +733,13 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                                     if (j >= LEC_MAX_EEPROM_CAT_PDO_ENTRIES) {
                                         do_eeprom_log(10, "EEPROM_TXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X (not stored)\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X (not stored)\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     } else {
                                         tmp_pdo.entries[j] = entry;
 
                                         do_eeprom_log(10, "EEPROM_TXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     }
                                 }
@@ -767,13 +796,13 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                                     if (j >= LEC_MAX_EEPROM_CAT_PDO_ENTRIES) {
                                         do_eeprom_log(10, "EEPROM_RXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X (not stored)\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X (not stored)\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     } else {
                                         tmp_pdo.entries[j] = entry;
 
                                         do_eeprom_log(10, "EEPROM_RXPDO", 
-                                                "          0x%04X:%2d -> 0x%04X\n",
+                                                "          0x%04X:%2" PRIu32 " -> 0x%04X\n",
                                                 tmp_pdo.pdo_index, j, entry.entry_index);
                                     }
                                 }
@@ -797,7 +826,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                         // allocating new dcs
                         osal_uint8_t dcs_cnt = cat_len / (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
-                        if (slv->eeprom.dcs_cnt > LEC_MAX_EEPROM_CAT_DC) {
+                        if (dcs_cnt > LEC_MAX_EEPROM_CAT_DC) {
                             ec_log(5, "EEPROM_DC", "slave %2d: can only store %" PRIu64 " dc settings but got %d!\n", 
                                     slave, LEC_MAX_EEPROM_CAT_DC, dcs_cnt);
                             slv->eeprom.dcs_cnt = LEC_MAX_EEPROM_CAT_DC;
@@ -810,8 +839,8 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
                             (void)ec_eepromread_len(pec, slave, local_offset, (osal_uint8_t *)&tmp_dc, EC_EEPROM_CAT_DC_LEN);
                             local_offset += (osal_size_t)(EC_EEPROM_CAT_DC_LEN / 2u);
 
-                            do_eeprom_log(10, "EEPROM_DC", "          cycle_time_0 %d, "
-                                    "shift_time_0 %d, shift_time_1 %d, "
+                            do_eeprom_log(10, "EEPROM_DC", "          cycle_time_0 %" PRIu32 ", "
+                                    "shift_time_0 %" PRIu32 ", shift_time_1 %" PRIu32 ", "
                                     "sync_0_cycle_factor %d, sync_1_cycle_factor %d, "
                                     "assign_active %d\n", 
                                     tmp_dc.cycle_time_0, tmp_dc.shift_time_0, 

@@ -36,8 +36,10 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
+
 #include <libethercat/hw.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>
@@ -67,6 +69,16 @@
 #include <net/util/inet.h>
 #endif
 
+// forward decls
+
+//! Start sending queued ethrecat datagrams from specified pool.
+/*!
+ * \param[in] phw           Hardware handle.
+ * \param[in] pool_type     Type of pool to sent.
+ * \return 0 or error code
+ */
+static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type);
+
 //! open a new hw
 /*!
  * \param[in]   phw         Pointer to hw structure.
@@ -85,7 +97,8 @@ int hw_open(struct hw_common *phw, struct ec *pec) {
     (void)pool_open(&phw->tx_high, 0, NULL);
     (void)pool_open(&phw->tx_low, 0, NULL);
 
-    osal_mutex_init(&phw->hw_lock, NULL);
+    osal_mutex_attr_t hw_lock_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&phw->hw_lock, &hw_lock_attr);
 
     return ret;
 }
@@ -144,8 +157,14 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     }
 }
 
-//! internal tx func
-static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
+//! Start sending queued ethrecat datagrams from specified pool.
+/*!
+ * \param[in] phw           Hardware handle.
+ * \param[in] pool_type     Type of pool to sent.
+ * \retval OSAL_TRUE when at least one frame was sent
+ * \retval OSAL_FALSE when no frame was sent
+ */
+osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     assert(phw != NULL);
 
     osal_bool_t sent = OSAL_FALSE;
@@ -195,10 +214,33 @@ static void hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
             phw->tx_send[p_entry_dg->idx] = p_entry;
         }
     } while (len > 0);
+
+    return sent;
+}
+
+//! start sending queued ethercat datagrams (low prio queue)
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_tx_high(struct hw_common *phw) {
+    assert(phw != NULL);
+
+    int ret = EC_OK;
+
+    osal_mutex_lock(&phw->hw_lock);
+    osal_uint64_t tx_start = osal_timer_gettime_nsec();
+    osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
+    osal_bool_t sent = hw_tx_pool(phw, POOL_HIGH);
+    phw->last_tx_duration_ns = osal_timer_gettime_nsec() - tx_start;
     
     if (sent == OSAL_TRUE) {
         phw->send_finished(phw);
     }
+   
+    osal_mutex_unlock(&phw->hw_lock);
+
+    return ret;
 }
 
 //! start sending queued ethercat datagrams (low prio queue)
@@ -212,7 +254,12 @@ int hw_tx_low(struct hw_common *phw) {
     int ret = EC_OK;
 
     osal_mutex_lock(&phw->hw_lock);
-    hw_tx_pool(phw, POOL_LOW);
+    osal_bool_t sent = hw_tx_pool(phw, POOL_LOW);
+    
+    if (sent == OSAL_TRUE) {
+        phw->send_finished(phw);
+    }
+   
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;
@@ -231,9 +278,13 @@ int hw_tx(struct hw_common *phw) {
     osal_mutex_lock(&phw->hw_lock);
 
     osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
-    hw_tx_pool(phw, POOL_HIGH);
-    hw_tx_pool(phw, POOL_LOW);
+    osal_bool_t sent = hw_tx_pool(phw, POOL_HIGH);
+    sent |= hw_tx_pool(phw, POOL_LOW);
 
+    if (sent == OSAL_TRUE) {
+        phw->send_finished(phw);
+    }
+   
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;

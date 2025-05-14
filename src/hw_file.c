@@ -36,8 +36,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #if LIBETHERCAT_BUILD_DEVICE_FILE == 1
 
@@ -239,8 +240,10 @@ int hw_device_file_close(struct hw_common *phw) {
 
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
 
-    phw_file->rxthreadrunning = 0;
-    osal_task_join(&phw_file->rxthread, NULL);
+    if (phw_file->polling_mode == OSAL_FALSE) {
+        phw_file->rxthreadrunning = 0;
+        osal_task_join(&phw_file->rxthread, NULL);
+    }
 
     (void)close(phw_file->fd);
 
@@ -249,17 +252,23 @@ int hw_device_file_close(struct hw_common *phw) {
 
 osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file) {
     osal_bool_t ret = OSAL_FALSE;
+    ec_frame_t *pframe;
+    osal_ssize_t bytesrx;
+
+    osal_uint64_t rx_start = osal_timer_gettime_nsec();
 
     // cppcheck-suppress misra-c2012-11.3
-    ec_frame_t *pframe = (ec_frame_t *) &phw_file->recv_frame;
+    pframe = (ec_frame_t *) &phw_file->recv_frame;
 
     // using tradional recv function
-    osal_ssize_t bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
+    bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
 
     if (bytesrx > 0) {
         hw_process_rx_frame(&phw_file->common, pframe);
         ret = OSAL_TRUE;
     }
+    
+    phw_file->common.last_rx_duration_ns = osal_timer_gettime_nsec() - rx_start;
 
     return ret;
 }
@@ -277,7 +286,7 @@ void *hw_device_file_rx_thread(void *arg) {
         rx_prio = 0;
     }
 
-    ec_log(10, "HW_FILE_RX", "receive thread running (prio %d)\n", rx_prio);
+    ec_log(10, "HW_FILE_RX", "receive thread running (prio %" PRIu32 ")\n", rx_prio);
 
     while (phw_file->rxthreadrunning != 0) {
         (void)hw_device_file_recv_internal(phw_file);

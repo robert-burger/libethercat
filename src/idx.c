@@ -36,8 +36,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include <string.h>
 #include <assert.h>
@@ -102,7 +103,8 @@ int ec_index_init(idx_queue_t *idx_q) {
 
     assert(idx_q != NULL);
 
-    osal_mutex_init(&idx_q->lock, NULL);
+    osal_mutex_attr_t lock_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
+    osal_mutex_init(&idx_q->lock, &lock_attr);
     
     // fill index queue
     TAILQ_INIT(&idx_q->q);
