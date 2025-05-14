@@ -44,8 +44,6 @@
 
 #if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 
-#if LIBETHERCAT_MBX_SUPPORT_FOE == 1
-
 #include "libethercat/ec.h"
 #include "libethercat/foe.h"
 #include "libethercat/error_codes.h"
