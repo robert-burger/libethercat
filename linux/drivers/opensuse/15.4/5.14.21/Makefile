@@ -1,2 +1,2 @@
-#obj-m += intel/
+obj-m += intel/
 obj-m += realtek/
