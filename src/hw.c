@@ -113,6 +113,34 @@ int hw_close(struct hw_common *phw) {
     return 0;
 }
 
+//! Enqueue frame to send queue.
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ * \param[in]   p_entry     Entry to be enqueued.
+ * \parma[in]   pool_type   Enqueue to high prio or low prio queue.
+ */
+void hw_enqueue(struct hw_common *phw, pool_entry_t *p_entry, pooltype_t pool_type) {
+    struct ec *pec = phw->pec;
+    if (phw->tx_send[p_entry->p_idx->idx] != NULL) {
+        pool_entry_t *p_entry_sent = phw->tx_send[p_entry->p_idx->idx];
+        phw->tx_send[p_entry->p_idx->idx] = NULL;
+
+        //phw->recv(phw);
+        osal_uint64_t now = osal_timer_gettime_nsec();
+        osal_uint64_t sent = p_entry_sent->send_timestamp.sec * NSEC_PER_SEC + p_entry_sent->send_timestamp.nsec;
+        
+        pec->stats.lost_datagrams++;
+            
+        ec_log(1, __func__, 
+                "Lost last cyclic datagram -> EXTREMELY BAD!\n"
+                "Increamenting lost datagram counter (now %lu)\n"
+                "Sending next datagram with idx %d which did not return in last cycle (already on wire since %lu ns!)\n", 
+                pec->stats.lost_datagrams, p_entry->p_idx->idx, now - sent);
+    }
+
+    pool_put(pool_type == POOL_HIGH ? &phw->tx_high : &phw->tx_low, p_entry);
+}
+
 //! Process a received EtherCAT frame
 /*!
  * \param[in]   phw     Pointer to hw handle.
@@ -198,6 +226,7 @@ static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
 
             // store as sent
             phw->tx_send[p_entry_dg->idx] = p_entry;
+            (void)osal_timer_gettime(&p_entry->send_timestamp);
         }
     } while (len > 0);
 

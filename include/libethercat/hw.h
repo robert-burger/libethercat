@@ -193,6 +193,14 @@ int hw_tx(struct hw_common *phw);
  */
 void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe);
 
+//! Enqueue frame to send queue.
+/*!
+ * \param[in]   phw         Pointer to hw handle.
+ * \param[in]   p_entry     Entry to be enqueued.
+ * \parma[in]   pool_type   Enqueue to high prio or low prio queue.
+ */
+void hw_enqueue(struct hw_common *phw, pool_entry_t *p_entry, pooltype_t pool_type);
+
 #ifdef __cplusplus
 }
 #endif

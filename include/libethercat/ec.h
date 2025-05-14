@@ -184,6 +184,10 @@ typedef struct ec_pd_group {
     int divisor_cnt;                //!< Actual timer cycle count
 } ec_pd_group_t;
 
+typedef struct ec_statistics {
+    osal_uint64_t lost_datagrams;
+} ec_statistics_t;
+
 //! ethercat master structure
 typedef struct ec {
     struct hw_common *phw;          //!< pointer to hardware interface
@@ -244,6 +248,9 @@ typedef struct ec {
     int consecutive_max_miss;       //!< max missed counter for receive frames before falling back to init
 
     ec_cyclic_datagram_t cdg_state; //!< Monitor EtherCAT AL Status from slaves.
+                                    
+    ec_statistics_t stats;
+
 
     void *ec_log_func_user;
     void (*ec_log_func)(ec_t *pec, int lvl, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));

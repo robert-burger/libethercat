@@ -1115,6 +1115,8 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     if (ret == EC_OK) {
         pec->master_state       = EC_STATE_UNKNOWN;
 
+        pec->stats.lost_datagrams = 0;
+
         // slaves'n groups
         pec->slave_cnt          = 0;
         pec->pd_group_cnt       = 0;
@@ -1300,10 +1302,13 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
         // allow frames to be sent 10 times if lost on wire (should not happen).
         osal_timer_t to_transceive;
         osal_timer_init(&to_transceive, EC_TIMEOUT_LOW_PRIO);
+        osal_retval_t to_transceive_expired = OSAL_FALSE;
 
         do {
+            osal_timer_t enqueue_timestamp;
             // queue frame and trigger tx
-            pool_put(&pec->phw->tx_low, p_entry);
+            hw_enqueue(pec->phw, p_entry, POOL_LOW);
+            osal_timer_gettime(&enqueue_timestamp);
 
             // send frame immediately if in sync mode
             if (    (pec->master_state != EC_STATE_SAFEOP) &&
@@ -1329,15 +1334,8 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             if (local_ret != OSAL_OK) {
                 osal_bool_t was_sent = pec->phw->tx_send[p_dg->idx] == NULL ? OSAL_FALSE : OSAL_TRUE;
 
-                // remove sent mark
-                pec->phw->tx_send[p_dg->idx] = NULL;
-
                 if (local_ret == OSAL_ERR_TIMEOUT) {
-                    if (was_sent == OSAL_FALSE) {
-                        ec_log(1, "MASTER_TRANSCEIVE", 
-                                "Timeout on cmd 0x%X, adr 0x%X but it looks like it was never sent.\n"
-                                "There seems to be something wrong with your configuration as e.g. scheduling prevents the sender from being executed!\n", cmd, adr);
-                    } else {
+                    if (was_sent == OSAL_TRUE) {
                         ec_log(1, "MASTER_TRANSCEIVE", 
                                 "Timeout on cmd 0x%X, adr 0x%X\n"
                                 "This should usually not happen on an EtherCAT fieldbus because the sent frames must always return to the master.\n"
@@ -1359,7 +1357,17 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
                 ret = EC_OK;
                 break;
             }
-        } while (osal_timer_expired(&to_transceive) != OSAL_ERR_TIMEOUT);
+            
+            to_transceive_expired = osal_timer_expired(&to_transceive);;
+        } while (to_transceive_expired != OSAL_ERR_TIMEOUT);
+                
+        if (to_transceive_expired == OSAL_ERR_TIMEOUT) {
+            ec_log(1, "MASTER_TRANSCEIVE",
+                    "Lost datagram during transceive though it was sent multiple times! Check your configuration!\n");
+
+            // remove sent mark
+            pec->phw->tx_send[p_dg->idx] = NULL;
+        }
 
         pool_put(&pec->pool, p_entry);
         ec_index_put(&pec->idx_q, p_idx);
@@ -1651,7 +1659,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 }
 
                 // queue frame and trigger tx
-                pool_put(&pec->phw->tx_high, pd->cdg.p_entry);
+                hw_enqueue(pec->phw, pd->cdg.p_entry, POOL_HIGH);           
             }
         }
 
@@ -1694,7 +1702,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 }
 
                 // queue frame and trigger tx
-                pool_put(&pec->phw->tx_high, pd->cdg_lwr.p_entry);
+                hw_enqueue(pec->phw, pd->cdg_lwr.p_entry, POOL_HIGH);           
             }
         }
 
@@ -1733,7 +1741,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
                 p_dg->len = pd->pdin_len;
 
                 // queue frame and trigger tx
-                pool_put(&pec->phw->tx_high, pd->cdg_lrd.p_entry);
+                hw_enqueue(pec->phw, pd->cdg_lrd.p_entry, POOL_HIGH);           
             }
         }
 
@@ -1773,7 +1781,7 @@ static int ec_send_process_data_group(ec_t *pec, int group) {
             p_dg->len = pd->log_mbx_state_len;
 
             // queue frame and trigger tx
-            pool_put(&pec->phw->tx_high, pd->cdg_lrd_mbx_state.p_entry);
+            hw_enqueue(pec->phw, pd->cdg_lrd_mbx_state.p_entry, POOL_HIGH);           
         }
     }
     
@@ -1968,7 +1976,7 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
             }
 
             // queue frame and trigger tx
-            pool_put(&pec->phw->tx_high, pec->dc.cdg.p_entry);
+            hw_enqueue(pec->phw, pec->dc.cdg.p_entry, POOL_HIGH);           
 
             pec->dc.sent_time_nsec = act_rtc_time;
         }
@@ -2090,7 +2098,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
         p_dg->len = 2;
 
         // queue frame and trigger tx
-        pool_put(&pec->phw->tx_high, pec->cdg_state.p_entry);
+        hw_enqueue(pec->phw, pec->cdg_state.p_entry, POOL_HIGH);           
         osal_timer_init(&pec->cdg_state.timeout, 10000000);
     }
     

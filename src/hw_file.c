@@ -372,6 +372,7 @@ int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t po
 
         if (bytestx == -1) {
             ec_log(1, "HW_TX", "error: %s\n", strerror(errno));
+            exit(-1);
         }
 
         ret = EC_ERROR_HW_SEND;

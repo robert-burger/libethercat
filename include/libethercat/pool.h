@@ -68,6 +68,7 @@ typedef struct pool_entry {
     void (*user_cb)(struct ec *pec, struct pool_entry *p_entry, struct ec_datagram *p_dg);  //!< \brief User callback.
     int user_arg;                                           //!< \brief User argument for user_cb.
     idx_entry_t *p_idx;                                     //!< \brief Assigned datagram index.                
+    osal_timer_t send_timestamp;
 
     TAILQ_ENTRY(pool_entry) qh;                             //!< \brief Queue handle of pool objects.
     
