@@ -36,8 +36,6 @@
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 
-#if LIBETHERCAT_MBX_SUPPORT_EOE == 1
-
 #include "libethercat/ec.h"
 #include "libethercat/eoe.h"
 #include "libethercat/error_codes.h"
