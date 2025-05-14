@@ -245,8 +245,15 @@ int main(int argc, char **argv) {
 
         if (string != NULL) {        
             if (second_fn == NULL) {
-                write(1, string, fsize);
-                write(1, "\n", 1);
+                int wr = write(1, string, fsize);
+                if (wr != fsize) {
+                    printf("could only wirte %d bytes to file instead of %ld\n", wr, fsize);
+                }
+
+                wr = write(1, "\n", 1);
+                if (wr != 1) {
+                    printf("could only wirte %d bytes to file instead of 1\n", wr);
+                }
             } else {
                 if (strcmp(second_fn, ".") == 0) { second_fn = first_fn; }
                 FILE *f = fopen(second_fn, "wb");
