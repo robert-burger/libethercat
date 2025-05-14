@@ -133,8 +133,8 @@ void hw_enqueue(struct hw_common *phw, pool_entry_t *p_entry, pooltype_t pool_ty
             
         ec_log(1, __func__, 
                 "Lost last cyclic datagram -> EXTREMELY BAD!\n"
-                "Increamenting lost datagram counter (now %lu)\n"
-                "Sending next datagram with idx %d which did not return in last cycle (already on wire since %lu ns!)\n", 
+                "Increamenting lost datagram counter (now %" PRIu64 ")\n"
+                "Sending next datagram with idx %d which did not return in last cycle (already on wire since %" PRIu64 " ns!)\n", 
                 pec->stats.lost_datagrams, p_entry->p_idx->idx, now - sent);
     }
 
