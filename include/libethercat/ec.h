@@ -361,19 +361,6 @@ int ec_destroy_pd_groups(ec_t *pec);
 int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr, 
         osal_uint8_t *data, osal_size_t datalen, osal_uint16_t *wkc);
 
-//! \brief Asyncronous ethercat read/write, answer don't care.
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- * \param[in] cmd           Ethercat command.
- * \param[in] adr           32-bit address of slave.
- * \param[in] data          Data buffer to read/write.
- * \param[in] datalen       Length of data.
- * \return 0 on succes, otherwise error code
- */
-int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr, 
-        osal_uint8_t *data, osal_size_t datalen);
-
 //! \brief Set state on ethercat bus.
 /*! 
  * \param[in] pec           Pointer to ethercat master structure, 

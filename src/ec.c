@@ -1381,62 +1381,6 @@ static void cb_no_reply(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_
     ec_index_put(&pec->idx_q, p_entry->p_idx);
 }
 
-//! asyncronous ethercat read/write, answer don't care
-/*!
- * \param pec pointer to ethercat master
- * \param cmd ethercat command
- * \param adr 32-bit address of slave
- * \param data data buffer to read/write 
- * \param datalen length of data
- * \return 0 on succes, otherwise error code
- */
-int ec_transmit_no_reply(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr, 
-        osal_uint8_t *data, osal_size_t datalen) {
-    assert(pec != NULL);
-    assert(data != NULL);
-
-    int ret = EC_OK;
-    pool_entry_t *p_entry;
-    ec_datagram_t *p_dg;
-    idx_entry_t *p_idx;
-
-    if (ec_index_get(&pec->idx_q, &p_idx) != EC_OK) {
-        ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "error getting ethercat index\n");
-        ret = EC_ERROR_OUT_OF_INDICES;
-    } else if (pool_get(&pec->pool, &p_entry, NULL) != EC_OK) {
-        ec_index_put(&pec->idx_q, p_idx);
-        ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "error getting datagram from pool\n");
-        ret = EC_ERROR_OUT_OF_DATAGRAMS;
-    } else {
-        p_dg = ec_datagram_cast(p_entry->data);
-
-        (void)memset(p_dg, 0, sizeof(ec_datagram_t) + datalen + 2u);
-        p_dg->cmd = cmd;
-        p_dg->idx = p_idx->idx;
-        p_dg->adr = adr;
-        p_dg->len = datalen;
-        p_dg->irq = 0;
-        (void)memcpy(ec_datagram_payload(p_dg), data, datalen);
-
-        // don't care about answer
-        p_entry->p_idx = p_idx;
-        p_entry->user_cb = cb_no_reply;
-
-        // queue frame and return, we don't care about an answer
-        pool_put(&pec->phw->tx_low, p_entry);
-
-        // send frame immediately if in sync mode
-        if (    (pec->master_state != EC_STATE_SAFEOP) &&
-                (pec->master_state != EC_STATE_OP)  ) {
-            if (hw_tx_low(pec->phw) != EC_OK) {
-                ec_log(1, "MASTER_TRANSMIT_NO_REPLY", "hw_tx_low failed!\n");
-            }
-        }
-    }
-
-    return ret;
-}
-
 //! datagram callack for receiving LWR process data group answer
 static void cb_process_data_group_lwr(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg) {
     assert(pec != NULL);

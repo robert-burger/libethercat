@@ -131,6 +131,7 @@ typedef struct hw_common {
 
     pool_entry_t *tx_send[256];     //!< sent datagrams
 
+    osal_uint64_t frame_idx;        //!< \brief frame index number.
     osal_size_t bytes_sent;         //!< \brief Bytes currently sent.
     osal_size_t bytes_last_sent;    //!< \brief Bytes last sent.
     osal_timer_t next_cylce_start;  //!< \brief Next cycle start time.

@@ -1218,9 +1218,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                 if (slv->sm_ch != 0u) {
                     for (osal_uint32_t i = 0u; i < slv->sm_ch; ++i) {
-                        (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
-                                ec_to_adr(slv->fixed_address, 0x800u + (8u * i)),
-                                (osal_uint8_t *)&slv->sm[i], sizeof(ec_slave_sm_t));
+                        (void)ec_fpwr(pec, slv->fixed_address, 0x600u + (16u * i),
+                                (osal_uint8_t *)&slv->fmmu[i], sizeof(ec_slave_fmmu_t), &wkc);
                     }
                 }
                 
@@ -1237,9 +1236,8 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                 if (slv->fmmu_ch != 0u) {
                     for (osal_uint32_t i = 0; i < slv->fmmu_ch; ++i) {
-                        (void)ec_transmit_no_reply(pec, EC_CMD_FPWR, 
-                                ec_to_adr(slv->fixed_address, 0x600u + (16u * i)),
-                                (osal_uint8_t *)&slv->fmmu[i], sizeof(ec_slave_fmmu_t));
+                        (void)ec_fpwr(pec, slv->fixed_address, 0x600u + (16u * i),
+                                (osal_uint8_t *)&slv->fmmu[i], sizeof(ec_slave_fmmu_t), &wkc);
                     }
                 }
 

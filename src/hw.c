@@ -81,6 +81,7 @@ int hw_open(struct hw_common *phw, struct ec *pec) {
     int ret = EC_OK;
 
     phw->pec = pec;
+    phw->frame_idx = 0;
     phw->bytes_last_sent = 0;
 
     (void)pool_open(&phw->tx_high, 0, NULL);
@@ -133,10 +134,10 @@ void hw_enqueue(struct hw_common *phw, pool_entry_t *p_entry, pooltype_t pool_ty
         pec->stats.lost_datagrams++;
             
         ec_log(1, __func__, 
-                "Lost last cyclic datagram -> EXTREMELY BAD!\n"
+                "Lost datagram -> EXTREMELY BAD! THE WORST THING THAT CAN HAPPEN ON THE PLANET!\n"
                 "Increamenting lost datagram counter (now %" PRIu64 ")\n"
-                "Sending next datagram with idx %d which did not return in last cycle (already on wire since %" PRIu64 " ns!)\n", 
-                pec->stats.lost_datagrams, p_entry->p_idx->idx, now - sent);
+                "Sending next datagram with idx %d which did not return in last cycle (already on wire since %" PRIu64 " ns with packet idx %" PRIu64 "!)\n", 
+                pec->stats.lost_datagrams, p_entry->p_idx->idx, now - sent, p_entry->send_idx);
     }
 
     pool_put(pool_type == POOL_HIGH ? &phw->tx_high : &phw->tx_low, p_entry);
@@ -152,6 +153,7 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     assert(pframe != NULL);
     ec_t *pec = phw->pec;
 
+#ifdef LOSS_SIMULATION
     static int miss = 0;
     // Find the random number in the range [min, max]
     static int rd_num = 1234;
@@ -160,6 +162,7 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
         rd_num = rand() % (10000 - 10 + 1) + 10;
         return;
     }
+#endif
 
     /* check if it is an EtherCAT frame */
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
@@ -217,6 +220,7 @@ static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
         if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
             if (pframe->len != sizeof(ec_frame_t)) {
                 (void)phw->send(phw, pframe, pool_type);
+                phw->frame_idx++;
                 sent = OSAL_TRUE;
                 (void)phw->get_tx_buffer(phw, &pframe);
                 pdg = ec_datagram_first(pframe);
@@ -237,6 +241,8 @@ static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
 
             // store as sent
             phw->tx_send[p_entry_dg->idx] = p_entry;
+            
+            p_entry->send_idx = phw->frame_idx;
             (void)osal_timer_gettime(&p_entry->send_timestamp);
         }
     } while (len > 0);
