@@ -33,6 +33,7 @@
  *
  */
 
+#include "libosal/types.h"
 #include <libosal/io.h>
 #include <libethercat/config.h>
 
@@ -898,7 +899,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case UNKNOWN_2_OP:
             // ====> switch to INIT stuff
             if (pec->user_cb_state_transition != NULL){
-                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_INIT);
+                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_INIT, OSAL_TRUE);
             }
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             ec_scan(pec);
@@ -918,7 +919,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case PREOP_2_PREOP:
             // ====> switch to PREOP stuff
             if (pec->user_cb_state_transition != NULL){
-                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_PREOP);
+                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_PREOP, OSAL_TRUE);
             }
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
 
@@ -931,7 +932,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case SAFEOP_2_SAFEOP:
             // ====> switch to SAFEOP stuff
             if (pec->user_cb_state_transition != NULL){
-                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_SAFEOP);
+                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_SAFEOP, OSAL_TRUE);
             }
             ret = ec_dc_config(pec);
             if (ret != EC_OK) {
@@ -977,7 +978,7 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case OP_2_OP: {
             // ====> switch to OP stuff
             if (pec->user_cb_state_transition != NULL){
-                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_OP);
+                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_OP, OSAL_TRUE);
             }
             ec_state_transition_loop(pec, EC_STATE_OP, 1);
             break;
@@ -987,6 +988,9 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case OP_2_PREOP:
         case OP_2_SAFEOP:
             ec_log(10, get_state_string(pec->master_state), "switching to SAFEOP\n");
+            if (pec->user_cb_state_transition != NULL){
+                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_SAFEOP, OSAL_FALSE);
+            }
             ec_state_transition_loop(pec, EC_STATE_SAFEOP, 0);
     
             pec->master_state = EC_STATE_SAFEOP;
@@ -999,6 +1003,9 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case SAFEOP_2_INIT:
         case SAFEOP_2_PREOP:
             ec_log(10, get_state_string(pec->master_state), "switching to PREOP\n");
+            if (pec->user_cb_state_transition != NULL){
+                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_PREOP, OSAL_FALSE);
+            }
             ec_state_transition_loop(pec, EC_STATE_PREOP, 0);
 
             // reset dc
@@ -1056,6 +1063,9 @@ int ec_set_state(ec_t *pec, ec_state_t state) {
         case PREOP_2_BOOT:
         case PREOP_2_INIT:
             ec_log(10, get_state_string(pec->master_state), "switching to INIT\n");
+            if (pec->user_cb_state_transition != NULL){
+                pec->user_cb_state_transition(pec->user_cb_state_transition_arg, pec, EC_STATE_INIT, OSAL_FALSE);
+            }
             ec_state_transition_loop(pec, EC_STATE_INIT, 0);
             pec->master_state = EC_STATE_INIT;
             ec_log(10, get_state_string(pec->master_state), "doing rescan\n");
