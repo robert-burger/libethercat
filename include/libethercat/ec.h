@@ -239,6 +239,11 @@ typedef struct ec {
     ec_state_t master_state;        //!< expected EtherCAT master state
     int state_transition_pending;   //!< state transition is currently pending
 
+    //! The callback is executed before each state transition on the way to OP.   
+    void (*user_cb_state_transition)(void *arg, ec_t *pec, ec_state_t target_state);
+    //! Arg for the callback.
+    void *user_cb_state_transition_arg;                                              
+
     int threaded_startup;           //!< running state machine in threads for slave
     
     int consecutive_max_miss;       //!< max missed counter for receive frames before falling back to init
