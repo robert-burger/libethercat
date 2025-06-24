@@ -24,5 +24,7 @@ var structec =
     [ "tun_fd", "structec.html#a26c74ff58cae637056984756f8ef4f7d", null ],
     [ "tun_ip", "structec.html#a2be3518205eb969a6333479ffcb9a0f2", null ],
     [ "tun_running", "structec.html#a351114c32c62cd6ffcc801c16b84e7a4", null ],
-    [ "tun_tid", "structec.html#a75841e22bc0c8dafc91d71ea19ac2c43", null ]
+    [ "tun_tid", "structec.html#a75841e22bc0c8dafc91d71ea19ac2c43", null ],
+    [ "user_cb_state_transition", "structec.html#ae24477dfda8a6533a4f617c63b70cb48", null ],
+    [ "user_cb_state_transition_arg", "structec.html#aa3cb6afb663e5c924e231fcfffcfc737", null ]
 ];

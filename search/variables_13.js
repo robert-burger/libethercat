@@ -5,5 +5,7 @@ var searchData=
   ['use_5flrw_2',['use_lrw',['../structec__pd__group.html#a6c1e52b74e35300c0d5f88b820966682',1,'ec_pd_group']]],
   ['user_5farg_3',['user_arg',['../structpool__entry.html#ad8f49dc45df99cebba5e17c0d36cfd16',1,'pool_entry']]],
   ['user_5fcb_4',['user_cb',['../structec__cyclic__datagram.html#a029278f5db42ce3f52fab73798e8f6c6',1,'ec_cyclic_datagram::user_cb'],['../structpool__entry.html#ac4b7b6e790f208370a9f8edf8cedb863',1,'pool_entry::user_cb']]],
-  ['user_5fcb_5farg_5',['user_cb_arg',['../structec__cyclic__datagram.html#ac0225663cb89396c7064fb996976d165',1,'ec_cyclic_datagram']]]
+  ['user_5fcb_5farg_5',['user_cb_arg',['../structec__cyclic__datagram.html#ac0225663cb89396c7064fb996976d165',1,'ec_cyclic_datagram']]],
+  ['user_5fcb_5fstate_5ftransition_6',['user_cb_state_transition',['../structec.html#ae24477dfda8a6533a4f617c63b70cb48',1,'ec']]],
+  ['user_5fcb_5fstate_5ftransition_5farg_7',['user_cb_state_transition_arg',['../structec.html#aa3cb6afb663e5c924e231fcfffcfc737',1,'ec']]]
 ];

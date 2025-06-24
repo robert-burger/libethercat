@@ -189,6 +189,14 @@ ec_state_t&#160;</td><td class="memItemRight" valign="bottom"><b>master_state</b
 int&#160;</td><td class="memItemRight" valign="bottom"><b>state_transition_pending</b></td></tr>
 <tr class="memdesc:a662647bc92e6b4e4c2c5d4fa26ebd0ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">state transition is currently pending <br /></td></tr>
 <tr class="separator:a662647bc92e6b4e4c2c5d4fa26ebd0ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae24477dfda8a6533a4f617c63b70cb48" id="r_ae24477dfda8a6533a4f617c63b70cb48"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structec.html#ae24477dfda8a6533a4f617c63b70cb48">user_cb_state_transition</a> )(void *arg, <a class="el" href="group__ec__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, ec_state_t target_state, osal_bool_t up)</td></tr>
+<tr class="memdesc:ae24477dfda8a6533a4f617c63b70cb48"><td class="mdescLeft">&#160;</td><td class="mdescRight">The callback is executed before each state transition. <br  />
+  <br /></td></tr>
+<tr class="separator:ae24477dfda8a6533a4f617c63b70cb48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3cb6afb663e5c924e231fcfffcfc737" id="r_aa3cb6afb663e5c924e231fcfffcfc737"><td class="memItemLeft" align="right" valign="top"><a id="aa3cb6afb663e5c924e231fcfffcfc737" name="aa3cb6afb663e5c924e231fcfffcfc737"></a>
+void *&#160;</td><td class="memItemRight" valign="bottom"><b>user_cb_state_transition_arg</b></td></tr>
+<tr class="memdesc:aa3cb6afb663e5c924e231fcfffcfc737"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arg for the callback. <br /></td></tr>
+<tr class="separator:aa3cb6afb663e5c924e231fcfffcfc737"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d866b2722ef9afe607e52e2ca2611e3" id="r_a8d866b2722ef9afe607e52e2ca2611e3"><td class="memItemLeft" align="right" valign="top"><a id="a8d866b2722ef9afe607e52e2ca2611e3" name="a8d866b2722ef9afe607e52e2ca2611e3"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>threaded_startup</b></td></tr>
 <tr class="memdesc:a8d866b2722ef9afe607e52e2ca2611e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">running state machine in threads for slave <br /></td></tr>
@@ -259,6 +267,31 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>ec_log_func</b> )(<
 
 <p>datagram pool </p>
 <p>All EtherCAT datagrams will be pre- allocated and available in the datagram pool. Theres no need to allocate datagrams at runtime. </p>
+
+</div>
+</div>
+<a id="ae24477dfda8a6533a4f617c63b70cb48" name="ae24477dfda8a6533a4f617c63b70cb48"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae24477dfda8a6533a4f617c63b70cb48">&#9670;&#160;</a></span>user_cb_state_transition</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void(* ec::user_cb_state_transition) (void *arg, <a class="el" href="group__ec__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, ec_state_t target_state, osal_bool_t up)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The callback is executed before each state transition. <br  />
+ </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pec</td><td>Pointer to ec </td></tr>
+    <tr><td class="paramname">target_state</td><td>The target_state during the execution of the callback. </td></tr>
+    <tr><td class="paramname">up</td><td>This is true if the callback is executed on the way up. E.g. PreOp-&gt;SafeOp </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

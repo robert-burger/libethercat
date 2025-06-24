@@ -1,5 +1,7 @@
 var NAVTREEINDEX4 =
 {
+"structeeprom__info.html#a36ab49296fa8807005d5ae5c45595f6c":[1,3,6,5],
+"structeeprom__info.html#a3d7c013ec77516cd78ac4823e22405e0":[1,3,6,25],
 "structeeprom__info.html#a48116e94078dff54cec5e2629b2dd1e2":[1,3,6,10],
 "structeeprom__info.html#a4a58a56d30951fe3f467bc1d9916b1b0":[1,3,6,21],
 "structeeprom__info.html#a4d492824b6c3856379648d32bbb56525":[1,3,6,20],
