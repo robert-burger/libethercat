@@ -147,11 +147,14 @@ void hw_enqueue(struct hw_common *phw, pool_entry_t *p_entry, pooltype_t pool_ty
 /*!
  * \param[in]   phw     Pointer to hw handle.
  * \param[in]   pframe  Pointer to received EtherCAT frame.
+ * \retval OSAL_TRUE if frame was successfully processed
+ * \retval OSAL_FALSE otherwise
  */
-void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
+osal_bool_t hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
     ec_t *pec = phw->pec;
+    osal_bool_t success = OSAL_FALSE;
 
 #ifdef LOSS_SIMULATION
     static int miss = 0;
@@ -180,6 +183,8 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
                         "- The receive timeout is too short and the reception of the frame was too late.\n"
                         "- An other process is sending EtherCAT frames over the same interface.\n", d->idx);
             } else {
+                success = OSAL_TRUE;
+                
                 if ((entry->user_cb) != NULL) {
                     (*entry->user_cb)(phw->pec, entry, d);
                 }
@@ -188,6 +193,8 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
             d = ec_datagram_next(d);
         }
     }
+
+    return success;
 }
 
 //! internal tx func

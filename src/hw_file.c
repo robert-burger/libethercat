@@ -259,13 +259,16 @@ osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file) {
     // cppcheck-suppress misra-c2012-11.3
     pframe = (ec_frame_t *) &phw_file->recv_frame;
 
-    // using tradional recv function
-    bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
+    do {
+        // using tradional recv function
+        bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
 
-    if (bytesrx > 0) {
-        hw_process_rx_frame(&phw_file->common, pframe);
-        ret = OSAL_TRUE;
-    }
+        if (bytesrx > 0) {
+            ret = hw_process_rx_frame(&phw_file->common, pframe);
+        } else {
+            break;
+        }
+    } while (ret == OSAL_FALSE);
     
     phw_file->common.last_rx_duration_ns = osal_timer_gettime_nsec() - rx_start;
 

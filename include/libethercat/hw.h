@@ -191,8 +191,10 @@ int hw_tx(struct hw_common *phw);
 /*!
  * \param[in]   phw     Pointer to hw handle.
  * \param[in]   pframe  Pointer to received EtherCAT frame.
+ * \retval OSAL_TRUE if frame was successfully processed
+ * \retval OSAL_FALSE otherwise
  */
-void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe);
+osal_bool_t hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe);
 
 //! Enqueue frame to send queue.
 /*!
