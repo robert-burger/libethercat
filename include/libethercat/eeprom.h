@@ -145,6 +145,8 @@ typedef struct eeprom_info {
 
     osal_uint32_t vendor_id;                //!< vendor id
     osal_uint32_t product_code;             //!< product code
+    osal_uint32_t revision_numer;           //!< revision number
+    osal_uint32_t serial_number;            //!< serial number
     osal_uint16_t mbx_supported;            //!< mailbox supported by slave
 
     osal_uint16_t mbx_receive_offset;       //!< default mailbox receive offset
@@ -187,6 +189,8 @@ typedef struct eeprom_info {
 
 #define EC_EEPROM_ADR_VENDOR_ID             (0x0008u)   //!< \brief offset vendor id
 #define EC_EEPROM_ADR_PRODUCT_CODE          (0x000Au)   //!< \brief offset product code
+#define EC_EEPROM_ADR_REVISION_NUMBER       (0x000Cu)   //!< \brief offset revision number
+#define EC_EEPROM_ADR_SERIAL_NUMBER         (0x000Eu)   //!< \brief offset serial number
 #define EC_EEPROM_ADR_BOOT_MBX_RECV_OFF     (0x0014u)   //!< \brief offset mbx receive off
 #define EC_EEPROM_ADR_BOOT_MBX_RECV_SIZE    (0x0015u)   //!< \brief offset mbx receive size
 #define EC_EEPROM_ADR_BOOT_MBX_SEND_OFF     (0x0016u)   //!< \brief offset mbx send off

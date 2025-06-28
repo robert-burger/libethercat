@@ -471,6 +471,8 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
         // read soem eeprom values
         (void)ec_read_eeprom(EC_EEPROM_ADR_VENDOR_ID, slv->eeprom.vendor_id);
         (void)ec_read_eeprom(EC_EEPROM_ADR_PRODUCT_CODE, slv->eeprom.product_code);
+        (void)ec_read_eeprom(EC_EEPROM_ADR_REVISION_NUMBER, slv->eeprom.revision_numer);
+        (void)ec_read_eeprom(EC_EEPROM_ADR_SERIAL_NUMBER, slv->eeprom.serial_number);
         (void)ec_read_eeprom(EC_EEPROM_ADR_MBX_SUPPORTED, slv->eeprom.mbx_supported);
         (void)ec_read_eeprom(EC_EEPROM_ADR_SIZE, value32);
         (void)ec_read_eeprom(EC_EEPROM_ADR_STD_MBX_RECV_OFF, slv->eeprom.mbx_receive_offset);
