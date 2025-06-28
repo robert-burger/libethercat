@@ -1,5 +1,6 @@
 var error__codes_8h =
 [
+    [ "EC_ERROR_CYCLIC_LOOP", "group__error__codes__group.html#ga5bbb9c38e1bbb3d25174d6efa4b643ce", null ],
     [ "EC_ERROR_EEPROM_CHECKSUM", "group__error__codes__group.html#gab2e4e2ff1098caf23e87ae44e0be7a65", null ],
     [ "EC_ERROR_EEPROM_CONTROL_TO_EC", "group__error__codes__group.html#gaecd6465853c9e9c0de3493ebac03947b", null ],
     [ "EC_ERROR_EEPROM_CONTROL_TO_PDI", "group__error__codes__group.html#ga3fa3b8bda6e0a4b9ea02fc4fe8e3a7b7", null ],

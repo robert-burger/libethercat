@@ -6,6 +6,7 @@ var mbx_8h =
     [ "ec_mbx_header_t", "group__mailbox__group.html#gaf9c80235c571b32792792f2645a7771a", null ],
     [ "ec_mbx_check", "group__mailbox__group.html#gadc065e4155b29ed03896d2b86bedec70", null ],
     [ "ec_mbx_deinit", "group__mailbox__group.html#ga7b312b692571e86baeb2ebf8234fb139", null ],
+    [ "ec_mbx_do_handle", "group__mailbox__group.html#gad373707f6afbeb4a664cd055420f1f72", null ],
     [ "ec_mbx_enqueue_head", "group__mailbox__group.html#gac1e44e8426b32008782df44185b805b3", null ],
     [ "ec_mbx_enqueue_tail", "group__mailbox__group.html#gaf24963ed01110d10da53f33abaf80fc7", null ],
     [ "ec_mbx_get_free_send_buffer", "group__mailbox__group.html#gacac494640051492bea8a86b55ed46a82", null ],

@@ -43,6 +43,7 @@ var annotated_dup =
     [ "hw_pikeos", "structhw__pikeos.html", "structhw__pikeos" ],
     [ "hw_sock_raw", "structhw__sock__raw.html", "structhw__sock__raw" ],
     [ "hw_sock_raw_mmaped", "structhw__sock__raw__mmaped.html", "structhw__sock__raw__mmaped" ],
+    [ "hw_stm32", "structhw__stm32.html", "structhw__stm32" ],
     [ "idx_entry", "structidx__entry.html", "structidx__entry" ],
     [ "idx_queue", "structidx__queue.html", "structidx__queue" ],
     [ "pool", "structpool.html", "structpool" ],

@@ -1,5 +1,11 @@
 var NAVTREEINDEX3 =
 {
+"structec__datagram.html#ac06ee7ca4d47b9bff1b5b520e0ed845d":[1,1,1,5],
+"structec__datagram.html#ac18244165bc920043f009c5d536afbe0":[1,1,1,1],
+"structec__dc__info.html":[2,0,8],
+"structec__dc__info.html#a0abc7303f500d62f28ab4388202285e4":[2,0,8,5],
+"structec__dc__info.html#a222f9e01e3658f9ed079ef428b9ae935":[2,0,8,1],
+"structec__dc__info.html#a274591b56c2f24f9e1195b1afcb37c6c":[2,0,8,8],
 "structec__dc__info.html#a27cd75af9a2da15d2187e49d1abeb748":[2,0,8,9],
 "structec__dc__info.html#a29db37a7cc92815b1e010d01f45d034d":[2,0,8,3],
 "structec__dc__info.html#a49992c42e2bbd58d992c35e4e27c06d3":[2,0,8,4],
@@ -243,11 +249,5 @@ var NAVTREEINDEX3 =
 "structec__soe__idn__attribute.html#ae238a6af0d2072f8d33194111e899c64":[1,12,1,5],
 "structec__soe__idn__attribute.html#aecea6b4314f7e009041219f207b358ba":[1,12,1,9],
 "structeeprom__info.html":[1,3,6],
-"structeeprom__info.html#a017aee79a11a391e0843386838789ad9":[1,3,6,8],
-"structeeprom__info.html#a11c1a3f22becbd6f09c5316f784c7691":[1,3,6,12],
-"structeeprom__info.html#a133537bf4b5900cfb634d6d4427c8834":[1,3,6,3],
-"structeeprom__info.html#a15a862c2f72b092c85534a587600c70a":[1,3,6,14],
-"structeeprom__info.html#a2938ef6c72c7b0b4f3b896c2178f874f":[1,3,6,9],
-"structeeprom__info.html#a35d484b3178ac8e5aa73b49f7a3b4fb6":[1,3,6,18],
-"structeeprom__info.html#a3618b9013a83199e40064141c4541a5c":[1,3,6,26]
+"structeeprom__info.html#a017aee79a11a391e0843386838789ad9":[1,3,6,8]
 };

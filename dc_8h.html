@@ -180,9 +180,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ad82933407629a3944d0f97dc53772296" id="r_ad82933407629a3944d0f97dc53772296"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="dc_8h.html#ad82933407629a3944d0f97dc53772296">ec_dc_config</a> (struct <a class="el" href="structec.html">ec</a> *pec)</td></tr>
 <tr class="memdesc:ad82933407629a3944d0f97dc53772296"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare EtherCAT master and slaves for distributed clocks.  <br /></td></tr>
 <tr class="separator:ad82933407629a3944d0f97dc53772296"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:affef6d3509931c456160ce45876c2a15" id="r_affef6d3509931c456160ce45876c2a15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="dc_8h.html#affef6d3509931c456160ce45876c2a15">ec_dc_sync</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, osal_uint8_t dc_active, osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift)</td></tr>
-<tr class="memdesc:affef6d3509931c456160ce45876c2a15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configure EtherCAT slave for distributed clock sync0 and sync1 pulse.  <br /></td></tr>
-<tr class="separator:affef6d3509931c456160ce45876c2a15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96b6a54d1bc75a37cefb762902b4c449" id="r_a96b6a54d1bc75a37cefb762902b4c449"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="dc_8h.html#a96b6a54d1bc75a37cefb762902b4c449">ec_dc_sync</a> (struct <a class="el" href="structec.html">ec</a> *pec, osal_uint16_t slave, osal_uint8_t dc_active, osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift)</td></tr>
+<tr class="memdesc:a96b6a54d1bc75a37cefb762902b4c449"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configure EtherCAT slave for distributed clock sync0 and sync1 pulse.  <br /></td></tr>
+<tr class="separator:a96b6a54d1bc75a37cefb762902b4c449"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>ethercat distributed clocks support. </p>
@@ -220,14 +220,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="affef6d3509931c456160ce45876c2a15" name="affef6d3509931c456160ce45876c2a15"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#affef6d3509931c456160ce45876c2a15">&#9670;&#160;</a></span>ec_dc_sync()</h2>
+<a id="a96b6a54d1bc75a37cefb762902b4c449" name="a96b6a54d1bc75a37cefb762902b4c449"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96b6a54d1bc75a37cefb762902b4c449">&#9670;&#160;</a></span>ec_dc_sync()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ec_dc_sync </td>
+          <td class="memname">int ec_dc_sync </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="structec.html">ec</a> *&#160;</td>
           <td class="paramname"><em>pec</em>, </td>
@@ -279,10 +279,11 @@ Functions</h2></td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">dc_active</td><td>Dc active flag. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_time_0</td><td>Cycle time to program to fire sync0 in [ns]. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">cycle_time_1</td><td>Cycle time to program to fire sync1 in [ns]. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">cycle_shift</td><td>Shift of first sync0 start in [ns]. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">cycle_shift</td><td>Shift of first sync0 start in [ns].</td></tr>
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>EC_OK or EC_UNAVAILABLE, EC_ERROR_CYCLIC_LOOP </dd></dl>
 
 </div>
 </div>

@@ -110,7 +110,7 @@ Data Structures</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ga761d05e4fcf5ee3f4c9e1f4516924869" id="r_ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="memItemLeft" align="right" valign="top"><a id="ga761d05e4fcf5ee3f4c9e1f4516924869" name="ga761d05e4fcf5ee3f4c9e1f4516924869"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>ETH_P_ECAT</b>&#160;&#160;&#160;(0x88A4)</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>ETH_P_ECAT</b>&#160;&#160;&#160;((osal_uint16_t)0x88A4u)</td></tr>
 <tr class="memdesc:ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ethertype for EtherCAT. <br /></td></tr>
 <tr class="separator:ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8151df877b5f1b60ed7e6dbb8fe0ea95" id="r_ga8151df877b5f1b60ed7e6dbb8fe0ea95"><td class="memItemLeft" align="right" valign="top"><a id="ga8151df877b5f1b60ed7e6dbb8fe0ea95" name="ga8151df877b5f1b60ed7e6dbb8fe0ea95"></a>
@@ -157,6 +157,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga5707126ae8da08fc1bf0f7b4b2ec1da7" id="r_ga5707126ae8da08fc1bf0f7b4b2ec1da7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga5707126ae8da08fc1bf0f7b4b2ec1da7">hw_close</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
 <tr class="memdesc:ga5707126ae8da08fc1bf0f7b4b2ec1da7"><td class="mdescLeft">&#160;</td><td class="mdescRight">destroys a hw  <br /></td></tr>
 <tr class="separator:ga5707126ae8da08fc1bf0f7b4b2ec1da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2772faf983ef30e60474480973b2e842" id="r_ga2772faf983ef30e60474480973b2e842"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga2772faf983ef30e60474480973b2e842">hw_tx_high</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:ga2772faf983ef30e60474480973b2e842"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <br /></td></tr>
+<tr class="separator:ga2772faf983ef30e60474480973b2e842"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3f23caf928bb7736403250c3a710bcff" id="r_ga3f23caf928bb7736403250c3a710bcff"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff">hw_tx_low</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
 <tr class="memdesc:ga3f23caf928bb7736403250c3a710bcff"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <br /></td></tr>
 <tr class="separator:ga3f23caf928bb7736403250c3a710bcff"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -432,6 +435,33 @@ Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">int hw_tx </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structhw__common.html">hw_common</a> *&#160;</td>
+          <td class="paramname"><em>phw</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>start sending queued ethercat datagrams </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">phw</td><td>hardware handle </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 or error code </dd></dl>
+
+</div>
+</div>
+<a id="ga2772faf983ef30e60474480973b2e842" name="ga2772faf983ef30e60474480973b2e842"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2772faf983ef30e60474480973b2e842">&#9670;&#160;</a></span>hw_tx_high()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hw_tx_high </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="structhw__common.html">hw_common</a> *&#160;</td>
           <td class="paramname"><em>phw</em></td><td>)</td>

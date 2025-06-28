@@ -197,6 +197,9 @@ Functions</h2></td></tr>
 <tr class="memitem:gacac494640051492bea8a86b55ed46a82" id="r_gacac494640051492bea8a86b55ed46a82"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__mailbox__group.html#gacac494640051492bea8a86b55ed46a82">ec_mbx_get_free_send_buffer</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint16_t slave, <a class="el" href="group__pool__group.html#gaee5c34f352692cc83ae9d5e583cc55f0">pool_entry_t</a> **pp_entry, osal_timer_t *timeout)</td></tr>
 <tr class="memdesc:gacac494640051492bea8a86b55ed46a82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get free mailbox send buffer from slaves send message pool.  <br /></td></tr>
 <tr class="separator:gacac494640051492bea8a86b55ed46a82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad373707f6afbeb4a664cd055420f1f72" id="r_gad373707f6afbeb4a664cd055420f1f72"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__mailbox__group.html#gad373707f6afbeb4a664cd055420f1f72">ec_mbx_do_handle</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, uint16_t slave)</td></tr>
+<tr class="memdesc:gad373707f6afbeb4a664cd055420f1f72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle slaves mailbox.  <br /></td></tr>
+<tr class="separator:gad373707f6afbeb4a664cd055420f1f72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>This modules contains EtherCAT mailbox funcitons. </p>
@@ -317,6 +320,44 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Deinit mailbox structure. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">slave</td><td>Number of ethercat slave. this depends on the physical order of the ethercat slaves (usually the n'th slave attached). </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gad373707f6afbeb4a664cd055420f1f72" name="gad373707f6afbeb4a664cd055420f1f72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad373707f6afbeb4a664cd055420f1f72">&#9670;&#160;</a></span>ec_mbx_do_handle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ec_mbx_do_handle </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *&#160;</td>
+          <td class="paramname"><em>pec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>slave</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Handle slaves mailbox. </p>
+<p>This function is usually called by the mbx handler thread.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">pec</td><td>Pointer to ethercat master structure, which you got from <a class="el" href="group__ec__group.html#ga57814183337779bfc29a8c1170269c37">ec_open</a>. </td></tr>

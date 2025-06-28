@@ -112,6 +112,9 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>next</b></td></tr>
 <tr class="memitem:a87e19a92d927defa66f953b781c6f85d" id="r_a87e19a92d927defa66f953b781c6f85d"><td class="memItemLeft" align="right" valign="top"><a id="a87e19a92d927defa66f953b781c6f85d" name="a87e19a92d927defa66f953b781c6f85d"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>prev</b></td></tr>
 <tr class="separator:a87e19a92d927defa66f953b781c6f85d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08ae4bb648ffd64e58ab5e2d4b789548" id="r_a08ae4bb648ffd64e58ab5e2d4b789548"><td class="memItemLeft" align="right" valign="top"><a id="a08ae4bb648ffd64e58ab5e2d4b789548" name="a08ae4bb648ffd64e58ab5e2d4b789548"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>have_64bit</b></td></tr>
+<tr class="separator:a08ae4bb648ffd64e58ab5e2d4b789548"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49992c42e2bbd58d992c35e4e27c06d3" id="r_a49992c42e2bbd58d992c35e4e27c06d3"><td class="memItemLeft" align="right" valign="top"><a id="a49992c42e2bbd58d992c35e4e27c06d3" name="a49992c42e2bbd58d992c35e4e27c06d3"></a>
 osal_uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>dc_time</b></td></tr>
 <tr class="memdesc:a49992c42e2bbd58d992c35e4e27c06d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Time from DC master clock. <br /></td></tr>
@@ -143,21 +146,24 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>timer_correction</b
 <tr class="memitem:a5f7677879ffc0f7356c7c326e910bf00" id="r_a5f7677879ffc0f7356c7c326e910bf00"><td class="memItemLeft" ><a id="a5f7677879ffc0f7356c7c326e910bf00" name="a5f7677879ffc0f7356c7c326e910bf00"></a>
 struct {&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75dabb33892b252f9bf13daa0f0fa23c" id="r_a75dabb33892b252f9bf13daa0f0fa23c"><td class="memItemLeft" >
-&#160;&#160;&#160;double&#160;&#160;&#160;<b>diffsum</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
-<tr class="separator:a75dabb33892b252f9bf13daa0f0fa23c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78ebd3ccbb510a0b8f6c84b78f70c5a4" id="r_a78ebd3ccbb510a0b8f6c84b78f70c5a4"><td class="memItemLeft" >
-&#160;&#160;&#160;double&#160;&#160;&#160;<b>diffsum_limit</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
-<tr class="separator:a78ebd3ccbb510a0b8f6c84b78f70c5a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a468266f39532c476454aad6785398071" id="r_a468266f39532c476454aad6785398071"><td class="memItemLeft" >
+&#160;&#160;&#160;double&#160;&#160;&#160;<b>p_part</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:a468266f39532c476454aad6785398071"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b84a76ccc2f8b772044f5fda98cb450" id="r_a8b84a76ccc2f8b772044f5fda98cb450"><td class="memItemLeft" >
+&#160;&#160;&#160;double&#160;&#160;&#160;<b>i_part</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:a8b84a76ccc2f8b772044f5fda98cb450"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7820daac2a39d57405862a3e86a1664" id="r_ae7820daac2a39d57405862a3e86a1664"><td class="memItemLeft" >
+&#160;&#160;&#160;double&#160;&#160;&#160;<b>i_part_limit</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:ae7820daac2a39d57405862a3e86a1664"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2eb3b590deb297801c3f4a76a94bd7b5" id="r_a2eb3b590deb297801c3f4a76a94bd7b5"><td class="memItemLeft" >
 &#160;&#160;&#160;double&#160;&#160;&#160;<b>kp</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
 <tr class="separator:a2eb3b590deb297801c3f4a76a94bd7b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a926b1604ea014bf3181d0f91e1552f04" id="r_a926b1604ea014bf3181d0f91e1552f04"><td class="memItemLeft" >
 &#160;&#160;&#160;double&#160;&#160;&#160;<b>ki</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
 <tr class="separator:a926b1604ea014bf3181d0f91e1552f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a214235b2bfc6bae5708f8275b77516cd" id="r_a214235b2bfc6bae5708f8275b77516cd"><td class="memItemLeft" >
-&#160;&#160;&#160;double&#160;&#160;&#160;<b>v_part_old</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
-<tr class="separator:a214235b2bfc6bae5708f8275b77516cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bca6b33e99340a8db68965388ece6a6" id="r_a8bca6b33e99340a8db68965388ece6a6"><td class="memItemLeft" >
+&#160;&#160;&#160;double&#160;&#160;&#160;<b>kd</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:a8bca6b33e99340a8db68965388ece6a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f7677879ffc0f7356c7c326e910bf00" id="r_a5f7677879ffc0f7356c7c326e910bf00"><td class="memItemLeft" valign="top">}&#160;</td><td class="memItemRight" valign="bottom"><b>control</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
 <tr class="memdesc:a5f7677879ffc0f7356c7c326e910bf00"><td class="mdescLeft">&#160;</td><td class="mdescRight">PI-controller to adjust EtherCAT master timer value. <br /></td></tr>
 <tr class="separator:a5f7677879ffc0f7356c7c326e910bf00"><td class="memSeparator" colspan="2">&#160;</td></tr>

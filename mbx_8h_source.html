@@ -277,13 +277,15 @@ $(document).ready(function(){initNavTree('mbx_8h_source.html',''); initResizable
 <div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span><span class="preprocessor">#define ec_mbx_return_free_recv_buffer(pec, slave, entry) \</span></div>
 <div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span><span class="preprocessor">    pool_put(&amp;(pec)-&gt;mbx_message_pool_recv_free, (entry))</span></div>
 <div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span> </div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span><span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>}</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span> </div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span><span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_MBX_H</span></div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span> </div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno"><a class="line" href="group__mailbox__group.html#gad373707f6afbeb4a664cd055420f1f72">  299</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="group__mailbox__group.html#gad373707f6afbeb4a664cd055420f1f72">ec_mbx_do_handle</a>(<a class="code hl_struct" href="structec.html">ec_t</a> *pec, uint16_t slave);</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span> </div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span><span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>}</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span> </div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span><span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_MBX_H</span></div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span> </div>
 <div class="ttc" id="acoe_8h_html"><div class="ttname"><a href="coe_8h.html">coe.h</a></div><div class="ttdoc">EtherCAT coe functions.</div></div>
 <div class="ttc" id="acommon_8h_html"><div class="ttname"><a href="common_8h.html">common.h</a></div><div class="ttdoc">ethercat master common stuff</div></div>
 <div class="ttc" id="adatagram_8h_html"><div class="ttname"><a href="datagram_8h.html">datagram.h</a></div><div class="ttdoc">ethercat datagram</div></div>
@@ -296,6 +298,7 @@ $(document).ready(function(){initNavTree('mbx_8h_source.html',''); initResizable
 <div class="ttc" id="agroup__mailbox__group_html_gac3892fc3f0a339ea3fba700240f2fd56"><div class="ttname"><a href="group__mailbox__group.html#gac3892fc3f0a339ea3fba700240f2fd56">ec_mbx_sched_read</a></div><div class="ttdeci">void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave)</div><div class="ttdoc">Trigger read of mailbox.</div></div>
 <div class="ttc" id="agroup__mailbox__group_html_gacac494640051492bea8a86b55ed46a82"><div class="ttname"><a href="group__mailbox__group.html#gacac494640051492bea8a86b55ed46a82">ec_mbx_get_free_send_buffer</a></div><div class="ttdeci">int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, osal_timer_t *timeout)</div><div class="ttdoc">Get free mailbox send buffer from slaves send message pool.</div></div>
 <div class="ttc" id="agroup__mailbox__group_html_gad0aef8f5b2ebba089fd2baeb8fd1bc52"><div class="ttname"><a href="group__mailbox__group.html#gad0aef8f5b2ebba089fd2baeb8fd1bc52">ec_mbx_init</a></div><div class="ttdeci">void ec_mbx_init(ec_t *pec, osal_uint16_t slave)</div><div class="ttdoc">Initialize mailbox structure.</div></div>
+<div class="ttc" id="agroup__mailbox__group_html_gad373707f6afbeb4a664cd055420f1f72"><div class="ttname"><a href="group__mailbox__group.html#gad373707f6afbeb4a664cd055420f1f72">ec_mbx_do_handle</a></div><div class="ttdeci">void ec_mbx_do_handle(ec_t *pec, uint16_t slave)</div><div class="ttdoc">Handle slaves mailbox.</div></div>
 <div class="ttc" id="agroup__mailbox__group_html_gadc065e4155b29ed03896d2b86bedec70"><div class="ttname"><a href="group__mailbox__group.html#gadc065e4155b29ed03896d2b86bedec70">ec_mbx_check</a></div><div class="ttdeci">int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag)</div><div class="ttdoc">Checks if mailbox protocol is supported by slave.</div></div>
 <div class="ttc" id="agroup__mailbox__group_html_gaf24963ed01110d10da53f33abaf80fc7"><div class="ttname"><a href="group__mailbox__group.html#gaf24963ed01110d10da53f33abaf80fc7">ec_mbx_enqueue_tail</a></div><div class="ttdeci">void ec_mbx_enqueue_tail(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry)</div><div class="ttdoc">Enqueue mailbox message to send queue.</div></div>
 <div class="ttc" id="agroup__mailbox__group_html_gaf9c80235c571b32792792f2645a7771a"><div class="ttname"><a href="group__mailbox__group.html#gaf9c80235c571b32792792f2645a7771a">ec_mbx_header_t</a></div><div class="ttdeci">struct PACKED ec_mbx_header ec_mbx_header_t</div><div class="ttdoc">ethercat mailbox header</div></div>

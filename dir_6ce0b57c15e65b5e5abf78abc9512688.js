@@ -16,6 +16,7 @@ var dir_6ce0b57c15e65b5e5abf78abc9512688 =
     [ "hw_pikeos.h", "hw__pikeos_8h.html", "hw__pikeos_8h" ],
     [ "hw_sock_raw.h", "hw__sock__raw_8h.html", "hw__sock__raw_8h" ],
     [ "hw_sock_raw_mmaped.h", "hw__sock__raw__mmaped_8h.html", "hw__sock__raw__mmaped_8h" ],
+    [ "hw_stm32.h", "hw__stm32_8h.html", "hw__stm32_8h" ],
     [ "idx.h", "idx_8h.html", "idx_8h" ],
     [ "mbx.h", "mbx_8h.html", "mbx_8h" ],
     [ "mii.h", "mii_8h.html", "mii_8h" ],

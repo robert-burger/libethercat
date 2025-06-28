@@ -8,7 +8,7 @@ var searchData=
   ['sbuf_5',['sbuf',['../structhw__pikeos.html#a35dd61f05741d9013dda4f1948906f65',1,'hw_pikeos']]],
   ['send_6',['send',['../structhw__common.html#a3da480caa374b590bc72e4bfa616a780',1,'hw_common']]],
   ['send_5ffinished_7',['send_finished',['../structhw__common.html#aed8ad17d32ccdc64be00b180b3ec6727',1,'hw_common']]],
-  ['send_5fframe_8',['send_frame',['../structhw__file.html#a7aa60c22fc8b9cbce3f22d34d4a3da60',1,'hw_file::send_frame'],['../structhw__pikeos.html#a64a0d150cafa75fb8cb3b8f29e084f81',1,'hw_pikeos::send_frame'],['../structhw__sock__raw.html#aef9991b905e4f3d1ed1d357da19eee93',1,'hw_sock_raw::send_frame'],['../structhw__sock__raw__mmaped.html#a6a980f7c1fb76b402a6bfa44190aad9c',1,'hw_sock_raw_mmaped::send_frame']]],
+  ['send_5fframe_8',['send_frame',['../structhw__file.html#a7aa60c22fc8b9cbce3f22d34d4a3da60',1,'hw_file::send_frame'],['../structhw__pikeos.html#a64a0d150cafa75fb8cb3b8f29e084f81',1,'hw_pikeos::send_frame'],['../structhw__sock__raw.html#aef9991b905e4f3d1ed1d357da19eee93',1,'hw_sock_raw::send_frame'],['../structhw__sock__raw__mmaped.html#a6a980f7c1fb76b402a6bfa44190aad9c',1,'hw_sock_raw_mmaped::send_frame'],['../structhw__stm32.html#ae39f199a2d306607b001a8f80deb6b65',1,'hw_stm32::send_frame']]],
   ['seq_5fcounter_9',['seq_counter',['../structec__mbx.html#ab2a005e2f40a5a01636d2b93a4571fd8',1,'ec_mbx']]],
   ['serial_5fnumber_10',['serial_number',['../structeeprom__info.html#a4d492824b6c3856379648d32bbb56525',1,'eeprom_info']]],
   ['servodrive_20over_20ethercat_20soe_11',['Servodrive over EtherCAT (SoE)',['../group__soe__group.html',1,'']]],
