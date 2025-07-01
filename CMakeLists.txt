@@ -139,6 +139,7 @@ if(${MBX_SUPPORT_EOE})
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/config.h)
+add_compile_definitions(HAVE_CONFIG_H)
 
 # LIBS
 add_library(ethercat ${SRC_ETHERCAT} ${SRC_HW_LAYER})
