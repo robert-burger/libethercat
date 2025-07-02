@@ -139,11 +139,11 @@ if(${MBX_SUPPORT_EOE})
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/config.h)
-add_compile_definitions(HAVE_CONFIG_H)
 
 # LIBS
 add_library(ethercat ${SRC_ETHERCAT} ${SRC_HW_LAYER})
 target_link_libraries (ethercat ${CMAKE_THREAD_LIBS_INIT} ${libosal_LIBS})
+target_compile_definitions(ethercat PUBLIC HAVE_CONFIG_H=1)
 
 # TOOLS
 add_executable(eepromtool tools/eepromtool/eepromtool.c)
