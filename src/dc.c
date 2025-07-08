@@ -196,10 +196,17 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
 
     if (ret == EC_OK) { 
         if ((active != 0u) && (pec->dc.dc_time == 0u)) {
-            ec_log(1, "DC_SYNC", "slave %2d: ERROR calculating start time because there's no cyclic "
-                    "loop running right now! DC will not work correctly!\n", slave);
+            osal_timer_t dc_time_to;
+            osal_timer_init(&dc_time_to, 1000000000); // wait 1 sec for cyclic loop
 
-            ret = EC_ERROR_CYCLIC_LOOP;
+            do {
+                if (osal_timer_expired(&dc_time_to) != OSAL_ERR_TIMEOUT) {
+                    ec_log(1, "DC_SYNC", "slave %2d: ERROR calculating start time because there's no cyclic "
+                            "loop running right now! DC will not work correctly!\n", slave);
+
+                    ret = EC_ERROR_CYCLIC_LOOP;
+                }
+            } while (pec->dc.dc_time == 0u);
         } 
     }
 
