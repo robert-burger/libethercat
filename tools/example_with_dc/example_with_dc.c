@@ -16,7 +16,6 @@
 #include <libethercat/error_codes.h>
 
 #include <stdio.h>
-#include <math.h>
 #include <inttypes.h>
 
 #if LIBETHERCAT_HAVE_UNISTD_H == 1
@@ -157,6 +156,10 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     }
 
     ec_log(100, "CYCLIC_TASK", "exiting!\n");
+}
+
+static osal_void_t* cb_state(osal_void_t* arg, ec_t* pec, ec_state_transition_t transition) {
+    printf("My transition callback\n");
 }
 
 int main(int argc, char **argv) {
@@ -367,6 +370,7 @@ int main(int argc, char **argv) {
     }
 
     ec.threaded_startup = threaded_startup;
+    ec.user_cb_state_transition = cb_state;
     
     ec_set_state(&ec, EC_STATE_INIT);
 

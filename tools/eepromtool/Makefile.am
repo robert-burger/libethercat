@@ -5,4 +5,4 @@ LIBS  = @LIBOSAL_LIBS@ @RT_LIBS@ @PTHREAD_LIBS@
 
 bin_PROGRAMS = eepromtool
 eepromtool_SOURCES = eepromtool.c 
-eepromtool_CFLAGS = -I$(top_srcdir)/include @LIBOSAL_CFLAGS@
+eepromtool_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include @LIBOSAL_CFLAGS@
