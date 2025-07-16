@@ -43,6 +43,7 @@ jobs:
           curl -u "robert-burger-xas1:{{apiKey}}" -1sLf \
                                                  'https://dl.cloudsmith.io/basic/robert-burger-AdLL/libosal/setup.deb.sh' \
                                                  | bash
+          apt-get update
           apt-get install libosal
 
       - name: Checkout source
