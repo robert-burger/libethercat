@@ -167,6 +167,7 @@ class MainProject(ConanFile):
 
         args.append("--disable-silent-rules")
 
+        self.run(f'sed "s|PACKAGE_VERSION|{self.version}|" configure.ac.in > configure.ac')
         autotools.autoreconf()
         autotools.configure(args=args)
         autotools.make()

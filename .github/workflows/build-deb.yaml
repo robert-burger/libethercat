@@ -57,7 +57,7 @@ jobs:
       - name: update branch name
         run: |
           safe_branch=$(echo "${GITHUB_REF_NAME}" | tr '/' '-')
-          sed "s|BRANCH_VERSION|$safe_branch|" configure.ac.in > configure.ac
+          sed "s|PACKAGE_VERSION|$safe_branch|" configure.ac.in > configure.ac
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
           
