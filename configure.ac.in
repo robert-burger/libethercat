@@ -195,7 +195,7 @@ AC_ARG_ENABLE([mbx-support-soe], AS_HELP_STRING([--disable-mbx-support-soe], [Di
 AM_CONDITIONAL([MBX_SUPPORT_SOE], [ test x$MBX_SUPPORT_SOE == xtrue ])
 
 # Checks for libraries.
-PKG_CHECK_MODULES([LIBOSAL], [libosal], [], AC_MSG_ERROR([libosal not found]))
+PKG_CHECK_MODULES([LIBOSAL], [libosal])
 
 # Checks for header files.
 AC_HEADER_ASSERT
