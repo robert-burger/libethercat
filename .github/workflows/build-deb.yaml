@@ -44,7 +44,7 @@ jobs:
                                                  'https://dl.cloudsmith.io/basic/robert-burger-AdLL/libosal/setup.deb.sh' \
                                                  | bash
           apt-get update
-          apt-get install libosal-dev
+          apt-get install -y libosal-dev
 
       - name: Checkout source
         uses: actions/checkout@v4
