@@ -13,7 +13,7 @@ Package: libethercat-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: same
-Depends: libethercat (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libethercat (= ${binary:Version}), ${misc:Depends}
 Description: An embeddable realtime EtherCAT-master library.
   This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface.
     support for a queue with mailbox init command for every slave
@@ -33,6 +33,7 @@ Description: An embeddable realtime EtherCAT-master library.
 
 Package: libethercat
 Architecture: any
+Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: An embeddable realtime EtherCAT-master library.
   This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface.
