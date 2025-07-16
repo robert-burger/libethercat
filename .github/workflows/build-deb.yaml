@@ -3,10 +3,8 @@ name: Build DEB Package
 on:
   push:
     branches:
-      - feat/tag-build
   pull_request:
     branches:
-      - feat/tag-build
 
 jobs:
   build-deb:
