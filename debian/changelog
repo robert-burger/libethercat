@@ -1,4 +1,4 @@
-libethercat (0.7.0~pre1-1) unstable; urgency=low
+libethercat (0.7.0~pre1) unstable; urgency=low
 
   * add: debian bookworm 6.1.0-37-rt kernel
   * fix: out-of-source build
