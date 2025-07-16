@@ -41,7 +41,7 @@ jobs:
           apt-get install -y build-essential devscripts debhelper autoconf-archive autotools-dev fakeroot pkg-config sed git python3-pip python3-venv curl jq
           
           curl -u "robert-burger-xas1:{{apiKey}}" -1sLf \
-                                                 'https://dl.cloudsmith.io/basic/robert-burger-AdLL/libosal/setup.deb.sh' \
+                                                 'https://dl.cloudsmith.io/basic/robert-burger-AdLL/common/setup.deb.sh' \
                                                  | bash
           apt-get update
           apt-get install -y libosal-dev
@@ -74,7 +74,7 @@ jobs:
       - name: Collect .deb artifact
         run: |
           mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
-          mv ../libethercat_*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
+          mv ../libethercat*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
       
       - name: Set sanitized image name
         id: sanitize
@@ -102,6 +102,7 @@ jobs:
         run: |
           VERSION=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
           FILENAME="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat_${VERSION}_amd64.deb"
+          FILENAME_DEV="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat-dev_${VERSION}_amd64.deb"
         
           python3 -m venv cloudsmith
           cd cloudsmith
@@ -110,7 +111,11 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install cloudsmith-cli
 
-          cloudsmith push deb robert-burger-AdLL/libethercat/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME} \
+          cloudsmith push deb robert-burger-AdLL/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME} \
+            --republish \
+            --api-key "$CLOUDSMITH_API_KEY"
+          
+          cloudsmith push deb robert-burger-AdLL/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME_DEV} \
             --republish \
             --api-key "$CLOUDSMITH_API_KEY"
 
