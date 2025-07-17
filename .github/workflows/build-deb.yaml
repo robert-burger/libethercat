@@ -40,9 +40,7 @@ jobs:
           apt-get update
           apt-get install -y build-essential devscripts debhelper autoconf-archive autotools-dev fakeroot pkg-config sed git python3-pip python3-venv curl jq
           
-          curl -u "robert-burger-xas1:{{apiKey}}" -1sLf \
-                                                 'https://dl.cloudsmith.io/basic/robert-burger-AdLL/common/setup.deb.sh' \
-                                                 | bash
+          curl -1sLf 'https://dl.cloudsmith.io/basic/robertburger/common/setup.deb.sh' | bash
           apt-get update
           apt-get install -y libosal-dev
 
@@ -57,7 +55,8 @@ jobs:
       - name: update branch name
         run: |
           safe_branch=$(echo "${GITHUB_REF_NAME}" | tr '/' '-')
-          sed "s|PACKAGE_VERSION|$safe_branch|" configure.ac.in > configure.ac
+          VERSION=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
+          sed "s|PACKAGE_VERSION|$VERSION|" configure.ac.in > configure.ac
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
           
@@ -111,11 +110,11 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install cloudsmith-cli
 
-          cloudsmith push deb robert-burger-AdLL/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME} \
+          cloudsmith push deb robertburger/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME} \
             --republish \
             --api-key "$CLOUDSMITH_API_KEY"
           
-          cloudsmith push deb robert-burger-AdLL/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME_DEV} \
+          cloudsmith push deb robertburger/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME_DEV} \
             --republish \
             --api-key "$CLOUDSMITH_API_KEY"
 
