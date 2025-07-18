@@ -59,11 +59,6 @@ jobs:
           sed "s|PACKAGE_VERSION|$VERSION|" configure.ac.in > configure.ac
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          
-      - name: Prepare autotools
-        run: |
-          # Nur falls nicht schon vorhanden (optional)
-          autoreconf -fi
 
       - name: Build .deb package
         run: |

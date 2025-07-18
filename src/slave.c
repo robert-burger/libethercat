@@ -1353,7 +1353,7 @@ void ec_slave_set_eoe_settings(struct ec *pec, osal_uint16_t slave,
     EOE_SET(dns, LEC_EOE_DNS_LEN);
     size_t tmp_len = LEC_EOE_DNS_NAME_LEN;
     if (dns_name != NULL) {
-    	tmp_len = min(LEC_EOE_DNS_NAME_LEN, strlen(dns_name));
+    	tmp_len = LEC_MIN(LEC_EOE_DNS_NAME_LEN, strlen(dns_name));
     }
     EOE_SET(dns_name, tmp_len);
 

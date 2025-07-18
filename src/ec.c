@@ -1279,7 +1279,7 @@ static void cb_block(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg)
     (void)pec;
 
     osal_size_t size = ec_datagram_length(p_dg);
-    (void)memcpy(p_entry->data, (osal_uint8_t *)p_dg, min(size, LEC_MAX_POOL_DATA_SIZE));
+    (void)memcpy(p_entry->data, (osal_uint8_t *)p_dg, LEC_MIN(size, LEC_MAX_POOL_DATA_SIZE));
 
     osal_binary_semaphore_post(&p_entry->p_idx->waiter);
 }

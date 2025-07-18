@@ -95,12 +95,7 @@ class MainProject(ConanFile):
         tc.generate()
 
     def source(self):
-        filedata = None
-        filename = "project.properties"
-        with open(filename, 'r') as f:
-            filedata = f.read()
-        with open(filename, 'w') as f:
-            f.write(re.sub("VERSION *=.*[^\n]", f"VERSION = {self.version}", filedata))
+        pass
 
     def build(self):
         print("os %s, compiler %s, build_type %s, arch %s" % (self.settings.os, self.settings.compiler, self.settings.build_type, self.settings.arch))

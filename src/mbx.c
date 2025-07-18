@@ -531,7 +531,7 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
             (void)memset(p_entry->data, 0, LEC_MAX_POOL_DATA_SIZE);
 
             if (ec_mbx_receive(pec, slave, p_entry->data, 
-                        min(LEC_MAX_POOL_DATA_SIZE, (osal_size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
+                        LEC_MIN(LEC_MAX_POOL_DATA_SIZE, (osal_size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
                 // cppcheck-suppress misra-c2012-11.3
                 ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
                 ec_log(200, "MAILBOX_HANDLE", "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
@@ -600,7 +600,7 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
 
             do {
                 ret = ec_mbx_send(pec, slave, p_entry->data, 
-                        min(LEC_MAX_POOL_DATA_SIZE, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
+                        LEC_MIN(LEC_MAX_POOL_DATA_SIZE, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
                 --retry_cnt;
             } while ((ret != EC_OK) && (retry_cnt > 0));
 

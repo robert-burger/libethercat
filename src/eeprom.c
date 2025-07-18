@@ -566,7 +566,7 @@ void ec_eeprom_dump(ec_t *pec, osal_uint16_t slave) {
 
                             if (i >= LEC_MAX_EEPROM_CAT_STRINGS) {
                                 char tmp[65];
-                                read_string_len = min(64, read_string_len);
+                                read_string_len = LEC_MIN(64, read_string_len);
                                 (void)strncpy(&tmp[0], (osal_char_t *)&ec_eeprom_buf[local_offset], read_string_len);
                                 local_offset += string_len;
                                 tmp[read_string_len] = '\0';

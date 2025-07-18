@@ -194,7 +194,7 @@ static void ec_foe_print_msg(ec_t *pec, int level, const osal_char_t *ctx, int s
 
     osal_char_t *tmp = msg_buf;
     osal_size_t pos = 0;
-    osal_size_t max_pos = min(MSG_BUF_LEN, buflen);
+    osal_size_t max_pos = LEC_MIN(MSG_BUF_LEN, buflen);
     for (osal_uint32_t u = 0u; (u < max_pos) && ((MSG_BUF_LEN-pos) > 0u); ++u) {
         int local_ret = snprintf(&tmp[pos], MSG_BUF_LEN - pos, "%02X ", buf[u]);
         if (local_ret < 0) {
@@ -254,8 +254,8 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry_send->data);
 
         // calc lengths
-        osal_size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
-        osal_size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
+        osal_size_t foe_max_len = LEC_MIN(slv->sm[1].len, MAX_FILE_NAME_SIZE);
+        osal_size_t file_name_len = LEC_MIN(strlen(file_name), foe_max_len-6u);
 
         (void)ec_mbx_next_counter(pec, slave, &counter);
 
@@ -375,8 +375,8 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry->data);
 
         // calc lengths
-        osal_size_t foe_max_len = min(slv->sm[1].len, MAX_FILE_NAME_SIZE);
-        osal_size_t file_name_len = min(strlen(file_name), foe_max_len-6u);
+        osal_size_t foe_max_len = LEC_MIN(slv->sm[1].len, MAX_FILE_NAME_SIZE);
+        osal_size_t file_name_len = LEC_MIN(strlen(file_name), foe_max_len-6u);
         
         (void)ec_mbx_next_counter(pec, slave, &counter);
 
@@ -438,7 +438,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 ec_foe_data_request_t *write_buf_data = (ec_foe_data_request_t *)p_entry->data;
 
                 osal_size_t rest_len = file_data_len - file_offset;
-                osal_size_t bytes_read = min(rest_len, data_len);
+                osal_size_t bytes_read = LEC_MIN(rest_len, data_len);
                 (void)memcpy(&write_buf_data->data[0], &file_data[file_offset], bytes_read);
                 if (bytes_read < data_len) {
                     last_pkt = 1;

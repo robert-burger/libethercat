@@ -202,7 +202,7 @@ int hw_device_sock_raw_open(struct hw_sock_raw *phw_sock_raw, struct ec *pec, co
         ec_log(10, "HW_OPEN", "binding raw socket to %s\n", devname);
 
         (void)memset(&ifr, 0, sizeof(ifr));
-        size_t copy_len = min(strlen(devname), IFNAMSIZ - 1);
+        size_t copy_len = LEC_MIN(strlen(devname), IFNAMSIZ - 1);
         (void)memset(ifr.ifr_name, 0, IFNAMSIZ);
         (void)memcpy(ifr.ifr_name, devname, copy_len);
         ioctl(phw_sock_raw->sockfd, SIOCGIFMTU, &ifr);

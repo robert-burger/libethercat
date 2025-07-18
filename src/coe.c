@@ -229,7 +229,7 @@ static void ec_coe_print_msg(ec_t *pec, int level, const osal_char_t *ctx, int s
 
     osal_char_t *tmp = msg_buf;
     osal_size_t pos = 0;
-    osal_size_t max_pos = min(MSG_BUF_LEN, buflen);
+    osal_size_t max_pos = LEC_MIN(MSG_BUF_LEN, buflen);
     for (osal_uint32_t u = 0; (u < max_pos) && (MSG_BUF_LEN > pos); ++u) {
         int ret = snprintf(&tmp[pos], MSG_BUF_LEN - pos, "%02X ", buf[u]);
 
@@ -948,7 +948,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                         (void)memcpy(&desc->data_type, (void *)&read_buf->sdo_info_data[2], sizeof(desc->data_type));
                         desc->max_subindices    = read_buf->sdo_info_data[4];
                         desc->obj_code          = read_buf->sdo_info_data[5];
-                        desc->name_len          = min(CANOPEN_MAXNAME, read_buf->mbx_hdr.length - 6u - 6u);
+                        desc->name_len          = LEC_MIN(CANOPEN_MAXNAME, read_buf->mbx_hdr.length - 6u - 6u);
                         (void)memcpy(desc->name, (void *)&read_buf->sdo_info_data[6], desc->name_len);
 
                         ret = EC_OK;
@@ -1074,7 +1074,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                         desc->data_type     = read_buf->data_type;
                         desc->bit_length    = read_buf->bit_length;
                         desc->obj_access    = read_buf->obj_access;
-                        desc->data_len      = min(CANOPEN_MAXDATA, read_buf->mbx_hdr.length - 6u - 10u);
+                        desc->data_len      = LEC_MIN(CANOPEN_MAXDATA, read_buf->mbx_hdr.length - 6u - 10u);
 
                         (void)memcpy(desc->data, read_buf->desc_data, desc->data_len);
                         ret = EC_OK;
@@ -1277,7 +1277,7 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
     ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
 
     // don't copy any headers, we already know that we have a coe emergency
-    osal_size_t msg_len = min(LEC_MAX_COE_EMERGENCY_MSG_LEN, (hdr->length - 2u));
+    osal_size_t msg_len = LEC_MIN(LEC_MAX_COE_EMERGENCY_MSG_LEN, (hdr->length - 2u));
 
     if (osal_mutex_lock(&slv->mbx.coe.lock) != OSAL_OK) {
         ec_log(1, "COE_EMERGENCY", "locking CoE mailbox failed!\n");
