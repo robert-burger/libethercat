@@ -54,6 +54,7 @@ Ensure that `libosal` is installed in your system. You can get `libosal` from he
 ```
 git clone https://github.com/robert-burger/libethercat.git
 cd libethercat
+./bootstrap.sh
 autoreconf -is
 ./configure
 make
