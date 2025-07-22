@@ -1,0 +1,115 @@
+name: Build DEB Package
+
+on:
+  push:
+    branches:
+  pull_request:
+    branches:
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+   
+    env:
+      DEB_BUILD_OPTIONS: nocheck  # or whatever options you need
+    strategy:
+      matrix:
+        distro: [debian-bookworm, debian-bullseye, ubuntu-24.04, ubuntu-22.04]
+        include:
+          - distro: debian-bookworm
+            image: debian:bookworm
+            os: debian
+            version: bookworm
+          - distro: debian-bullseye
+            image: debian:bullseye
+            os: debian
+            version: bullseye
+          - distro: ubuntu-24.04
+            image: ubuntu:24.04
+            os: ubuntu
+            version: noble
+          - distro: ubuntu-22.04
+            image: ubuntu:22.04
+            os: ubuntu
+            version: jammy
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential devscripts debhelper autoconf-archive autotools-dev fakeroot pkg-config sed git python3-pip python3-venv curl jq
+          
+          curl -1sLf 'https://dl.cloudsmith.io/basic/robertburger/common/setup.deb.sh' | bash
+          apt-get update
+          apt-get install -y libosal-dev
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mark working directory as safe
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: update branch name
+        run: |
+          safe_branch=$(echo "${GITHUB_REF_NAME}" | tr '/' '-')
+          VERSION=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
+          sed "s|PACKAGE_VERSION|$VERSION|" configure.ac.in > configure.ac
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: Build .deb package
+        run: |
+          # baue mit dpkg-buildpackage (ohne signieren)
+          dpkg-buildpackage -us -uc -d
+
+      - name: Collect .deb artifact
+        run: |
+          mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
+          mv ../libethercat*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
+      
+      - name: Set sanitized image name
+        id: sanitize
+        run: |
+          version=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
+          echo "sanitized_image=$(echo "$version-$IMAGE" | tr '/:' '--')" >> $GITHUB_OUTPUT
+        env:
+          IMAGE: ${{ matrix.image }}
+
+      - name: Upload .deb package
+        uses: actions/upload-artifact@v4
+        with:
+          name: libethercat-${{ steps.sanitize.outputs.sanitized_image }}.deb
+          path: artifacts/${{ matrix.os }}/${{ matrix.version }}/*.deb
+
+      - name: Ensure package is present
+        run: |
+          echo "Files in workspace:"
+          find *
+
+      - name: Upload to Cloudsmith (${{ matrix.os }}/${{ matrix.version }})
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        shell: bash
+        run: |
+          VERSION=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
+          FILENAME="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat_${VERSION}_amd64.deb"
+          FILENAME_DEV="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat-dev_${VERSION}_amd64.deb"
+        
+          python3 -m venv cloudsmith
+          cd cloudsmith
+          source bin/activate
+
+          python3 -m pip install --upgrade pip
+          pip3 install cloudsmith-cli
+
+          cloudsmith push deb robertburger/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME} \
+            --republish \
+            --api-key "$CLOUDSMITH_API_KEY"
+          
+          cloudsmith push deb robertburger/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME_DEV} \
+            --republish \
+            --api-key "$CLOUDSMITH_API_KEY"
+

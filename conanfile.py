@@ -42,7 +42,7 @@ class MainProject(ConanFile):
         "mbx_support_soe" : [ True, False ],
     }
 
-    requires = [ "libosal/[>=0.0.6]@common/stable", ]
+    requires = [ "libosal/[>=0.1.0]@common/unstable", ]
     generators = "PkgConfigDeps"
 
     def config_options(self):
@@ -95,12 +95,7 @@ class MainProject(ConanFile):
         tc.generate()
 
     def source(self):
-        filedata = None
-        filename = "project.properties"
-        with open(filename, 'r') as f:
-            filedata = f.read()
-        with open(filename, 'w') as f:
-            f.write(re.sub("VERSION *=.*[^\n]", f"VERSION = {self.version}", filedata))
+        pass
 
     def build(self):
         print("os %s, compiler %s, build_type %s, arch %s" % (self.settings.os, self.settings.compiler, self.settings.build_type, self.settings.arch))
@@ -167,6 +162,7 @@ class MainProject(ConanFile):
 
         args.append("--disable-silent-rules")
 
+        self.run(f'sed "s|PACKAGE_VERSION|{self.version}|" configure.ac.in > configure.ac')
         autotools.autoreconf()
         autotools.configure(args=args)
         autotools.make()

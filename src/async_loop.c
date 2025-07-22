@@ -36,8 +36,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
@@ -50,8 +51,14 @@
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 
-// get a message from a message pool
+// forward decls
 static int ec_async_loop_get(ec_message_pool_t *ppool,
+        ec_message_entry_t **msg, osal_timer_t *timeout);
+static int ec_async_loop_put(ec_message_pool_t *ppool,
+        ec_message_entry_t *msg);
+
+// get a message from a message pool
+int ec_async_loop_get(ec_message_pool_t *ppool,
         ec_message_entry_t **msg, osal_timer_t *timeout) {
     int ret = EC_OK;
 
@@ -82,7 +89,7 @@ static int ec_async_loop_get(ec_message_pool_t *ppool,
 }
 
 // return a message to message pool
-static int ec_async_loop_put(ec_message_pool_t *ppool, 
+int ec_async_loop_put(ec_message_pool_t *ppool,
         ec_message_entry_t *msg) {
     assert(ppool != NULL);
     assert(msg != NULL);
@@ -177,10 +184,51 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
     }
 }
 
+// Execute one async check step.
+/*!
+ * This function is usually called by Async loop thread.
+ * \param[in] paml  Handle to async message loop.
+ */
+void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *timeout) {
+    ec_message_entry_t *me = NULL;
+
+    int ret = ec_async_loop_get(&paml->exec, &me, timeout);
+    if (ret != EC_OK) {
+        return; // e.g. timeout
+    }
+
+    switch (me->msg.id) {
+        default: 
+            break;
+        case EC_MSG_CHECK_GROUP: {
+            // do something
+            osal_uint16_t slave;
+            for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
+                if ((paml->pec->slaves[slave].assigned_pd_group == (int)me->msg.payload) &&
+                    (paml->pec->slaves[slave].transition_active == OSAL_FALSE))
+                {
+                    ec_async_check_slave(paml, slave);
+                }
+            }
+            break;
+        }
+        case EC_MSG_CHECK_SLAVE:
+            if (paml->pec->slaves[me->msg.payload].transition_active == OSAL_FALSE) {
+                ec_async_check_slave(paml, me->msg.payload);
+            }
+
+            break;
+    };
+
+    // return message to pool
+    if (ec_async_loop_put(&paml->avail, me) == 0) {};
+}
+
 // async loop thread
 static void *ec_async_loop_thread(void *arg) {
     // cppcheck-suppress misra-c2012-11.5
     ec_async_loop_t *paml = (ec_async_loop_t *)arg;
+    osal_timer_t timeout;
     ec_t *pec = paml->pec;
     
     assert(paml != NULL);
@@ -189,42 +237,8 @@ static void *ec_async_loop_thread(void *arg) {
     ec_log(100, "ASYNC_LOOP", "async loop thread running\n");
 
     while (paml->loop_running == 1) {
-        osal_timer_t timeout;
-        osal_timer_init(&timeout, 100000000 );
-        ec_message_entry_t *me = NULL;
-
-        int ret = ec_async_loop_get(&paml->exec, &me, &timeout);
-        if (ret != EC_OK) {
-            continue; // e.g. timeout
-        }
-
-        switch (me->msg.id) {
-            default: 
-                break;
-            case EC_MSG_CHECK_GROUP: {
-                // do something
-                osal_uint16_t slave;
-                for (slave = 0u; slave < paml->pec->slave_cnt; ++slave) {
-                    if (paml->pec->slaves[slave].assigned_pd_group != (int)me->msg.payload) {
-                        continue;
-                    }
-
-                    if (paml->pec->slaves[slave].transition_active == OSAL_FALSE) {
-                        ec_async_check_slave(paml, slave);
-                    }
-                }
-                break;
-            }
-            case EC_MSG_CHECK_SLAVE:
-                if (paml->pec->slaves[me->msg.payload].transition_active == OSAL_FALSE) {
-                    ec_async_check_slave(paml, me->msg.payload);
-                }
-
-                break;
-        };
-
-        // return message to pool
-        if (ec_async_loop_put(&paml->avail, me) == 0) {};
+        osal_timer_init(&timeout, 100000000);
+        ec_async_loop_step(paml, &timeout);
     }
     
     ec_log(100, "ASYNC_LOOP", "async loop thread exited\n");
@@ -310,7 +324,7 @@ int ec_async_loop_create(ec_async_loop_t *paml, ec_t *pec) {
         attr.policy = OSAL_SCHED_POLICY_OTHER;
         attr.priority = 0;
         attr.affinity = 0xFF;
-        (void)strcpy(&attr.task_name[0], "ecat.async");
+        (void)memcpy(&attr.task_name[0], "ecat.async", strlen("ecat.async"));
         if (osal_task_create(&paml->loop_tid, &attr, 
                 ec_async_loop_thread, paml) != OSAL_OK) {
             ec_log(1, "ASYNC_INIT", "error creating async loop task!\n");

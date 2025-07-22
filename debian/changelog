@@ -1,8 +1,131 @@
+libethercat (0.7.0~pre1) unstable; urgency=low
+
+  * add: debian bookworm 6.1.0-37-rt kernel
+  * fix: out-of-source build
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Merge pull request #33 from marcfir/feat/on_statechange
+  * feat: Add up and down directions
+  * feat: hook on state change
+  * Merge pull request #21 from common/feat/pikeos_changes
+  * Update soe.c
+  * Update foe.c
+  * Update eoe.c
+  * Update coe.c
+  * Merge branch 'master' into feat/pikeos_changes
+  * Merge pull request #30 from buss-kr/lru2
+  * Update Makefile
+  * applied fixes
+  * applied daniels fix, and changed makefile to only build r8169
+  * Merge pull request #29 from common/feat/stm32
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * fix: error code on unexpected coe answer
+  * Merge pull request #28 from common/feat/stm32
+  * fix: re-enabled sending low prio frames in gap
+  * fix: hw_tx_pool reverted to static
+  * del: removed STRINGIFY and TOSTRING
+  * del: removed LEC_MAX_SLAVES_STRING
+  * fix: async loop step
+  * add: static forward decl of ec_async_loop_put
+  * add: static forward decl of ec_async_loop_get
+  * move: htons define to hw_stm32
+  * Merge branch 'master' into feat/stm32
+  * Merge pull request #32 from marcfir/feat/eeprom_info
+  * feat: Add revision_numer and serial_number to eeprom_info
+  * deleted tmp buf in ec_log
+  * fixed prints PRIu to PRIx for addresses; commented out mbx read; added typecast in ec_log coe mapping
+  * changed comment
+  * changed bitlen output to PRIu64
+  * changed prints for slave from %d to %2 PRIu16
+  * SCB_CleanDCache_by_Addr((void*)pframe, pframe->len) instead uint32_t* pframe
+  * changed output to PRIuXXX
+  * added include: common.h, eeprom.h + dc.h
+  * added timeout (to) as 2nd argument to funcs
+  * added timeout (to) as 2nd argument to funcs
+  * Merge pull request #1 from burger-r/stm32-changes
+  * change: exporting ec_async_loop_step func
+  * Merge branch 'master' into stm32-fix
+  * fix: stm32 additions
+  * deleted extra prints for stm32 -> unnecessary when using newlib instead newlib nano
+  * added ns to output
+  * add: compile guard for coe and foe
+  * change: replaces strlen of constant strings with sizeof() - 1
+  * add: definining sign and abs
+  * change: replaces strcpy with memcpy
+  * add: compile guard to in- or exclude optional files
+  * added bytes_sent calculation
+  * reworked if
+  * outcommented unnecessary lines
+  * changed output from PRIu64 to PRIu8
+  * minor formatting
+  * added MASTER OPEN prints for stm32; little formatting
+  * added various prints for debugging; added me as author
+  * changed PRIi64 to PRIu64 in ec_log at MASTER_OPEN
+  * changed func call: HTONS -> htons
+  * changed ifndef to if
+  * fixed htons for stm32
+  * added htons define + ifndef for htons
+  * deleted htons function declaration; used HTONS macro from header file
+  * added HTONS macro
+  * added func(rx,tx) declarations
+  * defined ETH_RX_TIMEOUT; implemented own HTONS func; corrected func call: ETH Transmit
+  * deleted rx_intern, rx_thread functions; modified send/recv func
+  * changed receive function; added comments in send and recv functions
+  * initialized size_t frame_len; added comments
+  * added hw_stm32.h and adapted .c file
+  * various changes...sorry
+  * added hw_stm32.c file
+  * fixed ec_log() data types to PRI_____
+  * fixed ec_log() data types to PRI_____
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
+
+libethercat (0.6.8) unstable; urgency=low
+
+  * fix compile errors
+  * chore: example rework
+  * Merge remote-tracking branch 'origin/release/0.6.8' into feat/first_dc_sync_and_start
+  * cleanup: dc control stuff
+  * change: switched to libosal >=0.0.6 stable
+  * Merge remote-tracking branch 'origin/feat/first_dc_sync_and_start' into release/0.6.8
+  * change: RX measurement also done for non-polling mode
+  * change: do measurement of TX and RX
+  * change: distinguish between poll TX and RX
+  * chore: some log messages
+  * Merge branch 'feat/first_dc_sync_and_start' into release/0.6.8
+  * fix: example sigint handling
+  * fix: example closing
+  * fix: example sigint handler
+  * fix: example send times
+  * chore: some logging
+  * fix: cycle shift relative to packet send
+  * fix: example
+  * Merge branch 'master' into feat/first_dc_sync_and_start
+  * chore: some log improvements
+  * fix: add support for 32-bit dc clock master
+  * fix: example for dc first sync
+  * Merge branch 'release/0.6.8' into feat/first_dc_sync_and_start
+  * fix: printing coe abort code on error message
+  * fix: need libosal >= 0.0.6
+  * Merge branch 'master' into feat/first_dc_sync_and_start
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * fix: enable priority inheritance for critical mutexes
+  * Merge pull request #31 from marcfir/feat/less_logging
+  * feat: Avoid logging in retry loop for state change
+  * fix: dc skipped first (0) slave
+  * fix: dc_start time wrt. master send time
+  * fix: dc_start time calculation wrt cycle_shift and mode
+  * fix: tried to fix rtc time on dc start in slaves to avoid dc_start is smaller than dc_time
+  * Merge pull request #26 from bens-im/master
+  * fix: correct mailbox types
+
+ -- Daniel Seidel <daniel@.seidel@dlr.de>  Tue, 1 Apr 2025 19:35:55 +0200
+
 libethercat (0.6.7) unstable; urgency=low
 
+  * prep: 0.6.7
   * fix: cleanup hw_file
 
- -- Robert Burger <robert.burger@dlr.de>  Tue, 25 Feb 2025 15:20:08 +0100
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 26 Feb 2025 06:12:29 +0100
 
 libethercat (0.6.6) unstable; urgency=low
 

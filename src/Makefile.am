@@ -5,7 +5,7 @@ includedir = $(prefix)/include/libethercat
 lib_LTLIBRARIES = libethercat.la
 
 include_HEADERS = $(top_srcdir)/include/libethercat/common.h \
-				  $(top_srcdir)/include/libethercat/config.h \
+				  $(top_builddir)/include/libethercat/config.h \
 				  $(top_srcdir)/include/libethercat/datagram.h \
 				  $(top_srcdir)/include/libethercat/pool.h \
 				  $(top_srcdir)/include/libethercat/dc.h \
@@ -69,7 +69,7 @@ include_HEADERS += $(top_srcdir)/include/libethercat/hw_pikeos.h
 libethercat_la_SOURCES += hw_pikeos.c
 endif
 
-libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(top_srcdir)/include @LIBOSAL_CFLAGS@
+libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_builddir)/include @LIBOSAL_CFLAGS@
 libethercat_la_LDFLAGS	= -Wall -Werror -no-undefined @LIBOSAL_LIBS@
 libethercat_la_LIBS     = @LIBOSAL_LIBS@
 

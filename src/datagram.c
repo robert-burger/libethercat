@@ -38,7 +38,9 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include <string.h>
 #include <assert.h>

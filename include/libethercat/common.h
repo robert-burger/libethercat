@@ -41,7 +41,9 @@
 #ifndef LIBETHERCAT_COMMON_H
 #define LIBETHERCAT_COMMON_H
 
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #include <libosal/types.h>
 
@@ -201,8 +203,8 @@
 
 #define PACKED __attribute__((__packed__))
 
-#ifndef min
-#define min(a, b)  ((a) < (b) ? (a) : (b))
+#ifndef LEC_MIN
+#define LEC_MIN(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
 typedef osal_uint8_t ec_data_t[LEC_MAX_DATA]; /* variants for easy data access */

@@ -30,8 +30,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 
@@ -453,7 +454,7 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
 
         do {
             osal_size_t frag_len = frame_len - frame_offset;
-            frag_len = min(frag_len, max_frag_len);
+            frag_len = LEC_MIN(frag_len, max_frag_len);
 
             // get mailbox buffer to write frame fragment request
             pool_entry_t *p_entry;

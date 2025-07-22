@@ -2,9 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([libethercat], 
-	m4_esyscmd_s([cat project.properties | grep VERSION    | cut -d'=' -f2 | xargs printf "%s"]),
-	m4_esyscmd_s([cat project.properties | grep MAINTAINER | cut -d'=' -f2 | xargs printf "%s"]))
+AC_INIT([libethercat], [PACKAGE_VERSION], [Robert Burger <robert.burger@dlr.de])
 
 AC_CANONICAL_TARGET
 
@@ -197,7 +195,7 @@ AC_ARG_ENABLE([mbx-support-soe], AS_HELP_STRING([--disable-mbx-support-soe], [Di
 AM_CONDITIONAL([MBX_SUPPORT_SOE], [ test x$MBX_SUPPORT_SOE == xtrue ])
 
 # Checks for libraries.
-PKG_CHECK_MODULES([LIBOSAL], [libosal], [], [AC_MSG_ERROR([libosal not found])])
+PKG_CHECK_MODULES([LIBOSAL], [libosal])
 
 # Checks for header files.
 AC_HEADER_ASSERT

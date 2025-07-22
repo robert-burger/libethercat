@@ -37,8 +37,9 @@
  * Germany (ETG, www.ethercat.org).
  *
  */
-
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 
@@ -309,7 +310,7 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
 
             if (left_len > 0) {
                 osal_size_t read_len = read_buf->mbx_hdr.length - sizeof(ec_soe_header_t);
-                (void)memcpy(to, &read_buf->data, min(read_len, (osal_size_t)left_len));
+                (void)memcpy(to, &read_buf->data, LEC_MIN(read_len, (osal_size_t)left_len));
                 to = &to[read_len];
                 left_len -= (osal_ssize_t)read_len;
             }
@@ -387,7 +388,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                 write_buf->soe_hdr.elements   = elements;
                 write_buf->soe_hdr.idn_fragments_left = idn;
 
-                osal_size_t send_len = min(left_len, mbx_len);
+                osal_size_t send_len = LEC_MIN(left_len, mbx_len);
                 write_buf->mbx_hdr.length = sizeof(ec_soe_header_t) + send_len;
                 (void)memcpy(&write_buf->data, from, send_len);
                 from = &from[send_len];
@@ -461,7 +462,7 @@ static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_ui
 
     if (ret == EC_OK) {
         // read mapping idn
-        osal_size_t idn_size = min((idn_len[0] + 4u), 512);
+        osal_size_t idn_size = LEC_MIN((idn_len[0] + 4u), 512);
         elements = EC_SOE_VALUE;
         ret = ec_soe_read(pec, slave, atn, idn, &elements, (osal_uint8_t *)&idn_value[0], &idn_size);
     }

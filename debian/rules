@@ -13,11 +13,11 @@ export DH_VERBOSE = 1
 # package maintainers to append LDFLAGS
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
-export GIT_VERSION = $(shell git describe --long --dirty --tags  | awk -F- '{ print $$1 }')
-
-override_dh_autoreconf:
-	sed 's/VERSION.*/VERSION = ${GIT_VERSION}/' -i project.properties
-	dh_autoreconf
+#export GIT_VERSION = $(shell git describe --long --dirty --tags  | awk -F- '{ print $$1 }')
+#
+#override_dh_autoreconf:
+#	sed 's/VERSION.*/VERSION = ${GIT_VERSION}/' -i project.properties
+#	dh_autoreconf
 
 %:
 	dh $@
@@ -25,6 +25,5 @@ override_dh_autoreconf:
 
 # dh_make generated override targets
 # This is example for Cmake (See https://bugs.debian.org/641051 )
-#override_dh_auto_configure:
-#	dh_auto_configure -- \
-#	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-device-file --enable-device-sock-raw

@@ -41,7 +41,9 @@
  */
 
 /* autoconf header goes first */
+#ifdef HAVE_CONFIG_H
 #include <libethercat/config.h>
+#endif
 
 /* system includes */
 #include <assert.h>
@@ -49,12 +51,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 /* libethercat header includes */
 #include "libethercat/dc.h"
 #include "libethercat/hw.h"
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
+
+#define sign(a)     ((a) < 0 ? -1 : 1)
+#define abs(a)      (sign((a))*(a))
 
 #define ONE_SEC     ((osal_uint64_t)1000000000u)
 
@@ -190,10 +196,17 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
 
     if (ret == EC_OK) { 
         if ((active != 0u) && (pec->dc.dc_time == 0u)) {
-            ec_log(1, "DC_SYNC", "slave %2d: ERROR calculating start time because there's no cyclic "
-                    "loop running right now! DC will not work correctly!\n", slave);
+            osal_timer_t dc_time_to;
+            osal_timer_init(&dc_time_to, 1000000000); // wait 1 sec for cyclic loop
 
-            ret = EC_ERROR_CYCLIC_LOOP;
+            do {
+                if (osal_timer_expired(&dc_time_to) != OSAL_ERR_TIMEOUT) {
+                    ec_log(1, "DC_SYNC", "slave %2d: ERROR calculating start time because there's no cyclic "
+                            "loop running right now! DC will not work correctly!\n", slave);
+
+                    ret = EC_ERROR_CYCLIC_LOOP;
+                }
+            } while (pec->dc.dc_time == 0u);
         } 
     }
 
@@ -228,7 +241,7 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
                     pec->dc.dc_time/1000000000, pec->dc.dc_time%1000000000, 
                     dc_start/1000000000, dc_start%1000000000, 
                     dc_time/1000000000, dc_time%1000000000, slv->pdelay);
-            ec_log(10, "DC_SYNC", "slave %2d: cycletime_0 %d, cycletime_1 %d, "
+            ec_log(10, "DC_SYNC", "slave %2d: cycletime_0 %" PRIu32 ", cycletime_1 %" PRIu32 ", "
                     "dc_active %d\n", slave, cycle_time_0, cycle_time_1, dc_active);
         } else {
             // if not active, the DC's stay inactive
@@ -280,7 +293,7 @@ int ec_dc_config(struct ec *pec) {
     check_ec_bwr(pec, EC_REG_DCSYSDELAY, &dcsysdelay, sizeof(dcsysdelay), &wkc);
 
     osal_uint64_t packet_duration = get_packet_duration(pec);
-    ec_log(100, "DC_CONFIG", "master   : packet duration %" PRIu64 "\n", packet_duration);
+    ec_log(100, "DC_CONFIG", "master   : packet duration %" PRIu64 " ns\n", packet_duration);
 
     for (osal_uint16_t slave = 0; slave < pec->slave_cnt; slave++) {        
         ec_slave_ptr(slv, pec, slave);
@@ -322,7 +335,7 @@ int ec_dc_config(struct ec *pec) {
                     slv->entry_port = i; 
                 }
 
-                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", slave, i, slv->dc.receive_times[i]);
+                ec_log(100, "DC_CONFIG", "slave %2d: receive time port %" PRIu32 " is %" PRIu32 "\n", slave, i, slv->dc.receive_times[i]);
             }
         }
 
@@ -340,7 +353,7 @@ int ec_dc_config(struct ec *pec) {
                 check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCTIME0, &dc_time0, sizeof(dc_time0), &wkc);
                 check_ec_fprd(pec, slv->fixed_address, EC_REG_DCTIME0, &slv->dc.receive_times[0], 4 * sizeof(slv->dc.receive_times[0]), &wkc);
                 for (i = 0u; i < 4u; ++i) {
-                    ec_log(100, "DC_CONFIG", "slave %2d: receive time port %d is %u\n", 
+                    ec_log(100, "DC_CONFIG", "slave %2d: receive time port %" PRIu32 " is %" PRIu32 "\n",
                             slave, i, slv->dc.receive_times[i]);
                 }
             }
@@ -397,21 +410,21 @@ int ec_dc_config(struct ec *pec) {
             slv->port_on_parent = get_and_consume_next_available_port(slv_parent, slv_parent->entry_port);
             parent_previous_port = get_previous_active_port(slv_parent, slv->port_on_parent); 
 
-            slv->dc.t_delay_with_childs = abs((osal_int32_t)times_parent[slv->port_on_parent] - times_parent[parent_previous_port]);
+            slv->dc.t_delay_with_childs = abs((osal_int32_t)times_parent[slv->port_on_parent] - (osal_int32_t)times_parent[parent_previous_port]);
             slv->dc.t_delay_slave = abs((slv->dc.t_delay_with_childs - slv->dc.t_delay_childs + t_diff) / 2);
             slv->dc.t_delay_parent_previous = times_parent[parent_previous_port] - times_parent[slv_parent->entry_port];
             if (slv->entry_port == 0) {
                 slv->pdelay = slv_parent->pdelay + slv->dc.t_delay_parent_previous + slv->dc.t_delay_slave;
             } else {
-                slv->pdelay = slv_parent->pdelay + (abs(times_slave[slv->entry_port] - times_slave[0] + t_diff) / 2);
+                slv->pdelay = slv_parent->pdelay + (abs((osal_int32_t)times_slave[slv->entry_port] - (osal_int32_t)times_slave[0] + t_diff) / 2);
             }
         }
         
-        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %d, delay_slave %d, delay_parent_previous_slaves %d, delay_with_childs %d\n", 
+        ec_log(100, "DISTRIBUTED_CLOCK", "slave %2d: delay_childs %" PRIi32 ", delay_slave %" PRIi32 ", delay_parent_previous_slaves %" PRIi32 ", delay_with_childs %" PRIi32 "\n",
                 slave, slv->dc.t_delay_childs, slv->dc.t_delay_slave, slv->dc.t_delay_parent_previous, slv->dc.t_delay_with_childs);
 
         // write propagation delay
-        ec_log(100, "DC_CONFIG", "slave %2d: sysdelay %d\n", slave, slv->pdelay);
+        ec_log(100, "DC_CONFIG", "slave %2d: sysdelay %" PRIi32 "\n", slave, slv->pdelay);
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSDELAY, &slv->pdelay, sizeof(slv->pdelay), &wkc);
     }
 
