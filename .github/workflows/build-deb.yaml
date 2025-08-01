@@ -143,13 +143,13 @@ jobs:
           
           curl --verbose -X POST https://deb.burger-system.de/upload \
             -H "Authorization: Bearer $DEPLOY_TOKEN" \
-            -F "deb=@../libethercat_${SANITIZED_IMAGE}_amd64.deb" \
-            -F "deb-dev=@../libethercat-dev_${SANITIZED_IMAGE}_amd64.deb" \
-            -F "dbgsym=@../libethercat-dbgsym_${SANITIZED_IMAGE}_amd64.deb" \
-            -F "changes=@../libethercat_${SANITIZED_IMAGE}_amd64.changes" \
-            -F "buildinfo=@../libethercat_${SANITIZED_IMAGE}_amd64.buildinfo" \
-            -F "dsc=@../libethercat_${SANITIZED_IMAGE}.dsc" \
-            -F "source=@../libethercat_${SANITIZED_IMAGE}.tar.gz"
+            -F "deb=@\"../libethercat_${SANITIZED_IMAGE}_amd64.deb\"" \
+            -F "deb-dev=@\"../libethercat-dev_${SANITIZED_IMAGE}_amd64.deb\"" \
+            -F "dbgsym=@\"../libethercat-dbgsym_${SANITIZED_IMAGE}_amd64.deb\"" \
+            -F "changes=@\"../libethercat_${SANITIZED_IMAGE}_amd64.changes\"" \
+            -F "buildinfo=@\"../libethercat_${SANITIZED_IMAGE}_amd64.buildinfo\"" \
+            -F "dsc=@\"../libethercat_${SANITIZED_IMAGE}.dsc\"" \
+            -F "source=@\"../libethercat_${SANITIZED_IMAGE}.tar.gz\""
           
       - name: Collect .deb artifact
         run: |
