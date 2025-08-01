@@ -153,7 +153,7 @@ jobs:
             [[ -f "$f" ]] || { echo "Missing file: $f"; exit 1; }
           done
 
-          curl --verbose -X POST https://deb.burger-system.de/upload \
+          curl -X POST https://deb.burger-system.de/upload \
             -H "Authorization: Bearer $DEPLOY_TOKEN" \
             -F "deb=@$DEB_FILE" \
             -F "deb-dev=@$DEV_FILE" \
@@ -166,7 +166,7 @@ jobs:
       - name: Collect .deb artifact
         run: |
           mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
-          mv ../libosal*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
+          mv ../libethercat*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
 
       - name: Upload .deb package artifact
         uses: actions/upload-artifact@v4
