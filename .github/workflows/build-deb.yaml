@@ -141,7 +141,7 @@ jobs:
             sed -i "s/${OLD_FILE}/${NEW_FILE}/g" "../$CHANGES_FILE"
           fi
           
-          curl -X POST https://deb.burger-system.de/upload \
+          curl --verbose -X POST https://deb.burger-system.de/upload \
             -H "Authorization: Bearer $DEPLOY_TOKEN" \
             -F "deb=@../libethercat_${SANITIZED_IMAGE}_amd64.deb" \
             -F "deb-dev=@../libethercat-dev_${SANITIZED_IMAGE}_amd64.deb" \
