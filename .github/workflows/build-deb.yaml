@@ -163,28 +163,16 @@ jobs:
             -F "dsc=@$DSC_FILE" \
             -F "source=@$TAR_FILE"
       
-      - name: Upload artifacts except libethercat dir
-        uses: actions/upload-artifact@v4
-        with:
-          name: libethercat-artifacts
-          path: |
-            ../*
-            !../libethercat/
-
       - name: Collect .deb artifact
         run: |
-          mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
-          mv ../libethercat*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
+          mkdir -p artifacts/
+          rsync -av --exclude='libethercat' ../ artifacts/
 
       - name: Upload .deb package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
-          path: artifacts/${{ matrix.os }}/${{ matrix.version }}/*.deb
-
-      - name: Debug artifact files
-        run: |
-          ls -l ./artifacts/${{ matrix.os }}/${{ matrix.version }}/
+          name: libethercat-artifacts
+          path: artifacts/
 
       # Fetch the release upload URL dynamically on tag builds
       - name: Get Release Upload URL
@@ -205,10 +193,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPLOAD_URL: ${{ steps.get_release.outputs.upload_url }}
-          FILE_PATH: ./artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
-          FILE_PATH_DEV: ./artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}.deb
-          FILE_NAME: libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
-          FILE_NAME_DEV: libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}.deb
+          FILE_PATH: ./artifacts/libethercat_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
+          FILE_PATH_DEV: ./artifacts/libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
+          FILE_NAME: libethercat_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
+          FILE_NAME_DEV: libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
         run: |
           echo "Uploading $FILE_PATH to $UPLOAD_URL?name=$FILE_NAME"
           curl --fail -X POST \
