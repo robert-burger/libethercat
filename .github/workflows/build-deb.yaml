@@ -62,13 +62,15 @@ jobs:
         shell: bash
         run: |
           apt-get update
-          apt-get install -y build-essential devscripts debhelper autoconf-archive autotools-dev fakeroot pkg-config sed git python3-pip python3-venv curl jq
+          #apt-get install -y build-essential devscripts debhelper autoconf-archive autotools-dev fakeroot pkg-config sed git python3-pip python3-venv curl jq
+          apt-get install -y build-essential devscripts debhelper autoconf-archive autotools-dev pkg-config sed git curl jq
           
           CODENAME=$(lsb_release -sc)
           curl -fsSL https://deb.burger-system.de/deb.burger-system.de.gpg | tee /usr/share/keyrings/deb.burger-system.de.gpg > /dev/null
           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/deb.burger-system.de.gpg] https://deb.burger-system.de/debian ${CODENAME} main" | tee /etc/apt/sources.list.d/burger-system.list > /dev/null
 
           apt-get update
+          apt-cache search libosal
           apt-get install -y libosal-dev
 
       - name: Checkout source
