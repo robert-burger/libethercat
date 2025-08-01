@@ -33,7 +33,7 @@ jobs:
   build-deb:
     runs-on: ubuntu-latest
     env:
-      DEB_BUILD_OPTIONS: nocheck
+      DEB_BUILD_OPTIONS: "compress=gzip nocheck"
     strategy:
       matrix:
         distro: [debian-12, debian-11, ubuntu-24.04, ubuntu-22.04]
@@ -59,11 +59,15 @@ jobs:
 
     steps:
       - name: Install build dependencies
+        shell: bash
         run: |
+          CODENAME=${lsb_release -sc}
           apt-get update
           apt-get install -y build-essential devscripts debhelper autoconf-archive autotools-dev fakeroot pkg-config sed git python3-pip python3-venv curl jq
           
-          curl -1sLf 'https://dl.cloudsmith.io/basic/robertburger/common/setup.deb.sh' | bash
+          curl -fsSL https://deb.burger-system.de/deb.burger-system.de.gpg | tee /usr/share/keyrings/deb.burger-system.de.gpg > /dev/null
+          echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/deb.burger-system.de.gpg] https://deb.burger-system.de/debian ${CODENAME} main" > /etc/apt/sources.list.d/burger-system.list
+
           apt-get update
           apt-get install -y libosal-dev
 
