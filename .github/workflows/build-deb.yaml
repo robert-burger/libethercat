@@ -170,7 +170,7 @@ jobs:
       - name: Upload .deb package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libethercat-artifacts
+          name: libethercat-artifacts-${{ steps.sanitize.outputs.sanitized_image }}
           path: artifacts/
 
       # Fetch the release upload URL dynamically on tag builds
