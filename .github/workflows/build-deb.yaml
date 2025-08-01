@@ -174,11 +174,6 @@ jobs:
           name: libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
           path: artifacts/${{ matrix.os }}/${{ matrix.version }}/*.deb
 
-      - name: Collect .deb artifact
-        run: |
-          mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
-          mv ../libethercat*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
-      
       - name: Debug artifact files
         run: |
           ls -l ./artifacts/${{ matrix.os }}/${{ matrix.version }}/
