@@ -70,7 +70,6 @@ jobs:
           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/deb.burger-system.de.gpg] https://deb.burger-system.de/debian ${CODENAME} main" | tee /etc/apt/sources.list.d/burger-system.list > /dev/null
 
           apt-get update
-          apt-cache search libosal
           apt-get install -y libosal-dev
 
       - name: Checkout source
@@ -96,24 +95,66 @@ jobs:
           CODENAME=$(lsb_release -sc)
           DEBEMAIL="robert.burger@dlr.de"
           DEBFULLNAME="Robert Burger"
+          VERSION=$(dpkg-parsechangelog --show-field Version)
 
-          if ! dpkg-parsechangelog | grep -q "~${CODENAME}"; then
-            dch --local ~${CODENAME} "Build for ${CODENAME}";
+          # Check if version already contains codename suffix
+          if [[ "$VERSION" == *"~${CODENAME}"* || "$VERSION" == *"+${CODENAME}"* ]]; then
+            echo "Version already contains codename suffix, skipping dch."
+          else
+            # If there's already a ~ in version (like ~pre1), add +codename
+            if [[ "$VERSION" == *"~"* ]]; then
+              dch --local +${CODENAME} --distribution ${CODENAME} "Build for ${CODENAME}"
+            else
+              dch --local ~${CODENAME} --distribution ${CODENAME} "Build for ${CODENAME}"
+            fi
           fi
 
-          dpkg-buildpackage -us -uc -S
-          dpkg-buildpackage -us -uc -d
+          dpkg-buildpackage -us -uc -sa
 
-      - name: Collect .deb artifact
+      - name: Debug artifact files 1
         run: |
-          mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
-          mv ../libethercat*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
-      
+          ls -l ../
+          
       - name: Set sanitized image name
         id: sanitize
         run: |
           version=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
-          echo "sanitized_image=$(echo "${version}_amd64" | tr '/:' '--')" >> $GITHUB_OUTPUT
+          echo "sanitized_image=$(echo "${version}" | tr '/:' '--')" >> $GITHUB_OUTPUT
+            
+      - name: Upload to APT repository
+        env:
+          DEPLOY_TOKEN: ${{ secrets.BS_UPLOAD_KEY }}
+        shell: bash
+        run: |
+          DISTRO="${{ matrix.distro }}"
+          SANITIZED_IMAGE="${{ steps.sanitize.outputs.sanitized_image }}"
+
+          if [[ "$DISTRO" == "ubuntu-24.04" || "$DISTRO" == "ubuntu-22.04" ]]; then
+            OLD_EXT=".ddeb"
+            NEW_EXT=".deb"
+
+            OLD_FILE="libethercat-dbgsym_${SANITIZED_IMAGE}_amd64${OLD_EXT}"
+            NEW_FILE="libethercat-dbgsym_${SANITIZED_IMAGE}_amd64${NEW_EXT}"
+            CHANGES_FILE="libethercat_${SANITIZED_IMAGE}_amd64.changes"
+
+            mv "../$OLD_FILE" "../$NEW_FILE"
+            sed -i "s/${OLD_FILE}/${NEW_FILE}/g" "../$CHANGES_FILE"
+          fi
+          
+          curl -X POST https://deb.burger-system.de/upload \
+            -H "Authorization: Bearer $DEPLOY_TOKEN" \
+            -F "deb=@../libethercat_${SANITIZED_IMAGE}_amd64.deb" \
+            -F "deb-dev=@../libethercat-dev_${SANITIZED_IMAGE}_amd64.deb" \
+            -F "dbgsym=@../libethercat-dbgsym_${SANITIZED_IMAGE}_amd64.deb" \
+            -F "changes=@../libethercat_${SANITIZED_IMAGE}_amd64.changes" \
+            -F "buildinfo=@../libethercat_${SANITIZED_IMAGE}_amd64.buildinfo" \
+            -F "dsc=@../libethercat_${SANITIZED_IMAGE}.dsc" \
+            -F "source=@../libethercat_${SANITIZED_IMAGE}.tar.gz"
+          
+      - name: Collect .deb artifact
+        run: |
+          mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
+          mv ../libosal*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
 
       - name: Upload .deb package artifact
         uses: actions/upload-artifact@v4
@@ -121,6 +162,11 @@ jobs:
           name: libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
           path: artifacts/${{ matrix.os }}/${{ matrix.version }}/*.deb
 
+      - name: Collect .deb artifact
+        run: |
+          mkdir -p artifacts/${{ matrix.os }}/${{ matrix.version }}
+          mv ../libethercat*.deb artifacts/${{ matrix.os }}/${{ matrix.version }}
+      
       - name: Debug artifact files
         run: |
           ls -l ./artifacts/${{ matrix.os }}/${{ matrix.version }}/
@@ -164,7 +210,7 @@ jobs:
             "$UPLOAD_URL?name=$FILE_NAME_DEV"
 
       - name: Upload to Cloudsmith (${{ matrix.os }}/${{ matrix.version }})
-        #if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         shell: bash
