@@ -149,6 +149,10 @@ jobs:
           DSC_FILE="../libethercat_${SANITIZED_IMAGE}.dsc"
           TAR_FILE="../libethercat_${SANITIZED_IMAGE}.tar.gz"
 
+          for f in "$DEB_FILE" "$DEV_FILE" "$DBG_FILE" "$CHANGES_FILE" "$BUILDINFO_FILE" "$DSC_FILE" "$TAR_FILE"; do
+            [[ -f "$f" ]] || { echo "Missing file: $f"; exit 1; }
+          done
+
           curl --verbose -X POST https://deb.burger-system.de/upload \
             -H "Authorization: Bearer $DEPLOY_TOKEN" \
             -F "deb=@$DEB_FILE" \
