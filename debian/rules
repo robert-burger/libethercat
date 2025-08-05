@@ -22,6 +22,8 @@ export DH_VERBOSE = 1
 %:
 	dh $@
 
+override_dh_builddeb:
+	dh_builddeb -- -Zgzip
 
 # dh_make generated override targets
 # This is example for Cmake (See https://bugs.debian.org/641051 )
