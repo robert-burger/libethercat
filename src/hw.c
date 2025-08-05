@@ -166,14 +166,12 @@ void hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
  */
 osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     assert(phw != NULL);
-
+    
     osal_bool_t sent = OSAL_FALSE;
     ec_frame_t *pframe = NULL;
     pool_t *pool = pool_type == POOL_HIGH ? &phw->tx_high : &phw->tx_low;
 
-    (void)phw->get_tx_buffer(phw, &pframe);
-
-    ec_datagram_t *pdg = ec_datagram_first(pframe);
+    ec_datagram_t *pdg = NULL;
     ec_datagram_t *pdg_prev = NULL;
 
     pool_entry_t *p_entry = NULL;
@@ -187,23 +185,31 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
             // cppcheck-suppress misra-c2012-11.3
             p_entry_dg = (ec_datagram_t *)p_entry->data;
             len = ec_datagram_length(p_entry_dg);
-        } else { len = 0u; }
-
-        if ((len == 0u) || ((pframe->len + len) > phw->mtu_size)) {
-            if (pframe->len != sizeof(ec_frame_t)) {
-                (void)phw->send(phw, pframe, pool_type);
-                sent = OSAL_TRUE;
-                (void)phw->get_tx_buffer(phw, &pframe);
-                pdg = ec_datagram_first(pframe);
-            }
+        } else { 
+            // This is the signal that we have no pending datagrams
+            len = 0u;
+        }
+        // Before copying the datagram into the frame buffer, we must check whether there is enough space.
+        // If there is no space left, we have to send the frame.
+        // We also have to send the frame if we have no further pending datagrams.
+        if (pframe != NULL 
+                && ((len == 0u) || ((pframe->len + len) > phw->mtu_size))) {
+            (void)phw->send(phw, pframe, pool_type);
+            pframe = NULL;
+            sent = OSAL_TRUE;
         }
 
         if (len != 0u) {
+            // Get the framebuffer if nothing has been allocated yet.
+            if (pframe == NULL) {
+                (void)phw->get_tx_buffer(phw, &pframe);
+                pdg = ec_datagram_first(pframe);
+            }
+
             pool_remove(pool, p_entry);
             if (pdg_prev != NULL) {
                 ec_datagram_mark_next(pdg_prev);
             }
-
             p_entry_dg->next = 0;
             (void)memcpy(pdg, p_entry_dg, ec_datagram_length(p_entry_dg));
             pframe->len += len;
