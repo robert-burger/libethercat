@@ -1,4 +1,4 @@
-name: Build DEB Package
+name: Build and Publish Debian Package
 
 on:
   push:
@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEB_BUILD_OPTIONS: "compress=gzip nocheck"
+      PKGNAME: "libethercat"
     strategy:
       matrix:
         distro: [debian-12, debian-11, ubuntu-24.04, ubuntu-22.04]
@@ -81,36 +82,36 @@ jobs:
 
       - name: update branch name and version
         run: |
-          safe_branch=$(echo "${GITHUB_REF_NAME}" | tr '/' '-')
           VERSION=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
           sed "s|PACKAGE_VERSION|$VERSION|" configure.ac.in > configure.ac
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
 
       - name: Build .deb package
         shell: bash
         run: |
           # baue mit dpkg-buildpackage (ohne signieren)
+          export DEBEMAIL="robert.burger@dlr.de"
+          export DEBFULLNAME="Robert Burger"
           CODENAME=$(lsb_release -sc)
-          DEBEMAIL="robert.burger@dlr.de"
-          DEBFULLNAME="Robert Burger"
           VERSION=$(dpkg-parsechangelog --show-field Version)
+          PRE_VERSION="pre${GITHUB_RUN_NUMBER}"
 
           # Check if version already contains codename suffix
           if [[ "$VERSION" == *"~${CODENAME}"* || "$VERSION" == *"+${CODENAME}"* ]]; then
             echo "Version already contains codename suffix, skipping dch."
           else
-            # If there's already a ~ in version (like ~pre1), add +codename
-            if [[ "$VERSION" == *"~"* ]]; then
-              dch --local +${CODENAME} --distribution ${CODENAME} "Build for ${CODENAME}"
+            if [[ ! $GITHUB_REF =~ ^refs/tags/ ]]; then
+              # Not a tag, so add ~pre<x>
+              FULL_VERSION="${VERSION}~${PRE_VERSION}-1~${CODENAME}-pre"
+              dch -b --newversion "${FULL_VERSION}" --distribution "${CODENAME}-pre" "Pre-release for ${CODENAME}-pre"
             else
-              dch --local ~${CODENAME} --distribution ${CODENAME} "Build for ${CODENAME}"
+              FULL_VERSION="${VERSION}-1~${CODENAME}"
+              dch --newversion "${FULL_VERSION}" --distribution "${CODENAME}" "Pre-release for ${CODENAME}"
             fi
           fi
 
           dpkg-buildpackage -us -uc -sa
 
-      - name: Debug artifact files 1
+      - name: Debug artifact files
         run: |
           ls -l ../
           
@@ -132,21 +133,21 @@ jobs:
             OLD_EXT=".ddeb"
             NEW_EXT=".deb"
 
-            OLD_FILE="libethercat-dbgsym_${SANITIZED_IMAGE}_amd64${OLD_EXT}"
-            NEW_FILE="libethercat-dbgsym_${SANITIZED_IMAGE}_amd64${NEW_EXT}"
-            CHANGES_FILE="libethercat_${SANITIZED_IMAGE}_amd64.changes"
+            OLD_FILE="${PKGNAME}-dbgsym_${SANITIZED_IMAGE}_amd64${OLD_EXT}"
+            NEW_FILE="${PKGNAME}-dbgsym_${SANITIZED_IMAGE}_amd64${NEW_EXT}"
+            CHANGES_FILE="${PKGNAME}_${SANITIZED_IMAGE}_amd64.changes"
 
             mv "../$OLD_FILE" "../$NEW_FILE"
             sed -i "s/${OLD_FILE}/${NEW_FILE}/g" "../$CHANGES_FILE"
           fi
           
-          DBG_FILE="../libethercat-dbgsym_${SANITIZED_IMAGE}_amd64.deb"
-          DEV_FILE="../libethercat-dev_${SANITIZED_IMAGE}_amd64.deb"
-          DEB_FILE="../libethercat_${SANITIZED_IMAGE}_amd64.deb"
-          CHANGES_FILE="../libethercat_${SANITIZED_IMAGE}_amd64.changes"
-          BUILDINFO_FILE="../libethercat_${SANITIZED_IMAGE}_amd64.buildinfo"
-          DSC_FILE="../libethercat_${SANITIZED_IMAGE}.dsc"
-          TAR_FILE="../libethercat_${SANITIZED_IMAGE}.tar.gz"
+          DBG_FILE="../${PKGNAME}-dbgsym_${SANITIZED_IMAGE}_amd64.deb"
+          DEV_FILE="../${PKGNAME}-dev_${SANITIZED_IMAGE}_amd64.deb"
+          DEB_FILE="../${PKGNAME}_${SANITIZED_IMAGE}_amd64.deb"
+          CHANGES_FILE="../${PKGNAME}_${SANITIZED_IMAGE}_amd64.changes"
+          BUILDINFO_FILE="../${PKGNAME}_${SANITIZED_IMAGE}_amd64.buildinfo"
+          DSC_FILE="../${PKGNAME}_${SANITIZED_IMAGE}.dsc"
+          TAR_FILE="../${PKGNAME}_${SANITIZED_IMAGE}.tar.gz"
 
           for f in "$DEB_FILE" "$DEV_FILE" "$DBG_FILE" "$CHANGES_FILE" "$BUILDINFO_FILE" "$DSC_FILE" "$TAR_FILE"; do
             [[ -f "$f" ]] || { echo "Missing file: $f"; exit 1; }
@@ -165,49 +166,39 @@ jobs:
       - name: Collect .deb artifact
         run: |
           mkdir -p artifacts/
-          rsync -av --exclude='libethercat' ../ artifacts/
+          rsync -av --exclude=${PKGNAME} ../ artifacts/
 
       - name: Upload .deb package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libethercat-artifacts-${{ steps.sanitize.outputs.sanitized_image }}
+          name: ${{ env.PKGNAME }}-artifacts-${{ steps.sanitize.outputs.sanitized_image }}
           path: artifacts/
 
       # Fetch the release upload URL dynamically on tag builds
-      - name: Get Release Upload URL
-        if: startsWith(github.ref, 'refs/tags/')
-        id: get_release
-        run: |
-          release_json=$(curl -sSL \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${GITHUB_REF_NAME}")
-          upload_url=$(echo "$release_json" | jq -r '.upload_url' | sed -e "s/{?name,label}//")
-          echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-
-      - name: Upload asset manually with curl
+      - name: Upload all artifacts to Release
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          UPLOAD_URL: ${{ steps.get_release.outputs.upload_url }}
-          FILE_PATH: ./artifacts/libethercat_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
-          FILE_PATH_DEV: ./artifacts/libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
-          FILE_NAME: libethercat_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
-          FILE_NAME_DEV: libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}_amd64.deb
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          echo "Uploading $FILE_PATH to $UPLOAD_URL?name=$FILE_NAME"
-          curl --fail -X POST \
+          release_json=$(curl -sSL \
             -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/vnd.debian.binary-package" \
-            --data-binary @"$FILE_PATH" \
-            "$UPLOAD_URL?name=$FILE_NAME"
-          
-          echo "Uploading $FILE_PATH_DEV to $UPLOAD_URL?name=$FILE_NAME_DEV"
-          curl --fail -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/vnd.debian.binary-package" \
-            --data-binary @"$FILE_PATH_DEV" \
-            "$UPLOAD_URL?name=$FILE_NAME_DEV"
-
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${GITHUB_REF_NAME}")
+      
+          upload_url=$(echo "$release_json" | jq -r '.upload_url' | sed -e "s/{?name,label}//")
+          echo "Release upload URL: $upload_url"
+      
+          if [ -d "./artifacts" ]; then
+            for file in ./artifacts/*; do
+              filename=$(basename "$file")
+              echo "Uploading $file as $filename"
+              curl --fail -X POST \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"$file" \
+                "$upload_url?name=$filename"
+            done
+          else
+            echo "Artifacts directory not found, skipping upload."
+          fi
