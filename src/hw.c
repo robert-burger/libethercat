@@ -249,6 +249,7 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
                 && ((len == 0u) || ((pframe->len + len) > phw->mtu_size))) {
             (void)phw->send(phw, pframe, pool_type);
             pframe = NULL;
+            pdg_prev = NULL;
             phw->frame_idx++;
             sent = OSAL_TRUE;
         }
@@ -256,7 +257,11 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
         if (len != 0u) {
             // Get the framebuffer if nothing has been allocated yet.
             if (pframe == NULL) {
-                (void)phw->get_tx_buffer(phw, &pframe);
+                if (phw->get_tx_buffer(phw, &pframe) != EC_OK) {
+                    ec_t *pec = phw->pec;
+                    ec_log(1, "HW_TX_POOL", "no more send buffers available!\n");
+                    break;
+                }
                 pdg = ec_datagram_first(pframe);
             }
 
