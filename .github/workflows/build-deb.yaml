@@ -3,25 +3,47 @@ name: Build DEB Package
 on:
   push:
     branches:
+      - '**'
+    tags:
+      - '**'
   pull_request:
     branches:
+      - '**'
 
 jobs:
+  create_release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: Automated release for tag ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
   build-deb:
     runs-on: ubuntu-latest
-   
     env:
-      DEB_BUILD_OPTIONS: nocheck  # or whatever options you need
+      DEB_BUILD_OPTIONS: nocheck
     strategy:
       matrix:
-        distro: [debian-bookworm, debian-bullseye, ubuntu-24.04, ubuntu-22.04]
+        distro: [debian-12, debian-11, ubuntu-24.04, ubuntu-22.04]
         include:
-          - distro: debian-bookworm
-            image: debian:bookworm
+          - distro: debian-12
+            image: debian:12
             os: debian
             version: bookworm
-          - distro: debian-bullseye
-            image: debian:bullseye
+          - distro: debian-11
+            image: debian:11
             os: debian
             version: bullseye
           - distro: ubuntu-24.04
@@ -34,6 +56,7 @@ jobs:
             version: jammy
     container:
       image: ${{ matrix.image }}
+
     steps:
       - name: Install build dependencies
         run: |
@@ -52,7 +75,7 @@ jobs:
       - name: Mark working directory as safe
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
-      - name: update branch name
+      - name: update branch name and version
         run: |
           safe_branch=$(echo "${GITHUB_REF_NAME}" | tr '/' '-')
           VERSION=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
@@ -61,8 +84,18 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
 
       - name: Build .deb package
+        shell: bash
         run: |
           # baue mit dpkg-buildpackage (ohne signieren)
+          CODENAME=$(lsb_release -sc)
+          DEBEMAIL="robert.burger@dlr.de"
+          DEBFULLNAME="Robert Burger"
+
+          if ! dpkg-parsechangelog | grep -q "~${CODENAME}"; then
+            dch --local ~${CODENAME} "Build for ${CODENAME}";
+          fi
+
+          dpkg-buildpackage -us -uc -S
           dpkg-buildpackage -us -uc -d
 
       - name: Collect .deb artifact
@@ -74,29 +107,64 @@ jobs:
         id: sanitize
         run: |
           version=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
-          echo "sanitized_image=$(echo "$version-$IMAGE" | tr '/:' '--')" >> $GITHUB_OUTPUT
-        env:
-          IMAGE: ${{ matrix.image }}
+          echo "sanitized_image=$(echo "${version}_amd64" | tr '/:' '--')" >> $GITHUB_OUTPUT
 
-      - name: Upload .deb package
+      - name: Upload .deb package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libethercat-${{ steps.sanitize.outputs.sanitized_image }}.deb
+          name: libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
           path: artifacts/${{ matrix.os }}/${{ matrix.version }}/*.deb
 
-      - name: Ensure package is present
+      - name: Debug artifact files
         run: |
-          echo "Files in workspace:"
-          find *
+          ls -l ./artifacts/${{ matrix.os }}/${{ matrix.version }}/
+
+      # Fetch the release upload URL dynamically on tag builds
+      - name: Get Release Upload URL
+        if: startsWith(github.ref, 'refs/tags/')
+        id: get_release
+        run: |
+          release_json=$(curl -sSL \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${GITHUB_REF_NAME}")
+          upload_url=$(echo "$release_json" | jq -r '.upload_url' | sed -e "s/{?name,label}//")
+          echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: Upload asset manually with curl
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPLOAD_URL: ${{ steps.get_release.outputs.upload_url }}
+          FILE_PATH: ./artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
+          FILE_PATH_DEV: ./artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}.deb
+          FILE_NAME: libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb
+          FILE_NAME_DEV: libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}.deb
+        run: |
+          echo "Uploading $FILE_PATH to $UPLOAD_URL?name=$FILE_NAME"
+          curl --fail -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/vnd.debian.binary-package" \
+            --data-binary @"$FILE_PATH" \
+            "$UPLOAD_URL?name=$FILE_NAME"
+          
+          echo "Uploading $FILE_PATH_DEV to $UPLOAD_URL?name=$FILE_NAME_DEV"
+          curl --fail -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/vnd.debian.binary-package" \
+            --data-binary @"$FILE_PATH_DEV" \
+            "$UPLOAD_URL?name=$FILE_NAME_DEV"
 
       - name: Upload to Cloudsmith (${{ matrix.os }}/${{ matrix.version }})
+        #if: startsWith(github.ref, 'refs/tags/')
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         shell: bash
         run: |
-          VERSION=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
-          FILENAME="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat_${VERSION}_amd64.deb"
-          FILENAME_DEV="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat-dev_${VERSION}_amd64.deb"
+          FILENAME="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat_${{ steps.sanitize.outputs.sanitized_image }}.deb"
+          FILENAME_DEV="artifacts/${{ matrix.os }}/${{ matrix.version }}/libethercat-dev_${{ steps.sanitize.outputs.sanitized_image }}.deb"
         
           python3 -m venv cloudsmith
           cd cloudsmith
@@ -108,8 +176,7 @@ jobs:
           cloudsmith push deb robertburger/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME} \
             --republish \
             --api-key "$CLOUDSMITH_API_KEY"
-          
+      
           cloudsmith push deb robertburger/common/${{ matrix.os }}/${{ matrix.version }} ../${FILENAME_DEV} \
             --republish \
             --api-key "$CLOUDSMITH_API_KEY"
-
