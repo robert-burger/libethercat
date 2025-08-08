@@ -42,6 +42,7 @@
 
 #include <libosal/types.h>
 #include <libosal/osal.h>
+#include <libosal/task.h>
 
 #include "libethercat/common.h"
 
