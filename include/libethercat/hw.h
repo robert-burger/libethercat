@@ -40,7 +40,6 @@
 #ifndef LIBETHERCAT_HW_H
 #define LIBETHERCAT_HW_H
 
-#include <libosal/task.h>
 #include <libosal/types.h>
 #include <libosal/mutex.h>
 

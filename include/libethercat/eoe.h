@@ -42,6 +42,7 @@
 #define LIBETHERCAT_EOE_H
 
 #include <libosal/types.h>
+#include <libosal/mutex.h>
 #include <libosal/semaphore.h>
 
 #include "libethercat/common.h"

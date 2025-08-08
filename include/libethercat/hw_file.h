@@ -41,6 +41,7 @@
 #define LIBETHERCAT_HW_FILE_H
 
 #include <libethercat/hw.h>
+#include <libosal/task.h>
 
 typedef struct hw_file {
     struct hw_common common;

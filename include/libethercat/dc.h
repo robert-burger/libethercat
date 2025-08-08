@@ -44,7 +44,6 @@
 #define LIBETHERCAT_DC_H
 
 #include <libosal/types.h>
-#include <libosal/mutex.h>
 
 #include "libethercat/common.h"
 #include "libethercat/idx.h"

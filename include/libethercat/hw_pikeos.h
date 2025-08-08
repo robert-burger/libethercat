@@ -40,6 +40,7 @@
 #ifndef LIBETHERCAT_HW_PIKEOS_H
 #define LIBETHERCAT_HW_PIKEOS_H
 
+#include <libosal/task.h>
 #include <libethercat/hw.h>
 
 typedef struct hw_pikeos {
