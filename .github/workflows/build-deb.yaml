@@ -67,7 +67,7 @@ jobs:
           
           curl -fsSL https://deb.burger-system.de/setup.sh | bash > /dev/null
           apt-get update
-          apt-get install -y libosal-dev=0.1.1*
+          apt-get install -y libosal-dev=0.2.0*
 
       - name: Checkout source
         uses: actions/checkout@v4
