@@ -41,10 +41,6 @@
 #ifndef LIBETHERCAT_COMMON_H
 #define LIBETHERCAT_COMMON_H
 
-#ifdef HAVE_CONFIG_H
-#include <libethercat/config.h>
-#endif
-
 #include <libosal/types.h>
 
 #include <stdint.h>

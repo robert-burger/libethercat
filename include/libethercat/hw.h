@@ -44,10 +44,6 @@
 #include <libosal/types.h>
 #include <libosal/mutex.h>
 
-#ifdef HAVE_CONFIG_H
-#include <libethercat/config.h>
-#endif
-
 #include <libethercat/pool.h>
 #include <libethercat/datagram.h>
 
