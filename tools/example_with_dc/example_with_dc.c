@@ -158,7 +158,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     ec_log(100, "CYCLIC_TASK", "exiting!\n");
 }
 
-static osal_void_t* cb_state(osal_void_t* arg, ec_t* pec, ec_state_transition_t transition) {
+static void cb_state(void *arg, ec_t *pec, ec_state_t target_state, osal_bool_t up) {
     printf("My transition callback\n");
 }
 
