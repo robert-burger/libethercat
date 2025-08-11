@@ -37,5 +37,6 @@ var searchData=
   ['ec_5fslave_5fsubdev_34',['ec_slave_subdev',['../structec__slave__subdev.html',1,'']]],
   ['ec_5fsoe_35',['ec_soe',['../structec__soe.html',1,'']]],
   ['ec_5fsoe_5fidn_5fattribute_36',['ec_soe_idn_attribute',['../structec__soe__idn__attribute.html',1,'']]],
-  ['eeprom_5finfo_37',['eeprom_info',['../structeeprom__info.html',1,'']]]
+  ['ec_5fstatistics_37',['ec_statistics',['../structec__statistics.html',1,'']]],
+  ['eeprom_5finfo_38',['eeprom_info',['../structeeprom__info.html',1,'']]]
 ];

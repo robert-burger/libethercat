@@ -37,6 +37,7 @@ var annotated_dup =
     [ "ec_slave_subdev", "structec__slave__subdev.html", "structec__slave__subdev" ],
     [ "ec_soe", "structec__soe.html", "structec__soe" ],
     [ "ec_soe_idn_attribute", "structec__soe__idn__attribute.html", "structec__soe__idn__attribute" ],
+    [ "ec_statistics", "structec__statistics.html", null ],
     [ "eeprom_info", "structeeprom__info.html", "structeeprom__info" ],
     [ "hw_common", "structhw__common.html", "structhw__common" ],
     [ "hw_file", "structhw__file.html", "structhw__file" ],

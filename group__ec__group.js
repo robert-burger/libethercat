@@ -31,6 +31,7 @@ var group__ec__group =
       [ "wkc_mismatch_cnt_lwr", "structec__pd__group.html#aa0d68f06752216a0653f389d2585d784", null ],
       [ "wkc_mismatch_cnt_mbx_state", "structec__pd__group.html#a77f55a70a9c5735672b2099a78fd5d32", null ]
     ] ],
+    [ "ec_statistics", "structec__statistics.html", null ],
     [ "ec", "structec.html", [
       [ "async_loop", "structec.html#ab54102ead49e2e356d4b4fea4950c175", null ],
       [ "cdg_state", "structec.html#a34e7a844f255822ba0155d7c9488548f", null ],
@@ -103,6 +104,5 @@ var group__ec__group =
     [ "ec_send_distributed_clocks_sync_with_rtc", "group__ec__group.html#gaa63b30f58c80832c17ce14e19e0b4acd", null ],
     [ "ec_send_process_data", "group__ec__group.html#ga0858169a1d7af160964d7b2264eca4aa", null ],
     [ "ec_set_state", "group__ec__group.html#gab8797c371fd754ef1e465fdc2d6c5a9c", null ],
-    [ "ec_transceive", "group__ec__group.html#ga982ceec27068a0b8172a33e630eba641", null ],
-    [ "ec_transmit_no_reply", "group__ec__group.html#gaebae5d5a108f8dc8ca8afc334af4995c", null ]
+    [ "ec_transceive", "group__ec__group.html#ga982ceec27068a0b8172a33e630eba641", null ]
 ];

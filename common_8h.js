@@ -10,6 +10,8 @@ var common_8h =
     [ "EC_STATE_RESET", "common_8h.html#a15e4344bb35eadc4e934402d79a5a5f4", null ],
     [ "EC_STATE_SAFEOP", "common_8h.html#a27d6112f1ff83a7deaeb7a7a5b2a89ad", null ],
     [ "EC_STATE_UNKNOWN", "common_8h.html#a060f1c581890b318c4365218215c9683", null ],
+    [ "EC_TIMEOUT_FRAME", "common_8h.html#a25f586a1e1806ee39f71d6a9eb3e09fa", null ],
+    [ "EC_TIMEOUT_LOW_PRIO", "common_8h.html#a8c04f0c840a0878fc3d92ad1c9f5a0a6", null ],
     [ "LEC_MAX_COE_EMERGENCIES", "common_8h.html#ab6041ce2c60f6de5042c26598a81cb13", null ],
     [ "LEC_MAX_COE_EMERGENCY_MSG_LEN", "common_8h.html#a1c42b5ee1355dfd7f40eee7217d57f23", null ],
     [ "LEC_MAX_DATA", "common_8h.html#a56e79ebfb44baffadcbf4323621b1751", null ],

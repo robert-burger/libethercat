@@ -8,5 +8,7 @@ var searchData=
   ['ec_5fstate_5fpreop_5',['EC_STATE_PREOP',['../common_8h.html#a08ea264aa02c9d386f1cff053d1558e1',1,'common.h']]],
   ['ec_5fstate_5freset_6',['EC_STATE_RESET',['../common_8h.html#a15e4344bb35eadc4e934402d79a5a5f4',1,'common.h']]],
   ['ec_5fstate_5fsafeop_7',['EC_STATE_SAFEOP',['../common_8h.html#a27d6112f1ff83a7deaeb7a7a5b2a89ad',1,'common.h']]],
-  ['ec_5fstate_5funknown_8',['EC_STATE_UNKNOWN',['../common_8h.html#a060f1c581890b318c4365218215c9683',1,'common.h']]]
+  ['ec_5fstate_5funknown_8',['EC_STATE_UNKNOWN',['../common_8h.html#a060f1c581890b318c4365218215c9683',1,'common.h']]],
+  ['ec_5ftimeout_5fframe_9',['EC_TIMEOUT_FRAME',['../common_8h.html#a25f586a1e1806ee39f71d6a9eb3e09fa',1,'common.h']]],
+  ['ec_5ftimeout_5flow_5fprio_10',['EC_TIMEOUT_LOW_PRIO',['../common_8h.html#a8c04f0c840a0878fc3d92ad1c9f5a0a6',1,'common.h']]]
 ];

@@ -4,6 +4,7 @@ var group__hardware__group =
       [ "bytes_last_sent", "structhw__common.html#a6d51d74971a98a31137656672e85877f", null ],
       [ "bytes_sent", "structhw__common.html#ace32e6f96af423e60473c277ed526d35", null ],
       [ "close", "structhw__common.html#aa4df9371d8a8f11099f0852457f909f9", null ],
+      [ "frame_idx", "structhw__common.html#a2faadba105ec6012bfbd169d09741b45", null ],
       [ "get_tx_buffer", "structhw__common.html#ad2c21228253c5c0345855150ad593035", null ],
       [ "hw_lock", "structhw__common.html#a2d907569ef6d8678c185d7359d8d068e", null ],
       [ "mtu_size", "structhw__common.html#a5d2b1ebe5bb37eeaec3ddc207ef018ba", null ],
@@ -26,8 +27,9 @@ var group__hardware__group =
     [ "pooltype_t", "group__hardware__group.html#gaa211bde91362d8546c64c3424689e603", null ],
     [ "pooltype", "group__hardware__group.html#ga78f817daf3daff912062dc6c44eb8e46", null ],
     [ "hw_close", "group__hardware__group.html#ga5707126ae8da08fc1bf0f7b4b2ec1da7", null ],
+    [ "hw_enqueue", "group__hardware__group.html#ga6dc2485f0a0939d961b1f7645667158f", null ],
     [ "hw_open", "group__hardware__group.html#gae894f118c5550dd2385f99c91db3e6e6", null ],
-    [ "hw_process_rx_frame", "group__hardware__group.html#ga021a653eb2aec38d25fba4d3fbdd32d1", null ],
+    [ "hw_process_rx_frame", "group__hardware__group.html#ga5f105e7445bcefd86799d5709bce377f", null ],
     [ "hw_tx", "group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383", null ],
     [ "hw_tx_high", "group__hardware__group.html#ga2772faf983ef30e60474480973b2e842", null ],
     [ "hw_tx_low", "group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff", null ]

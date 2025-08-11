@@ -103,8 +103,7 @@ $(document).ready(function(){initNavTree('hw_8h.html',''); initResizable(); });
 
 <p>hardware access functions  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;libosal/task.h&gt;</code><br />
-<code>#include &lt;libosal/types.h&gt;</code><br />
+<div class="textblock"><code>#include &lt;libosal/types.h&gt;</code><br />
 <code>#include &lt;libosal/mutex.h&gt;</code><br />
 <code>#include &lt;<a class="el" href="pool_8h_source.html">libethercat/pool.h</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="datagram_8h_source.html">libethercat/datagram.h</a>&gt;</code><br />
@@ -178,9 +177,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ga317d72c3f8cb8460308f42eec6381383" id="r_ga317d72c3f8cb8460308f42eec6381383"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383">hw_tx</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
 <tr class="memdesc:ga317d72c3f8cb8460308f42eec6381383"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <br /></td></tr>
 <tr class="separator:ga317d72c3f8cb8460308f42eec6381383"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga021a653eb2aec38d25fba4d3fbdd32d1" id="r_ga021a653eb2aec38d25fba4d3fbdd32d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga021a653eb2aec38d25fba4d3fbdd32d1">hw_process_rx_frame</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
-<tr class="memdesc:ga021a653eb2aec38d25fba4d3fbdd32d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a received EtherCAT frame.  <br /></td></tr>
-<tr class="separator:ga021a653eb2aec38d25fba4d3fbdd32d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5f105e7445bcefd86799d5709bce377f" id="r_ga5f105e7445bcefd86799d5709bce377f"><td class="memItemLeft" align="right" valign="top">osal_bool_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga5f105e7445bcefd86799d5709bce377f">hw_process_rx_frame</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
+<tr class="memdesc:ga5f105e7445bcefd86799d5709bce377f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a received EtherCAT frame.  <br /></td></tr>
+<tr class="separator:ga5f105e7445bcefd86799d5709bce377f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6dc2485f0a0939d961b1f7645667158f" id="r_ga6dc2485f0a0939d961b1f7645667158f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga6dc2485f0a0939d961b1f7645667158f">hw_enqueue</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__pool__group.html#gaee5c34f352692cc83ae9d5e583cc55f0">pool_entry_t</a> *p_entry, <a class="el" href="group__hardware__group.html#gaa211bde91362d8546c64c3424689e603">pooltype_t</a> pool_type)</td></tr>
+<tr class="memdesc:ga6dc2485f0a0939d961b1f7645667158f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enqueue frame to send queue.  <br /></td></tr>
+<tr class="separator:ga6dc2485f0a0939d961b1f7645667158f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>hardware access functions </p>

@@ -121,6 +121,8 @@ Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structec__pd__group.html">ec_pd_group</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">process data group structure  <a href="structec__pd__group.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structec__statistics.html">ec_statistics</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structec.html">ec</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">ethercat master structure  <a href="structec.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -237,6 +239,9 @@ typedef struct <a class="el" href="structec__slave.html">ec_slave</a>&#160;</td>
 typedef struct <a class="el" href="structec__pd__group.html">ec_pd_group</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_pd_group_t</b></td></tr>
 <tr class="memdesc:ga5e3d3a91b2b7c400f23ab6a09678a8fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">process data group structure <br /></td></tr>
 <tr class="separator:ga5e3d3a91b2b7c400f23ab6a09678a8fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga82d54f65d8bc45d8c3075974a431645b" id="r_ga82d54f65d8bc45d8c3075974a431645b"><td class="memItemLeft" align="right" valign="top">
+typedef struct <a class="el" href="structec__statistics.html">ec_statistics</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_statistics_t</b></td></tr>
+<tr class="separator:ga82d54f65d8bc45d8c3075974a431645b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3bb8b6ae2cba98e3d3dd7cfd9602800d" id="r_ga3bb8b6ae2cba98e3d3dd7cfd9602800d"><td class="memItemLeft" align="right" valign="top">
 typedef struct <a class="el" href="structec.html">ec</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_t</b></td></tr>
 <tr class="memdesc:ga3bb8b6ae2cba98e3d3dd7cfd9602800d"><td class="mdescLeft">&#160;</td><td class="mdescRight">ethercat master structure <br /></td></tr>
@@ -271,9 +276,6 @@ Functions</h2></td></tr>
 <tr class="memitem:ga982ceec27068a0b8172a33e630eba641" id="r_ga982ceec27068a0b8172a33e630eba641"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#ga982ceec27068a0b8172a33e630eba641">ec_transceive</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint8_t cmd, osal_uint32_t adr, osal_uint8_t *data, osal_size_t datalen, osal_uint16_t *wkc)</td></tr>
 <tr class="memdesc:ga982ceec27068a0b8172a33e630eba641"><td class="mdescLeft">&#160;</td><td class="mdescRight">Syncronous ethercat read/write.  <br /></td></tr>
 <tr class="separator:ga982ceec27068a0b8172a33e630eba641"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaebae5d5a108f8dc8ca8afc334af4995c" id="r_gaebae5d5a108f8dc8ca8afc334af4995c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gaebae5d5a108f8dc8ca8afc334af4995c">ec_transmit_no_reply</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, osal_uint8_t cmd, osal_uint32_t adr, osal_uint8_t *data, osal_size_t datalen)</td></tr>
-<tr class="memdesc:gaebae5d5a108f8dc8ca8afc334af4995c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Asyncronous ethercat read/write, answer don't care.  <br /></td></tr>
-<tr class="separator:gaebae5d5a108f8dc8ca8afc334af4995c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab8797c371fd754ef1e465fdc2d6c5a9c" id="r_gab8797c371fd754ef1e465fdc2d6c5a9c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ec__group.html#gab8797c371fd754ef1e465fdc2d6c5a9c">ec_set_state</a> (<a class="el" href="group__coe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d">ec_t</a> *pec, ec_state_t state)</td></tr>
 <tr class="memdesc:gab8797c371fd754ef1e465fdc2d6c5a9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set state on ethercat bus.  <br /></td></tr>
 <tr class="separator:gab8797c371fd754ef1e465fdc2d6c5a9c"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -193,9 +193,9 @@ Macros</h2></td></tr>
 <tr class="memitem:a36d525cf4d116b2fe4ecc00222b256f1" id="r_a36d525cf4d116b2fe4ecc00222b256f1"><td class="memItemLeft" align="right" valign="top"><a id="a36d525cf4d116b2fe4ecc00222b256f1" name="a36d525cf4d116b2fe4ecc00222b256f1"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>PACKED</b>&#160;&#160;&#160;__attribute__((__packed__))</td></tr>
 <tr class="separator:a36d525cf4d116b2fe4ecc00222b256f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6afabdc09a49a433ee19d8a9486056d" id="r_ac6afabdc09a49a433ee19d8a9486056d"><td class="memItemLeft" align="right" valign="top"><a id="ac6afabdc09a49a433ee19d8a9486056d" name="ac6afabdc09a49a433ee19d8a9486056d"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>min</b>(a,  b)&#160;&#160;&#160;((a) &lt; (b) ? (a) : (b))</td></tr>
-<tr class="separator:ac6afabdc09a49a433ee19d8a9486056d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1848cfcd7b0cb9ce8f0ff0e059b4dbad" id="r_a1848cfcd7b0cb9ce8f0ff0e059b4dbad"><td class="memItemLeft" align="right" valign="top"><a id="a1848cfcd7b0cb9ce8f0ff0e059b4dbad" name="a1848cfcd7b0cb9ce8f0ff0e059b4dbad"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>LEC_MIN</b>(a,  b)&#160;&#160;&#160;((a) &lt; (b) ? (a) : (b))</td></tr>
+<tr class="separator:a1848cfcd7b0cb9ce8f0ff0e059b4dbad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a060f1c581890b318c4365218215c9683" id="r_a060f1c581890b318c4365218215c9683"><td class="memItemLeft" align="right" valign="top"><a id="a060f1c581890b318c4365218215c9683" name="a060f1c581890b318c4365218215c9683"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>EC_STATE_UNKNOWN</b>&#160;&#160;&#160;((osal_uint16_t)(0x0000u))</td></tr>
 <tr class="memdesc:a060f1c581890b318c4365218215c9683"><td class="mdescLeft">&#160;</td><td class="mdescRight">unknown state <br /></td></tr>
@@ -232,6 +232,14 @@ Macros</h2></td></tr>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>EC_STATE_RESET</b>&#160;&#160;&#160;((osal_uint16_t)(0x0010u))</td></tr>
 <tr class="memdesc:a15e4344bb35eadc4e934402d79a5a5f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">EtherCAT ERROR reset. <br /></td></tr>
 <tr class="separator:a15e4344bb35eadc4e934402d79a5a5f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25f586a1e1806ee39f71d6a9eb3e09fa" id="r_a25f586a1e1806ee39f71d6a9eb3e09fa"><td class="memItemLeft" align="right" valign="top"><a id="a25f586a1e1806ee39f71d6a9eb3e09fa" name="a25f586a1e1806ee39f71d6a9eb3e09fa"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>EC_TIMEOUT_FRAME</b>&#160;&#160;&#160;((osal_uint64_t) 2000000u)</td></tr>
+<tr class="memdesc:a25f586a1e1806ee39f71d6a9eb3e09fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">EtherCAT frame timeout in [ns]. <br /></td></tr>
+<tr class="separator:a25f586a1e1806ee39f71d6a9eb3e09fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c04f0c840a0878fc3d92ad1c9f5a0a6" id="r_a8c04f0c840a0878fc3d92ad1c9f5a0a6"><td class="memItemLeft" align="right" valign="top"><a id="a8c04f0c840a0878fc3d92ad1c9f5a0a6" name="a8c04f0c840a0878fc3d92ad1c9f5a0a6"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>EC_TIMEOUT_LOW_PRIO</b>&#160;&#160;&#160;((osal_uint64_t)50000000u)</td></tr>
+<tr class="memdesc:a8c04f0c840a0878fc3d92ad1c9f5a0a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Timeout for low-priority tranceive frames, will be re-send on loss. <br /></td></tr>
+<tr class="separator:a8c04f0c840a0878fc3d92ad1c9f5a0a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>

@@ -13,8 +13,9 @@ var hw_8h =
       [ "POOL_LOW", "group__hardware__group.html#gga78f817daf3daff912062dc6c44eb8e46a8d275486105f8b7be08056c355603cdd", null ]
     ] ],
     [ "hw_close", "group__hardware__group.html#ga5707126ae8da08fc1bf0f7b4b2ec1da7", null ],
+    [ "hw_enqueue", "group__hardware__group.html#ga6dc2485f0a0939d961b1f7645667158f", null ],
     [ "hw_open", "group__hardware__group.html#gae894f118c5550dd2385f99c91db3e6e6", null ],
-    [ "hw_process_rx_frame", "group__hardware__group.html#ga021a653eb2aec38d25fba4d3fbdd32d1", null ],
+    [ "hw_process_rx_frame", "group__hardware__group.html#ga5f105e7445bcefd86799d5709bce377f", null ],
     [ "hw_tx", "group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383", null ],
     [ "hw_tx_high", "group__hardware__group.html#ga2772faf983ef30e60474480973b2e842", null ],
     [ "hw_tx_low", "group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff", null ]
