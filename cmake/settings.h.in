@@ -123,13 +123,13 @@
 #cmakedefine01 LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED
 
 /* Use PikeOS build */
-#cmakedefine LIBETHERCAT_BUILD_PIKEOS
+#cmakedefine01 LIBETHERCAT_BUILD_PIKEOS
 
 /* Use POSIX build on linux */
-#cmakedefine LIBETHERCAT_BUILD_POSIX
+#cmakedefine01 LIBETHERCAT_BUILD_POSIX
 
 /* Use VxWorks build */
-#cmakedefine LIBETHERCAT_BUILD_VXWORKS
+#cmakedefine01 LIBETHERCAT_BUILD_VXWORKS
 
 #endif /* LIBETHERCAT_SETTINGS_H */
 
