@@ -1,3 +1,7 @@
+libethercat (0.7.2) unstable; urgency=low
+
+  * change: add new settings.h to pass compilation settings 
+
 libethercat (0.7.1) unstable; urgency=low
 
   * fix: function signature in example
