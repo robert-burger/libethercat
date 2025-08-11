@@ -1,6 +1,7 @@
 # http://www.gnu.org/software/automake
 
 Makefile.in
+include/libethercat/settings.h
 
 # http://www.gnu.org/software/autoconf
 
