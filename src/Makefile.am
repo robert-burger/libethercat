@@ -15,6 +15,7 @@ include_HEADERS = $(top_srcdir)/include/libethercat/common.h \
 				  $(top_srcdir)/include/libethercat/mbx.h \
 				  $(top_srcdir)/include/libethercat/async_loop.h \
 				  $(top_srcdir)/include/libethercat/regs.h \
+				  $(top_srcdir)/include/libethercat/settings.h \
 				  $(top_srcdir)/include/libethercat/slave.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
 				  $(top_srcdir)/include/libethercat/mii.h
@@ -22,48 +23,48 @@ include_HEADERS = $(top_srcdir)/include/libethercat/common.h \
 libethercat_la_SOURCES	= slave.c datagram.c pool.c async_loop.c ec.c \
 						  hw.c mbx.c eeprom.c dc.c idx.c mii.c
 
-if MBX_SUPPORT_EOE
+if LIBETHERCAT_MBX_SUPPORT_EOE
 include_HEADERS += $(top_srcdir)/include/libethercat/eoe.h
 libethercat_la_SOURCES += eoe.c
 endif
 
-if MBX_SUPPORT_COE
+if LIBETHERCAT_MBX_SUPPORT_COE
 include_HEADERS += $(top_srcdir)/include/libethercat/coe.h
 libethercat_la_SOURCES += coe.c
 libethercat_la_SOURCES += coe_master.c
 endif
 
-if MBX_SUPPORT_FOE
+if LIBETHERCAT_MBX_SUPPORT_FOE
 include_HEADERS += $(top_srcdir)/include/libethercat/foe.h
 libethercat_la_SOURCES += foe.c
 endif
 
-if MBX_SUPPORT_SOE
+if LIBETHERCAT_MBX_SUPPORT_SOE
 include_HEADERS += $(top_srcdir)/include/libethercat/soe.h
 libethercat_la_SOURCES += soe.c
 endif
 
-if BUILD_DEVICE_SOCK_RAW_LEGACY
+if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY
 include_HEADERS += $(top_srcdir)/include/libethercat/hw_sock_raw.h
 libethercat_la_SOURCES += hw_sock_raw.c
 endif
 
-if BUILD_DEVICE_SOCK_RAW_MMAPED
+if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED
 include_HEADERS += $(top_srcdir)/include/libethercat/hw_sock_raw_mmaped.h
 libethercat_la_SOURCES += hw_sock_raw_mmaped.c
 endif
 
-if BUILD_DEVICE_FILE
+if LIBETHERCAT_BUILD_DEVICE_FILE
 include_HEADERS += $(top_srcdir)/include/libethercat/hw_file.h
 libethercat_la_SOURCES += hw_file.c
 endif
 
-if BUILD_DEVICE_BPF
+if LIBETHERCAT_BUILD_DEVICE_BPF
 include_HEADERS += $(top_srcdir)/include/libethercat/hw_bpf.h
 libethercat_la_SOURCES += hw_bpf.c
 endif
 
-if BUILD_PIKEOS
+if LIBETHERCAT_BUILD_PIKEOS
 include_HEADERS += $(top_srcdir)/include/libethercat/hw_pikeos.h
 libethercat_la_SOURCES += hw_pikeos.c
 endif

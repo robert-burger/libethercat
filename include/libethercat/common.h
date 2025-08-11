@@ -43,6 +43,8 @@
 
 #include <libosal/types.h>
 
+#include <libethercat/settings.h>
+
 #include <stdint.h>
 
 #ifdef LIBETHERCAT_MAX_SLAVES

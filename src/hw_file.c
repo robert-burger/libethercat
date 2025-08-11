@@ -40,6 +40,8 @@
 #include <libethercat/config.h>
 #endif
 
+#include <libethercat/settings.h>
+
 #if LIBETHERCAT_BUILD_DEVICE_FILE == 1
 
 #include <libethercat/hw_file.h>

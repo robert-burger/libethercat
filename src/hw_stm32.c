@@ -41,6 +41,8 @@
 #include <libethercat/config.h>
 #endif
 
+#include <libethercat/settings.h>
+
 #include <libethercat/hw_stm32.h>
 #include <libethercat/ec.h>
 #include <libethercat/idx.h>

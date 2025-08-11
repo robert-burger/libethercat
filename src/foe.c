@@ -42,6 +42,8 @@
 #include <libethercat/config.h>
 #endif
 
+#include <libethercat/foe.h>
+
 #if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 
 #include "libethercat/ec.h"

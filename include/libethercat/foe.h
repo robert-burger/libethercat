@@ -45,6 +45,7 @@
 #include <libosal/types.h>
 
 #include "libethercat/common.h"
+#include "libethercat/pool.h"
 
 /** \defgroup foe_group File transfer over EtherCAT (FoE)
  *
@@ -101,6 +102,10 @@ typedef struct ec_fw_update {
 #define EFW_CMD_CHKSUMCHKSUM            6u          //!< \brief command checksum checksum
 #define EFW_CMD_BOOTCHKSUM              7u          //!< \brief command boot checksum
 #define EFW_CMD_SET_EEPROM              10u         //!< \brief command set eeprom
+
+// forward declarations
+struct ec;
+typedef struct ec ec_t;     //!< \brief typedef to ec struct.
 
 #ifdef __cplusplus
 extern "C" {

@@ -40,6 +40,8 @@
 #include <libethercat/config.h>
 #endif
 
+#include <libethercat/settings.h>
+
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_LEGACY == 1
 
 #include <libethercat/hw_sock_raw.h>

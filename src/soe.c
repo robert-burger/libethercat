@@ -41,6 +41,8 @@
 #include <libethercat/config.h>
 #endif
 
+#include <libethercat/settings.h>
+
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
 
 #include "libethercat/slave.h"

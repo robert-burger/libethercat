@@ -34,6 +34,8 @@
 #include <libethercat/config.h>
 #endif
 
+#include <libethercat/settings.h>
+
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
 
 #include "libethercat/ec.h"
