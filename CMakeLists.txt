@@ -1,9 +1,22 @@
 cmake_minimum_required(VERSION 3.5)
-file(READ "project.properties" PROJECT_PROPERTIES)
-string(REGEX MATCH "VERSION = ([0-9]*.[0-9]*.[0-9]*)" _ ${PROJECT_PROPERTIES})
-set(PROJECT_VERSION ${CMAKE_MATCH_1})
-project(libethercat VERSION ${PROJECT_VERSION})
+execute_process(
+    COMMAND git describe --tags --abbrev=0
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_VER
+    RESULT_VARIABLE GIT_RESULT
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(GIT_RESULT EQUAL 0)
+    string(REGEX MATCH "v?([0-9]+\\.[0-9]+\\.[0-9]+)" _ ${GIT_VER})
+    set(PROJECT_VERSION ${CMAKE_MATCH_1})
+endif()
 
+if(NOT PROJECT_VERSION)
+    set(PROJECT_VERSION 0.0.0)
+endif()
+
+project(libethercat VERSION ${PROJECT_VERSION})
 
 option(MBX_SUPPORT_COE "Flag to enable or disable Mailbox CoE support" ON)       
 option(MBX_SUPPORT_FOE "Flag to enable or disable Mailbox FoE support" ON)
@@ -22,8 +35,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
 
 set(LIBETHERCAT_STDC_HEADERS 1)
-set(LIBETHERCAT_PACKAGE_VERSION "${CMAKE_PROJECT_VERSION}")
-set(LIBETHERCAT_VERSION "${CMAKE_PROJECT_VERSION}")
+set(LIBETHERCAT_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(LIBETHERCAT_VERSION "${PROJECT_VERSION}")
 set(LIBETHERCAT_PACKAGE_URL "${CMAKE_PROJECT_HOMEPAGE_URL}")
 set(LIBETHERCAT_PACKAGE "${CMAKE_PROJECT_NAME}")
 set(LIBETHERCAT_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
@@ -70,7 +83,7 @@ find_package (Threads REQUIRED)
 
 include_directories(${libosal_INCLUDE_DIRS} include)
 link_directories(${libosal_LIB_DIR})
-check_symbol_exists("LIBOSAL_BUILD_POSIX" "libosal/config.h" LIBETHERCAT_BUILD_POSIX)
+check_symbol_exists("LIBOSAL_BUILD_POSIX" "libosal/osal.h" LIBETHERCAT_BUILD_POSIX)
 
 set(SRC_ETHERCAT 
     src/async_loop.c
