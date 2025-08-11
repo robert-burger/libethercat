@@ -1,5 +1,7 @@
 # libethercat 
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/libethercat.svg)](https://repology.org/project/libethercat/versions)
+
 EtherCAT-master library  
 
 This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface. 
