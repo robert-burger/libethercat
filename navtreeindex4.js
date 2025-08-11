@@ -1,5 +1,6 @@
 var NAVTREEINDEX4 =
 {
+"structec__soe__idn__attribute.html#aecea6b4314f7e009041219f207b358ba":[1,12,1,9],
 "structec__statistics.html":[1,2,1],
 "structeeprom__info.html":[1,3,6],
 "structeeprom__info.html#a017aee79a11a391e0843386838789ad9":[1,3,6,8],

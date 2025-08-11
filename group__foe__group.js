@@ -42,6 +42,7 @@ var group__foe__group =
     [ "MAX_ERROR_TEXT_SIZE", "group__foe__group.html#ga7f7619744439b9942bb0cbcaa6245031", null ],
     [ "MAX_FILE_NAME_SIZE", "group__foe__group.html#ga0887cab1acf8e238e6777ab604ed7044", null ],
     [ "ec_fw_update_t", "group__foe__group.html#ga5ef5769a2514316da4c49239ab4c1564", null ],
+    [ "ec_t", "group__foe__group.html#ga3bb8b6ae2cba98e3d3dd7cfd9602800d", null ],
     [ "ec_foe_deinit", "group__foe__group.html#ga1a640129ef0ab328b2d479694b6a9eb3", null ],
     [ "ec_foe_enqueue", "group__foe__group.html#ga3bbe728c41837257a99313e214528aab", null ],
     [ "ec_foe_init", "group__foe__group.html#gaafb724621963ce72c01e6cbd1fadeb86", null ],
