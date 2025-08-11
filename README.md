@@ -1,5 +1,14 @@
 # libethercat 
 
+[![Build and Publish Debian Package](https://github.com/robert-burger/libethercat/actions/workflows/build-deb.yaml/badge.svg)](https://github.com/robert-burger/libethercat/actions/workflows/build-deb.yaml)
+[![License: LGPL-V3](https://img.shields.io/badge/license-LGPL--V3-green.svg)](LICENSE)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#)
+[![Debian](https://img.shields.io/badge/Debian-A81D33?logo=debian&logoColor=fff)](#)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](#)
+[![PikeOS](https://img.shields.io/badge/PikeOS-purple.svg)](LICENSE)
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/libethercat.svg)](https://repology.org/project/libethercat/versions)
+
 EtherCAT-master library  
 
 This library provides all functionality to communicate with EtherCAT slaves attached to a Network interface. 
