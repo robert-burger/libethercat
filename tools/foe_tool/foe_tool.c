@@ -2,6 +2,8 @@
 #include <libethercat/config.h>
 #endif
 
+#include <libethercat/settings.h>
+
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -25,6 +27,7 @@
 
 #include "libethercat/ec.h"
 #include "libethercat/mii.h"
+#include "libethercat/foe.h"
 
 #if LIBETHERCAT_BUILD_DEVICE_FILE == 1
 #include <libethercat/hw_file.h>

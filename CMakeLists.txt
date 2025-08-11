@@ -81,7 +81,7 @@ check_include_files("unistd.h" LIBETHERCAT_HAVE_UNISTD_H)
 find_package(libosal REQUIRED)
 find_package (Threads REQUIRED)
 
-include_directories(${libosal_INCLUDE_DIRS} include)
+include_directories(${libosal_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
 link_directories(${libosal_LIB_DIR})
 check_symbol_exists("LIBOSAL_BUILD_POSIX" "libosal/osal.h" LIBETHERCAT_BUILD_POSIX)
 
@@ -151,7 +151,8 @@ if(${MBX_SUPPORT_EOE})
     list(APPEND SRC_ETHERCAT src/eoe.c)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libethercat/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/settings.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/settings.h)
 
 # LIBS
 add_library(ethercat ${SRC_ETHERCAT} ${SRC_HW_LAYER})
