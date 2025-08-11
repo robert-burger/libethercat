@@ -84,6 +84,7 @@ find_package (Threads REQUIRED)
 include_directories(${libosal_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
 link_directories(${libosal_LIB_DIR})
 check_symbol_exists("LIBOSAL_BUILD_POSIX" "libosal/osal.h" LIBETHERCAT_BUILD_POSIX)
+set(LIBETHERCAT_BUILD_POSIX 1)
 
 set(SRC_ETHERCAT 
     src/async_loop.c
