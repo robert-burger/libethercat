@@ -1,3 +1,7 @@
+libethercat (0.7.1) unstable; urgency=low
+
+  * fix: function signature in example
+
 libethercat (0.7.0) unstable; urgency=low
 
   * add: debian bookworm 6.1.0-37-rt kernel
