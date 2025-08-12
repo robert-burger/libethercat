@@ -1,3 +1,7 @@
+libethercat (0.7.3) unstable; urgency=low
+
+  * fix: cmake build
+
 libethercat (0.7.2) unstable; urgency=low
 
   * change: add new settings.h to pass compilation settings 
