@@ -30,9 +30,11 @@ include(CheckSymbolExists)
 include(CheckLibraryExists)
 include(ExternalProject)
 include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
+set(PACKAGE_LIB_DIR ${CMAKE_INSTALL_LIBDIR})
 
 set(LIBETHERCAT_STDC_HEADERS 1)
 set(LIBETHERCAT_PACKAGE_VERSION "${PROJECT_VERSION}")
@@ -81,6 +83,7 @@ check_include_files("unistd.h" LIBETHERCAT_HAVE_UNISTD_H)
 find_package(libosal REQUIRED)
 find_package (Threads REQUIRED)
 
+message(INFO "libosal ${libosal_LIB_DIR}")
 include_directories(${libosal_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
 link_directories(${libosal_LIB_DIR})
 check_symbol_exists("LIBOSAL_BUILD_POSIX" "libosal/osal.h" LIBETHERCAT_BUILD_POSIX)
@@ -182,13 +185,26 @@ write_basic_package_version_file(
     COMPATIBILITY AnyNewerVersion
 )
 
+# Define your version, prefix, and dirs (adjust as needed)
+set(VERSION "${PROJECT_VERSION}")
+set(prefix "${CMAKE_INSTALL_PREFIX}")
+set(exec_prefix "${prefix}")
+set(libdir "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+set(includedir "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/libethercat.pc.in
+  ${CMAKE_CURRENT_BINARY_DIR}/libethercat.pc
+  @ONLY
+)
+
 set(INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
 set(ETHERCAT_LIB_NAME ethercat)
 
 configure_package_config_file(
     ${PROJECT_SOURCE_DIR}/cmake/libethercatConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/libethercatConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/libethercat
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libethercat
     PATH_VARS ETHERCAT_LIB_NAME INSTALL_DIR
 )
 
@@ -196,7 +212,7 @@ install(TARGETS ethercat EXPORT libethercatTargets)
 install(
     EXPORT libethercatTargets 
     FILE libethercatTargets.cmake
-    DESTINATION lib/cmake/libethercat
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libethercat
 )
 install(DIRECTORY include/libethercat/ DESTINATION include/libethercat 
 	FILES_MATCHING PATTERN "*.h"
@@ -204,5 +220,8 @@ install(DIRECTORY include/libethercat/ DESTINATION include/libethercat
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libethercatConfig.cmake" 
     "${CMAKE_CURRENT_BINARY_DIR}/libethercatConfigVersion.cmake"
-    DESTINATION lib/cmake/libethercat
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libethercat
 )
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libethercat.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
