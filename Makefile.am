@@ -19,3 +19,6 @@ endif
 
 pkgconfig_DATA = libethercat.pc
 
+pkgcmakedir = $(libdir)/cmake/libethercat
+dist_pkgcmake_DATA = cmake/libethercat/libethercatConfig.cmake
+
