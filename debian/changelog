@@ -1,14 +1,27 @@
+libethercat (0.7.4) unstable; urgency=low
+
+  * autotools: cmake find package from autotools
+  * cmake: add generation of pkg-config file from cmake
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 13 Aug 2025 08:15:09 +0200
+
 libethercat (0.7.3) unstable; urgency=low
 
   * fix: cmake build
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
 
 libethercat (0.7.2) unstable; urgency=low
 
   * change: add new settings.h to pass compilation settings 
 
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
+
 libethercat (0.7.1) unstable; urgency=low
 
   * fix: function signature in example
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
 
 libethercat (0.7.0) unstable; urgency=low
 
