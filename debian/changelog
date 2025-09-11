@@ -1,5 +1,6 @@
 libethercat (0.7.4) unstable; urgency=low
 
+  * fix: timeout waiting for cyclic loop
   * autotools: cmake find package from autotools
   * cmake: add generation of pkg-config file from cmake
 
