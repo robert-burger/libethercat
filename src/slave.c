@@ -544,7 +544,11 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     osal_uint16_t value = 0u;
     
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
         
     // generate transition
     ec_state_transition_t transition = ((pec->slaves[slave].act_state & EC_STATE_MASK) << 8u) | (state & EC_STATE_MASK); 
@@ -626,7 +630,11 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
 int ec_slave_get_state(ec_t *pec, osal_uint16_t slave, ec_state_t *state, osal_uint16_t *alstatcode) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     osal_uint16_t wkc = 0u;
@@ -661,7 +669,11 @@ int ec_slave_get_state(ec_t *pec, osal_uint16_t slave, ec_state_t *state, osal_u
 // generate pd mapping
 int ec_slave_generate_mapping(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
@@ -740,7 +752,11 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
     int ret = EC_OK;
     
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     ec_slave_ptr(slv, pec, slave);
 
@@ -884,7 +900,11 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
     int ret = EC_OK;
     
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     ec_slave_ptr(slv, pec, slave);
 

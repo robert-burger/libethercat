@@ -341,7 +341,11 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
         osal_uint8_t *dns, osal_char_t *dns_name) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     pool_entry_t *p_entry;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
@@ -437,8 +441,13 @@ static void ec_eoe_send_sync(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
 int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_size_t frame_len) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(frame != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
+
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     int counter;
@@ -516,7 +525,11 @@ int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, osal_
  */
 int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);

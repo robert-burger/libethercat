@@ -241,9 +241,13 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
         osal_uint8_t *elements, osal_uint8_t *buf, osal_size_t *len) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(buf != NULL);
     assert(len != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     int counter;
@@ -336,8 +340,12 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
 int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t idn, 
         osal_uint8_t elements, osal_uint8_t *buf, osal_size_t len) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(buf != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     int counter;
@@ -445,8 +453,12 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
 static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, 
         osal_uint16_t idn, osal_uint32_t *bitsize) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(bitsize != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
     
     int ret = EC_OK;
     osal_uint16_t idn_value[512];
@@ -500,7 +512,11 @@ static int ec_soe_generate_mapping_local(ec_t *pec, osal_uint16_t slave, osal_ui
 
 int ec_soe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     ec_slave_ptr(slv, pec, slave);
     int ret = EC_OK;
