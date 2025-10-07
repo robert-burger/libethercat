@@ -69,6 +69,7 @@
 #define EC_ERROR_SLAVE_STATE_SWITCH             (EC_ERROR_SLAVE_MASK   | 0x00000001)        //!< \brief State switch on slave failed.
 #define EC_ERROR_SLAVE_NOT_RESPONDING           (EC_ERROR_SLAVE_MASK   | 0x00000002)        //!< \brief Slave is not responding.
 #define EC_ERROR_SLAVE_TRANSITION_ACTIVE        (EC_ERROR_SLAVE_MASK   | 0x00000004)        //!< \brief Slave state transition currently active.
+#define EC_ERROR_SLAVE_NOT_FOUND                (EC_ERROR_SLAVE_MASK   | 0x00000008)        //!< \brief Slave is not found in the network
 
 #define EC_ERROR_EEPROM_MASK                    (0x00040000)                                //!< \brief Slave EEPROM error mask.
 #define EC_ERROR_EEPROM_READ_ERROR              (EC_ERROR_EEPROM_MASK  | 0x00000001)        //!< \brief Slave EEPROM read error.

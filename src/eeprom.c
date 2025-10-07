@@ -60,7 +60,11 @@
 // set eeprom control to pdi
 int ec_eeprom_to_pdi(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     osal_uint16_t wkc;
@@ -79,7 +83,11 @@ int ec_eeprom_to_pdi(ec_t *pec, osal_uint16_t slave) {
 // set eeprom control to ec
 int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     osal_uint16_t wkc;
@@ -136,8 +144,12 @@ int ec_eeprom_to_ec(struct ec *pec, osal_uint16_t slave) {
 // read 32-bit word of eeprom
 int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uint32_t *data) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(data != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
    
     int ret = EC_OK;
     osal_uint16_t wkc = 0;
@@ -239,8 +251,12 @@ int ec_eepromread(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uin
 // write 32-bit word of eeprom
 int ec_eepromwrite(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr, osal_uint16_t *data) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(data != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     osal_uint16_t wkc = 0;
@@ -390,8 +406,12 @@ int ec_eepromread_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
         osal_uint8_t *buf, osal_size_t buflen) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(buf != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     osal_off_t offset = 0;
     int ret = EC_OK;
@@ -422,8 +442,12 @@ int ec_eepromwrite_len(ec_t *pec, osal_uint16_t slave, osal_uint32_t eepadr,
         const osal_uint8_t *buf, osal_size_t buflen) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(buf != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     osal_off_t offset = 0;
     int i;

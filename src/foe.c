@@ -237,9 +237,13 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         osal_size_t *file_data_len, const osal_char_t **error_message) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(file_data != NULL);
     assert(file_data_len != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     int counter;
@@ -359,8 +363,12 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 {
     (void)error_message;
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(file_data != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     int counter;

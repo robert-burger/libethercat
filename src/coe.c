@@ -352,7 +352,11 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
     assert(pec != NULL);
     assert(buf != NULL);
     assert(len != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
@@ -470,7 +474,11 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
 {
     assert(pec != NULL);
     assert(buf != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
@@ -566,7 +574,11 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
 {
     assert(pec != NULL);
     assert(buf != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
@@ -787,7 +799,11 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
     assert(pec != NULL);
     assert(buf != NULL);
     assert(len != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_OK; 
@@ -904,7 +920,11 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
         ec_coe_sdo_desc_t *desc, osal_uint32_t *error_code) {
     assert(pec != NULL);
     assert(desc != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_OK;
@@ -1026,7 +1046,11 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
 {
     assert(pec != NULL);
     assert(desc != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     pool_entry_t *p_entry = NULL;
     int ret = EC_ERROR_MAILBOX_READ;
@@ -1125,7 +1149,11 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
 
 int ec_coe_generate_mapping(ec_t *pec, osal_uint16_t slave) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
     osal_uint8_t *buf = NULL;
@@ -1311,8 +1339,12 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
  */
 int ec_coe_emergency_get_next(ec_t *pec, osal_uint16_t slave, ec_coe_emergency_message_t *msg) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(msg != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     ec_slave_ptr(slv, pec, slave);
     int ret = EC_ERROR_UNAVAILABLE;

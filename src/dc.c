@@ -185,7 +185,11 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
         osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
