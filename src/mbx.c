@@ -273,7 +273,11 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
     ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     osal_uint64_t timeout = nsec;
     osal_timer_t timer;
@@ -320,7 +324,11 @@ int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_ui
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
 
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     osal_uint64_t timeout = nsec;
     osal_timer_t timer;
@@ -358,8 +366,12 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
     ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(buf != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     osal_uint64_t timeout = nsec;
     osal_timer_t timer;
@@ -410,9 +422,13 @@ int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_
     ec_slave_ptr(slv, pec, slave);
 
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(buf != NULL);
-    
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
+
     // wait for receive mailbox available 
     if (ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec) == EC_OK) {
         (void)ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr,
@@ -686,8 +702,12 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
  */
 int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, osal_timer_t *timeout) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     (void)slave;
 
@@ -715,8 +735,12 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
  */
 int ec_mbx_next_counter(ec_t *pec, int slave, int *seq_counter) {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(seq_counter != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     ec_slave_ptr(slv, pec, slave);
 

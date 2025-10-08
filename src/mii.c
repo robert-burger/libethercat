@@ -66,8 +66,12 @@ int ec_miiread(struct ec *pec, osal_uint16_t slave,
         osal_uint8_t phy_adr, osal_uint16_t phy_reg, osal_uint16_t *data) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(data != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     osal_uint16_t wkc;
@@ -117,8 +121,12 @@ int ec_miiwrite(struct ec *pec, osal_uint16_t slave,
         osal_uint8_t phy_adr, osal_uint16_t phy_reg, osal_uint16_t *data) 
 {
     assert(pec != NULL);
-    assert(slave < pec->slave_cnt);
     assert(data != NULL);
+
+    if(slave >= pec->slave_cnt)
+    {
+        return EC_ERROR_SLAVE_NOT_FOUND ;
+    }
 
     int ret = EC_OK;
     osal_uint16_t wkc;
