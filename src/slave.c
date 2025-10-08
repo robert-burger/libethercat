@@ -552,6 +552,7 @@ int ec_slave_set_state(ec_t *pec, osal_uint16_t slave, ec_state_t state) {
     if (ec_fpwr(pec, pec->slaves[slave].fixed_address, EC_REG_ALCTL, &state, sizeof(state), &wkc) != EC_OK) { 
         // just return, we got an error from ec_transceive
         ret = EC_ERROR_SLAVE_NOT_RESPONDING;
+        ec_log(1, get_transition_string(transition), "slave %2d: not reponding!\n", slave);
     } else if ((state & EC_STATE_RESET) != 0u) {
         osal_timer_t timeout;
         osal_timer_init(&timeout, 1000000000);
@@ -899,15 +900,22 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
     // check error state
     ret = ec_slave_get_state(pec, slave, &act_state, &al_status_code);
     if (ret != EC_OK) {
-        ec_log(10, "ERROR", "could not get state of slave %d\n", slave);
+        ec_log(10, "ERROR", "could not get state of slave %d, try to rewrite fixed address %d/0x%04X\n", slave, slv->fixed_address, slv->fixed_address);
         
         // rewrite fixed address
         (void)ec_apwr(pec, slv->auto_inc_address, EC_REG_STADR, 
                 (osal_uint8_t *)&slv->fixed_address, 
                 sizeof(slv->fixed_address), &wkc); 
 
-        ret = EC_ERROR_SLAVE_NOT_RESPONDING;
-    } else {
+        if (wkc == 0) {
+            ret = EC_ERROR_SLAVE_NOT_RESPONDING;
+        } else {
+            // retry getting slave state
+            ret = ec_slave_get_state(pec, slave, &act_state, &al_status_code);
+        }
+    }
+    
+    if (ret == EC_OK) {
         if (    ((act_state & EC_STATE_ERROR) != 0u) &&
                 ((al_status_code != 0u))) { // reset error state first
             osal_timer_t error_reset_timeout;

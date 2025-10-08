@@ -1286,6 +1286,100 @@ static void cb_block(struct ec *pec, pool_entry_t *p_entry, ec_datagram_t *p_dg)
     osal_binary_semaphore_post(&p_entry->p_idx->waiter);
 }
 
+
+static const char ec_cmd_nop_str[]     = "NOP";
+static const char ec_cmd_aprd_str[]    = "APRD";
+static const char ec_cmd_apwr_str[]    = "APWR";
+static const char ec_cmd_aprw_str[]    = "APRW";
+static const char ec_cmd_fprd_str[]    = "FPRD";
+static const char ec_cmd_fpwr_str[]    = "FPWR";
+static const char ec_cmd_fprw_str[]    = "FPRW";
+static const char ec_cmd_brd_str[]     = "BRD";
+static const char ec_cmd_bwr_str[]     = "BWR";
+static const char ec_cmd_brw_str[]     = "BRW";
+static const char ec_cmd_lrd_str[]     = "LRD";
+static const char ec_cmd_lwr_str[]     = "LWR";
+static const char ec_cmd_lrw_str[]     = "LRW";
+static const char ec_cmd_armw_str[]    = "ARMW";
+static const char ec_cmd_frmw_str[]    = "FRMW";
+static const char ec_cmd_unknown_str[] = "UNKNOWN";
+
+const char *ec_datagram_cmd_to_string(osal_uint8_t cmd) {
+    switch (cmd) {
+        case EC_CMD_NOP:
+            return ec_cmd_nop_str;
+        case EC_CMD_APRD:
+            return ec_cmd_aprd_str;
+        case EC_CMD_APWR:
+            return ec_cmd_apwr_str;
+        case EC_CMD_APRW:
+            return ec_cmd_aprw_str;
+        case EC_CMD_FPRD:
+            return ec_cmd_fprd_str;
+        case EC_CMD_FPWR:
+            return ec_cmd_fpwr_str;
+        case EC_CMD_FPRW:
+            return ec_cmd_fprw_str;
+        case EC_CMD_BRD:
+            return ec_cmd_brd_str;
+        case EC_CMD_BWR:
+            return ec_cmd_bwr_str;
+        case EC_CMD_BRW:
+            return ec_cmd_brw_str;
+        case EC_CMD_LRD:
+            return ec_cmd_lrd_str;
+        case EC_CMD_LWR:
+            return ec_cmd_lwr_str;
+        case EC_CMD_LRW:
+            return ec_cmd_lrw_str;
+        case EC_CMD_ARMW:
+            return ec_cmd_armw_str;
+        case EC_CMD_FRMW:
+            return ec_cmd_frmw_str;
+        default:
+            return ec_cmd_unknown_str;
+    }
+}
+
+void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, ssize_t out_len) {
+    uint16_t adp = p_dg->adr & 0xFFFFu,
+             ado = (p_dg->adr & 0xFFFF0000u) >> 16u;
+
+    switch (p_dg->cmd) {
+        default:
+        case EC_CMD_NOP:
+            snprintf(out, out_len, "cmd %s\n", 
+                    ec_datagram_cmd_to_string(p_dg->cmd));
+            break;
+        case EC_CMD_APRD:
+        case EC_CMD_APWR:
+        case EC_CMD_APRW:
+        case EC_CMD_ARMW:
+            snprintf(out, out_len, "cmd %s, auto-inc address %d/0x%04X, register 0x%04X", 
+                    ec_datagram_cmd_to_string(p_dg->cmd), *(int16_t *)&adp, adp, ado);
+            break;
+        case EC_CMD_FPRD:
+        case EC_CMD_FPWR:
+        case EC_CMD_FPRW:
+        case EC_CMD_FRMW:
+            snprintf(out, out_len, "cmd %s, fixed address %d/0x%04X, register 0x%04X", 
+                    ec_datagram_cmd_to_string(p_dg->cmd), adp, adp, ado);
+            break;
+        case EC_CMD_BRD:
+        case EC_CMD_BWR:
+        case EC_CMD_BRW:
+            snprintf(out, out_len, "cmd %s, register 0x%04X", 
+                    ec_datagram_cmd_to_string(p_dg->cmd), ado);
+            break;
+        case EC_CMD_LRD:
+        case EC_CMD_LWR:
+        case EC_CMD_LRW:
+            snprintf(out, out_len, "cmd %s, logical address 0x%08X", 
+                    ec_datagram_cmd_to_string(p_dg->cmd), p_dg->adr);
+            break;
+    }
+}
+
 //! syncronous ethercat read/write
 /*!
  * \param pec pointer to ethercat master
@@ -1364,7 +1458,9 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             int local_ret = osal_binary_semaphore_timedwait(&p_idx->waiter, &to);
             if (local_ret != OSAL_OK) {
                 if (local_ret == OSAL_ERR_TIMEOUT) {
-                    ec_log(1, "MASTER_TRANSCEIVE", "timeout on cmd 0x%X, adr 0x%" PRIu32 "\n", cmd, adr);
+                    char tmp[128];
+                    ec_decode_datagram_to_string(p_dg, tmp, 128);
+                    ec_log(1, "MASTER_TRANSCEIVE", "timeout on %s\n", tmp);
                 } else {
                     ec_log(1, "MASTER_TRANSCEIVE", "osal_binary_semaphore_wait returned: %d, cmd 0x%X, adr 0x%X\n", 
                             local_ret, cmd, adr);
@@ -1383,7 +1479,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             }
             
             to_transceive_expired = osal_timer_expired(&to_transceive);;
-        } while (to_transceive_expired != OSAL_ERR_TIMEOUT);
+        } while ((to_transceive_expired != OSAL_ERR_TIMEOUT) && (ret == EC_OK));
                 
         if (to_transceive_expired == OSAL_ERR_TIMEOUT) {
             ec_log(1, "MASTER_TRANSCEIVE", 
