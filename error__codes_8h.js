@@ -44,6 +44,7 @@ var error__codes_8h =
     [ "EC_ERROR_OUT_OF_INDICES", "group__error__codes__group.html#ga2c070aa20d583c5c0c1424e847146604", null ],
     [ "EC_ERROR_OUT_OF_MEMORY", "group__error__codes__group.html#gaaf5e341535bc2202d51d3354955c5c97", null ],
     [ "EC_ERROR_SLAVE_MASK", "group__error__codes__group.html#gae8700ac31ca467cf067e3d5f58494be1", null ],
+    [ "EC_ERROR_SLAVE_NOT_FOUND", "group__error__codes__group.html#gaafcea28451718a62d32bee2128797e59", null ],
     [ "EC_ERROR_SLAVE_NOT_RESPONDING", "group__error__codes__group.html#ga44ff84f0f5538c9bff6d9a0e637dfb48", null ],
     [ "EC_ERROR_SLAVE_STATE_SWITCH", "group__error__codes__group.html#ga2d21901dc3f015f46ec392cd12a48a56", null ],
     [ "EC_ERROR_SLAVE_TRANSITION_ACTIVE", "group__error__codes__group.html#gab60f150d76b750f836f29480fdecb74e", null ],

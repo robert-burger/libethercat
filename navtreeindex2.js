@@ -1,5 +1,6 @@
 var NAVTREEINDEX2 =
 {
+"group__regs__group.html#ga5609716e407ea63de494b5db373f0478":[1,10,58],
 "group__regs__group.html#ga5a826c30cc00af068b0a42f5105164a4":[1,10,47],
 "group__regs__group.html#ga5db13786237f6dfcbdeb64a57ce289de":[1,10,9],
 "group__regs__group.html#ga5dd6caa38030390622c7157d56a85e42":[1,10,6],
@@ -248,6 +249,5 @@ var NAVTREEINDEX2 =
 "structec__cyclic__datagram.html#ac0225663cb89396c7064fb996976d165":[1,1,2,6],
 "structec__cyclic__datagram.html#aeb9a9d4e8e8e7fba9c3207ddc6b48fde":[1,1,2,3],
 "structec__datagram.html":[1,1,1],
-"structec__datagram.html#a0ea781a3a5e2cdc4491ae25fc1d5219a":[1,1,1,6],
-"structec__datagram.html#a4ba68bd0c7e087c839e198a4d2bfa91b":[1,1,1,0]
+"structec__datagram.html#a0ea781a3a5e2cdc4491ae25fc1d5219a":[1,1,1,6]
 };
