@@ -1019,7 +1019,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
 
                     for (osal_uint32_t sm_idx = 0u; sm_idx < 2u; ++sm_idx) {
                         ec_log(10, get_transition_string(transition), "slave %2d: "
-                                "sm%" PRIu32 ", adr 0x%04X, len %3d, flags 0x%08" PRIu32 "\n",
+                                "sm%" PRIu32 ", adr 0x%04X, len %3d, flags 0x%08" PRIX32 "\n",
                                 slave, sm_idx, slv->sm[sm_idx].adr, 
                                 slv->sm[sm_idx].len, slv->sm[sm_idx].flags);
 
