@@ -19,23 +19,23 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * libethercat is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with libethercat (LICENSE.LGPL-V3); if not, write 
- * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth
  * Floor, Boston, MA  02110-1301, USA.
- * 
- * Please note that the use of the EtherCAT technology, the EtherCAT 
- * brand name and the EtherCAT logo is only permitted if the property 
- * rights of Beckhoff Automation GmbH are observed. For further 
- * information please contact Beckhoff Automation GmbH & Co. KG, 
- * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
- * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ *
+ * Please note that the use of the EtherCAT technology, the EtherCAT
+ * brand name and the EtherCAT logo is only permitted if the property
+ * rights of Beckhoff Automation GmbH are observed. For further
+ * information please contact Beckhoff Automation GmbH & Co. KG,
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg,
  * Germany (ETG, www.ethercat.org).
  *
  */
@@ -46,42 +46,43 @@
 #include <libosal/types.h>
 
 #include "libethercat/common.h"
+#include "libethercat/datagram.h"
 #include "libethercat/idx.h"
 #include "libethercat/pool.h"
-#include "libethercat/datagram.h"
 
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION              ( 0x01u )
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_SYNC0                   ( 0x02u )
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_SYNC1                   ( 0x04u )
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION         ( 0x08u )
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_EXT_64BIT               ( 0x10u )
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_START_TIME_CHECK        ( 0x20u )
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_NEAR_FUTURE_CONFIG      ( 0x40u )
-#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_DEBUG_PULSE             ( 0x80u )
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_ACTIVATION (0x01u)
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_SYNC0 (0x02u)
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_SYNC1 (0x04u)
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_AUTO_ACTIVATION (0x08u)
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_EXT_64BIT (0x10u)
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_START_TIME_CHECK (0x20u)
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_NEAR_FUTURE_CONFIG (0x40u)
+#define EC_REG_DCSYNCACT__SYNC_OUT_UNIT_DEBUG_PULSE (0x80u)
 
-#define EC_DC_ACTIVATION_REG_SYNC0                              ( 0x3 )
-#define EC_DC_ACTIVATION_REG_SYNC1                              ( 0x5 )
-#define EC_DC_ACTIVATION_REG_SYNC01                             ( 0x7 )
+#define EC_DC_ACTIVATION_REG_SYNC0 (0x3)
+#define EC_DC_ACTIVATION_REG_SYNC1 (0x5)
+#define EC_DC_ACTIVATION_REG_SYNC01 (0x7)
 
 typedef struct ec_dc_info_slave {
-    int use_dc;                     //!< \brief flag, whether to use dc
-    int next;                       //!< \brief marker for next dc slave
-    int prev;                       //!< \brief marker for previous dc slave
+    int use_dc;  //!< \brief flag, whether to use dc
+    int next;    //!< \brief marker for next dc slave
+    int prev;    //!< \brief marker for previous dc slave
 
-    osal_uint8_t available_ports;   //!< \brief available ports for dc config
-    osal_uint32_t receive_times[4]; //!< \brief latched port receive times
+    osal_uint8_t available_ports;    //!< \brief available ports for dc config
+    osal_uint32_t receive_times[4];  //!< \brief latched port receive times
 
     osal_int32_t t_delay_childs;
     osal_int32_t t_delay_with_childs;
     osal_int32_t t_delay_slave;
     osal_int32_t t_delay_parent_previous;
-                 
-    int activation_reg;             //!< \brief DC Sync Activation Register (0x981). 0x3 = Sync0, 0x5 = Sync1, 0x7 = Sync01
-    osal_uint32_t cycle_time_0;     //!< \brief cycle time of sync 0 [ns]
-    osal_uint32_t cycle_time_1;     //!< \brief cycle time of sync 1 [ns]
-    osal_int32_t cycle_shift;       //!< \brief cycle shift time [ns]
+
+    int activation_reg;  //!< \brief DC Sync Activation Register (0x981). 0x3 = Sync0, 0x5 = Sync1,
+                         //!< 0x7 = Sync01
+    osal_uint32_t cycle_time_0;  //!< \brief cycle time of sync 0 [ns]
+    osal_uint32_t cycle_time_1;  //!< \brief cycle time of sync 1 [ns]
+    osal_int32_t cycle_shift;    //!< \brief cycle shift time [ns]
 } ec_dc_info_slave_t;
-    
+
 typedef enum ec_dc_mode {
     dc_mode_master_clock = 0,
     dc_mode_ref_clock,
@@ -90,8 +91,8 @@ typedef enum ec_dc_mode {
 
 typedef struct ec_dc_info {
     osal_uint16_t master_address;
-    int have_dc;                    //!< \brief At least one slave is using DCs.
-    int next;                       
+    int have_dc;  //!< \brief At least one slave is using DCs.
+    int next;
     int prev;
     int have_64bit;
 
@@ -102,8 +103,8 @@ typedef struct ec_dc_info {
     osal_int64_t act_diff;          //!< \brief Actual difference of DC and RTC clock.
     osal_uint64_t packet_duration;  //!< \brief Packet duration on wire.
 
-    double timer_correction;        //!< \brief Correction value for EtherCAT master timer in [ns].
-    
+    double timer_correction;  //!< \brief Correction value for EtherCAT master timer in [ns].
+
     struct {
         double p_part;
         double i_part;
@@ -112,13 +113,13 @@ typedef struct ec_dc_info {
         double kp;
         double ki;
         double kd;
-    } control;                   //!< \brief PI-controller to adjust EtherCAT master timer value.
+    } control;  //!< \brief PI-controller to adjust EtherCAT master timer value.
 
     osal_uint64_t sent_time_nsec;
 
     ec_dc_mode_t mode;
 
-    ec_cyclic_datagram_t cdg;       //!< \brief DC cyclic datagram.
+    ec_cyclic_datagram_t cdg;  //!< \brief DC cyclic datagram.
 } ec_dc_info_t;
 
 struct ec;
@@ -131,11 +132,11 @@ extern "C" {
 /*!
  * Check all slaves if they support distributed clocks and measure delays.
  *
- * DC support can be determined from EtherCAT slave's feature register (0x08). 
- * which is automatically read on EtherCAT master's INIT phase. On all 
+ * DC support can be determined from EtherCAT slave's feature register (0x08).
+ * which is automatically read on EtherCAT master's INIT phase. On all
  * slaves supporting DC's the system time is read and written to
  * the system time offset to set slave time to 0. afterwards the port times
- * are taken and the propagation delays are calculated and written. 
+ * are taken and the propagation delays are calculated and written.
  *
  * This function does not enable distributed clock sync0/1 pulse generation
  * on the slaves. this has to be done with \link ec_dc_sync0 \endlink
@@ -145,15 +146,15 @@ extern "C" {
  * \param[in]   pec     Pointer to EtherCAT master structure.
  * \return supported dc
  */
-int ec_dc_config(struct ec *pec);
+int ec_dc_config(struct ec* pec);
 
 //! Configure EtherCAT slave for distributed clock sync0 and sync1 pulse
 /*!
- * This function writes the cycle time, calculates the DC first start time 
- * wrt the cycle shift 
- * and enables sync0 and sync1 pulse generation on the corresponding device. 
+ * This function writes the cycle time, calculates the DC first start time
+ * wrt the cycle shift
+ * and enables sync0 and sync1 pulse generation on the corresponding device.
  * It can also be use to disable DC's on the EtherCAT slave.
- * 
+ *
  * \param[in]   pec             Pointer to EtherCAT master structure.
  * \param[in]   slave           Slave number.
  * \param[in]   dc_active       Dc active flag.
@@ -163,12 +164,11 @@ int ec_dc_config(struct ec *pec);
  *
  * \return EC_OK or EC_UNAVAILABLE, EC_ERROR_CYCLIC_LOOP
  */
-int ec_dc_sync(struct ec *pec, osal_uint16_t slave, osal_uint8_t dc_active, 
-        osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
+int ec_dc_sync(struct ec* pec, osal_uint16_t slave, osal_uint8_t dc_active,
+               osal_uint32_t cycle_time_0, osal_uint32_t cycle_time_1, osal_int32_t cycle_shift);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // LIBETHERCAT_DC_H
-
+#endif  // LIBETHERCAT_DC_H

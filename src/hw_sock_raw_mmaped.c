@@ -16,23 +16,23 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * libethercat is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with libethercat (LICENSE.LGPL-V3); if not, write 
- * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth
  * Floor, Boston, MA  02110-1301, USA.
- * 
- * Please note that the use of the EtherCAT technology, the EtherCAT 
- * brand name and the EtherCAT logo is only permitted if the property 
- * rights of Beckhoff Automation GmbH are observed. For further 
- * information please contact Beckhoff Automation GmbH & Co. KG, 
- * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
- * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ *
+ * Please note that the use of the EtherCAT technology, the EtherCAT
+ * brand name and the EtherCAT logo is only permitted if the property
+ * rights of Beckhoff Automation GmbH are observed. For further
+ * information please contact Beckhoff Automation GmbH & Co. KG,
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg,
  * Germany (ETG, www.ethercat.org).
  *
  */
@@ -44,46 +44,45 @@
 
 #if LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1
 
-#include <libethercat/hw_sock_raw_mmaped.h>
-#include <libethercat/ec.h>
-#include <libethercat/idx.h>
-#include <libethercat/error_codes.h>
-
 #include <assert.h>
+#include <libethercat/ec.h>
+#include <libethercat/error_codes.h>
+#include <libethercat/hw_sock_raw_mmaped.h>
+#include <libethercat/idx.h>
 
 #ifdef LIBETHERCAT_HAVE_NET_IF_H
-#include <net/if.h> 
+#include <net/if.h>
 #endif
 
 #ifdef LIBETHERCAT_HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
-#include <net/ethernet.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <linux/if_packet.h>
-#include <sys/mman.h>
-#include <poll.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <linux/if_packet.h>
+#include <net/ethernet.h>
+#include <poll.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 // forward declarations
-int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type);
-int hw_device_sock_raw_mmaped_recv(struct hw_common *phw);
-void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw);
-int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe);
-int hw_device_sock_raw_mmaped_close(struct hw_common *phw);
+int hw_device_sock_raw_mmaped_send(struct hw_common* phw, ec_frame_t* pframe, pooltype_t pool_type);
+int hw_device_sock_raw_mmaped_recv(struct hw_common* phw);
+void hw_device_sock_raw_mmaped_send_finished(struct hw_common* phw);
+int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common* phw, ec_frame_t** ppframe);
+int hw_device_sock_raw_mmaped_close(struct hw_common* phw);
 
-static void *hw_device_sock_raw_mmaped_rx_thread(void *arg);
+static void* hw_device_sock_raw_mmaped_rx_thread(void* arg);
 
-// this need the grant_cap_net_raw kernel module 
+// this need the grant_cap_net_raw kernel module
 // see https://gitlab.com/fastflo/open_ethercat
 #define GRANT_CAP_NET_RAW_PROCFS "/proc/grant_cap_net_raw"
 
-static int try_grant_cap_net_raw_init(ec_t *pec) {
+static int try_grant_cap_net_raw_init(ec_t* pec) {
     int ret = 0;
 
     if (access(GRANT_CAP_NET_RAW_PROCFS, R_OK) != 0) {
@@ -91,8 +90,8 @@ static int try_grant_cap_net_raw_init(ec_t *pec) {
     } else {
         int fd = open(GRANT_CAP_NET_RAW_PROCFS, O_RDONLY);
         if (fd == -1) {
-            ec_log(1, "HW_OPEN", "error opening %s: %s\n", 
-                    GRANT_CAP_NET_RAW_PROCFS, strerror(errno));
+            ec_log(1, "HW_OPEN", "error opening %s: %s\n", GRANT_CAP_NET_RAW_PROCFS,
+                   strerror(errno));
             ret = -1;
         } else {
             osal_char_t buffer[1024];
@@ -109,23 +108,25 @@ static int try_grant_cap_net_raw_init(ec_t *pec) {
 
 //! Opens EtherCAT hw device.
 /*!
- * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   phw         Pointer to hw handle.
  * \param[in]   devname     Null-terminated string to EtherCAT hw device name.
  * \param[in]   prio        Priority for receiver thread.
  * \param[in]   cpu_mask    CPU mask for receiver thread.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmaped, ec_t *pec, const osal_char_t *devname, int prio, int cpumask) {
+int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped* phw_sock_raw_mmaped, ec_t* pec,
+                                   const osal_char_t* devname, int prio, int cpumask) {
     int ret = EC_OK;
     struct ifreq ifr;
     int ifindex;
-    
+
     if (try_grant_cap_net_raw_init(pec) == -1) {
-        ec_log(10, "hw_open", "grant_cap_net_raw unsuccessfull, maybe we are "
-                "not allowed to open a raw socket\n");
+        ec_log(10, "hw_open",
+               "grant_cap_net_raw unsuccessfull, maybe we are "
+               "not allowed to open a raw socket\n");
     }
-    
+
     phw_sock_raw_mmaped->common.send = hw_device_sock_raw_mmaped_send;
     phw_sock_raw_mmaped->common.recv = hw_device_sock_raw_mmaped_recv;
     phw_sock_raw_mmaped->common.send_finished = hw_device_sock_raw_mmaped_send_finished;
@@ -149,28 +150,34 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
 
         // tell kernel to export data through mmap()ped ring
         tp.tp_block_size = phw_sock_raw_mmaped->mmap_packets * pagesize;
-        tp.tp_block_nr   = 1;
+        tp.tp_block_nr = 1;
         tp.tp_frame_size = pagesize;
-        tp.tp_frame_nr   = phw_sock_raw_mmaped->mmap_packets;
-        if (setsockopt(phw_sock_raw_mmaped->sockfd, SOL_PACKET, PACKET_RX_RING, (void*)&tp, sizeof(tp)) != 0) {
+        tp.tp_frame_nr = phw_sock_raw_mmaped->mmap_packets;
+        if (setsockopt(phw_sock_raw_mmaped->sockfd, SOL_PACKET, PACKET_RX_RING, (void*)&tp,
+                       sizeof(tp)) != 0) {
             ec_log(1, "HW_OPEN", "setsockopt() rx ring: %s\n", strerror(errno));
             ret = EC_ERROR_UNAVAILABLE;
-        } else if (setsockopt(phw_sock_raw_mmaped->sockfd, SOL_PACKET, PACKET_TX_RING, (void*)&tp, sizeof(tp)) != 0) {
+        } else if (setsockopt(phw_sock_raw_mmaped->sockfd, SOL_PACKET, PACKET_TX_RING, (void*)&tp,
+                              sizeof(tp)) != 0) {
             ec_log(1, "HW_OPEN", "setsockopt() tx ring: %s\n", strerror(errno));
             ret = EC_ERROR_UNAVAILABLE;
-        } else {}
+        } else {
+        }
 
         if (ret == EC_OK) {
             // TODO unmap anywhere
-            phw_sock_raw_mmaped->rx_ring = mmap(0, phw_sock_raw_mmaped->mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE, MAP_SHARED, phw_sock_raw_mmaped->sockfd, 0);
-            phw_sock_raw_mmaped->tx_ring = &phw_sock_raw_mmaped->rx_ring[(phw_sock_raw_mmaped->mmap_packets * pagesize)];
+            phw_sock_raw_mmaped->rx_ring =
+                mmap(0, phw_sock_raw_mmaped->mmap_packets * pagesize * 2, PROT_READ | PROT_WRITE,
+                     MAP_SHARED, phw_sock_raw_mmaped->sockfd, 0);
+            phw_sock_raw_mmaped->tx_ring =
+                &phw_sock_raw_mmaped->rx_ring[(phw_sock_raw_mmaped->mmap_packets * pagesize)];
 
             phw_sock_raw_mmaped->rx_ring_offset = 0;
             phw_sock_raw_mmaped->tx_ring_offset = 0;
         }
     }
 
-    if (ret == EC_OK) { 
+    if (ret == EC_OK) {
         int i;
 
         // set timeouts
@@ -194,24 +201,27 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
 
         osal_bool_t iff_running = (ifr.ifr_flags & IFF_RUNNING) == 0 ? OSAL_FALSE : OSAL_TRUE;
         ifr.ifr_flags = ifr.ifr_flags | IFF_PROMISC | IFF_BROADCAST | IFF_UP;
-        /*int ret =*/ ioctl(phw_sock_raw_mmaped->sockfd, SIOCSIFFLAGS, &ifr);
+        /*int ret =*/ioctl(phw_sock_raw_mmaped->sockfd, SIOCSIFFLAGS, &ifr);
         //    if (ret != 0) {
-        //        ec_log(1, "HW_OPEN", "error setting interface %s: %s\n", devname, strerror(errno));
-        //        goto error_exit;
+        //        ec_log(1, "HW_OPEN", "error setting interface %s: %s\n", devname,
+        //        strerror(errno)); goto error_exit;
         //    }
-        
+
         osal_timer_t up_timeout;
         osal_timer_init(&up_timeout, 10000000000);
         while (iff_running == OSAL_FALSE) {
             ioctl(phw_sock_raw_mmaped->sockfd, SIOCGIFFLAGS, &ifr);
             iff_running = (ifr.ifr_flags & IFF_RUNNING) == 0 ? OSAL_FALSE : OSAL_TRUE;
             if (iff_running == OSAL_TRUE) {
-                ec_log(10, "HW_OPEN", "interface %s is RUNNING now, wait additional 2 sec for link to be established!\n", devname);
+                ec_log(10, "HW_OPEN",
+                       "interface %s is RUNNING now, wait additional 2 sec for link to be "
+                       "established!\n",
+                       devname);
                 osal_sleep(1000000000);
             } else {
                 ec_log(10, "HW_OPEN", "interface %s is not RUNNING, waiting ...\n", devname);
             }
-            
+
             if (osal_timer_expired(&up_timeout) == OSAL_ERR_TIMEOUT) {
                 break;
             }
@@ -244,9 +254,9 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
         sll.sll_family = AF_PACKET;
         sll.sll_ifindex = ifindex;
         sll.sll_protocol = htons(ETH_P_ECAT);
-        bind(phw_sock_raw_mmaped->sockfd, (struct sockaddr *) &sll, sizeof(sll));
+        bind(phw_sock_raw_mmaped->sockfd, (struct sockaddr*)&sll, sizeof(sll));
     }
-    
+
     if (ret == EC_OK) {
         phw_sock_raw_mmaped->rxthreadrunning = 1;
         osal_task_attr_t attr;
@@ -254,7 +264,8 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
         attr.priority = prio;
         attr.affinity = cpumask;
         (void)strcpy(&attr.task_name[0], "ecat.rx");
-        osal_task_create(&phw_sock_raw_mmaped->rxthread, &attr, hw_device_sock_raw_mmaped_rx_thread, phw_sock_raw_mmaped);
+        osal_task_create(&phw_sock_raw_mmaped->rxthread, &attr, hw_device_sock_raw_mmaped_rx_thread,
+                         phw_sock_raw_mmaped);
     }
 
     return ret;
@@ -266,14 +277,15 @@ int hw_device_sock_raw_mmaped_open(struct hw_sock_raw_mmaped *phw_sock_raw_mmape
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_close(struct hw_common *phw) {
+int hw_device_sock_raw_mmaped_close(struct hw_common* phw) {
     int ret = 0;
 
-    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
-    
+    struct hw_sock_raw_mmaped* phw_sock_raw_mmaped =
+        container_of(phw, struct hw_sock_raw_mmaped, common);
+
     phw_sock_raw_mmaped->rxthreadrunning = 0;
     osal_task_join(&phw_sock_raw_mmaped->rxthread, NULL);
-    
+
     close(phw_sock_raw_mmaped->sockfd);
 
     return ret;
@@ -281,14 +293,15 @@ int hw_device_sock_raw_mmaped_close(struct hw_common *phw) {
 
 //! Receive a frame from an EtherCAT hw device.
 /*!
- * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   phw         Pointer to hw handle.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_recv(struct hw_common *phw) {
+int hw_device_sock_raw_mmaped_recv(struct hw_common* phw) {
     assert(phw != NULL);
 
-    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
+    struct hw_sock_raw_mmaped* phw_sock_raw_mmaped =
+        container_of(phw, struct hw_sock_raw_mmaped, common);
 
     // using kernel mapped receive buffers
     // wait for received, non-processed packet
@@ -300,34 +313,36 @@ int hw_device_sock_raw_mmaped_recv(struct hw_common *phw) {
     if (ret > 0) {
         int pagesize = getpagesize();
 
-        struct tpacket_hdr *header;
+        struct tpacket_hdr* header;
         for (
-                // cppcheck-suppress misra-c2012-11.3
-                header = (struct tpacket_hdr *)(&phw_sock_raw_mmaped->rx_ring[(phw_sock_raw_mmaped->rx_ring_offset * pagesize)]);
-                header->tp_status & TP_STATUS_USER; 
-                // cppcheck-suppress misra-c2012-11.3
-                header = (struct tpacket_hdr *)(&phw_sock_raw_mmaped->rx_ring[(phw_sock_raw_mmaped->rx_ring_offset * pagesize)])) 
-        {
             // cppcheck-suppress misra-c2012-11.3
-            ec_frame_t *real_frame = (ec_frame_t *)(&((osal_char_t *)header)[header->tp_mac]);
+            header = (struct tpacket_hdr*)(&phw_sock_raw_mmaped->rx_ring[(
+                phw_sock_raw_mmaped->rx_ring_offset * pagesize)]);
+            header->tp_status & TP_STATUS_USER;
+            // cppcheck-suppress misra-c2012-11.3
+            header = (struct tpacket_hdr*)(&phw_sock_raw_mmaped->rx_ring[(
+                phw_sock_raw_mmaped->rx_ring_offset * pagesize)])) {
+            // cppcheck-suppress misra-c2012-11.3
+            ec_frame_t* real_frame = (ec_frame_t*)(&((osal_char_t*)header)[header->tp_mac]);
             hw_process_rx_frame(phw, real_frame);
 
             header->tp_status = 0;
-            phw_sock_raw_mmaped->rx_ring_offset = (phw_sock_raw_mmaped->rx_ring_offset + 1) % phw_sock_raw_mmaped->mmap_packets;
-        }           
+            phw_sock_raw_mmaped->rx_ring_offset =
+                (phw_sock_raw_mmaped->rx_ring_offset + 1) % phw_sock_raw_mmaped->mmap_packets;
+        }
     }
 
     return EC_OK;
 }
 
 //! receiver thread
-void *hw_device_sock_raw_mmaped_rx_thread(void *arg) {
+void* hw_device_sock_raw_mmaped_rx_thread(void* arg) {
     // cppcheck-suppress misra-c2012-11.5
-    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = (struct hw_sock_raw_mmaped *) arg;
-    ec_t *pec = phw_sock_raw_mmaped->common.pec;
+    struct hw_sock_raw_mmaped* phw_sock_raw_mmaped = (struct hw_sock_raw_mmaped*)arg;
+    ec_t* pec = phw_sock_raw_mmaped->common.pec;
 
     assert(phw_sock_raw_mmaped != NULL);
-    
+
     osal_task_sched_priority_t rx_prio;
     if (osal_task_get_priority(&phw_sock_raw_mmaped->rxthread, &rx_prio) != OSAL_OK) {
         rx_prio = 0;
@@ -338,24 +353,25 @@ void *hw_device_sock_raw_mmaped_rx_thread(void *arg) {
     while (phw_sock_raw_mmaped->rxthreadrunning != 0) {
         (void)hw_device_sock_raw_mmaped_recv(&phw_sock_raw_mmaped->common);
     }
-    
+
     ec_log(10, "HW_SOCK_RAW_MMAPED_RX", "receive thread stopped\n");
-    
+
     return NULL;
 }
 
-
-static struct tpacket_hdr *hw_get_next_tx_buffer(struct hw_common *phw) {
-    struct tpacket_hdr *header;
+static struct tpacket_hdr* hw_get_next_tx_buffer(struct hw_common* phw) {
+    struct tpacket_hdr* header;
     struct pollfd pollset;
 
     assert(phw != NULL);
-    ec_t *pec = phw->pec;
-    
-    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
+    ec_t* pec = phw->pec;
+
+    struct hw_sock_raw_mmaped* phw_sock_raw_mmaped =
+        container_of(phw, struct hw_sock_raw_mmaped, common);
 
     // cppcheck-suppress misra-c2012-11.3
-    header = (struct tpacket_hdr *)(&phw_sock_raw_mmaped->tx_ring[(phw_sock_raw_mmaped->tx_ring_offset * getpagesize())]);
+    header = (struct tpacket_hdr*)(&phw_sock_raw_mmaped->tx_ring[(
+        phw_sock_raw_mmaped->tx_ring_offset * getpagesize())]);
 
     while (header->tp_status != TP_STATUS_AVAILABLE) {
         // notify kernel
@@ -379,25 +395,25 @@ static struct tpacket_hdr *hw_get_next_tx_buffer(struct hw_common *phw) {
 
 //! Get a free tx buffer from underlying hw device.
 /*!
- * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   phw         Pointer to hw handle.
  * \param[in]   ppframe     Pointer to return frame buffer pointer.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **ppframe) {
+int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common* phw, ec_frame_t** ppframe) {
     assert(phw != NULL);
     assert(ppframe != NULL);
 
     int ret = EC_OK;
-    ec_frame_t *pframe = NULL;
-    
+    ec_frame_t* pframe = NULL;
+
     static const osal_uint8_t mac_dest[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     static const osal_uint8_t mac_src[] = {0x00, 0x30, 0x64, 0x0f, 0x83, 0x35};
 
-    struct tpacket_hdr *header = NULL;
+    struct tpacket_hdr* header = NULL;
     header = hw_get_next_tx_buffer(phw);
     // cppcheck-suppress misra-c2012-11.3
-    pframe = (ec_frame_t *)(&((osal_char_t *)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
+    pframe = (ec_frame_t*)(&((osal_char_t*)header)[(TPACKET_HDRLEN - sizeof(struct sockaddr_ll))]);
 
     // reset length to send new frame
     (void)memcpy(pframe->mac_dest, mac_dest, 6);
@@ -413,25 +429,27 @@ int hw_device_sock_raw_mmaped_get_tx_buffer(struct hw_common *phw, ec_frame_t **
 
 //! Send a frame from an EtherCAT hw device.
 /*!
- * \param[in]   phw         Pointer to hw handle. 
+ * \param[in]   phw         Pointer to hw handle.
  * \param[in]   pframe      Pointer to frame buffer.
  * \param[in]   pool_type   Pool type to distinguish between high and low prio frames.
  *
  * \return 0 or negative error code
  */
-int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type) {
+int hw_device_sock_raw_mmaped_send(struct hw_common* phw, ec_frame_t* pframe,
+                                   pooltype_t pool_type) {
     assert(phw != NULL);
     assert(pframe != NULL);
 
     (void)pool_type;
 
     int ret = EC_OK;
-    ec_t *pec = phw->pec;
-    struct hw_sock_raw_mmaped *phw_sock_raw_mmaped = container_of(phw, struct hw_sock_raw_mmaped, common);
+    ec_t* pec = phw->pec;
+    struct hw_sock_raw_mmaped* phw_sock_raw_mmaped =
+        container_of(phw, struct hw_sock_raw_mmaped, common);
 
     // fill header
-    struct tpacket_hdr *header = NULL;
-    header = (struct tpacket_hdr *)(((osal_char_t *)pframe) - sizeof(struct tpacket_hdr));
+    struct tpacket_hdr* header = NULL;
+    header = (struct tpacket_hdr*)(((osal_char_t*)pframe) - sizeof(struct tpacket_hdr));
     header->tp_len = pframe->len;
     header->tp_status = TP_STATUS_SEND_REQUEST;
 
@@ -442,7 +460,8 @@ int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, po
     }
 
     // increase consumer ring pointer
-    phw_sock_raw_mmaped->tx_ring_offset = (phw_sock_raw_mmaped->tx_ring_offset + 1) % phw_sock_raw_mmaped->mmap_packets;
+    phw_sock_raw_mmaped->tx_ring_offset =
+        (phw_sock_raw_mmaped->tx_ring_offset + 1) % phw_sock_raw_mmaped->mmap_packets;
 
     return ret;
 }
@@ -451,9 +470,6 @@ int hw_device_sock_raw_mmaped_send(struct hw_common *phw, ec_frame_t *pframe, po
 /*!
  * \param[in]   phw         Pointer to hw handle.
  */
-void hw_device_sock_raw_mmaped_send_finished(struct hw_common *phw) {
-}
-
+void hw_device_sock_raw_mmaped_send_finished(struct hw_common* phw) {}
 
 #endif /* LIBETHERCAT_BUILD_DEVICE_SOCK_RAW_MMAPED == 1 */
-

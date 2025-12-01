@@ -16,23 +16,23 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * libethercat is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with libethercat (LICENSE.LGPL-V3); if not, write 
- * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth
  * Floor, Boston, MA  02110-1301, USA.
- * 
- * Please note that the use of the EtherCAT technology, the EtherCAT 
- * brand name and the EtherCAT logo is only permitted if the property 
- * rights of Beckhoff Automation GmbH are observed. For further 
- * information please contact Beckhoff Automation GmbH & Co. KG, 
- * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
- * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ *
+ * Please note that the use of the EtherCAT technology, the EtherCAT
+ * brand name and the EtherCAT logo is only permitted if the property
+ * rights of Beckhoff Automation GmbH are observed. For further
+ * information please contact Beckhoff Automation GmbH & Co. KG,
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg,
  * Germany (ETG, www.ethercat.org).
  *
  */
@@ -40,47 +40,49 @@
 #include <libethercat/config.h>
 #endif
 
-#include "libethercat/mbx.h"
+#include <assert.h>
+
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
-
-#include <assert.h>
+#include "libethercat/mbx.h"
 // cppcheck-support misra-c2012-21.6
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 
 #ifndef max
-#define max(a, b)  ((a) > (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
-#define MBX_HANDLER_FLAGS_SEND  ((osal_uint32_t)0x00000001u)
-#define MBX_HANDLER_FLAGS_RECV  ((osal_uint32_t)0x00000002u)
+#define MBX_HANDLER_FLAGS_SEND ((osal_uint32_t)0x00000001u)
+#define MBX_HANDLER_FLAGS_RECV ((osal_uint32_t)0x00000002u)
 
 // forward declarations
-static int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec);
-static int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec);
-static void ec_mbx_handler(ec_t *pec, osal_uint16_t slave);
-static int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
-static int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
+static int ec_mbx_send(ec_t* pec, osal_uint16_t slave, osal_uint8_t* buf, osal_size_t buf_len,
+                       osal_uint32_t nsec);
+static int ec_mbx_receive(ec_t* pec, osal_uint16_t slave, osal_uint8_t* buf, osal_size_t buf_len,
+                          osal_uint32_t nsec);
+static void ec_mbx_handler(ec_t* pec, osal_uint16_t slave);
+static int ec_mbx_is_empty(ec_t* pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
+static int ec_mbx_is_full(ec_t* pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec);
 
 //! \brief Mailbox handler thread wrapper
-static void *ec_mbx_handler_thread(void *arg) {
+static void* ec_mbx_handler_thread(void* arg) {
     // cppcheck-suppress misra-c2012-11.5
-    ec_mbx_t *pmbx = (ec_mbx_t *)arg;
+    ec_mbx_t* pmbx = (ec_mbx_t*)arg;
     ec_mbx_handler(pmbx->pec, pmbx->slave);
     return NULL;
 }
 
 //! \brief Initialize mailbox structure.
 /*!
- * \param[in] pec           Pointer to ethercat master structure, 
+ * \param[in] pec           Pointer to ethercat master structure,
  *                          which you got from \link ec_open \endlink.
- * \param[in] slave         Number of ethercat slave. this depends on 
- *                          the physical order of the ethercat slaves 
+ * \param[in] slave         Number of ethercat slave. this depends on
+ *                          the physical order of the ethercat slaves
  *                          (usually the n'th slave attached).
  */
-void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
+void ec_mbx_init(ec_t* pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -90,7 +92,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         ec_log(100, "MAILBOX_INIT", "slave %2d: initializing mailbox\n", slave);
 
         slv->mbx.seq_counter = 1;
-        slv->mbx.sm_state = &slv->mbx.mbx_state; // this may be overwritten by logical mapping
+        slv->mbx.sm_state = &slv->mbx.mbx_state;  // this may be overwritten by logical mapping
 
         (void)pool_open(&slv->mbx.message_pool_send_queued, 0, NULL);
 
@@ -126,7 +128,7 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
         slv->mbx.handler_running = 1;
         slv->mbx.pec = pec;
         slv->mbx.slave = slave;
-    
+
         osal_task_attr_t attr;
         attr.policy = OSAL_SCHED_POLICY_OTHER;
         attr.priority = 0;
@@ -138,13 +140,13 @@ void ec_mbx_init(ec_t *pec, osal_uint16_t slave) {
 
 //! \brief Deinit mailbox structure
 /*!
- * \param[in] pec           Pointer to ethercat master structure, 
+ * \param[in] pec           Pointer to ethercat master structure,
  *                          which you got from \link ec_open \endlink.
- * \param[in] slave         Number of ethercat slave. this depends on 
- *                          the physical order of the ethercat slaves 
+ * \param[in] slave         Number of ethercat slave. this depends on
+ *                          the physical order of the ethercat slaves
  *                          (usually the n'th slave attached).
  */
-void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
+void ec_mbx_deinit(ec_t* pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -194,14 +196,14 @@ void ec_mbx_deinit(ec_t *pec, osal_uint16_t slave) {
  *
  * \return Mailbox protocol string repr.
  */
-static const osal_char_t *ec_mbx_get_protocol_string(osal_uint16_t mbx_flag) {
-    static const osal_char_t *MBX_PROTOCOL_STRING_COE = "CoE";
-    static const osal_char_t *MBX_PROTOCOL_STRING_SOE = "SoE";
-    static const osal_char_t *MBX_PROTOCOL_STRING_FOE = "FoE";
-    static const osal_char_t *MBX_PROTOCOL_STRING_EOE = "EoE";
-    static const osal_char_t *MBX_PROTOCOL_STRING_UNKNOWN = "Unknown";
+static const osal_char_t* ec_mbx_get_protocol_string(osal_uint16_t mbx_flag) {
+    static const osal_char_t* MBX_PROTOCOL_STRING_COE = "CoE";
+    static const osal_char_t* MBX_PROTOCOL_STRING_SOE = "SoE";
+    static const osal_char_t* MBX_PROTOCOL_STRING_FOE = "FoE";
+    static const osal_char_t* MBX_PROTOCOL_STRING_EOE = "EoE";
+    static const osal_char_t* MBX_PROTOCOL_STRING_UNKNOWN = "Unknown";
 
-    const osal_char_t *ret;
+    const osal_char_t* ret;
 
     if (mbx_flag == EC_EEPROM_MBX_COE) {
         ret = MBX_PROTOCOL_STRING_COE;
@@ -213,29 +215,29 @@ static const osal_char_t *ec_mbx_get_protocol_string(osal_uint16_t mbx_flag) {
         ret = MBX_PROTOCOL_STRING_FOE;
     } else {
         ret = MBX_PROTOCOL_STRING_UNKNOWN;
-    } 
+    }
 
     return ret;
 }
 
 //! \brief Checks if mailbox protocol is supported by slave
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] mbx_flag  Mailbox protocols flag to be checked
  *
- * \retval EC_OK                                   If all requested protocols supported, otherwise ored error codes.
- * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE      Mailbox AoE not supported.
+ * \retval EC_OK                                   If all requested protocols supported, otherwise
+ * ored error codes. \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_AOE      Mailbox AoE not supported.
  * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_EOE      Mailbox EoE not supported.
  * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_COE      Mailbox CoE not supported.
  * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE      Mailbox FoE not supported.
  * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_SOE      Mailbox SoE not supported.
  * \retval EC_ERROR_MAILBOX_NOT_SUPPORTED_VOE      Mailbox VoE not supported.
  */
-int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag) {
+int ec_mbx_check(ec_t* pec, int slave, osal_uint16_t mbx_flag) {
     int ret = EC_OK;
 
     if ((pec->slaves[slave].eeprom.mbx_supported & (mbx_flag)) != mbx_flag) {
@@ -245,7 +247,8 @@ int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag) {
             osal_uint16_t proto = not_supp & (1u << i);
 
             if (proto != 0u) {
-                ec_log(200, "MAILBOX_CHECK", "slave %d has no %s support\n", slave, ec_mbx_get_protocol_string(proto)); 
+                ec_log(200, "MAILBOX_CHECK", "slave %d has no %s support\n", slave,
+                       ec_mbx_get_protocol_string(proto));
             }
         }
 
@@ -257,16 +260,16 @@ int ec_mbx_check(ec_t *pec, int slave, osal_uint16_t mbx_flag) {
 
 //! \brief Check if mailbox is full.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] mbx_nr    Number of mailbox to be checked.
  * \param[in] nsec      Timeout in nanoseconds.
  * \return full (EC_OK) or empty (EC_ERROR_MAILBOX_TIMEOUT)
  */
-int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec) {
+int ec_mbx_is_full(ec_t* pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec) {
     osal_uint16_t wkc = 0;
     osal_uint8_t sm_state = 0;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
@@ -274,9 +277,8 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
 
     assert(pec != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
     osal_uint64_t timeout = nsec;
@@ -284,16 +286,15 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
     osal_timer_init(&timer, timeout);
 
     do {
-        if (    (mbx_nr == MAILBOX_READ) && (slv->mbx.sm_state != NULL) &&
-                (    (slv->act_state == EC_STATE_OP) ||
-                     (slv->act_state == EC_STATE_SAFEOP))) {
+        if ((mbx_nr == MAILBOX_READ) && (slv->mbx.sm_state != NULL) &&
+            ((slv->act_state == EC_STATE_OP) || (slv->act_state == EC_STATE_SAFEOP))) {
             wkc = 1;
             sm_state = *slv->mbx.sm_state;
             *slv->mbx.sm_state = 0;
         } else {
-            (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                    (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
-                    &sm_state, sizeof(sm_state), &wkc);
+            (void)ec_fprd(pec, pec->slaves[slave].fixed_address,
+                          (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)),
+                          &sm_state, sizeof(sm_state), &wkc);
         }
 
         if (wkc && ((sm_state & 0x08u) == 0x08u)) {
@@ -309,25 +310,24 @@ int ec_mbx_is_full(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uin
 
 //! \brief Check if mailbox is empty.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] mbx_nr    Number of mailbox to be checked.
  * \param[in] nsec      Timeout in nanoseconds.
  * \return full (EC_ERROR_MAILBOX_TIMEOUT) or empty (EC_OK)
  */
-int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec) {
+int ec_mbx_is_empty(ec_t* pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_uint32_t nsec) {
     osal_uint16_t wkc = 0;
     osal_uint8_t sm_state = 0;
     int ret = EC_ERROR_MAILBOX_TIMEOUT;
 
     assert(pec != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
     osal_uint64_t timeout = nsec;
@@ -335,9 +335,9 @@ int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_ui
     osal_timer_init(&timer, timeout);
 
     do {
-        (void)ec_fprd(pec, pec->slaves[slave].fixed_address, 
-                (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), 
-                &sm_state, sizeof(sm_state), &wkc);
+        (void)ec_fprd(pec, pec->slaves[slave].fixed_address,
+                      (osal_uint16_t)(EC_REG_SM0STAT + ((osal_uint16_t)mbx_nr << 3u)), &sm_state,
+                      sizeof(sm_state), &wkc);
 
         if (wkc && ((sm_state & 0x08u) == 0x00u)) {
             ret = EC_OK;
@@ -352,15 +352,16 @@ int ec_mbx_is_empty(ec_t *pec, osal_uint16_t slave, osal_uint8_t mbx_nr, osal_ui
 
 //! \brief write mailbox to slave.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec) {
+int ec_mbx_send(ec_t* pec, osal_uint16_t slave, osal_uint8_t* buf, osal_size_t buf_len,
+                osal_uint32_t nsec) {
     osal_uint16_t wkc = 0;
     int ret = EC_OK;
     ec_slave_ptr(slv, pec, slave);
@@ -368,16 +369,15 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
     assert(pec != NULL);
     assert(buf != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
     osal_uint64_t timeout = nsec;
     osal_timer_t timer;
     osal_timer_init(&timer, timeout);
 
-    // wait for send mailbox available 
+    // wait for send mailbox available
     ret = ec_mbx_is_empty(pec, slave, MAILBOX_WRITE, nsec);
     if (ret != EC_OK) {
         ec_log(1, "MAILBOX_SEND", "slave %d: waiting for empty send mailbox failed!\n", slave);
@@ -398,7 +398,8 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
         } while (osal_timer_expired(&timer) != OSAL_ERR_TIMEOUT);
 
         if (ret != EC_OK) {
-            ec_log(1, "MAILBOX_SEND", "slave %d: did not respond on writing to write mailbox\n", slave);
+            ec_log(1, "MAILBOX_SEND", "slave %d: did not respond on writing to write mailbox\n",
+                   slave);
         }
     }
 
@@ -408,15 +409,16 @@ int ec_mbx_send(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t b
 //! \brief Read mailbox from slave.
 /*!
  *
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] nsec      Timeout in nanoseconds.
  * \return working counter
  */
-int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_t buf_len, osal_uint32_t nsec) {
+int ec_mbx_receive(ec_t* pec, osal_uint16_t slave, osal_uint8_t* buf, osal_size_t buf_len,
+                   osal_uint32_t nsec) {
     osal_uint16_t wkc = 0;
     int ret = EC_ERROR_MAILBOX_READ_EMPTY;
     ec_slave_ptr(slv, pec, slave);
@@ -424,18 +426,16 @@ int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_
     assert(pec != NULL);
     assert(buf != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
-    // wait for receive mailbox available 
+    // wait for receive mailbox available
     if (ec_mbx_is_full(pec, slave, MAILBOX_READ, nsec) == EC_OK) {
-        (void)ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr,
-                buf, buf_len, &wkc);
+        (void)ec_fprd(pec, slv->fixed_address, slv->sm[MAILBOX_READ].adr, buf, buf_len, &wkc);
 
         if (wkc != 0u) {
-            // reset mailbox state 
+            // reset mailbox state
             if (slv->mbx.sm_state != NULL) {
                 *slv->mbx.sm_state = 0u;
             }
@@ -449,14 +449,14 @@ int ec_mbx_receive(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_size_
 
 //! \brief Enqueue mailbox message to send queue.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue_head(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
+void ec_mbx_enqueue_head(ec_t* pec, osal_uint16_t slave, pool_entry_t* p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(p_entry != NULL);
@@ -464,24 +464,24 @@ void ec_mbx_enqueue_head(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) 
     ec_slave_ptr(slv, pec, slave);
 
     pool_put_head(&slv->mbx.message_pool_send_queued, p_entry);
-    
+
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
-    
+
     osal_binary_semaphore_post(&slv->mbx.sync_sem);
     osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Enqueue mailbox message to send queue.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Entry to enqueue to be sent via mailbox.
  */
-void ec_mbx_enqueue_tail(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
+void ec_mbx_enqueue_tail(ec_t* pec, osal_uint16_t slave, pool_entry_t* p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(p_entry != NULL);
@@ -489,28 +489,28 @@ void ec_mbx_enqueue_tail(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) 
     ec_slave_ptr(slv, pec, slave);
 
     pool_put(&slv->mbx.message_pool_send_queued, p_entry);
-    
+
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
-    
+
     osal_binary_semaphore_post(&slv->mbx.sync_sem);
     osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
 
 //! \brief Trigger read of mailbox.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  */
-void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave) {
+void ec_mbx_sched_read(ec_t* pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    
+
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
 
@@ -520,19 +520,19 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave) {
 
 //! \brief Handle slaves mailbox.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  */
-void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
+void ec_mbx_do_handle(ec_t* pec, uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    pool_entry_t *p_entry = NULL;
-    
+    pool_entry_t* p_entry = NULL;
+
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     uint32_t flags = slv->mbx.handler_flags;
     slv->mbx.handler_flags = 0;
@@ -546,11 +546,14 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
         } else {
             (void)memset(p_entry->data, 0, LEC_MAX_POOL_DATA_SIZE);
 
-            if (ec_mbx_receive(pec, slave, p_entry->data, 
-                        LEC_MIN(LEC_MAX_POOL_DATA_SIZE, (osal_size_t)slv->sm[MAILBOX_READ].len), 0) == EC_OK) {
+            if (ec_mbx_receive(
+                    pec, slave, p_entry->data,
+                    LEC_MIN(LEC_MAX_POOL_DATA_SIZE, (osal_size_t)slv->sm[MAILBOX_READ].len),
+                    0) == EC_OK) {
                 // cppcheck-suppress misra-c2012-11.3
-                ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
-                ec_log(200, "MAILBOX_HANDLE", "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
+                ec_mbx_header_t* hdr = (ec_mbx_header_t*)(p_entry->data);
+                ec_log(200, "MAILBOX_HANDLE", "slave %2d: got one mailbox message: %0X\n", slave,
+                       hdr->mbxtype);
 
                 switch (hdr->mbxtype) {
 #if LIBETHERCAT_MBX_SUPPORT_COE == 1
@@ -559,7 +562,8 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_coe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got CoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE",
+                                   "slave %2d: got CoE frame, but slave has no support!\n", slave);
                         }
                         break;
 #endif
@@ -569,7 +573,8 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_soe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got SoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE",
+                                   "slave %2d: got SoE frame, but slave has no support!\n", slave);
                         }
                         break;
 #endif
@@ -579,7 +584,8 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_foe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got FoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE",
+                                   "slave %2d: got FoE frame, but slave has no support!\n", slave);
                         }
                         break;
 #endif
@@ -589,7 +595,8 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                             ec_eoe_enqueue(pec, slave, p_entry);
                             p_entry = NULL;
                         } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got EoE frame, but slave has no support!\n", slave);
+                            ec_log(1, "MAILBOX_HANDLE",
+                                   "slave %2d: got EoE frame, but slave has no support!\n", slave);
                         }
                         break;
 #endif
@@ -615,15 +622,17 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
             int retry_cnt = 10;
 
             do {
-                ret = ec_mbx_send(pec, slave, p_entry->data, 
-                        LEC_MIN(LEC_MAX_POOL_DATA_SIZE, slv->sm[MAILBOX_WRITE].len), EC_DEFAULT_TIMEOUT_MBX);
+                ret = ec_mbx_send(pec, slave, p_entry->data,
+                                  LEC_MIN(LEC_MAX_POOL_DATA_SIZE, slv->sm[MAILBOX_WRITE].len),
+                                  EC_DEFAULT_TIMEOUT_MBX);
                 --retry_cnt;
             } while ((ret != EC_OK) && (retry_cnt > 0));
 
             if (ret != EC_OK) {
-                ec_log(1, "MAILBOX_HANDLE", "slave %2d: error on writing send mailbox -> requeue\n", slave);
+                ec_log(1, "MAILBOX_HANDLE", "slave %2d: error on writing send mailbox -> requeue\n",
+                       slave);
                 ec_mbx_enqueue_head(pec, slave, p_entry);
-            } else {                    
+            } else {
                 // all done
                 if (p_entry->user_cb != NULL) {
                     (*p_entry->user_cb)(pec, p_entry, NULL);
@@ -635,18 +644,18 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                 ec_mbx_return_free_send_buffer(pec, slave, p_entry);
             }
         }
-    } 
+    }
 }
 
 //! \brief Mailbox handler for one slave
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  */
-void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
+void ec_mbx_handler(ec_t* pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -657,7 +666,8 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
     while (slv->mbx.handler_running != 0) {
         int ret;
         osal_timer_t to;
-        if (((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) || (slv->mbx.sm_state == NULL)) {
+        if (((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) ||
+            (slv->mbx.sm_state == NULL)) {
             osal_timer_init(&to, 1000000);
         } else {
             osal_timer_init(&to, 100000000);
@@ -672,7 +682,8 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
                 slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
 
                 // check receive mailbox on timeout if PREOP or lower
-                if (((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) || (slv->mbx.sm_state == NULL)) {
+                if (((slv->act_state != EC_STATE_OP) && (slv->act_state != EC_STATE_SAFEOP)) ||
+                    (slv->mbx.sm_state == NULL)) {
                     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
                 }
                 osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
@@ -680,7 +691,7 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
                 continue;
             }
         }
-       
+
         ec_mbx_do_handle(pec, slave);
     }
 
@@ -689,24 +700,24 @@ void ec_mbx_handler(ec_t *pec, osal_uint16_t slave) {
 
 //! \brief Get free mailbox send buffer from slaves send message pool.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
- * \param[out] pp_entry Pointer to pool entry pointer where buffer 
+ * \param[out] pp_entry Pointer to pool entry pointer where buffer
  *                      is returned.
  * \param[in] timeout   Pointer to timeout or NULL.
  *
  * \return EC_OK on success, otherwise EC_ERROR_MAILBOX_* code.
  */
-int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, osal_timer_t *timeout) {
+int ec_mbx_get_free_send_buffer(ec_t* pec, osal_uint16_t slave, pool_entry_t** pp_entry,
+                                osal_timer_t* timeout) {
     assert(pec != NULL);
     assert(pp_entry != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
     (void)slave;
@@ -724,22 +735,21 @@ int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **p
 
 //! \brief Get next sequence counter.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] seq_cnt   Returns sequence counter.
  *
  * \return EC_OK on success.
  */
-int ec_mbx_next_counter(ec_t *pec, int slave, int *seq_counter) {
+int ec_mbx_next_counter(ec_t* pec, int slave, int* seq_counter) {
     assert(pec != NULL);
     assert(seq_counter != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
     ec_slave_ptr(slv, pec, slave);

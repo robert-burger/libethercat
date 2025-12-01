@@ -16,23 +16,23 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * libethercat is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with libethercat (LICENSE.LGPL-V3); if not, write 
- * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth
  * Floor, Boston, MA  02110-1301, USA.
- * 
- * Please note that the use of the EtherCAT technology, the EtherCAT 
- * brand name and the EtherCAT logo is only permitted if the property 
- * rights of Beckhoff Automation GmbH are observed. For further 
- * information please contact Beckhoff Automation GmbH & Co. KG, 
- * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
- * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ *
+ * Please note that the use of the EtherCAT technology, the EtherCAT
+ * brand name and the EtherCAT logo is only permitted if the property
+ * rights of Beckhoff Automation GmbH are observed. For further
+ * information please contact Beckhoff Automation GmbH & Co. KG,
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg,
  * Germany (ETG, www.ethercat.org).
  *
  */
@@ -40,13 +40,12 @@
 #include <libethercat/config.h>
 #endif
 
-#include <libethercat/hw.h>
-#include <libethercat/ec.h>
-#include <libethercat/idx.h>
-#include <libethercat/error_codes.h>
-
 #include <assert.h>
 #include <errno.h>
+#include <libethercat/ec.h>
+#include <libethercat/error_codes.h>
+#include <libethercat/hw.h>
+#include <libethercat/idx.h>
 #include <string.h>
 
 #ifdef LIBETHERCAT_HAVE_INTTYPES_H
@@ -55,8 +54,8 @@
 
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef LIBETHERCAT_HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -78,7 +77,7 @@
  * \param[in] pool_type     Type of pool to sent.
  * \return 0 or error code
  */
-static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type);
+static osal_bool_t hw_tx_pool(struct hw_common* phw, pooltype_t pool_type);
 
 //! open a new hw
 /*!
@@ -87,7 +86,7 @@ static osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type);
  *
  * \return 0 or negative error code
  */
-int hw_open(struct hw_common *phw, struct ec *pec) {
+int hw_open(struct hw_common* phw, struct ec* pec) {
     assert(phw != NULL);
 
     int ret = EC_OK;
@@ -110,7 +109,7 @@ int hw_open(struct hw_common *phw, struct ec *pec) {
  * \param phw hw handle
  * \return 0 or negative error code
  */
-int hw_close(struct hw_common *phw) {
+int hw_close(struct hw_common* phw) {
     assert(phw != NULL);
 
     if (phw->close) {
@@ -133,23 +132,26 @@ int hw_close(struct hw_common *phw) {
  * \param[in]   p_entry     Entry to be enqueued.
  * \parma[in]   pool_type   Enqueue to high prio or low prio queue.
  */
-void hw_enqueue(struct hw_common *phw, pool_entry_t *p_entry, pooltype_t pool_type) {
-    struct ec *pec = phw->pec;
+void hw_enqueue(struct hw_common* phw, pool_entry_t* p_entry, pooltype_t pool_type) {
+    struct ec* pec = phw->pec;
     if (phw->tx_send[p_entry->p_idx->idx] != NULL) {
-        pool_entry_t *p_entry_sent = phw->tx_send[p_entry->p_idx->idx];
+        pool_entry_t* p_entry_sent = phw->tx_send[p_entry->p_idx->idx];
         phw->tx_send[p_entry->p_idx->idx] = NULL;
 
-        //phw->recv(phw);
+        // phw->recv(phw);
         osal_uint64_t now = osal_timer_gettime_nsec();
-        osal_uint64_t sent = p_entry_sent->send_timestamp.sec * NSEC_PER_SEC + p_entry_sent->send_timestamp.nsec;
-        
+        osal_uint64_t sent =
+            p_entry_sent->send_timestamp.sec * NSEC_PER_SEC + p_entry_sent->send_timestamp.nsec;
+
         pec->stats.lost_datagrams++;
-            
-        ec_log(1, __func__, 
-                "Lost datagram -> EXTREMELY BAD! THE WORST THING THAT CAN HAPPEN ON THE PLANET!\n"
-                "Incrementing lost datagram counter (now %" PRIu64 ")\n"
-                "Sending next datagram with idx %d which did not return in last cycle (already on wire since %" PRIu64 " ns with packet idx %" PRIu64 "!)\n", 
-                pec->stats.lost_datagrams, p_entry->p_idx->idx, now - sent, p_entry->send_idx);
+
+        ec_log(1, __func__,
+               "Lost datagram -> EXTREMELY BAD! THE WORST THING THAT CAN HAPPEN ON THE PLANET!\n"
+               "Incrementing lost datagram counter (now %" PRIu64
+               ")\n"
+               "Sending next datagram with idx %d which did not return in last cycle (already on "
+               "wire since %" PRIu64 " ns with packet idx %" PRIu64 "!)\n",
+               pec->stats.lost_datagrams, p_entry->p_idx->idx, now - sent, p_entry->send_idx);
     }
 
     pool_put(pool_type == POOL_HIGH ? &phw->tx_high : &phw->tx_low, p_entry);
@@ -162,10 +164,10 @@ void hw_enqueue(struct hw_common *phw, pool_entry_t *p_entry, pooltype_t pool_ty
  * \retval OSAL_TRUE if frame was successfully processed
  * \retval OSAL_FALSE otherwise
  */
-osal_bool_t hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
+osal_bool_t hw_process_rx_frame(struct hw_common* phw, ec_frame_t* pframe) {
     assert(phw != NULL);
     assert(pframe != NULL);
-    ec_t *pec = phw->pec;
+    ec_t* pec = phw->pec;
     osal_bool_t success = OSAL_FALSE;
 
 #ifdef LOSS_SIMULATION
@@ -183,20 +185,22 @@ osal_bool_t hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
     if (pframe->ethertype != htons(ETH_P_ECAT)) {
         ec_log(1, "HW_RX", "received non-ethercat frame! (type 0x%X)\n", pframe->type);
     } else {
-        ec_datagram_t *d = ec_datagram_first(pframe); 
-        while ((osal_uint8_t *) d < (osal_uint8_t *) ec_frame_end(pframe)) {
-            pool_entry_t *entry = phw->tx_send[d->idx];
+        ec_datagram_t* d = ec_datagram_first(pframe);
+        while ((osal_uint8_t*)d < (osal_uint8_t*)ec_frame_end(pframe)) {
+            pool_entry_t* entry = phw->tx_send[d->idx];
             phw->tx_send[d->idx] = NULL;
 
             if (!entry) {
-                ec_log(1, "HW_RX", 
-                        "Received idx %d, but it is not marked as sent.\n"
-                        "This could be caused by:\n"
-                        "- The receive timeout is too short and the reception of the frame was too late.\n"
-                        "- An other process is sending EtherCAT frames over the same interface.\n", d->idx);
+                ec_log(1, "HW_RX",
+                       "Received idx %d, but it is not marked as sent.\n"
+                       "This could be caused by:\n"
+                       "- The receive timeout is too short and the reception of the frame was too "
+                       "late.\n"
+                       "- An other process is sending EtherCAT frames over the same interface.\n",
+                       d->idx);
             } else {
                 success = OSAL_TRUE;
-                
+
                 if ((entry->user_cb) != NULL) {
                     (*entry->user_cb)(phw->pec, entry, d);
                 }
@@ -216,37 +220,36 @@ osal_bool_t hw_process_rx_frame(struct hw_common *phw, ec_frame_t *pframe) {
  * \retval OSAL_TRUE when at least one frame was sent
  * \retval OSAL_FALSE when no frame was sent
  */
-osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
+osal_bool_t hw_tx_pool(struct hw_common* phw, pooltype_t pool_type) {
     assert(phw != NULL);
-    
+
     osal_bool_t sent = OSAL_FALSE;
-    ec_frame_t *pframe = NULL;
-    pool_t *pool = pool_type == POOL_HIGH ? &phw->tx_high : &phw->tx_low;
+    ec_frame_t* pframe = NULL;
+    pool_t* pool = pool_type == POOL_HIGH ? &phw->tx_high : &phw->tx_low;
 
-    ec_datagram_t *pdg = NULL;
-    ec_datagram_t *pdg_prev = NULL;
+    ec_datagram_t* pdg = NULL;
+    ec_datagram_t* pdg_prev = NULL;
 
-    pool_entry_t *p_entry = NULL;
-    ec_datagram_t *p_entry_dg = NULL;
+    pool_entry_t* p_entry = NULL;
+    ec_datagram_t* p_entry_dg = NULL;
 
     // send frames
     osal_size_t len;
     do {
         (void)pool_peek(pool, &p_entry);
-        if (p_entry !=  NULL) {
+        if (p_entry != NULL) {
             // cppcheck-suppress misra-c2012-11.3
-            p_entry_dg = (ec_datagram_t *)p_entry->data;
-            
+            p_entry_dg = (ec_datagram_t*)p_entry->data;
+
             len = ec_datagram_length(p_entry_dg);
-        } else { 
+        } else {
             // This is the signal that we have no pending datagrams
             len = 0u;
         }
-        // Before copying the datagram into the frame buffer, we must check whether there is enough space.
-        // If there is no space left, we have to send the frame.
-        // We also have to send the frame if we have no further pending datagrams.
-        if (pframe != NULL 
-                && ((len == 0u) || ((pframe->len + len) > phw->mtu_size))) {
+        // Before copying the datagram into the frame buffer, we must check whether there is enough
+        // space. If there is no space left, we have to send the frame. We also have to send the
+        // frame if we have no further pending datagrams.
+        if (pframe != NULL && ((len == 0u) || ((pframe->len + len) > phw->mtu_size))) {
             (void)phw->send(phw, pframe, pool_type);
             pframe = NULL;
             pdg_prev = NULL;
@@ -258,7 +261,7 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
             // Get the framebuffer if nothing has been allocated yet.
             if (pframe == NULL) {
                 if (phw->get_tx_buffer(phw, &pframe) != EC_OK) {
-                    ec_t *pec = phw->pec;
+                    ec_t* pec = phw->pec;
                     ec_log(1, "HW_TX_POOL", "no more send buffers available!\n");
                     break;
                 }
@@ -277,7 +280,7 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
 
             // store as sent
             phw->tx_send[p_entry_dg->idx] = p_entry;
-            
+
             p_entry->send_idx = phw->frame_idx;
             (void)osal_timer_gettime(&p_entry->send_timestamp);
         }
@@ -291,7 +294,7 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx_high(struct hw_common *phw) {
+int hw_tx_high(struct hw_common* phw) {
     assert(phw != NULL);
 
     int ret = EC_OK;
@@ -301,11 +304,11 @@ int hw_tx_high(struct hw_common *phw) {
     osal_timer_init(&phw->next_cylce_start, phw->pec->main_cycle_interval);
     osal_bool_t sent = hw_tx_pool(phw, POOL_HIGH);
     phw->last_tx_duration_ns = osal_timer_gettime_nsec() - tx_start;
-    
+
     if (sent == OSAL_TRUE) {
         phw->send_finished(phw);
     }
-   
+
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;
@@ -316,18 +319,18 @@ int hw_tx_high(struct hw_common *phw) {
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx_low(struct hw_common *phw) {
+int hw_tx_low(struct hw_common* phw) {
     assert(phw != NULL);
 
     int ret = EC_OK;
 
     osal_mutex_lock(&phw->hw_lock);
     osal_bool_t sent = hw_tx_pool(phw, POOL_LOW);
-    
+
     if (sent == OSAL_TRUE) {
         phw->send_finished(phw);
     }
-   
+
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;
@@ -338,7 +341,7 @@ int hw_tx_low(struct hw_common *phw) {
  * \param phw hardware handle
  * \return 0 or error code
  */
-int hw_tx(struct hw_common *phw) {
+int hw_tx(struct hw_common* phw) {
     assert(phw != NULL);
 
     int ret = EC_OK;
@@ -352,9 +355,8 @@ int hw_tx(struct hw_common *phw) {
     if (sent == OSAL_TRUE) {
         phw->send_finished(phw);
     }
-   
+
     osal_mutex_unlock(&phw->hw_lock);
 
     return ret;
 }
-

@@ -7,7 +7,7 @@
  *
  * \brief file over ethercat fuctions
  *
- * These functions are used to gain access to the File-over-EtherCAT 
+ * These functions are used to gain access to the File-over-EtherCAT
  * mailbox protocol.
  */
 
@@ -18,23 +18,23 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * libethercat is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with libethercat (LICENSE.LGPL-V3); if not, write 
- * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth
  * Floor, Boston, MA  02110-1301, USA.
- * 
- * Please note that the use of the EtherCAT technology, the EtherCAT 
- * brand name and the EtherCAT logo is only permitted if the property 
- * rights of Beckhoff Automation GmbH are observed. For further 
- * information please contact Beckhoff Automation GmbH & Co. KG, 
- * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
- * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ *
+ * Please note that the use of the EtherCAT technology, the EtherCAT
+ * brand name and the EtherCAT logo is only permitted if the property
+ * rights of Beckhoff Automation GmbH are observed. For further
+ * information please contact Beckhoff Automation GmbH & Co. KG,
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg,
  * Germany (ETG, www.ethercat.org).
  *
  */
@@ -42,18 +42,18 @@
 #include <libethercat/config.h>
 #endif
 
-#include <libethercat/settings.h>
 #include <libethercat/foe.h>
+#include <libethercat/settings.h>
 
 #if LIBETHERCAT_MBX_SUPPORT_FOE == 1
 
 #include "libethercat/ec.h"
-#include "libethercat/foe.h"
 #include "libethercat/error_codes.h"
+#include "libethercat/foe.h"
 
 // cppcheck-suppress misra-c2012-21.6
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifdef LIBETHERCAT_HAVE_INTTYPES_H
@@ -66,60 +66,60 @@
 
 #ifdef LIBETHERCAT_HAVE_UNISTD_H
 #include <unistd.h>
-#endif 
+#endif
 
 #include <errno.h>
 #include <stdlib.h>
 
 //! FoE header
 typedef struct PACKED ec_foe_header {
-    osal_uint8_t op_code;            //!< FoE op code
+    osal_uint8_t op_code;  //!< FoE op code
     // cppcheck-suppress unusedStructMember
-    osal_uint8_t reserved;           //!< FoE reserved 
+    osal_uint8_t reserved;  //!< FoE reserved
 } PACKED ec_foe_header_t;
 
 //! read/write request
 typedef struct PACKED ec_foe_rw_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t   password;   //!< FoE password
-    osal_char_t     file_name[MAX_FILE_NAME_SIZE];
-                                //!< FoE filename to read/write
+    ec_mbx_header_t mbx_hdr;  //!< mailbox header
+    ec_foe_header_t foe_hdr;  //!< FoE header
+    osal_uint32_t password;   //!< FoE password
+    osal_char_t file_name[MAX_FILE_NAME_SIZE];
+    //!< FoE filename to read/write
 } PACKED ec_foe_rw_request_t;
 
 //! data packet
 typedef struct PACKED ec_foe_data_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t   packet_nr;  //!< FoE segmented packet number
-    ec_data_t       data;       //!< FoE segmented packet data
+    ec_mbx_header_t mbx_hdr;  //!< mailbox header
+    ec_foe_header_t foe_hdr;  //!< FoE header
+    osal_uint32_t packet_nr;  //!< FoE segmented packet number
+    ec_data_t data;           //!< FoE segmented packet data
 } PACKED ec_foe_data_request_t;
 
 //! acknowledge data packet
 typedef struct PACKED ec_foe_ack_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t   packet_nr;  //!< FoE segmented packet number
+    ec_mbx_header_t mbx_hdr;  //!< mailbox header
+    ec_foe_header_t foe_hdr;  //!< FoE header
+    osal_uint32_t packet_nr;  //!< FoE segmented packet number
 } PACKED ec_foe_ack_request_t;
 
 //! error request
 typedef struct PACKED ec_foe_error_request {
-    ec_mbx_header_t mbx_hdr;    //!< mailbox header
-    ec_foe_header_t foe_hdr;    //!< FoE header
-    osal_uint32_t   error_code; //!< error code
-    osal_char_t     error_text[MAX_ERROR_TEXT_SIZE];
-                                //!< error text
+    ec_mbx_header_t mbx_hdr;   //!< mailbox header
+    ec_foe_header_t foe_hdr;   //!< FoE header
+    osal_uint32_t error_code;  //!< error code
+    osal_char_t error_text[MAX_ERROR_TEXT_SIZE];
+    //!< error text
 } PACKED ec_foe_error_request_t;
 
-//! initialize FoE structure 
+//! initialize FoE structure
 /*!
- * \param[in] pec           Pointer to ethercat master structure, 
+ * \param[in] pec           Pointer to ethercat master structure,
  *                          which you got from \link ec_open \endlink.
- * \param[in] slave         Number of ethercat slave. this depends on 
- *                          the physical order of the ethercat slaves 
+ * \param[in] slave         Number of ethercat slave. this depends on
+ *                          the physical order of the ethercat slaves
  *                          (usually the n'th slave attached).
  */
-void ec_foe_init(ec_t *pec, osal_uint16_t slave) {
+void ec_foe_init(ec_t* pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -129,15 +129,15 @@ void ec_foe_init(ec_t *pec, osal_uint16_t slave) {
     }
 }
 
-//! deinitialize FoE structure 
+//! deinitialize FoE structure
 /*!
- * \param[in] pec           Pointer to ethercat master structure, 
+ * \param[in] pec           Pointer to ethercat master structure,
  *                          which you got from \link ec_open \endlink.
- * \param[in] slave         Number of ethercat slave. this depends on 
- *                          the physical order of the ethercat slaves 
+ * \param[in] slave         Number of ethercat slave. this depends on
+ *                          the physical order of the ethercat slaves
  *                          (usually the n'th slave attached).
  */
-void ec_foe_deinit(ec_t *pec, osal_uint16_t slave) {
+void ec_foe_deinit(ec_t* pec, osal_uint16_t slave) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -149,15 +149,15 @@ void ec_foe_deinit(ec_t *pec, osal_uint16_t slave) {
 
 //! \brief Wait for FoE message received from slave.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] pp_entry  Returns pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-static void ec_foe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry) {
+static void ec_foe_wait(ec_t* pec, osal_uint16_t slave, pool_entry_t** pp_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
     assert(pp_entry != NULL);
@@ -167,7 +167,7 @@ static void ec_foe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
     ec_mbx_sched_read(pec, slave);
 
     osal_timer_t timeout;
-    osal_timer_init(&timeout, (osal_uint64_t)30 * EC_DEFAULT_TIMEOUT_MBX); // 30 !!! seconds
+    osal_timer_init(&timeout, (osal_uint64_t)30 * EC_DEFAULT_TIMEOUT_MBX);  // 30 !!! seconds
 
     // ignore return value here, may fail if no new message are currently available
     (void)pool_get(&slv->mbx.foe.recv_pool, pp_entry, &timeout);
@@ -175,15 +175,15 @@ static void ec_foe_wait(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry)
 
 //! \brief Enqueue FoE message received from slave.
 /*!
- * \param[in] pec       Pointer to ethercat master structure, 
+ * \param[in] pec       Pointer to ethercat master structure,
  *                      which you got from \link ec_open \endlink.
- * \param[in] slave     Number of ethercat slave. this depends on 
- *                      the physical order of the ethercat slaves 
+ * \param[in] slave     Number of ethercat slave. this depends on
+ *                      the physical order of the ethercat slaves
  *                      (usually the n'th slave attached).
  * \param[in] p_entry   Pointer to pool entry containing received
  *                      mailbox message from slave.
  */
-void ec_foe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
+void ec_foe_enqueue(ec_t* pec, osal_uint16_t slave, pool_entry_t* p_entry) {
     assert(pec != NULL);
     assert(slave < pec->slave_cnt);
 
@@ -191,19 +191,20 @@ void ec_foe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     pool_put(&slv->mbx.foe.recv_pool, p_entry);
 }
 
-#define MSG_BUF_LEN     256u
-static void ec_foe_print_msg(ec_t *pec, int level, const osal_char_t *ctx, int slave, const osal_char_t *msg, osal_uint8_t *buf, osal_size_t buflen) {
+#define MSG_BUF_LEN 256u
+static void ec_foe_print_msg(ec_t* pec, int level, const osal_char_t* ctx, int slave,
+                             const osal_char_t* msg, osal_uint8_t* buf, osal_size_t buflen) {
     static osal_char_t msg_buf[MSG_BUF_LEN];
 
-    osal_char_t *tmp = msg_buf;
+    osal_char_t* tmp = msg_buf;
     osal_size_t pos = 0;
     osal_size_t max_pos = LEC_MIN(MSG_BUF_LEN, buflen);
-    for (osal_uint32_t u = 0u; (u < max_pos) && ((MSG_BUF_LEN-pos) > 0u); ++u) {
+    for (osal_uint32_t u = 0u; (u < max_pos) && ((MSG_BUF_LEN - pos) > 0u); ++u) {
         int local_ret = snprintf(&tmp[pos], MSG_BUF_LEN - pos, "%02X ", buf[u]);
         if (local_ret < 0) {
             ec_log(1, ctx, "slave %2d: snprintf failed with %d\n", slave, local_ret);
             break;
-        } 
+        }
 
         pos += (osal_size_t)local_ret;
     }
@@ -211,10 +212,11 @@ static void ec_foe_print_msg(ec_t *pec, int level, const osal_char_t *ctx, int s
     ec_log(level, ctx, "slave %d: %s - %s\n", slave, msg, msg_buf);
 }
 
-static const osal_char_t *dump_foe_error_request(ec_t *pec, const osal_char_t *ctx, int slave, ec_foe_error_request_t *read_buf_error) {
-    static const osal_char_t *EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND = "File not found!";
+static const osal_char_t* dump_foe_error_request(ec_t* pec, const osal_char_t* ctx, int slave,
+                                                 ec_foe_error_request_t* read_buf_error) {
+    static const osal_char_t* EC_MAILBOX_FOE_ERROR_MESSAGE_FILE_NOT_FOUND = "File not found!";
 
-    const osal_char_t *ret = NULL;
+    const osal_char_t* ret = NULL;
     ec_log(10, ctx, "got foe error code 0x%X\n", read_buf_error->error_code);
 
     osal_size_t text_len = (read_buf_error->mbx_hdr.length - 6u);
@@ -226,29 +228,28 @@ static const osal_char_t *dump_foe_error_request(ec_t *pec, const osal_char_t *c
         }
     }
 
-    ec_foe_print_msg(pec, 1, ctx, slave, "got message: ", (void *)read_buf_error, read_buf_error->mbx_hdr.length + 6u);
+    ec_foe_print_msg(pec, 1, ctx, slave, "got message: ", (void*)read_buf_error,
+                     read_buf_error->mbx_hdr.length + 6u);
 
     return ret;
 }
 
 // read file over foe
-int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
-        osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t **file_data, 
-        osal_size_t *file_data_len, const osal_char_t **error_message) 
-{
+int ec_foe_read(ec_t* pec, osal_uint16_t slave, osal_uint32_t password,
+                osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t** file_data,
+                osal_size_t* file_data_len, const osal_char_t** error_message) {
     assert(pec != NULL);
     assert(file_data != NULL);
     assert(file_data_len != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
     int ret = EC_OK;
     int counter;
     ec_slave_ptr(slv, pec, slave);
-    pool_entry_t *p_entry_send;
+    pool_entry_t* p_entry_send;
 
     osal_mutex_lock(&slv->mbx.lock);
 
@@ -258,23 +259,23 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else {
         // cppcheck-suppress misra-c2012-11.3
-        ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry_send->data);
+        ec_foe_rw_request_t* write_buf = (ec_foe_rw_request_t*)(p_entry_send->data);
 
         // calc lengths
         osal_size_t foe_max_len = LEC_MIN(slv->sm[1].len, MAX_FILE_NAME_SIZE);
-        osal_size_t file_name_len = LEC_MIN(strlen(file_name), foe_max_len-6u);
+        osal_size_t file_name_len = LEC_MIN(strlen(file_name), foe_max_len - 6u);
 
         (void)ec_mbx_next_counter(pec, slave, &counter);
 
         // mailbox header
-        write_buf->mbx_hdr.length    = 6u + file_name_len;
-        write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
-        write_buf->mbx_hdr.counter   = counter;
+        write_buf->mbx_hdr.length = 6u + file_name_len;
+        write_buf->mbx_hdr.mbxtype = EC_MBX_FOE;
+        write_buf->mbx_hdr.counter = counter;
 
         // foe header (2 Byte)
-        write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_READ_REQUEST;
+        write_buf->foe_hdr.op_code = EC_FOE_OP_CODE_READ_REQUEST;
         // read request (password 4 Byte)
-        write_buf->password          = password;
+        write_buf->password = password;
         (void)memcpy(write_buf->file_name, file_name, file_name_len);
 
         ec_log(10, "FOE_READ", "start reading file \"%s\"\n", file_name);
@@ -284,34 +285,36 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 
         *file_data_len = 0;
 
-        do { 
+        do {
             ret = EC_ERROR_MAILBOX_FOE_AGAIN;
 
             // wait for answer
-            pool_entry_t *p_entry_recv;
+            pool_entry_t* p_entry_recv;
             ec_foe_wait(pec, slave, &p_entry_recv);
 
             if (p_entry_recv == NULL) {
                 ret = EC_ERROR_MAILBOX_TIMEOUT;
             } else {
                 // cppcheck-suppress misra-c2012-11.3
-                ec_foe_data_request_t *read_buf_data = (ec_foe_data_request_t *)(p_entry_recv->data);
+                ec_foe_data_request_t* read_buf_data = (ec_foe_data_request_t*)(p_entry_recv->data);
 
                 if (read_buf_data->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
                     // cppcheck-suppress misra-c2012-11.3
-                    ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry_recv->data);
+                    ec_foe_error_request_t* read_buf_error =
+                        (ec_foe_error_request_t*)(p_entry_recv->data);
                     *error_message = dump_foe_error_request(pec, "FOE_READ", slave, read_buf_error);
                     ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                 } else if (read_buf_data->foe_hdr.op_code != EC_FOE_OP_CODE_DATA_REQUEST) {
                     ec_log(10, "FOE_READ", "got foe op_code %X\n", read_buf_data->foe_hdr.op_code);
                 } else {
                     osal_size_t len = read_buf_data->mbx_hdr.length - 6u;
-                
-                    ec_log(10, "FOE_READ", "slave %2d: retrieving file offset %" PRIu64"\n", slave, *file_data_len);
+
+                    ec_log(10, "FOE_READ", "slave %2d: retrieving file offset %" PRIu64 "\n", slave,
+                           *file_data_len);
 
                     // cppcheck-suppress misra-c2012-21.3
-                    *file_data = (osal_uint8_t *)realloc(*file_data, *file_data_len + len);
-                    (void)memcpy(&(*file_data)[*file_data_len], &read_buf_data->data[0], len); 
+                    *file_data = (osal_uint8_t*)realloc(*file_data, *file_data_len + len);
+                    (void)memcpy(&(*file_data)[*file_data_len], &read_buf_data->data[0], len);
                     *file_data_len += len;
 
                     int packet_nr = read_buf_data->packet_nr;
@@ -321,18 +324,19 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
                     } else {
                         // cppcheck-suppress misra-c2012-11.3
-                        ec_foe_ack_request_t *write_buf_ack = (ec_foe_ack_request_t *)(p_entry_send->data);
-        
+                        ec_foe_ack_request_t* write_buf_ack =
+                            (ec_foe_ack_request_t*)(p_entry_send->data);
+
                         (void)ec_mbx_next_counter(pec, slave, &counter);
 
-                        // everthing is fine, send ack 
+                        // everthing is fine, send ack
                         // mailbox header
-                        write_buf_ack->mbx_hdr.length    = 6; 
-                        write_buf_ack->mbx_hdr.mbxtype   = EC_MBX_FOE;
-                        write_buf->mbx_hdr.counter   = counter;
+                        write_buf_ack->mbx_hdr.length = 6;
+                        write_buf_ack->mbx_hdr.mbxtype = EC_MBX_FOE;
+                        write_buf->mbx_hdr.counter = counter;
                         // foe
-                        write_buf_ack->foe_hdr.op_code   = EC_FOE_OP_CODE_ACK_REQUEST;
-                        write_buf_ack->packet_nr         = packet_nr;
+                        write_buf_ack->foe_hdr.op_code = EC_FOE_OP_CODE_ACK_REQUEST;
+                        write_buf_ack->packet_nr = packet_nr;
 
                         // send request
                         ec_mbx_enqueue_head(pec, slave, p_entry_send);
@@ -357,48 +361,46 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 }
 
 // write file over foe
-int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
-        osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t *file_data, 
-        osal_size_t file_data_len, const osal_char_t **error_message) 
-{
+int ec_foe_write(ec_t* pec, osal_uint16_t slave, osal_uint32_t password,
+                 osal_char_t file_name[MAX_FILE_NAME_SIZE], osal_uint8_t* file_data,
+                 osal_size_t file_data_len, const osal_char_t** error_message) {
     (void)error_message;
     assert(pec != NULL);
     assert(file_data != NULL);
 
-    if(slave >= pec->slave_cnt)
-    {
-        return EC_ERROR_SLAVE_NOT_FOUND ;
+    if (slave >= pec->slave_cnt) {
+        return EC_ERROR_SLAVE_NOT_FOUND;
     }
 
     int ret = EC_OK;
     int counter;
     ec_slave_ptr(slv, pec, slave);
-    pool_entry_t *p_entry;
-        
+    pool_entry_t* p_entry;
+
     osal_mutex_lock(&slv->mbx.lock);
 
-    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) != EC_OK) { 
+    if (ec_mbx_check(pec, slave, EC_EEPROM_MBX_FOE) != EC_OK) {
         ret = EC_ERROR_MAILBOX_NOT_SUPPORTED_FOE;
     } else if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != EC_OK) {
         ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
     } else {
         // cppcheck-suppress misra-c2012-11.3
-        ec_foe_rw_request_t *write_buf = (ec_foe_rw_request_t *)(p_entry->data);
+        ec_foe_rw_request_t* write_buf = (ec_foe_rw_request_t*)(p_entry->data);
 
         // calc lengths
         osal_size_t foe_max_len = LEC_MIN(slv->sm[1].len, MAX_FILE_NAME_SIZE);
-        osal_size_t file_name_len = LEC_MIN(strlen(file_name), foe_max_len-6u);
-        
+        osal_size_t file_name_len = LEC_MIN(strlen(file_name), foe_max_len - 6u);
+
         (void)ec_mbx_next_counter(pec, slave, &counter);
 
         // mailbox header
-        write_buf->mbx_hdr.length    = 6u + file_name_len;
-        write_buf->mbx_hdr.mbxtype   = EC_MBX_FOE;
-        write_buf->mbx_hdr.counter   = counter;
+        write_buf->mbx_hdr.length = 6u + file_name_len;
+        write_buf->mbx_hdr.mbxtype = EC_MBX_FOE;
+        write_buf->mbx_hdr.counter = counter;
         // foe header (2 Byte)
-        write_buf->foe_hdr.op_code   = EC_FOE_OP_CODE_WRITE_REQUEST;
+        write_buf->foe_hdr.op_code = EC_FOE_OP_CODE_WRITE_REQUEST;
         // read request (password 4 Byte)
-        write_buf->password          = password;
+        write_buf->password = password;
         (void)memcpy(write_buf->file_name, file_name, file_name_len);
 
         // send request
@@ -406,25 +408,28 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 
         // wait for answer
         ec_foe_wait(pec, slave, &p_entry);
-        
+
         if (p_entry != NULL) {
             // cppcheck-suppress misra-c2012-11.3
-            ec_foe_ack_request_t *read_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
+            ec_foe_ack_request_t* read_buf_ack = (ec_foe_ack_request_t*)(p_entry->data);
 
             if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
                 if (read_buf_ack->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
                     // cppcheck-suppress misra-c2012-11.3
-                    ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry->data);
-                    *error_message = dump_foe_error_request(pec, "FOE_WRITE", slave, read_buf_error);
+                    ec_foe_error_request_t* read_buf_error =
+                        (ec_foe_error_request_t*)(p_entry->data);
+                    *error_message =
+                        dump_foe_error_request(pec, "FOE_WRITE", slave, read_buf_error);
                     ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                 } else {
-                    ec_log(10, "FOE_WRITE", "got no ack on foe write request, got 0x%X\n", 
-                            read_buf_ack->foe_hdr.op_code);
+                    ec_log(10, "FOE_WRITE", "got no ack on foe write request, got 0x%X\n",
+                           read_buf_ack->foe_hdr.op_code);
 
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }
             } else {
-                ec_log(10, "FOE_WRITE", "got ack, requested packet no %d\n", read_buf_ack->packet_nr);
+                ec_log(10, "FOE_WRITE", "got ack, requested packet no %d\n",
+                       read_buf_ack->packet_nr);
                 ret = EC_OK;
             }
 
@@ -446,7 +451,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
             ret = ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL);
             if (ret == EC_OK) {
                 // cppcheck-suppress misra-c2012-11.3
-                ec_foe_data_request_t *write_buf_data = (ec_foe_data_request_t *)p_entry->data;
+                ec_foe_data_request_t* write_buf_data = (ec_foe_data_request_t*)p_entry->data;
 
                 osal_size_t rest_len = file_data_len - file_offset;
                 osal_size_t bytes_read = LEC_MIN(rest_len, data_len);
@@ -454,22 +459,24 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 if (bytes_read < data_len) {
                     last_pkt = 1;
                 }
-                
+
                 (void)ec_mbx_next_counter(pec, slave, &counter);
 
-                ec_log(10, "FOE_WRITE", "slave %2d: sending file offset %" PRIu64 ", bytes %4" PRIu64 ", progress %6.2f\n", 
-                        slave, file_offset, bytes_read, ((double)file_offset/file_data_len) * 100);
+                ec_log(10, "FOE_WRITE",
+                       "slave %2d: sending file offset %" PRIu64 ", bytes %4" PRIu64
+                       ", progress %6.2f\n",
+                       slave, file_offset, bytes_read, ((double)file_offset / file_data_len) * 100);
 
                 file_offset += bytes_read;
 
                 packet_nr++;
                 // mailbox header
-                write_buf_data->mbx_hdr.length    = 6u + bytes_read; 
-                write_buf_data->mbx_hdr.mbxtype   = EC_MBX_FOE;
-                write_buf_data->mbx_hdr.counter   = counter;
+                write_buf_data->mbx_hdr.length = 6u + bytes_read;
+                write_buf_data->mbx_hdr.mbxtype = EC_MBX_FOE;
+                write_buf_data->mbx_hdr.counter = counter;
                 // foe
-                write_buf_data->foe_hdr.op_code   = EC_FOE_OP_CODE_DATA_REQUEST;
-                write_buf_data->packet_nr         = packet_nr;
+                write_buf_data->foe_hdr.op_code = EC_FOE_OP_CODE_DATA_REQUEST;
+                write_buf_data->packet_nr = packet_nr;
 
                 // send request
                 ec_mbx_enqueue_head(pec, slave, p_entry);
@@ -478,18 +485,22 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                 ec_foe_wait(pec, slave, &p_entry);
                 if (p_entry != NULL) {
                     // cppcheck-suppress misra-c2012-11.3
-                    ec_foe_ack_request_t *read_buf_ack = (ec_foe_ack_request_t *)(p_entry->data);
+                    ec_foe_ack_request_t* read_buf_ack = (ec_foe_ack_request_t*)(p_entry->data);
 
                     if (read_buf_ack->foe_hdr.op_code != EC_FOE_OP_CODE_ACK_REQUEST) {
                         if (read_buf_ack->foe_hdr.op_code == EC_FOE_OP_CODE_ERROR_REQUEST) {
                             // cppcheck-suppress misra-c2012-11.3
-                            ec_foe_error_request_t *read_buf_error = (ec_foe_error_request_t *)(p_entry->data);
-                            *error_message = dump_foe_error_request(pec, "FOE_WRITE", slave, read_buf_error);
+                            ec_foe_error_request_t* read_buf_error =
+                                (ec_foe_error_request_t*)(p_entry->data);
+                            *error_message =
+                                dump_foe_error_request(pec, "FOE_WRITE", slave, read_buf_error);
                             ret = EC_ERROR_MAILBOX_FOE_ERROR_REQ;
                         } else {
                             ec_log(10, "FOE_WRITE",
-                                    "got no ack on foe write request, got 0x%X, last_pkt %d, bytes_read %" PRIu64 ", data_len %" PRIu64 ", packet_nr %d\n", 
-                                    read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len, packet_nr);
+                                   "got no ack on foe write request, got 0x%X, last_pkt %d, "
+                                   "bytes_read %" PRIu64 ", data_len %" PRIu64 ", packet_nr %d\n",
+                                   read_buf_ack->foe_hdr.op_code, last_pkt, bytes_read, data_len,
+                                   packet_nr);
 
                             ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                         }
@@ -500,8 +511,9 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
                 } else {
                     ec_log(10, "FOE_WRITE",
-                            "got no ack on foe write request, last_pkt %d, bytes_read %" PRIu64 ", data_len %" PRIu64 "\n", 
-                            last_pkt, bytes_read, data_len);
+                           "got no ack on foe write request, last_pkt %d, bytes_read %" PRIu64
+                           ", data_len %" PRIu64 "\n",
+                           last_pkt, bytes_read, data_len);
                     ret = EC_ERROR_MAILBOX_FOE_NO_ACK;
                 }
             }
@@ -520,4 +532,3 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
 }
 
 #endif /* LIBETHERCAT_MBX_SUPPORT_FOE */
-

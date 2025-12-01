@@ -17,23 +17,23 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * libethercat is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with libethercat (LICENSE.LGPL-V3); if not, write 
- * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with libethercat (LICENSE.LGPL-V3); if not, write
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth
  * Floor, Boston, MA  02110-1301, USA.
- * 
- * Please note that the use of the EtherCAT technology, the EtherCAT 
- * brand name and the EtherCAT logo is only permitted if the property 
- * rights of Beckhoff Automation GmbH are observed. For further 
- * information please contact Beckhoff Automation GmbH & Co. KG, 
- * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the 
- * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg, 
+ *
+ * Please note that the use of the EtherCAT technology, the EtherCAT
+ * brand name and the EtherCAT logo is only permitted if the property
+ * rights of Beckhoff Automation GmbH are observed. For further
+ * information please contact Beckhoff Automation GmbH & Co. KG,
+ * Hülshorstweg 20, D-33415 Verl, Germany (www.beckhoff.com) or the
+ * EtherCAT Technology Group, Ostendstraße 196, D-90482 Nuremberg,
  * Germany (ETG, www.ethercat.org).
  *
  */
@@ -42,12 +42,12 @@
 #include <libethercat/config.h>
 #endif
 
-#include <string.h>
 #include <assert.h>
+#include <string.h>
 
-#include "libethercat/regs.h"
 #include "libethercat/datagram.h"
 #include "libethercat/error_codes.h"
+#include "libethercat/regs.h"
 
 //! Initialize cyclic datagram structure
 /*!
@@ -55,7 +55,7 @@
  * \param[in]   recv_timeout_ns     Receive timeout in [ns].
  * \return EC_OK on success, otherwise error code.
  */
-int ec_cyclic_datagram_init(ec_cyclic_datagram_t *cdg, osal_uint64_t recv_timeout) {
+int ec_cyclic_datagram_init(ec_cyclic_datagram_t* cdg, osal_uint64_t recv_timeout) {
     osal_mutex_attr_t lock_attr = OSAL_MUTEX_ATTR__PROTOCOL__INHERIT;
     osal_mutex_init(&cdg->lock, &lock_attr);
     cdg->p_entry = NULL;
@@ -72,7 +72,7 @@ int ec_cyclic_datagram_init(ec_cyclic_datagram_t *cdg, osal_uint64_t recv_timeou
  * \param[in]   cdg     Pointer to cyclic datagram structure.
  * \return EC_OK on success, otherwise error code.
  */
-int ec_cyclic_datagram_destroy(ec_cyclic_datagram_t *cdg) {
+int ec_cyclic_datagram_destroy(ec_cyclic_datagram_t* cdg) {
     osal_mutex_destroy(&cdg->lock);
     return EC_OK;
 }
@@ -83,7 +83,7 @@ int ec_cyclic_datagram_destroy(ec_cyclic_datagram_t *cdg) {
  *
  * \return EC_OK
  */
-int ec_frame_init(ec_frame_t *frame) {
+int ec_frame_init(ec_frame_t* frame) {
     int i;
     int ret = EC_OK;
 
@@ -112,13 +112,14 @@ int ec_frame_init(ec_frame_t *frame) {
  * \param[in]       payload       Frame payload.
  * \param[in]       payload_len   Length of payload.
  */
-void ec_frame_add_datagram_phys(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_t idx, 
-        osal_uint16_t adp, osal_uint16_t ado, osal_uint8_t *payload, osal_size_t payload_len) {
+void ec_frame_add_datagram_phys(ec_frame_t* frame, osal_uint8_t cmd, osal_uint8_t idx,
+                                osal_uint16_t adp, osal_uint16_t ado, osal_uint8_t* payload,
+                                osal_size_t payload_len) {
     assert(frame != NULL);
     assert(payload != NULL);
 
-    ec_frame_add_datagram_log(frame, cmd, idx, 
-            (((osal_uint32_t)ado << 16u) || (osal_uint32_t)adp), payload, payload_len);
+    ec_frame_add_datagram_log(frame, cmd, idx, (((osal_uint32_t)ado << 16u) || (osal_uint32_t)adp),
+                              payload, payload_len);
 }
 
 //! Add datagram at the end of frame.
@@ -130,31 +131,30 @@ void ec_frame_add_datagram_phys(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_
  * \param[in]       payload       Frame payload.
  * \param[in]       payload_len   Length of payload.
  */
-void ec_frame_add_datagram_log(ec_frame_t *frame, osal_uint8_t cmd, osal_uint8_t idx, 
-        osal_uint32_t adr, osal_uint8_t *payload, osal_size_t payload_len) {
+void ec_frame_add_datagram_log(ec_frame_t* frame, osal_uint8_t cmd, osal_uint8_t idx,
+                               osal_uint32_t adr, osal_uint8_t* payload, osal_size_t payload_len) {
     assert(frame != NULL);
     assert(payload != NULL);
 
     // get address to first datagram
     // cppcheck-suppress misra-c2012-11.3
-    ec_datagram_t *d = (ec_datagram_t *)&((osal_uint8_t *)frame)[sizeof(ec_frame_t)];
+    ec_datagram_t* d = (ec_datagram_t*)&((osal_uint8_t*)frame)[sizeof(ec_frame_t)];
 
-    while (((osal_uint8_t *)d < (&((osal_uint8_t *)frame)[frame->len])) && d->next) {
+    while (((osal_uint8_t*)d < (&((osal_uint8_t*)frame)[frame->len])) && d->next) {
         // cppcheck-suppress misra-c2012-11.3
-        d = (ec_datagram_t *)&((osal_uint8_t *)d)[ec_datagram_length(d)];
+        d = (ec_datagram_t*)&((osal_uint8_t*)d)[ec_datagram_length(d)];
     }
 
-    // get next 
+    // get next
     d->next = 1;
     // cppcheck-suppress misra-c2012-11.3
-    d = (ec_datagram_t *)&((osal_uint8_t *)d)[ec_datagram_length(d)];
+    d = (ec_datagram_t*)&((osal_uint8_t*)d)[ec_datagram_length(d)];
 
-    d->cmd = cmd; 
+    d->cmd = cmd;
     d->idx = idx;
     d->adr = adr;
-    (void)memcpy(&((osal_uint8_t *)d)[sizeof(ec_datagram_t)], payload, payload_len);
+    (void)memcpy(&((osal_uint8_t*)d)[sizeof(ec_datagram_t)], payload, payload_len);
     d->len = payload_len;
 
     frame->len += ec_datagram_length(d);
 }
-
