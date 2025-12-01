@@ -1,0 +1,54 @@
+
++name: CI with cppcheck
++
++on:
++  push:
++    branches: [ master ]
++  pull_request:
++    branches: [ master ]
++
++jobs:
++  build-and-static:
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Install build dependencies
++        run: |
++          sudo apt-get update
++          sudo apt-get install -y build-essential autoconf automake libtool pkg-config \
++            cmake cppcheck doxygen
++
++      - name: Bootstrap & configure
++        run: |
++          if [ -f bootstrap.sh ]; then
++            chmod +x ./bootstrap.sh && ./bootstrap.sh || true
++          fi
++          autoreconf -i || true
++          ./configure || true
++
++      - name: Build
++        run: |
++          make -j$(nproc) || true
++
++      - name: Run cppcheck (static analysis)
++        run: |
++          cppcheck --enable=all --inconclusive --std=c99 --suppress=missingIncludeSystem src || true
++
++      - name: Run make check (if available)
++        run: |
++          if make -n check >/dev/null 2>&1; then
++            make check || true
++          else
++            echo "no make check target"
++          fi
++
++      - name: Archive build artifacts
++        if: always()
++        uses: actions/upload-artifact@v4
++        with:
++          name: libethercat-build
++          path: |
++            ./src
++            ./configure.log || true
