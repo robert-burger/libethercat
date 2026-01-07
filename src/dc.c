@@ -209,6 +209,7 @@ int ec_dc_sync(ec_t *pec, osal_uint16_t slave, osal_uint8_t active,
                             "loop running right now! DC will not work correctly!\n", slave);
 
                     ret = EC_ERROR_CYCLIC_LOOP;
+                    break;
                 }
             } while (pec->dc.dc_time == 0u);
         } 
