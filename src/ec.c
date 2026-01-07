@@ -80,6 +80,8 @@
 // forward declaration
 static void default_log_func(ec_t *pec, int lvl, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));
 static int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time);
+static const char *ec_datagram_cmd_to_string(osal_uint8_t cmd);
+static void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, osal_ssize_t out_len);
 
 //! calculate signed difference of 64-bit unsigned int's
 /*!
@@ -1341,7 +1343,7 @@ const char *ec_datagram_cmd_to_string(osal_uint8_t cmd) {
     }
 }
 
-void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, ssize_t out_len) {
+void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, osal_ssize_t out_len) {
     uint16_t adp = p_dg->adr & 0xFFFFu,
              ado = (p_dg->adr & 0xFFFF0000u) >> 16u;
 
