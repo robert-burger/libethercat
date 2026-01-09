@@ -1317,7 +1317,7 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 }
 
                 ec_log(10, get_transition_string(transition), 
-                        "slave %2d: fixed address %d, vendor 0x%08" PRIu32 ", product 0x%08" PRIu32 ", mbx 0x%04X\n",
+                        "slave %2d: fixed address %d, vendor 0x%08" PRIX32 ", product 0x%08" PRIX32 ", mbx 0x%04X\n",
                         slave, slv->fixed_address, slv->eeprom.vendor_id, slv->eeprom.product_code, 
                         slv->eeprom.mbx_supported);
             }
