@@ -9401,7 +9401,25 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return igb_ptp_get_ts_config(netdev, ifr);
 	case SIOCSHWTSTAMP:
 		return igb_ptp_set_ts_config(netdev, ifr);
-	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL: {
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX: {
+		struct igb_adapter *adapter = netdev_priv(netdev);
+		struct igb_q_vector *q_vector = adapter->q_vector[0];
+		bool clean_complete = true;
+
+		if (!adapter->is_ecat) {
+			return -EOPNOTSUPP;
+		}
+
+		if (q_vector->tx.ring) {
+			clean_complete = igb_clean_tx_irq(q_vector, 1);
+		}
+
+		if (!clean_complete)
+			return 1;
+
+		return 0;
+	}
+	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX: {
 		struct igb_adapter *adapter = netdev_priv(netdev);
 		struct igb_q_vector *q_vector = adapter->q_vector[0];
 		int budget = 64;
@@ -9411,17 +9429,13 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 			return -EOPNOTSUPP;
 		}
 
-		if (q_vector->tx.ring) {
-			clean_complete = igb_clean_tx_irq(q_vector, budget);
-		}
-
 		if (q_vector->rx.ring) {
 			int cleaned = igb_clean_rx_irq(q_vector, budget);
 
 			if (cleaned >= budget) 
 				clean_complete = false;
 		}
-		if (!clean_complete) 
+		if (!clean_complete)
 			return 1;
 
 		return 0;
