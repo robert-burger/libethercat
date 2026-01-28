@@ -191,6 +191,7 @@ static void ec_async_check_slave(ec_async_loop_t *paml, osal_uint16_t slave) {
  */
 void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *timeout) {
     ec_message_entry_t *me = NULL;
+    ec_t *pec = paml->pec;
 
     int ret = ec_async_loop_get(&paml->exec, &me, timeout);
     if (ret != EC_OK) {
@@ -218,6 +219,14 @@ void ec_async_loop_step(ec_async_loop_t *paml, osal_timer_t *timeout) {
             }
 
             break;
+        case EC_MSG_CHECK_DCSOFFSET: {
+            uint16_t wkc;
+            uint64_t dcsoffset;
+            (void)ec_fprd(pec, pec->dc.master_address, EC_REG_DCSYSOFFSET, &dcsoffset, sizeof(dcsoffset), &wkc);
+            dcsoffset += *(osal_int32_t *)&(me->msg.payload);
+            (void)ec_fpwr(pec, pec->dc.master_address, EC_REG_DCSYSOFFSET, &dcsoffset, sizeof(dcsoffset), &wkc);
+            break;
+        }
     };
 
     // return message to pool
@@ -281,6 +290,29 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid) {
             if (ec_async_loop_put(&paml->exec, me) == 0) {
                 ec_log(5, "ASYNC_CHECK_GROUP", "group %d: scheduled\n", gid);
             }
+        }
+    }
+}
+
+//! Execute asynchronous check dc system time offset.
+/*!
+ * \param[in] paml  Handle to async message loop.
+ */
+void ec_async_check_dcsoffset(ec_async_loop_t *paml, osal_int32_t correction_value) {
+    assert(paml != NULL);
+    ec_t *pec = paml->pec;
+
+    osal_timer_t timeout;
+    osal_timer_init(&timeout, 1000);
+    ec_message_entry_t *me = NULL;
+    int ret = ec_async_loop_get(&paml->avail, &me, &timeout);
+    if (ret != EC_OK) {
+        // got no message buffer
+    } else {
+        me->msg.id = EC_MSG_CHECK_DCSOFFSET;
+        me->msg.payload = *(osal_uint32_t *)&correction_value;
+        if (ec_async_loop_put(&paml->exec, me) == 0) {
+            ec_log(200, "ASYNC_CHECK_DCSOFFSET", "scheduled\n");
         }
     }
 }

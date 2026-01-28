@@ -54,7 +54,8 @@ struct ec;
 typedef enum ec_async_message_id {
     EC_MSG_CHECK_GROUP,             //!< \brief message type check group
     EC_MSG_CHECK_SLAVE,             //!< \brief message type check slave
-    EC_MSG_CHECK_ALL                //!< \brief message type check all slaves
+    EC_MSG_CHECK_ALL,               //!< \brief message type check all slaves
+    EC_MSG_CHECK_DCSOFFSET          //!< \brief message type check dc system time offset
 } ec_async_message_id_t;
     
 typedef osal_uint32_t ec_async_message_payload_t;
@@ -132,6 +133,12 @@ void ec_async_check_group(ec_async_loop_t *paml, osal_uint16_t gid);
  * \param[in] paml  Handle to async message loop.
  */
 void ec_async_check_all(ec_async_loop_t *paml);
+
+//! Execute asynchronous check dc system time offset.
+/*!
+ * \param[in] paml  Handle to async message loop.
+ */
+void ec_async_check_dcsoffset(ec_async_loop_t *paml, osal_int32_t correction_value);
 
 // Execute one async check step.
 /*!
