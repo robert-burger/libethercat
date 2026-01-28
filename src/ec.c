@@ -381,6 +381,9 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
                         slv->subdevs[z].pdout.pd = &pdout[pdoff];
                         pdoff += slv->subdevs[z].pdout.len;
                     }
+                } else {
+                    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: not mapping slave %2d sm %d (OUTPUTS), no fmmu left on device!\n",
+                            group, i, k);
                 }
 
                 tmp_pdout = &tmp_pdout[slv->sm[k].len];
@@ -409,6 +412,9 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
                         slv->subdevs[z].pdin.pd = &pdin[pdoff];
                         pdoff += slv->subdevs[z].pdin.len;
                     }
+                } else {
+                    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: not mapping slave %2d sm %d (INPUTS), no fmmu left on device!\n",
+                            group, i, k);
                 }
 
                 tmp_pdin = &tmp_pdin[slv->sm[k].len];
