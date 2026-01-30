@@ -775,7 +775,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
             case INIT_2_SAFEOP:
             case PREOP_2_SAFEOP:
                 if (!LIST_EMPTY(&slv->init_cmds)) {
-                    ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds\n", slave);
+                    ec_log(100, get_transition_string(transition), "slave %2d: sending init cmds\n", slave);
 
                     ec_init_cmd_t *cmd;
                     LIST_FOREACH(cmd, &slv->init_cmds, le) {
@@ -788,7 +788,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                                 break;
 #if LIBETHERCAT_MBX_SUPPORT_COE == 1
                             case EC_MBX_COE: {
-                                ec_log(10, get_transition_string(transition), 
+                                ec_log(100, get_transition_string(transition), 
                                         "slave %2d: sending CoE init cmd 0x%04X:%d, "
                                         "ca %d, datalen %" PRIu64 ", datap %p\n", slave, cmd->id, 
                                         cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
@@ -808,7 +808,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
 #endif
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
                             case EC_MBX_SOE: {
-                                ec_log(10, get_transition_string(transition), 
+                                ec_log(100, get_transition_string(transition), 
                                         "slave %2d: sending SoE init cmd 0x%04X:%d, "
                                         "atn %d, datalen %" PRIu64 ", datap %p\n", slave, cmd->id, 
                                         cmd->si_el, cmd->ca_atn, cmd->datalen, cmd->data);
@@ -829,7 +829,7 @@ int ec_slave_prepare_state_transition(ec_t *pec, osal_uint16_t slave,
                         }
                     }
 
-                    ec_log(10, get_transition_string(transition), "slave %2d: sending init cmds done\n", slave);
+                    ec_log(100, get_transition_string(transition), "slave %2d: sending init cmds done\n", slave);
                 }
 
                 break;
@@ -1280,13 +1280,18 @@ int ec_slave_state_transition(ec_t *pec, osal_uint16_t slave, ec_state_t state) 
                 // get features
                 ec_reg_read(EC_REG_ESCSUP, &slv->features, sizeof(slv->features));
 
-                ec_log(10, get_transition_string(transition), 
-                        "slave %2d: pdi ctrl 0x%04X, fmmus %d, syncm %d, features 0x%X\n", 
-                        slave, slv->pdi_ctrl, slv->fmmu_ch, slv->sm_ch, slv->features);
-
                 // init to preop stuff
                 slv->eeprom.read_eeprom = 0;
                 ec_eeprom_dump(pec, slave);
+
+                if ((slv->eeprom.general.name_idx > 0) && (slv->eeprom.strings_cnt > (slv->eeprom.general.name_idx - 1))) { 
+                    ec_log(10, get_transition_string(transition), 
+                            "slave %2d: name \"%s\"\n", slave, slv->eeprom.strings[slv->eeprom.general.name_idx-1]);
+                }
+
+                ec_log(10, get_transition_string(transition), 
+                        "slave %2d: pdi ctrl 0x%04X, fmmus %d, syncm %d, features 0x%X\n", 
+                        slave, slv->pdi_ctrl, slv->fmmu_ch, slv->sm_ch, slv->features);
 
                 // allocate sub device structures
                 if (slv->eeprom.general.ds402_channels > 0u) {
