@@ -1,37 +1,166 @@
+libethercat (0.7.7) unstable; urgency=low
+
+  * change: some logging moved to verbose, print slave name on startup if available
+  * change: extended 32-bit distributed clocks with increasing upper 32-bit!
+  * add: async loop now is able to set dcsoffset of master clock
+  * add: printf when no more fmmus are available
+  * fix: printf format
+  * Merge pull request #36 from common/build-update_imports
+  * build: build_profile import are deprecated
+  * fix: print of product code as hex value
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 30 Jan 2026 08:22:13 +0100
+
+libethercat (0.7.6) unstable; urgency=low
+
+  * change: disabled debian build
+  * fix: arm pikeos build
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 9 Jan 2026 07:02:28 +0100
+
+libethercat (0.7.5) unstable; urgency=low
+
+  * fix: #35
+  * fix: ci.yaml
+  * Create ci.yaml
+  * fix: printing sync manager flags as hex value
+  * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
+  * change: error output
+  * Merge pull request #34 from bens-im/feat-handle_slave_not_found
+  * feat: handle slave not found case instead of crashing sw
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 7 Jan 2026 15:29:50 +0100
+
 libethercat (0.7.4) unstable; urgency=low
 
-  * fix: timeout waiting for cyclic loop
+  * update: debian changelog
+  * fix: timeout waiting for cyclic loop running
+  * fix: debian install of cmake file
+  * debian: changelog update
   * autotools: cmake find package from autotools
   * cmake: add generation of pkg-config file from cmake
+  * del: old unused license file
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 13 Aug 2025 08:15:09 +0200
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 11 Sep 2025 14:49:37 +0200
 
 libethercat (0.7.3) unstable; urgency=low
 
-  * fix: cmake build
+  * debian: bump version to 0.7.3
+  * fix: LIBETHERCAT_BUILD_xxx is 0 or 1 for cmake
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * fix: set LIBETHERCAT_BUILD_POSIX in cmake
+  * Update README.md
+  * Merge pull request #39 from taotieren/patch-1
+  * Update README.md
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 12 Aug 2025 06:02:46 +0200
 
 libethercat (0.7.2) unstable; urgency=low
 
-  * change: add new settings.h to pass compilation settings 
+  * ignore: generated settings.h
+  * debian: bump 0.7.2
+  * fix: cmake build system
+  * fix: new settings header for config.h replacement
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 11 Aug 2025 09:37:25 +0200
 
 libethercat (0.7.1) unstable; urgency=low
 
-  * fix: function signature in example
+  * debian: inc version 0.7.1
+  * fix: function signature for cb_state
+  * fix: conan libosal version
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 11 Aug 2025 08:47:53 +0200
 
 libethercat (0.7.0) unstable; urgency=low
 
-  * add: debian bookworm 6.1.0-37-rt kernel
-  * fix: out-of-source build
+  * fix: github action don't stick to libosal version
+  * fix: latest cmake build system changes
+  * update: libosal version
+  * del: debian example files
+  * add: bootstrap script
+  * chore: header include cleanup
+  * fix: no config.h distribution and include in headers
+  * fix: missing include
+  * changed: fixed libosal version to 0.1.1
+  * Update build-deb.yaml
+  * fix: removed pre suffix in debian changelog
+  * fix: remove debian source option folder
+  * fix: prerelease to separate repo
+  * Merge remote-tracking branch 'origin-github/release/0.7.0-deb-with-codename' into release/0.7.0
+  * Merge branch 'release/0.7.0' of github.com:robert-burger/libethercat into release/0.7.0
+  * fix: reset pdg_prev and check return value of get_tx_buffer
+  * Merge remote-tracking branch 'origin-github/master' into release/0.7.0
+  * Merge pull request #37 from marcfir/fix/hw_tx
+  * fix: install rsync
+  * fix: install rsync
+  * fix: upload all artifacts
+  * fix: upload all artifacts
+  * fix: removed double step
+  * add: filenames
+  * forced: gzip source tarball
+  * forced: gzip source tarball
+  * add: quoting filenames
+  * add: quoting filenames
+  * add: quoting filenames
+  * add: burger-system upload verbose
+  * add: burger-system upload
+  * fix: install order
+  * fix: install order
+  * fix: install order
+  * fix: brackets
+  * fix: install libosal from burger-system
+  * fix: request only required tx_buffers via get_tx_buffer()  in hw_tx_pool()
+  * Update build-deb.yaml
+  * Merge pull request #36 from robert-burger/release/0.7.0-deb-with-codename
+  * change: reworked build-deb.yaml
+  * Update README.md
+  * Merge branch 'master' into release/0.7.0
   * Merge branch 'master' of github.com:robert-burger/libethercat
+  * Merge branch 'release/0.7.0' into feat/lru-timeout-tests-0.7.0
+  * update: debian copyright file
+  * add: build of device-file and device-sock-raw
+  * change: renamed min macro to LEC_MIN
+  * update: debian homepage and vcs
+  * change: cloudsmith workspace name
+  * change: using configure.ac.in now
+  * change: del debian rev from version
+  * Merge branch 'feat/build-deb' of github.com:robert-burger/libethercat into feat/build-deb
+  * update: debian changelog
+  * fix: debian install
+  * add: debian -dev package build
+  * change: upload to cloudsmith common
+  * change: install pkg-config
+  * change: PKG_CHECK_MODULES uses default actions
+  * change: add -y option to apt-get install
+  * change: installing libosal-dev now
+  * add: fix for AC_MSG_ERROR
+  * add: install of autoconf-archive
+  * change: configure.ac to .in
+  * add: apt-get update
+  * change: enable action for all branches/tags
+  * add: deb build action
+  * change: waiting 1 sec for cyclic loop
+  * Merge branch 'master' into release/0.7.0
+  * Merge pull request #35 from marcfir/master
+  * add: debian bookworm 6.1.0-37-rt kernel
+  * use target_compile_definitions
+  * fix: out-of-source build
+  * fix: add HAVE_CONFIG_H to cmake
+  * Merge branch 'master' of github.com:robert-burger/libethercat
+  * fix: skipping frames that were received too late and not marked as sent any more
   * Merge pull request #33 from marcfir/feat/on_statechange
   * feat: Add up and down directions
   * feat: hook on state change
+  * Update hw.c
+  * Update hw.c
+  * applied fixes
+  * applied daniels fix, and changed makefile to only build r8169
+  * change: reworked loss handling a little
+  * cleanup: last loss detection changes
+  * fix: printf format
+  * fix: error unused result from write
+  * fix: detection of datagram loss
   * Merge pull request #21 from common/feat/pikeos_changes
   * Update soe.c
   * Update foe.c
@@ -40,8 +169,18 @@ libethercat (0.7.0) unstable; urgency=low
   * Merge branch 'master' into feat/pikeos_changes
   * Merge pull request #30 from buss-kr/lru2
   * Update Makefile
+  * change: resending frames in transceive if lost
+  * fix: pec pointer part 2
+  * fix: pec pointer
+  * fix: workaround to retry receiving frames in states < SAFEOP
+  * change: add missing newlines to log messages
+  * change: log message when frame was expected to be sent but was not
+  * change: extented log message on frame reception timeout
+  * change: add more log message when reception of a frame was missed somehow
   * applied fixes
   * applied daniels fix, and changed makefile to only build r8169
+  * Merge branch 'master' into release/0.7.0
+  * change: libosal req at least 0.1.0
   * Merge pull request #29 from common/feat/stm32
   * Merge branch 'master' of rmc-github.robotic.dlr.de:common/libethercat
   * fix: error code on unexpected coe answer
@@ -103,7 +242,7 @@ libethercat (0.7.0) unstable; urgency=low
   * fixed ec_log() data types to PRI_____
   * fixed ec_log() data types to PRI_____
 
- -- Robert Burger <robert.burger@dlr.de>  Wed, 2 Jul 2025 15:55:19 +0200
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 11 Aug 2025 08:06:27 +0200
 
 libethercat (0.6.8) unstable; urgency=low
 
