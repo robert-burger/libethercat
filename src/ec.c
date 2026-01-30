@@ -82,6 +82,8 @@ static void default_log_func(ec_t *pec, int lvl, const osal_char_t *format, ...)
 static int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time);
 static const char *ec_datagram_cmd_to_string(osal_uint8_t cmd);
 static void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, osal_ssize_t out_len);
+static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) __attribute__((unused));
+static int32_t signed32_diff(osal_uint32_t a, osal_uint32_t b) __attribute__((unused));
 
 //! calculate signed difference of 64-bit unsigned int's
 /*!
@@ -90,7 +92,7 @@ static void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, osal_ss
  *
  * \return Difference 
  */
-static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
+int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
     osal_uint64_t tmp_a = a;
     osal_uint64_t tmp_b = b;
     osal_uint64_t abs_diff = (a - b);
@@ -119,7 +121,7 @@ static int64_t signed64_diff(osal_uint64_t a, osal_uint64_t b) {
  *
  * \return Difference 
  */
-static int32_t signed32_diff(osal_uint32_t a, osal_uint32_t b) {
+int32_t signed32_diff(osal_uint32_t a, osal_uint32_t b) {
     osal_uint32_t tmp_a = a;
     osal_uint32_t tmp_b = b;
     osal_uint32_t abs_diff = (a - b);
@@ -1909,16 +1911,19 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
     pec->dc.packet_duration = osal_timer_gettime_nsec() - pec->dc.sent_time_nsec;
 
     if (wkc != 0u) {
+        uint64_t old_dc_time = pec->dc.dc_time;
         (void)memcpy((osal_uint8_t *)&pec->dc.dc_time, (osal_uint8_t *)ec_datagram_payload(p_dg), 8);
-        int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
 
-        if (pec->dc.have_64bit == 0) { // we only have 32-bit dc ...
-            // get clock difference
-            pec->dc.act_diff = signed32_diff((pec->dc.rtc_time % UINT_MAX + tx_time_to_dc_master), pec->dc.dc_time); 
-        } else {
-            // get clock difference
-            pec->dc.act_diff = signed64_diff((pec->dc.rtc_time % UINT64_MAX + tx_time_to_dc_master), pec->dc.dc_time); 
+        if (pec->dc.have_64bit == 0) { // we only have 32-bit dc .. correct upper 32-bits.
+            if (pec->dc.dc_time < (old_dc_time % UINT_MAX)) {
+                pec->dc.dc_time += (old_dc_time / UINT_MAX) * UINT_MAX + UINT_MAX;
+            } else{
+                pec->dc.dc_time += (old_dc_time / UINT_MAX) * UINT_MAX;
+            }
         }
+
+        // get clock difference
+        pec->dc.act_diff = signed64_diff((pec->dc.rtc_time % UINT64_MAX), pec->dc.dc_time); 
 
         if (pec->dc.mode == dc_mode_ref_clock) {
             // calc proportional part
@@ -1936,6 +1941,9 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
             pec->dc.timer_correction = pec->dc.control.p_part + pec->dc.control.i_part;
         } else if (pec->dc.mode == dc_mode_master_clock) {
+            int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
+            pec->dc.act_diff -= tx_time_to_dc_master;
+
             // sending offset compensation value to dc master clock
             pool_entry_t *p_entry_dc_sto;
             idx_entry_t *p_idx_sto;
