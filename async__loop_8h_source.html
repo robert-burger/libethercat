@@ -144,95 +144,99 @@ $(document).ready(function(){initNavTree('async__loop_8h_source.html',''); initR
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="keyword">typedef</span> <span class="keyword">enum</span> ec_async_message_id {</div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    EC_MSG_CHECK_GROUP,             </div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    EC_MSG_CHECK_SLAVE,             </div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    EC_MSG_CHECK_ALL                </div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>} ec_async_message_id_t;</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    </div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="keyword">typedef</span> osal_uint32_t ec_async_message_payload_t;</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
-<div class="foldopen" id="foldopen00063" data-start="{" data-end="};">
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno"><a class="line" href="structec__message.html">   63</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__message.html">ec_message</a> {</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno"><a class="line" href="structec__message.html#accd96368d6b639ea33e9507d072176dc">   64</a></span>    ec_async_message_id_t <a class="code hl_variable" href="structec__message.html#accd96368d6b639ea33e9507d072176dc">id</a>;       </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno"><a class="line" href="structec__message.html#a404700f6e70161b02a1f8918665b353d">   65</a></span>    ec_async_message_payload_t <a class="code hl_variable" href="structec__message.html#a404700f6e70161b02a1f8918665b353d">payload</a>;</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>} <a class="code hl_struct" href="structec__message.html">ec_message_t</a>;</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    EC_MSG_CHECK_ALL,               </div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    EC_MSG_CHECK_DCSOFFSET          </div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>} ec_async_message_id_t;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    </div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="keyword">typedef</span> osal_uint32_t ec_async_message_payload_t;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
+<div class="foldopen" id="foldopen00064" data-start="{" data-end="};">
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno"><a class="line" href="structec__message.html">   64</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__message.html">ec_message</a> {</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno"><a class="line" href="structec__message.html#accd96368d6b639ea33e9507d072176dc">   65</a></span>    ec_async_message_id_t <a class="code hl_variable" href="structec__message.html#accd96368d6b639ea33e9507d072176dc">id</a>;       </div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno"><a class="line" href="structec__message.html#a404700f6e70161b02a1f8918665b353d">   66</a></span>    ec_async_message_payload_t <a class="code hl_variable" href="structec__message.html#a404700f6e70161b02a1f8918665b353d">payload</a>;</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>} <a class="code hl_struct" href="structec__message.html">ec_message_t</a>;</div>
 </div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="foldopen" id="foldopen00070" data-start="{" data-end="};">
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno"><a class="line" href="structec__message__entry.html">   70</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__message__entry.html">ec_message_entry</a> {</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno"><a class="line" href="structec__message__entry.html#ad8d7619aec49c61ba40fe411fbd04ed8">   71</a></span>    <a class="code hl_function" href="structec__message__entry.html#ad8d7619aec49c61ba40fe411fbd04ed8">TAILQ_ENTRY</a>(<a class="code hl_struct" href="structec__message__entry.html">ec_message_entry</a>) qh;</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    </div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno"><a class="line" href="structec__message__entry.html#a58f6aed72c611585e2ad3d6a25e1b032">   74</a></span>    <a class="code hl_struct" href="structec__message.html">ec_message_t</a> <a class="code hl_variable" href="structec__message__entry.html#a58f6aed72c611585e2ad3d6a25e1b032">msg</a>;               </div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>} <a class="code hl_struct" href="structec__message__entry.html">ec_message_entry_t</a>;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span> </div>
+<div class="foldopen" id="foldopen00071" data-start="{" data-end="};">
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno"><a class="line" href="structec__message__entry.html">   71</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__message__entry.html">ec_message_entry</a> {</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno"><a class="line" href="structec__message__entry.html#ad8d7619aec49c61ba40fe411fbd04ed8">   72</a></span>    <a class="code hl_function" href="structec__message__entry.html#ad8d7619aec49c61ba40fe411fbd04ed8">TAILQ_ENTRY</a>(<a class="code hl_struct" href="structec__message__entry.html">ec_message_entry</a>) qh;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    </div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="structec__message__entry.html#a58f6aed72c611585e2ad3d6a25e1b032">   75</a></span>    <a class="code hl_struct" href="structec__message.html">ec_message_t</a> <a class="code hl_variable" href="structec__message__entry.html#a58f6aed72c611585e2ad3d6a25e1b032">msg</a>;               </div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>} <a class="code hl_struct" href="structec__message__entry.html">ec_message_entry_t</a>;</div>
 </div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>TAILQ_HEAD(ec_message_pool_queue, <a class="code hl_struct" href="structec__message__entry.html">ec_message_entry</a>);</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span><span class="keyword">typedef</span> <span class="keyword">struct </span>ec_message_pool_queue ec_message_pool_queue_t;</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
-<div class="foldopen" id="foldopen00080" data-start="{" data-end="};">
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno"><a class="line" href="structec__message__pool.html">   80</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__message__pool.html">ec_message_pool</a> {</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno"><a class="line" href="structec__message__pool.html#a355763f1c857a5e3a9cce8e963c2ab1c">   81</a></span>    ec_message_pool_queue_t <a class="code hl_variable" href="structec__message__pool.html#a355763f1c857a5e3a9cce8e963c2ab1c">queue</a>;  </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno"><a class="line" href="structec__message__pool.html#a8d1e392e35d37d707c816efd5bbb3e85">   82</a></span>    osal_semaphore_t <a class="code hl_variable" href="structec__message__pool.html#a8d1e392e35d37d707c816efd5bbb3e85">avail_cnt</a>;     </div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno"><a class="line" href="structec__message__pool.html#a71f656d6c1a1bedc80d1759185174eb5">   83</a></span>    osal_mutex_t <a class="code hl_variable" href="structec__message__pool.html#a71f656d6c1a1bedc80d1759185174eb5">lock</a>;              </div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>} <a class="code hl_struct" href="structec__message__pool.html">ec_message_pool_t</a>;</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>TAILQ_HEAD(ec_message_pool_queue, <a class="code hl_struct" href="structec__message__entry.html">ec_message_entry</a>);</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="keyword">typedef</span> <span class="keyword">struct </span>ec_message_pool_queue ec_message_pool_queue_t;</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span> </div>
+<div class="foldopen" id="foldopen00081" data-start="{" data-end="};">
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno"><a class="line" href="structec__message__pool.html">   81</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__message__pool.html">ec_message_pool</a> {</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno"><a class="line" href="structec__message__pool.html#a355763f1c857a5e3a9cce8e963c2ab1c">   82</a></span>    ec_message_pool_queue_t <a class="code hl_variable" href="structec__message__pool.html#a355763f1c857a5e3a9cce8e963c2ab1c">queue</a>;  </div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno"><a class="line" href="structec__message__pool.html#a8d1e392e35d37d707c816efd5bbb3e85">   83</a></span>    osal_semaphore_t <a class="code hl_variable" href="structec__message__pool.html#a8d1e392e35d37d707c816efd5bbb3e85">avail_cnt</a>;     </div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno"><a class="line" href="structec__message__pool.html#a71f656d6c1a1bedc80d1759185174eb5">   84</a></span>    osal_mutex_t <a class="code hl_variable" href="structec__message__pool.html#a71f656d6c1a1bedc80d1759185174eb5">lock</a>;              </div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>} <a class="code hl_struct" href="structec__message__pool.html">ec_message_pool_t</a>;</div>
 </div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><span class="preprocessor">#define EC_ASYNC_MESSAGE_LOOP_COUNT 100</span></div>
-<div class="foldopen" id="foldopen00087" data-start="{" data-end="};">
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno"><a class="line" href="structec__async__loop.html">   87</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__async__loop.html">ec_async_loop</a> {</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <a class="code hl_struct" href="structec__message__entry.html">ec_message_entry_t</a> entries[EC_ASYNC_MESSAGE_LOOP_COUNT];</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a72983bd0a874c598eb3545e9a54aa928">   90</a></span>    <a class="code hl_struct" href="structec__message__pool.html">ec_message_pool_t</a> <a class="code hl_variable" href="structec__async__loop.html#a72983bd0a874c598eb3545e9a54aa928">avail</a>;        </div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno"><a class="line" href="structec__async__loop.html#ac8d5c3bee1195d917ad3e22cc1da23c2">   91</a></span>    <a class="code hl_struct" href="structec__message__pool.html">ec_message_pool_t</a> <a class="code hl_variable" href="structec__async__loop.html#ac8d5c3bee1195d917ad3e22cc1da23c2">exec</a>;         </div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a93824f5a1b1d0f3b862f9d1c8537b127">   93</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structec__async__loop.html#a93824f5a1b1d0f3b862f9d1c8537b127">loop_running</a>;               </div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a885a3de435ecb2f6d6a18f79ee29be60">   94</a></span>    osal_task_t <a class="code hl_variable" href="structec__async__loop.html#a885a3de435ecb2f6d6a18f79ee29be60">loop_tid</a>;           </div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a426dde72b105ede8053fb189f4701008">   95</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structec.html">ec</a> *<a class="code hl_variable" href="structec__async__loop.html#a426dde72b105ede8053fb189f4701008">pec</a>;                 </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span> </div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    osal_timer_t next_check_group;</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>} <a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a>;</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span><span class="preprocessor">#define EC_ASYNC_MESSAGE_LOOP_COUNT 100</span></div>
+<div class="foldopen" id="foldopen00088" data-start="{" data-end="};">
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno"><a class="line" href="structec__async__loop.html">   88</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="structec__async__loop.html">ec_async_loop</a> {</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <a class="code hl_struct" href="structec__message__entry.html">ec_message_entry_t</a> entries[EC_ASYNC_MESSAGE_LOOP_COUNT];</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a72983bd0a874c598eb3545e9a54aa928">   91</a></span>    <a class="code hl_struct" href="structec__message__pool.html">ec_message_pool_t</a> <a class="code hl_variable" href="structec__async__loop.html#a72983bd0a874c598eb3545e9a54aa928">avail</a>;        </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno"><a class="line" href="structec__async__loop.html#ac8d5c3bee1195d917ad3e22cc1da23c2">   92</a></span>    <a class="code hl_struct" href="structec__message__pool.html">ec_message_pool_t</a> <a class="code hl_variable" href="structec__async__loop.html#ac8d5c3bee1195d917ad3e22cc1da23c2">exec</a>;         </div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a93824f5a1b1d0f3b862f9d1c8537b127">   94</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structec__async__loop.html#a93824f5a1b1d0f3b862f9d1c8537b127">loop_running</a>;               </div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a885a3de435ecb2f6d6a18f79ee29be60">   95</a></span>    osal_task_t <a class="code hl_variable" href="structec__async__loop.html#a885a3de435ecb2f6d6a18f79ee29be60">loop_tid</a>;           </div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno"><a class="line" href="structec__async__loop.html#a426dde72b105ede8053fb189f4701008">   96</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structec.html">ec</a> *<a class="code hl_variable" href="structec__async__loop.html#a426dde72b105ede8053fb189f4701008">pec</a>;                 </div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    osal_timer_t next_check_group;</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>} <a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a>;</div>
 </div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span><span class="keywordtype">int</span> ec_async_loop_create(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml, <span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec);</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span><span class="keywordtype">int</span> ec_async_loop_destroy(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml);</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span> </div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span> </div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span><span class="keywordtype">void</span> ec_async_check_group(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml, osal_uint16_t gid);</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span><span class="keywordtype">void</span> ec_async_check_all(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml);</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span> </div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span><span class="comment">// Execute one async check step.</span></div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span><span class="keywordtype">void</span> ec_async_loop_step(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml, osal_timer_t *to);</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span> </div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="keywordtype">int</span> ec_async_loop_create(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml, <span class="keyword">struct</span> <a class="code hl_struct" href="structec.html">ec</a> *pec);</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span> </div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span><span class="keywordtype">int</span> ec_async_loop_destroy(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml);</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span><span class="keywordtype">void</span> ec_async_check_group(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml, osal_uint16_t gid);</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span> </div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span><span class="keywordtype">void</span> ec_async_check_all(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml);</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span> </div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span> </div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span><span class="keywordtype">void</span> ec_async_check_dcsoffset(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml, osal_int32_t correction_value);</div>
 <div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span> </div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span><span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>}</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span> </div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span><span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_ASYNC_MESSAGE_LOOP_H</span></div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span> </div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span><span class="comment">// Execute one async check step.</span></div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span><span class="keywordtype">void</span> ec_async_loop_step(<a class="code hl_struct" href="structec__async__loop.html">ec_async_loop_t</a> *paml, osal_timer_t *to);</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span><span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>}</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span> </div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span><span class="preprocessor">#endif </span><span class="comment">// LIBETHERCAT_ASYNC_MESSAGE_LOOP_H</span></div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span> </div>
 <div class="ttc" id="acommon_8h_html"><div class="ttname"><a href="common_8h.html">common.h</a></div><div class="ttdoc">ethercat master common stuff</div></div>
-<div class="ttc" id="astructec__async__loop_html"><div class="ttname"><a href="structec__async__loop.html">ec_async_loop</a></div><div class="ttdef"><b>Definition</b> async_loop.h:87</div></div>
-<div class="ttc" id="astructec__async__loop_html_a426dde72b105ede8053fb189f4701008"><div class="ttname"><a href="structec__async__loop.html#a426dde72b105ede8053fb189f4701008">ec_async_loop::pec</a></div><div class="ttdeci">struct ec * pec</div><div class="ttdoc">ethercat master pointer</div><div class="ttdef"><b>Definition</b> async_loop.h:95</div></div>
-<div class="ttc" id="astructec__async__loop_html_a72983bd0a874c598eb3545e9a54aa928"><div class="ttname"><a href="structec__async__loop.html#a72983bd0a874c598eb3545e9a54aa928">ec_async_loop::avail</a></div><div class="ttdeci">ec_message_pool_t avail</div><div class="ttdoc">empty messages</div><div class="ttdef"><b>Definition</b> async_loop.h:90</div></div>
-<div class="ttc" id="astructec__async__loop_html_a885a3de435ecb2f6d6a18f79ee29be60"><div class="ttname"><a href="structec__async__loop.html#a885a3de435ecb2f6d6a18f79ee29be60">ec_async_loop::loop_tid</a></div><div class="ttdeci">osal_task_t loop_tid</div><div class="ttdoc">loop thread id</div><div class="ttdef"><b>Definition</b> async_loop.h:94</div></div>
-<div class="ttc" id="astructec__async__loop_html_a93824f5a1b1d0f3b862f9d1c8537b127"><div class="ttname"><a href="structec__async__loop.html#a93824f5a1b1d0f3b862f9d1c8537b127">ec_async_loop::loop_running</a></div><div class="ttdeci">int loop_running</div><div class="ttdoc">loop thread run flag</div><div class="ttdef"><b>Definition</b> async_loop.h:93</div></div>
-<div class="ttc" id="astructec__async__loop_html_ac8d5c3bee1195d917ad3e22cc1da23c2"><div class="ttname"><a href="structec__async__loop.html#ac8d5c3bee1195d917ad3e22cc1da23c2">ec_async_loop::exec</a></div><div class="ttdeci">ec_message_pool_t exec</div><div class="ttdoc">execute messages</div><div class="ttdef"><b>Definition</b> async_loop.h:91</div></div>
-<div class="ttc" id="astructec__message__entry_html"><div class="ttname"><a href="structec__message__entry.html">ec_message_entry</a></div><div class="ttdoc">Message queue qentry.</div><div class="ttdef"><b>Definition</b> async_loop.h:70</div></div>
-<div class="ttc" id="astructec__message__entry_html_a58f6aed72c611585e2ad3d6a25e1b032"><div class="ttname"><a href="structec__message__entry.html#a58f6aed72c611585e2ad3d6a25e1b032">ec_message_entry::msg</a></div><div class="ttdeci">ec_message_t msg</div><div class="ttdoc">message itself</div><div class="ttdef"><b>Definition</b> async_loop.h:74</div></div>
+<div class="ttc" id="astructec__async__loop_html"><div class="ttname"><a href="structec__async__loop.html">ec_async_loop</a></div><div class="ttdef"><b>Definition</b> async_loop.h:88</div></div>
+<div class="ttc" id="astructec__async__loop_html_a426dde72b105ede8053fb189f4701008"><div class="ttname"><a href="structec__async__loop.html#a426dde72b105ede8053fb189f4701008">ec_async_loop::pec</a></div><div class="ttdeci">struct ec * pec</div><div class="ttdoc">ethercat master pointer</div><div class="ttdef"><b>Definition</b> async_loop.h:96</div></div>
+<div class="ttc" id="astructec__async__loop_html_a72983bd0a874c598eb3545e9a54aa928"><div class="ttname"><a href="structec__async__loop.html#a72983bd0a874c598eb3545e9a54aa928">ec_async_loop::avail</a></div><div class="ttdeci">ec_message_pool_t avail</div><div class="ttdoc">empty messages</div><div class="ttdef"><b>Definition</b> async_loop.h:91</div></div>
+<div class="ttc" id="astructec__async__loop_html_a885a3de435ecb2f6d6a18f79ee29be60"><div class="ttname"><a href="structec__async__loop.html#a885a3de435ecb2f6d6a18f79ee29be60">ec_async_loop::loop_tid</a></div><div class="ttdeci">osal_task_t loop_tid</div><div class="ttdoc">loop thread id</div><div class="ttdef"><b>Definition</b> async_loop.h:95</div></div>
+<div class="ttc" id="astructec__async__loop_html_a93824f5a1b1d0f3b862f9d1c8537b127"><div class="ttname"><a href="structec__async__loop.html#a93824f5a1b1d0f3b862f9d1c8537b127">ec_async_loop::loop_running</a></div><div class="ttdeci">int loop_running</div><div class="ttdoc">loop thread run flag</div><div class="ttdef"><b>Definition</b> async_loop.h:94</div></div>
+<div class="ttc" id="astructec__async__loop_html_ac8d5c3bee1195d917ad3e22cc1da23c2"><div class="ttname"><a href="structec__async__loop.html#ac8d5c3bee1195d917ad3e22cc1da23c2">ec_async_loop::exec</a></div><div class="ttdeci">ec_message_pool_t exec</div><div class="ttdoc">execute messages</div><div class="ttdef"><b>Definition</b> async_loop.h:92</div></div>
+<div class="ttc" id="astructec__message__entry_html"><div class="ttname"><a href="structec__message__entry.html">ec_message_entry</a></div><div class="ttdoc">Message queue qentry.</div><div class="ttdef"><b>Definition</b> async_loop.h:71</div></div>
+<div class="ttc" id="astructec__message__entry_html_a58f6aed72c611585e2ad3d6a25e1b032"><div class="ttname"><a href="structec__message__entry.html#a58f6aed72c611585e2ad3d6a25e1b032">ec_message_entry::msg</a></div><div class="ttdeci">ec_message_t msg</div><div class="ttdoc">message itself</div><div class="ttdef"><b>Definition</b> async_loop.h:75</div></div>
 <div class="ttc" id="astructec__message__entry_html_ad8d7619aec49c61ba40fe411fbd04ed8"><div class="ttname"><a href="structec__message__entry.html#ad8d7619aec49c61ba40fe411fbd04ed8">ec_message_entry::TAILQ_ENTRY</a></div><div class="ttdeci">TAILQ_ENTRY(ec_message_entry) qh</div><div class="ttdoc">handle to message entry queue</div></div>
-<div class="ttc" id="astructec__message__pool_html"><div class="ttname"><a href="structec__message__pool.html">ec_message_pool</a></div><div class="ttdef"><b>Definition</b> async_loop.h:80</div></div>
-<div class="ttc" id="astructec__message__pool_html_a355763f1c857a5e3a9cce8e963c2ab1c"><div class="ttname"><a href="structec__message__pool.html#a355763f1c857a5e3a9cce8e963c2ab1c">ec_message_pool::queue</a></div><div class="ttdeci">ec_message_pool_queue_t queue</div><div class="ttdoc">message pool queue</div><div class="ttdef"><b>Definition</b> async_loop.h:81</div></div>
-<div class="ttc" id="astructec__message__pool_html_a71f656d6c1a1bedc80d1759185174eb5"><div class="ttname"><a href="structec__message__pool.html#a71f656d6c1a1bedc80d1759185174eb5">ec_message_pool::lock</a></div><div class="ttdeci">osal_mutex_t lock</div><div class="ttdoc">pool lock</div><div class="ttdef"><b>Definition</b> async_loop.h:83</div></div>
-<div class="ttc" id="astructec__message__pool_html_a8d1e392e35d37d707c816efd5bbb3e85"><div class="ttname"><a href="structec__message__pool.html#a8d1e392e35d37d707c816efd5bbb3e85">ec_message_pool::avail_cnt</a></div><div class="ttdeci">osal_semaphore_t avail_cnt</div><div class="ttdoc">available messages in pool queue</div><div class="ttdef"><b>Definition</b> async_loop.h:82</div></div>
-<div class="ttc" id="astructec__message_html"><div class="ttname"><a href="structec__message.html">ec_message</a></div><div class="ttdoc">Message for asynchronous loop.</div><div class="ttdef"><b>Definition</b> async_loop.h:63</div></div>
-<div class="ttc" id="astructec__message_html_a404700f6e70161b02a1f8918665b353d"><div class="ttname"><a href="structec__message.html#a404700f6e70161b02a1f8918665b353d">ec_message::payload</a></div><div class="ttdeci">ec_async_message_payload_t payload</div><div class="ttdoc">payload</div><div class="ttdef"><b>Definition</b> async_loop.h:65</div></div>
-<div class="ttc" id="astructec__message_html_accd96368d6b639ea33e9507d072176dc"><div class="ttname"><a href="structec__message.html#accd96368d6b639ea33e9507d072176dc">ec_message::id</a></div><div class="ttdeci">ec_async_message_id_t id</div><div class="ttdoc">index</div><div class="ttdef"><b>Definition</b> async_loop.h:64</div></div>
+<div class="ttc" id="astructec__message__pool_html"><div class="ttname"><a href="structec__message__pool.html">ec_message_pool</a></div><div class="ttdef"><b>Definition</b> async_loop.h:81</div></div>
+<div class="ttc" id="astructec__message__pool_html_a355763f1c857a5e3a9cce8e963c2ab1c"><div class="ttname"><a href="structec__message__pool.html#a355763f1c857a5e3a9cce8e963c2ab1c">ec_message_pool::queue</a></div><div class="ttdeci">ec_message_pool_queue_t queue</div><div class="ttdoc">message pool queue</div><div class="ttdef"><b>Definition</b> async_loop.h:82</div></div>
+<div class="ttc" id="astructec__message__pool_html_a71f656d6c1a1bedc80d1759185174eb5"><div class="ttname"><a href="structec__message__pool.html#a71f656d6c1a1bedc80d1759185174eb5">ec_message_pool::lock</a></div><div class="ttdeci">osal_mutex_t lock</div><div class="ttdoc">pool lock</div><div class="ttdef"><b>Definition</b> async_loop.h:84</div></div>
+<div class="ttc" id="astructec__message__pool_html_a8d1e392e35d37d707c816efd5bbb3e85"><div class="ttname"><a href="structec__message__pool.html#a8d1e392e35d37d707c816efd5bbb3e85">ec_message_pool::avail_cnt</a></div><div class="ttdeci">osal_semaphore_t avail_cnt</div><div class="ttdoc">available messages in pool queue</div><div class="ttdef"><b>Definition</b> async_loop.h:83</div></div>
+<div class="ttc" id="astructec__message_html"><div class="ttname"><a href="structec__message.html">ec_message</a></div><div class="ttdoc">Message for asynchronous loop.</div><div class="ttdef"><b>Definition</b> async_loop.h:64</div></div>
+<div class="ttc" id="astructec__message_html_a404700f6e70161b02a1f8918665b353d"><div class="ttname"><a href="structec__message.html#a404700f6e70161b02a1f8918665b353d">ec_message::payload</a></div><div class="ttdeci">ec_async_message_payload_t payload</div><div class="ttdoc">payload</div><div class="ttdef"><b>Definition</b> async_loop.h:66</div></div>
+<div class="ttc" id="astructec__message_html_accd96368d6b639ea33e9507d072176dc"><div class="ttname"><a href="structec__message.html#accd96368d6b639ea33e9507d072176dc">ec_message::id</a></div><div class="ttdeci">ec_async_message_id_t id</div><div class="ttdoc">index</div><div class="ttdef"><b>Definition</b> async_loop.h:65</div></div>
 <div class="ttc" id="astructec_html"><div class="ttname"><a href="structec.html">ec</a></div><div class="ttdoc">ethercat master structure</div><div class="ttdef"><b>Definition</b> ec.h:192</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
