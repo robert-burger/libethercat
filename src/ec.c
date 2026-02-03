@@ -748,6 +748,8 @@ static void ec_state_transition_loop(ec_t *pec, ec_state_t state, osal_uint8_t w
             }
         }
     }
+
+    osal_sleep(100000000); // sleep 100 ms to complete state transition in slaves
 }
 
 //! scan ethercat bus for slaves and create strucutres
@@ -1552,7 +1554,7 @@ static void cb_process_data_group_lwr(struct ec *pec, pool_entry_t *p_entry, ec_
             }
         }
 
-        if (do_check_group == OSAL_TRUE) {
+        if (!pec->state_transition_pending && (do_check_group == OSAL_TRUE)) {
             if ((pd->wkc_mismatch_cnt_lwr++%1000) == 0) {
                 ec_log(1, "MASTER_RECV_PD_LWR", 
                         "group %2d: working counter mismatch got %u, "
@@ -1607,7 +1609,8 @@ static void cb_process_data_group(struct ec *pec, pool_entry_t *p_entry, ec_data
         (*pd->cdg.user_cb)(pd->cdg.user_cb_arg, pd->group);
     }
 
-    if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+    if (    !pec->state_transition_pending &&
+            (   (pec->master_state == EC_STATE_SAFEOP) || 
                 (pec->master_state == EC_STATE_OP)  ) && 
             (wkc_mismatch)) {
         if ((pd->wkc_mismatch_cnt_lrw++%1000) == 0) {
@@ -1664,7 +1667,8 @@ static void cb_lrd_mbx_state(struct ec *pec, pool_entry_t *p_entry, ec_datagram_
 
         pd->wkc_mismatch_cnt_mbx_state = 0;
     } else {
-        if (    (   (pec->master_state == EC_STATE_SAFEOP) || 
+        if (    !pec->state_transition_pending &&
+                (   (pec->master_state == EC_STATE_SAFEOP) || 
                     (pec->master_state == EC_STATE_OP)  ) && 
                 (pd->wkc_mismatch_cnt_mbx_state++%1000) == 0) {
             ec_log(1, "MASTER_RECV_MBX_STATE", 
