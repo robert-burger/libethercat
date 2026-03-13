@@ -384,7 +384,8 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
                         pdoff += slv->subdevs[z].pdout.len;
                     }
                 } else {
-                    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: not mapping slave %2d sm %d (OUTPUTS), no fmmu left on device!\n",
+                    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: not "
+                            "mapping slave %2d sm %d (OUTPUTS), no fmmu left on device!\n",
                             group, i, k);
                 }
 
@@ -415,7 +416,8 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
                         pdoff += slv->subdevs[z].pdin.len;
                     }
                 } else {
-                    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: not mapping slave %2d sm %d (INPUTS), no fmmu left on device!\n",
+                    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: not "
+                            "mapping slave %2d sm %d (INPUTS), no fmmu left on device!\n",
                             group, i, k);
                 }
 
@@ -453,8 +455,9 @@ static void ec_create_logical_mapping_overlapping(ec_t *pec, osal_uint32_t group
         pd->wkc_expected_lrw += wkc_expected_lrw;
     }
     
-    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08X "
-            "%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes, lrw window %3" PRIu64 " bytes, expected wkc %d\n", 
+    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2d: pd out 0x%08" PRIX64
+            " %3" PRIu64 " bytes, in 0x%08" PRIX64 " %3" PRIu64 " bytes, "
+            "lrw window %3" PRIu64 " bytes, expected wkc %d\n", 
             group, pd->log, pd->pdout_len, pd->log + pd->pdout_len, 
             pd->pdin_len, pd->pd_lrw_len, pd->wkc_expected_lrw);
 
@@ -497,8 +500,8 @@ static void ec_create_logical_mapping(ec_t *pec, osal_uint32_t group) {
         }
     }
 
-    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2" PRIu32 ": pd out 0x%08" PRIx32
-    		"%3" PRIu64 " bytes, in 0x%08" PRIx64 " %3" PRIu64 " bytes\n", group, pd->log,
+    ec_log(10, "CREATE_LOGICAL_MAPPING", "group %2" PRIu32 ": pd out 0x%08" PRIX32
+    		"%3" PRIu64 " bytes, in 0x%08" PRIX64 " %3" PRIu64 " bytes\n", group, pd->log,
             pd->pdout_len, pd->log + pd->pdout_len, pd->pdin_len);
 
     pd->log_len = pd->pdout_len + pd->pdin_len;
