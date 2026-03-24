@@ -8405,11 +8405,13 @@ static int igb_poll(struct napi_struct *napi, int budget)
 	if (q_vector->adapter->flags & IGB_FLAG_DCA_ENABLED)
 		igb_update_dca(q_vector);
 #endif
-	if (q_vector->tx.ring)
-		if (likely(q_vector->is_ecat)) {
+	if (q_vector->tx.ring) {
+		if (likely(q_vector->adapter->is_ecat)) {
 			schedule_work(&q_vector->clean_tx_irq_task);
-		else
+        } else {
 			clean_complete = igb_clean_tx_irq(q_vector, budget);
+        }
+    }
 
 	if (q_vector->rx.ring) {
 		int cleaned = igb_clean_rx_irq(q_vector, budget);
