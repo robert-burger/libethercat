@@ -138,6 +138,7 @@ static void igb_update_dca(struct igb_q_vector *);
 static void igb_setup_dca(struct igb_adapter *);
 #endif /* CONFIG_IGB_DCA */
 static int igb_poll(struct napi_struct *, int);
+static void igb_clean_tx_irq_task(struct work_struct *work);
 static bool igb_clean_tx_irq(struct igb_q_vector *, int);
 static int igb_clean_rx_irq(struct igb_q_vector *, int);
 static int igb_ioctl(struct net_device *, struct ifreq *, int cmd);
@@ -1045,6 +1046,8 @@ static void igb_reset_q_vector(struct igb_adapter *adapter, int v_idx)
 
 	if (unlikely(!adapter->is_ecat)) {
 		netif_napi_del(&q_vector->napi);
+	} else {
+		cancel_work_sync(&q_vector->clean_tx_irq_task);
 	}
 }
 
@@ -3642,7 +3645,10 @@ static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 					/* configure q_vector to set itr on next interrupt */
 					q_vector->set_itr = 1;
+				
+					INIT_WORK(&q_vector->clean_tx_irq_task, igb_clean_tx_irq_task);
 				}
+	
 				break;
 			}
 		}
@@ -8400,7 +8406,10 @@ static int igb_poll(struct napi_struct *napi, int budget)
 		igb_update_dca(q_vector);
 #endif
 	if (q_vector->tx.ring)
-		clean_complete = igb_clean_tx_irq(q_vector, budget);
+		if (likely(q_vector->is_ecat)) {
+			schedule_work(&q_vector->clean_tx_irq_task);
+		else
+			clean_complete = igb_clean_tx_irq(q_vector, budget);
 
 	if (q_vector->rx.ring) {
 		int cleaned = igb_clean_rx_irq(q_vector, budget);
@@ -8421,6 +8430,13 @@ static int igb_poll(struct napi_struct *napi, int budget)
 		igb_ring_irq_enable(q_vector);
 
 	return work_done;
+}
+
+static void igb_clean_tx_irq_task(struct work_struct *work) {
+	struct igb_q_vector *q_vector = container_of(work,
+						     struct igb_q_vector,
+						     clean_tx_irq_task);
+	igb_clean_tx_irq(q_vector, 64);
 }
 
 /**

@@ -376,6 +376,7 @@ struct igb_q_vector {
 	struct napi_struct napi;
 	struct rcu_head rcu;	/* to avoid race with update stats on free */
 	char name[IFNAMSIZ + 9];
+	struct work_struct clean_tx_irq_task;
 
 	/* for dynamic allocation of rings associated with this q_vector */
 	struct igb_ring ring[] ____cacheline_internodealigned_in_smp;
