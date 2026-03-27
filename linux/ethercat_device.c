@@ -47,6 +47,8 @@ MODULE_AUTHOR("Robert Burger <robert.burger@dlr.de>");
 MODULE_DESCRIPTION("ethercat char device driver");
 MODULE_LICENSE("GPL");
 
+int  ethercat_init(void);
+void ethercat_exit(void);
 
 static int          ethercat_device_open   (struct inode *inode, struct file *file);
 static int          ethercat_device_release(struct inode *inode, struct file *file);
@@ -217,7 +219,7 @@ static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8
         return;
     }
 
-    skb = netdev_alloc_skb(ecat_dev->monitor_dev, ETH_FRAME_LEN);
+    skb = __netdev_alloc_skb(ecat_dev->monitor_dev, ETH_FRAME_LEN, GFP_ATOMIC | __GFP_NOWARN | __GFP_NORETRY);
     if (skb == NULL) {
         ecat_dev->monitor_stats.rx_dropped++;
         return;
@@ -552,7 +554,10 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
 
     debug_pr_info("ethercat char dev driver: read called\n");
 
-    if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
+    volatile int *recv_idx = &ecat_dev->rx_skb_index_last_recv;
+    volatile int *read_idx = &ecat_dev->rx_skb_index_last_read;
+
+    if (*recv_idx == *read_idx) {
         if (filp->f_flags & O_NONBLOCK) {
             // no frame received until now
             return -EWOULDBLOCK; 
@@ -565,27 +570,23 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
                     do {
                         (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX);
 
-                        if (ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read) {
-                            break;
-                        }
-
                         act_time = ktime_to_ns(ktime_get_raw());
-                    } while (act_time < end_time);
+                    } while ((*recv_idx == *read_idx) && (act_time < end_time));
                 }
 
-                if (ecat_dev->rx_skb_index_last_recv == ecat_dev->rx_skb_index_last_read) {
+                if (*recv_idx == *read_idx) {
                     return -EAGAIN;
                 }
             } else {
                 if (!swait_event_interruptible_timeout_exclusive(ecat_dev->ir_queue, 
-                            ecat_dev->rx_skb_index_last_recv != ecat_dev->rx_skb_index_last_read, HZ)) {
+                            *recv_idx != *read_idx, HZ)) {
                     return -EAGAIN;
                 }
             }
         }
     }
 
-    ecat_dev->rx_skb_index_last_read = (ecat_dev->rx_skb_index_last_read + 1) % EC_RX_RING_SIZE;
+    ecat_dev->rx_skb_index_last_read = (*read_idx + 1) % EC_RX_RING_SIZE;
     skb = ecat_dev->rx_skb[ecat_dev->rx_skb_index_last_read];
 
     copy_len = len < skb->len ? len : skb->len;

@@ -59,8 +59,8 @@ struct ethercat_device {
     // internal ring buffer with socket buffers containing received EtherCAT frames.
 #define EC_RX_RING_SIZE 0x100
     struct sk_buff *rx_skb[EC_RX_RING_SIZE];
-    unsigned int rx_skb_index_last_recv;
-    unsigned int rx_skb_index_last_read;
+    volatile unsigned int rx_skb_index_last_recv;
+    volatile unsigned int rx_skb_index_last_read;
 
     bool ethercat_polling;                  //! \brief EtherCAT polling mode (no irq's)
     uint64_t rx_timeout_ns;                 //! \brief Timeout in polling mode.
