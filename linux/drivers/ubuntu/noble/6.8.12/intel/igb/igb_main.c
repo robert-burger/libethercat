@@ -862,6 +862,8 @@ static void igb_assign_vector(struct igb_q_vector *q_vector, int msix_vector)
 
 	/* configure q_vector to set itr on first interrupt */
 	q_vector->set_itr = 1;
+				
+	INIT_WORK(&q_vector->clean_tx_irq_task, igb_clean_tx_irq_task);
 }
 
 /**
@@ -3645,8 +3647,6 @@ static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 					/* configure q_vector to set itr on next interrupt */
 					q_vector->set_itr = 1;
-				
-					INIT_WORK(&q_vector->clean_tx_irq_task, igb_clean_tx_irq_task);
 				}
 	
 				break;
