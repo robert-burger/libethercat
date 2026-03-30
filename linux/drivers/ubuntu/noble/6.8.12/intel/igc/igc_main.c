@@ -6180,7 +6180,7 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		}
 
 		if (q_vector->tx.ring) {
-			clean_complete = igc_clean_tx_irq(q_vector, 1);
+			clean_complete = igc_clean_tx_irq(q_vector, 64);
 		}
 
 		if (!clean_complete)
@@ -6191,7 +6191,7 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX: {
 		struct igc_adapter *adapter = netdev_priv(netdev);
 		struct igc_q_vector *q_vector = adapter->q_vector[0];
-		int budget = 1;
+		int budget = 64;
 		bool clean_complete = true;
 
 		if (!adapter->is_ecat) {
