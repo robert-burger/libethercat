@@ -563,17 +563,7 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
             return -EWOULDBLOCK; 
         } else {
             if (ecat_dev->ethercat_polling) {
-                s64 act_time = ktime_to_ns(ktime_get_raw());
-                s64 end_time = act_time + ecat_dev->rx_timeout_ns;
-
-                if (ndo_do_ioctl) {
-                    do {
-                        (void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX);
-
-                        act_time = ktime_to_ns(ktime_get_raw());
-                    } while ((*recv_idx == *read_idx) && (act_time < end_time));
-                }
-
+        	(void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX);
                 if (*recv_idx == *read_idx) {
                     return -EAGAIN;
                 }
@@ -652,20 +642,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
                 if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
 #endif
-
-                s64 act_time = ktime_to_ns(ktime_get_raw());
-                s64 end_time = act_time + ecat_dev->rx_timeout_ns;
-
-                if (ndo_do_ioctl) {
-                    do {
-                        int local_ret = ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
-                        if (local_ret == 1) {
-                            break;
-                        }
-
-                        act_time = ktime_to_ns(ktime_get_raw());
-                    } while (act_time < end_time);
-                }
+        	(void)ndo_do_ioctl(ecat_dev->net_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
             }
 
         }
@@ -720,14 +697,6 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
 #endif
     
     switch (num) {
-        case ETHERCAT_DEVICE_SET_POLLING_RX_TIMEOUT: {
-            if (__copy_from_user(&ecat_dev->rx_timeout_ns, (void *)arg, sizeof(uint64_t))) {
-                ret = -EFAULT;
-            }
-
-            pr_info("set rx_timeout_ns to %lld\n", ecat_dev->rx_timeout_ns);
-            break;
-        }
         case ETHERCAT_DEVICE_SET_POLLING: { 
             uint32_t set_polling;
             if (__copy_from_user(&set_polling, (void *)arg, sizeof(uint32_t))) {

@@ -58,6 +58,8 @@ typedef struct hw_file {
                                             
     int frames_send;
 
+    uint64_t rx_timeout_ns;
+    pooltype_t last_pool_type;
 } hw_file_t;
 
 #ifdef __cplusplus
