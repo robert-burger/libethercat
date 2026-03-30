@@ -184,6 +184,9 @@ static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
         if ((ret = register_netdev(ecat_dev->monitor_dev))) {
             pr_err("error registering monitor net device!\n");
             ret = -1;
+        } else {
+            netif_carrier_off(ecat_dev->monitor_dev);
+            netif_stop_queue(ecat_dev->monitor_dev);
         }
     }
 
