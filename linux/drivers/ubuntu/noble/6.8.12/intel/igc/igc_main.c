@@ -4517,7 +4517,7 @@ static void igc_update_ring_itr(struct igc_q_vector *q_vector)
 	case SPEED_10:
 	case SPEED_100:
 		if (adapter->is_ecat) 
-			new_val = IGC_20K_ITR;
+			new_val = IGC_70K_ITR;
 		else
 			new_val = IGC_4K_ITR;
 		goto set_itr_val;
@@ -5519,13 +5519,9 @@ static int igc_request_msix(struct igc_adapter *adapter)
 	unsigned int num_q_vectors = adapter->num_q_vectors;
 	int i = 0, err = 0, vector = 0, free_vector = 0;
 	struct net_device *netdev = adapter->netdev;
-	unsigned long irq_flags = 0;
-	if (adapter->is_ecat) {
-		irq_flags = IRQF_NO_THREAD;
-	}
 
 	err = request_irq(adapter->msix_entries[vector].vector,
-			  &igc_msix_other, irq_flags, netdev->name, adapter);
+			  &igc_msix_other, 0, netdev->name, adapter);
 	if (err)
 		goto err_out;
 
@@ -5555,7 +5551,7 @@ static int igc_request_msix(struct igc_adapter *adapter)
 			sprintf(q_vector->name, "%s-unused", netdev->name);
 
 		err = request_irq(adapter->msix_entries[vector].vector,
-				  igc_msix_ring, irq_flags, q_vector->name,
+				  igc_msix_ring, 0, q_vector->name,
 				  q_vector);
 		if (err)
 			goto err_free;
@@ -5954,10 +5950,6 @@ static int igc_request_irq(struct igc_adapter *adapter)
 	struct net_device *netdev = adapter->netdev;
 	struct pci_dev *pdev = adapter->pdev;
 	int err = 0;
-	unsigned long irq_flags = 0;
-	if (adapter->is_ecat) {
-		irq_flags = IRQF_NO_THREAD;
-	}
 
 	if (adapter->flags & IGC_FLAG_HAS_MSIX) {
 		if ((adapter->is_ecat) && (ethercat_polling != 0)) {
@@ -5987,7 +5979,7 @@ static int igc_request_irq(struct igc_adapter *adapter)
 	}
 
 	if (adapter->flags & IGC_FLAG_HAS_MSI) {
-		err = request_irq(pdev->irq, &igc_intr_msi, irq_flags,
+		err = request_irq(pdev->irq, &igc_intr_msi, 0,
 				  netdev->name, adapter);
 		if (!err)
 			goto request_done;
@@ -5997,11 +5989,7 @@ static int igc_request_irq(struct igc_adapter *adapter)
 		adapter->flags &= ~IGC_FLAG_HAS_MSI;
 	}
 	
-	if (!adapter->is_ecat) {
-		irq_flags = IRQF_SHARED;
-	}
-
-	err = request_irq(pdev->irq, &igc_intr, irq_flags,
+	err = request_irq(pdev->irq, &igc_intr, 0,
 			  netdev->name, adapter);
 
 	if (err)
@@ -6203,7 +6191,7 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 	case ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX: {
 		struct igc_adapter *adapter = netdev_priv(netdev);
 		struct igc_q_vector *q_vector = adapter->q_vector[0];
-		int budget = 64;
+		int budget = 1;
 		bool clean_complete = true;
 
 		if (!adapter->is_ecat) {
