@@ -3092,8 +3092,10 @@ static bool igc_clean_tx_irq(struct igc_q_vector *q_vector, int napi_budget)
 		budget--;
 	} while (likely(budget));
 
-	netdev_tx_completed_queue(txring_txq(tx_ring),
-				  total_packets, total_bytes);
+	if (unlikely(!adapter->is_ecat)) {
+		netdev_tx_completed_queue(txring_txq(tx_ring),
+				total_packets, total_bytes);
+	}
 
 	i += tx_ring->count;
 	tx_ring->next_to_clean = i;
