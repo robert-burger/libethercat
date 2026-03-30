@@ -15,7 +15,7 @@ include_HEADERS = $(top_srcdir)/include/libethercat/common.h \
 				  $(top_srcdir)/include/libethercat/mbx.h \
 				  $(top_srcdir)/include/libethercat/async_loop.h \
 				  $(top_srcdir)/include/libethercat/regs.h \
-				  $(top_srcdir)/include/libethercat/settings.h \
+				  $(top_builddir)/include/libethercat/settings.h \
 				  $(top_srcdir)/include/libethercat/slave.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
 				  $(top_srcdir)/include/libethercat/mii.h
