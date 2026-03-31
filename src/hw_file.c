@@ -394,11 +394,10 @@ int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t po
  */
 void hw_device_file_send_finished(struct hw_common *phw) {
     assert(phw != NULL);
-    int retry_cnt = 10;
 
     ec_t *pec = phw->pec;
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
-    
+
     // in case of polling do receive now
     if (phw_file->polling_mode == OSAL_TRUE) {
         while (phw_file->frames_send > 0) {
@@ -409,21 +408,21 @@ void hw_device_file_send_finished(struct hw_common *phw) {
             phw_file->common.bytes_last_sent = phw_file->common.bytes_sent;
             phw_file->common.bytes_sent = 0;
 
-	    osal_bool_t local_ret = OSAL_FALSE;
-	    osal_timer_t timeout;
-	    osal_timer_init(&timeout, phw_file->rx_timeout_ns);
-	    while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT) {
-            	local_ret = hw_device_file_recv_internal(phw_file);
-		if (local_ret == OSAL_TRUE) {
-            		phw_file->frames_send--;
-			break;
-		}
+            osal_bool_t local_ret = OSAL_FALSE;
+            osal_timer_t timeout;
+            osal_timer_init(&timeout, phw_file->rx_timeout_ns);
+            while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT) {
+                local_ret = hw_device_file_recv_internal(phw_file);
+                if (local_ret == OSAL_TRUE) {
+                    phw_file->frames_send--;
+                    break;
+                }
             }
 
-	    if (local_ret == OSAL_FALSE) {
-        	ec_log(100, "HW_RX", "Timeout on receive, retrying (%d) ...\n", retry_cnt);
-
-	    }
+            if (local_ret == OSAL_FALSE) {
+                ec_log(100, "HW_RX", "Timeout on receive\n");
+                break;
+            }
         }
 
         if (phw_file->frames_send > 0) {
