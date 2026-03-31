@@ -185,6 +185,13 @@ int hw_tx_low(struct hw_common *phw);
  */
 int hw_tx(struct hw_common *phw);
 
+//! start receiving queued ethercat datagrams in polling modes
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_rx(struct hw_common *phw);
+
 //! Process a received EtherCAT frame
 /*!
  * \param[in]   phw     Pointer to hw handle.
