@@ -104,7 +104,7 @@ static inline osal_uint64_t get_packet_duration(ec_t *pec) {
         pool_put(&pec->phw->tx_high, p_entry);
 
         osal_uint64_t start = osal_timer_gettime_nsec();
-        hw_tx(pec->phw);
+        if (hw_tx(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
         
         // wait for completion
         osal_timer_t to;

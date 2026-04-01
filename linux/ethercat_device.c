@@ -405,6 +405,10 @@ int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
         }
     }
 
+    // char device cleanup
+    device_destroy(ecat_chr_class, MKDEV(ecat_chr_major, ecat_dev->minor));
+    cdev_del(&ecat_dev->cdev);
+
     kfree(ecat_dev);
 	return 0;
 }

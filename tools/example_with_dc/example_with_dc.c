@@ -147,12 +147,12 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         ec_send_process_data(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
-        hw_tx_high(pec->phw);
+        if (hw_tx_high(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
 
         osal_trace_time(tx_duration, pec->phw->last_tx_duration_ns);
         bytes_last_sent = ec.phw->bytes_last_sent;
         
-        hw_tx_low(pec->phw);
+        if (hw_tx_low(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
     }
 
     ec_log(100, "CYCLIC_TASK", "exiting!\n");
