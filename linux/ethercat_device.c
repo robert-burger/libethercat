@@ -75,9 +75,10 @@ struct ethercat_device_user {
 static dev_t ecat_chr_dev;
 struct class *ecat_chr_class;
 u16 ecat_chr_major = 0;
-u16 ecat_chr_minor = 0;
+atomic_t ecat_chr_minor = ATOMIC_INIT(0);
 u16 ecat_chr_cnt   = 10;
 
+//#define MODULE_DEBUG
 #ifdef MODULE_DEBUG
 #define DBG_BUF_SIZE    4096
 static char debug_buf[DBG_BUF_SIZE];
@@ -268,7 +269,6 @@ static int ethercat_device_init(void) {
 
 	// get major and minor
 	ecat_chr_major = MAJOR(ecat_chr_dev);
-	ecat_chr_minor = 0;
 
 	debug_pr_info("allocated major nr: %d\n", ecat_chr_major);
 
@@ -305,7 +305,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
 
     ecat_dev->net_dev = net_dev;
     ecat_dev->link_state = 0;
-	ecat_dev->minor = ecat_chr_minor++;
+    ecat_dev->minor = atomic_inc_return(&ecat_chr_minor) - 1;
     memset(ecat_dev->tx_skb, 0, sizeof(struct sk_buff *) * EC_TX_RING_SIZE);
     ecat_dev->tx_skb_index_next = 0;
     memset(ecat_dev->rx_skb, 0, sizeof(struct sk_buff *) * EC_RX_RING_SIZE);
