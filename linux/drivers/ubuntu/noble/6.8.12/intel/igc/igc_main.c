@@ -5140,10 +5140,12 @@ void igc_down(struct igc_adapter *adapter)
 	/* set trans_start so we don't get spurious watchdogs during reset */
 	netif_trans_update(netdev);
 
-	if (unlikely(!adapter->is_ecat)) {
-		netif_carrier_off(netdev);
-		netif_tx_stop_all_queues(netdev);
+	if (likely(adapter->is_ecat)) {
+		ethercat_device_set_link(adapter->ecat_dev, 0);
 	}
+
+	netif_carrier_off(netdev);
+	netif_tx_stop_all_queues(netdev);
 
 	if (pci_device_is_present(adapter->pdev)) {
 		/* disable transmits in the hardware */
@@ -5650,24 +5652,6 @@ static void igc_watchdog_task(struct work_struct *work)
 
 	link = igc_has_link(adapter);
 
-	if (likely(adapter->is_ecat)) {
-		if (adapter->ecat_dev) {
-			ethercat_device_set_link(adapter->ecat_dev, link);
-		}
-	
-		if (!test_bit(__IGC_DOWN, &adapter->state)) {
-			mod_timer(&adapter->watchdog_timer, round_jiffies(jiffies + HZ));
-		}
-
-		adapter->link_speed = SPEED_100;
-	
-		spin_lock(&adapter->stats64_lock);
-		igc_update_stats(adapter);
-		spin_unlock(&adapter->stats64_lock);
-
-		return;
-	}
-
 	if (adapter->flags & IGC_FLAG_NEED_LINK_UPDATE) {
 		if (time_after(jiffies, (adapter->link_check_timeout + HZ)))
 			adapter->flags &= ~IGC_FLAG_NEED_LINK_UPDATE;
@@ -5777,6 +5761,14 @@ no_wait:
 		}
 	}
 
+	if (adapter->ecat_dev) {
+		if (!netif_carrier_ok(netdev)) {
+			ethercat_device_set_link(adapter->ecat_dev, 0);
+		} else {
+			ethercat_device_set_link(adapter->ecat_dev, 1);
+		}
+	}
+
 	spin_lock(&adapter->stats64_lock);
 	igc_update_stats(adapter);
 	spin_unlock(&adapter->stats64_lock);
@@ -5802,15 +5794,17 @@ no_wait:
 		set_bit(IGC_RING_FLAG_TX_DETECT_HANG, &tx_ring->flags);
 	}
 
-	/* Cause software interrupt to ensure Rx ring is cleaned */
-	if (adapter->flags & IGC_FLAG_HAS_MSIX) {
-		u32 eics = 0;
+	if (!adapter->ecat_dev || !adapter->ethercat_polling) {
+		/* Cause software interrupt to ensure Rx ring is cleaned */
+		if (adapter->flags & IGC_FLAG_HAS_MSIX) {
+			u32 eics = 0;
 
-		for (i = 0; i < adapter->num_q_vectors; i++)
-			eics |= adapter->q_vector[i]->eims_value;
-		wr32(IGC_EICS, eics);
-	} else {
-		wr32(IGC_ICS, IGC_ICS_RXDMT0);
+			for (i = 0; i < adapter->num_q_vectors; i++)
+				eics |= adapter->q_vector[i]->eims_value;
+			wr32(IGC_EICS, eics);
+		} else {
+			wr32(IGC_ICS, IGC_ICS_RXDMT0);
+		}
 	}
 
 	igc_ptp_tx_hang(adapter);
@@ -7218,6 +7212,7 @@ static int igc_probe(struct pci_dev *pdev,
 				adapter->ethercat_polling = false;
 				adapter->ecat_dev = ethercat_device_create(netdev);
 
+				netdev->reg_state = NETREG_REGISTERED;
 				/* set low ITR values */
 				adapter->rx_itr_setting = 0;
 				adapter->tx_itr_setting = 0;

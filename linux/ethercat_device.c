@@ -417,9 +417,15 @@ EXPORT_SYMBOL(ethercat_device_destroy);
 
 void ethercat_device_set_link(struct ethercat_device *ecat_dev, bool link) {
     if (ecat_dev->link_state != link) {
-        pr_info("link state changed to %s\n", (link ? "UP" : "DOWN"));
-        ecat_dev->link_state = link;
+        if (link) {
+            netif_start_queue(ecat_dev->net_dev);
+	    set_bit(__LINK_STATE_START, &ecat_dev->net_dev->state);
+        } else {
+            netif_stop_queue(ecat_dev->net_dev);
+	    clear_bit(__LINK_STATE_START, &ecat_dev->net_dev->state);
+        }
 
+        ecat_dev->link_state = link;
         swake_up_one(&ecat_dev->ir_queue);
     }
 }
@@ -556,6 +562,10 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
 
+    if (!access_ok(buff, len)) {
+        return -EFAULT;
+    }
+
     ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
     if (!ndo_do_ioctl) { ndo_do_ioctl = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl; }
@@ -616,7 +626,15 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
     ecat_dev = user->ecat_dev;
     
     debug_pr_info("ethercat char dev driver: write called\n");
-    
+
+    if (!netif_running(ecat_dev->net_dev)) {
+        return -ENETDOWN;
+    }
+
+    if (!access_ok(buff, len)) {
+        return -EFAULT;
+    }
+
     skb = ecat_dev->tx_skb[ecat_dev->tx_skb_index_next++];
     if (ecat_dev->tx_skb_index_next >= EC_TX_RING_SIZE) {
         ecat_dev->tx_skb_index_next = 0;

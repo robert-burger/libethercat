@@ -2223,10 +2223,12 @@ void igb_down(struct igb_adapter *adapter)
 
 	igb_nfc_filter_exit(adapter);
 
-	if (!adapter->is_ecat) {
-		netif_carrier_off(netdev);
-		netif_tx_stop_all_queues(netdev);
+	if (adapter->is_ecat) {
+		ethercat_device_set_link(adapter->ecat_dev, 0);
 	}
+
+	netif_carrier_off(netdev);
+	netif_tx_stop_all_queues(netdev);
 
 	/* disable transmits in the hardware */
 	tctl = rd32(E1000_TCTL);
@@ -3627,6 +3629,8 @@ static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 				adapter->is_ecat = true;
 				adapter->ethercat_polling = false;
 				adapter->ecat_dev = ethercat_device_create(netdev);
+			
+				netdev->reg_state = NETREG_REGISTERED;
 
 				/* set low ITR values */
 				adapter->rx_itr_setting = 0;
