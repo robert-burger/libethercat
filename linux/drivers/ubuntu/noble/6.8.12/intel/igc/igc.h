@@ -301,6 +301,7 @@ struct igc_adapter {
 	} perout[IGC_N_PEROUT];
 	
 	bool is_ecat;
+	bool ethercat_polling;
 	struct ethercat_device *ecat_dev;
 };
 

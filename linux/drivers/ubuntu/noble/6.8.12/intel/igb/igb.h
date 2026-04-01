@@ -672,6 +672,7 @@ struct igb_adapter {
 	spinlock_t vfs_lock;
 
 	bool is_ecat;
+	bool ethercat_polling;
 	struct ethercat_device *ecat_dev;
 };
 

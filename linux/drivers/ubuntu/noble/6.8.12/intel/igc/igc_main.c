@@ -44,8 +44,6 @@ static int ethercat_mac_addr_count;
 module_param_array(ethercat_mac_addr, charp, &ethercat_mac_addr_count,  0660);
 MODULE_PARM_DESC(ethercat_mac_addr, "List of MAC addresses to use as EtherCAT device");
 
-static unsigned int ethercat_polling = 0;
-
 char igc_driver_name[] = "igc-ethercat";
 static const char igc_driver_string[] = DRV_SUMMARY;
 static const char igc_copyright[] =
@@ -5921,7 +5919,7 @@ static irqreturn_t igc_intr(int irq, void *data)
 
 static void igc_free_irq(struct igc_adapter *adapter)
 {
-	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+	if ((adapter->is_ecat) && (adapter->ethercat_polling == true)) {
 		return;
 	}
 
@@ -5952,7 +5950,7 @@ static int igc_request_irq(struct igc_adapter *adapter)
 	int err = 0;
 
 	if (adapter->flags & IGC_FLAG_HAS_MSIX) {
-		if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+		if ((adapter->is_ecat) && (adapter->ethercat_polling == true)) {
 			goto request_done;
 		}
 
@@ -5974,7 +5972,7 @@ static int igc_request_irq(struct igc_adapter *adapter)
 
 	igc_assign_vector(adapter->q_vector[0], 0);
 
-	if ((adapter->is_ecat) && (ethercat_polling != 0)) {
+	if ((adapter->is_ecat) && (adapter->ethercat_polling == true)) {
 		goto request_done;
 	}
 
@@ -6210,8 +6208,8 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return 0;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_SET_POLLING: {
-		int do_reopen = ethercat_polling != 1;
 		struct igc_adapter *adapter = netdev_priv(netdev);
+		int do_reopen = adapter->ethercat_polling == false;
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
 		}
@@ -6220,7 +6218,7 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 			igc_close(netdev);
 		}
 
-		ethercat_polling = 1;
+		adapter->ethercat_polling = true;
 
 		if (do_reopen) {
 			igc_open(netdev);
@@ -6228,8 +6226,8 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 		return 1;
 	}
 	case ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING: {
-		int do_reopen = ethercat_polling != 0;
 		struct igc_adapter *adapter = netdev_priv(netdev);
+		int do_reopen = adapter->ethercat_polling == true;
 		if (!adapter->is_ecat) {
 			return -EOPNOTSUPP;
 		}
@@ -6238,7 +6236,7 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 			igc_close(netdev);
 		}
 
-		ethercat_polling = 0;
+		adapter->ethercat_polling = false;
 
 		if (do_reopen) {
 			igc_open(netdev);
@@ -6251,7 +6249,7 @@ static int igc_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 			return -EOPNOTSUPP;
 		}
 
-		if (ethercat_polling == 0) {
+		if (adapter->ethercat_polling == false) {
 			return 0;
 		} 
 
@@ -7217,6 +7215,7 @@ static int igc_probe(struct pci_dev *pdev,
 
 				dev_info(&pdev->dev, "attaching as EtherCAT interface\n");
 				adapter->is_ecat = true;
+				adapter->ethercat_polling = false;
 				adapter->ecat_dev = ethercat_device_create(netdev);
 
 				/* set low ITR values */
