@@ -43,6 +43,8 @@
 #include <linux/skbuff.h>
 #include <linux/netdevice.h>
 
+#include <linux/ethtool.h>
+
 MODULE_AUTHOR("Robert Burger <robert.burger@dlr.de>");
 MODULE_DESCRIPTION("ethercat char device driver");
 MODULE_LICENSE("GPL");
@@ -738,6 +740,49 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
             if (__copy_to_user((void *)arg, &ecat_dev->link_state, sizeof(uint8_t))) {
                 ret = -EFAULT;
             }
+            break;
+        }
+        case ETHERCAT_DEVICE_SET_RX_USECS: {
+            struct ethtool_coalesce ec;
+            struct kernel_ethtool_coalesce kernel_coal;
+            struct netlink_ext_ack extack;
+            u32 rx_usecs_low;
+
+            if (__copy_to_user((void *)arg, &rx_usecs_low, sizeof(uint32_t))) {
+                ret = -EFAULT;
+            } else {
+                ecat_dev->net_dev->ethtool_ops->get_coalesce(
+                        ecat_dev->net_dev,
+                        &ec, &kernel_coal, &extack);
+
+                ec.rx_coalesce_usecs_low = rx_usecs_low;
+
+                ecat_dev->net_dev->ethtool_ops->set_coalesce(
+                        ecat_dev->net_dev,
+                        &ec, &kernel_coal, &extack);
+            }
+            break;
+        }
+        case ETHERCAT_DEVICE_SET_TX_USECS: {
+            struct ethtool_coalesce ec;
+            struct kernel_ethtool_coalesce kernel_coal;
+            struct netlink_ext_ack extack;
+            u32 tx_usecs_low;
+
+            if (__copy_to_user((void *)arg, &tx_usecs_low, sizeof(uint32_t))) {
+                ret = -EFAULT;
+            } else {
+                ecat_dev->net_dev->ethtool_ops->get_coalesce(
+                        ecat_dev->net_dev,
+                        &ec, &kernel_coal, &extack);
+
+                ec.tx_coalesce_usecs_low = tx_usecs_low;
+
+                ecat_dev->net_dev->ethtool_ops->set_coalesce(
+                        ecat_dev->net_dev,
+                        &ec, &kernel_coal, &extack);
+            }
+            break;
             break;
         }
         default:

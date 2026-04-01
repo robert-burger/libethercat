@@ -111,7 +111,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     phw_file->rx_timeout_ns = 1000000;
     
     int flags = O_RDWR;
-    uint64_t link_timeout_sec = 5;
+    uint64_t link_timeout_sec = 5, rx_usecs = 0, tx_usecs = 0;
 
     char *tmp;
     if ((tmp = strchr(devname, ':')) != NULL) {
@@ -132,6 +132,10 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
                     phw_file->rx_timeout_ns = strtoull(value, NULL, 10);
                 } else if (strcmp(act, "link_timeout_sec") == 0) {
                     link_timeout_sec = strtoull(value, NULL, 10);
+                } else if (strcmp(act, "rx_usecs") == 0) {
+                    rx_usecs = strtoull(value, NULL, 10);
+                } else if (strcmp(act, "tx_usecs") == 0) {
+                    tx_usecs = strtoull(value, NULL, 10);
                 }
             } else {
                 if (strcmp(act, "polling") == 0) {
@@ -201,6 +205,16 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
 #endif
 
         ec_log(10, "HW_OPEN", "%s polling mode\n", phw_file->polling_mode == OSAL_FALSE ? "not using" : "using");
+    }
+
+    int tmp_ret = 0;
+    ec_log(10, "HW_OPEN", "set rx_usecs to %lu\n", rx_usecs);
+    if ((tmp_ret = ioctl(phw_file->fd, ETHERCAT_DEVICE_SET_RX_USECS, &rx_usecs)) != 0) {
+	ec_log(1, "HW_OPEN", "error on ioctl: %d -> %s\n", tmp_ret, strerror(tmp_ret));
+    }
+    ec_log(10, "HW_OPEN", "set tx_usecs to %lu\n", tx_usecs);
+    if ((tmp_ret =ioctl(phw_file->fd, ETHERCAT_DEVICE_SET_TX_USECS, &tx_usecs)) != 0) {
+	ec_log(1, "HW_OPEN", "error on ioctl: %d -> %s\n", tmp_ret, strerror(tmp_ret));
     }
 
     if (ret == EC_OK) {
