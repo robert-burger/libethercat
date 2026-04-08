@@ -110,7 +110,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     phw_file->common.close = hw_device_file_close;
     phw_file->rx_timeout_ns = 1000000;
     
-    int flags = O_RDWR;
+    int flags = O_RDWR | O_NONBLOCK;
     uint64_t link_timeout_sec = 5, rx_usecs = 0, tx_usecs = 0;
 
     char *tmp;
@@ -141,6 +141,9 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
                 if (strcmp(act, "polling") == 0) {
                     ec_log(10, "HW_OPEN", "switching to polling mode\n");
                     phw_file->polling_mode = OSAL_TRUE;
+                } else if (strcmp(act, "blocking") == 0) {
+                    ec_log(10, "HW_OPEN", "using kernel blocking\n");
+		    flags &= ~O_NONBLOCK;
                 }
             }
 

@@ -515,6 +515,7 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
     ecat_dev->tx_skb_index_next = 0;
     ecat_dev->rx_skb_index_last_recv = 0;
     ecat_dev->rx_skb_index_last_read = 0;
+    ecat_dev->rx_timeout_ns = 1000000;
 
     // create user memory
     user = kmalloc(sizeof(struct ethercat_device_user), GFP_KERNEL);
@@ -537,7 +538,7 @@ static int ethercat_device_release(struct inode *inode, struct file *filp) {
     struct ethercat_device *ecat_dev;
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
-    
+
     debug_pr_info("libetherat char dev driver: release called\n");
 
     // free allocated user struct memory
@@ -575,20 +576,34 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
         volatile int *read_idx = &ecat_dev->rx_skb_index_last_read;
 
         if (*recv_idx == *read_idx) {
-            if (filp->f_flags & O_NONBLOCK) {
-                // no frame received until now
-                copy_len = -EWOULDBLOCK; 
-            } else {
-                if (ecat_dev->ethercat_polling) {
+            if (ecat_dev->ethercat_polling) {
+		copy_len = -EAGAIN;
+                s64 start_ns = ktime_get_ns();
+
+                do {
+                    // controller polling func
                     (void)ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX);
-                    if (*recv_idx == *read_idx) {
-                        copy_len = -EAGAIN;
+
+                    // check indices
+                    if (*recv_idx != *read_idx) {
+			copy_len = 0;
+			break;
+		    }
+
+                    // check timeout
+                    if ((ktime_get_ns() - start_ns) >= ecat_dev->rx_timeout_ns) {
+                        copy_len = -ETIMEDOUT;
+			break;
                     }
-                } else {
-                    if (!swait_event_interruptible_timeout_exclusive(ecat_dev->ir_queue, 
-                                *recv_idx != *read_idx, HZ)) {
-                        copy_len = -EAGAIN;
-                    }
+                
+		    if (filp->f_flags & O_NONBLOCK) {
+			break;
+		    }
+                } while (1);
+            } else {
+                if (!swait_event_interruptible_timeout_exclusive(ecat_dev->ir_queue, 
+                            *recv_idx != *read_idx, HZ)) {
+                    copy_len = -EAGAIN;
                 }
             }
         }
@@ -625,7 +640,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
 
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
-    
+
     debug_pr_info("ethercat char dev driver: write called\n");
 
     if (!netif_running(ecat_dev->net_dev)) {
@@ -645,7 +660,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
     if (skb->len > ETH_FRAME_LEN) {
         ret = -EINVAL;
     }
-        
+
     if (ret == 0) {
         /* don't copy ethernet header, use our own */
         unsigned long bytes_not_copied = __copy_from_user(skb->data + ETH_HLEN, buff + ETH_HLEN, len - ETH_HLEN);
@@ -654,7 +669,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
         } else {
             netdev_tx_t local_ret = 0;
             debug_print_frame("ethercat char dev driver: sending", skb->data, skb->len);
-            
+
             ethercat_monitor_frame(ecat_dev, skb->data, len);
 
             local_ret = skb->dev->netdev_ops->ndo_start_xmit(skb, skb->dev);
@@ -712,8 +727,16 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
 
     user = (struct ethercat_device_user *)filp->private_data;
     ecat_dev = user->ecat_dev;
-    
+
     switch (num) {
+        case ETHERCAT_DEVICE_SET_POLLING_RX_TIMEOUT: {
+            if (__copy_from_user(&ecat_dev->rx_timeout_ns, (void *)arg, sizeof(uint64_t))) {
+                ret = -EFAULT;
+            }
+
+            pr_info("set rx_timeout_ns to %lld\n", ecat_dev->rx_timeout_ns);
+            break;
+        }
         case ETHERCAT_DEVICE_SET_POLLING: { 
             uint32_t set_polling;
             if (__copy_from_user(&set_polling, (void *)arg, sizeof(uint32_t))) {
@@ -728,7 +751,7 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
                 } else {
                     (void)ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_RESET_POLLING);
                 }
-        
+
                 local_ret = ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_GET_POLLING);
                 if (local_ret > 0) {
                     ecat_dev->ethercat_polling = true;

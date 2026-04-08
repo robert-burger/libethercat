@@ -63,7 +63,8 @@ struct ethercat_device {
     volatile unsigned int rx_skb_index_last_read;
 
     bool ethercat_polling;                  //! \brief EtherCAT polling mode (no irq's)
-
+    uint64_t rx_timeout_ns;                 //! \brief Timeout in polling mode.
+                                            //
     // EtherCAT monitor device 
     bool monitor_enabled;                   //! \brief Monitor device enabled.
     struct net_device *monitor_dev;         //! \brief Monitor device net_dev.
