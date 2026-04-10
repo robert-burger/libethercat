@@ -262,6 +262,8 @@ typedef struct ec {
                                     
     ec_statistics_t stats;
 
+    void *ec_time_func_user;
+    osal_uint64_t (*ec_time_func)(ec_t *pec);
 
     void *ec_log_func_user;
     void (*ec_log_func)(ec_t *pec, int lvl, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));

@@ -377,12 +377,14 @@ int ec_dc_config(struct ec *pec) {
         dcsof = 0;
         check_ec_fprd(pec, slv->fixed_address, EC_REG_DCSOF, &dcsof, sizeof(dcsof), &wkc);
         dcsof *= -1;
+        if (pec->ec_time_func) { dcsof += pec->ec_time_func(pec); }
         check_ec_fpwr(pec, slv->fixed_address, EC_REG_DCSYSOFFSET, &dcsof, sizeof(dcsof), &wkc);
 
         // store our system time offsets if we got the dc master clock
         if (pec->dc.master_address == slv->fixed_address) {
             pec->dc.dc_sto = 0; // we did a reset 5 lines above
             pec->dc.rtc_sto = (osal_timer_gettime_nsec() / pec->main_cycle_interval) * pec->main_cycle_interval;
+            pec->dc.rtc_time = 0;
             ec_log(100, "DC_CONFIG", "master  : initial dc_sto %" PRId64 ", rtc_sto %" PRId64 "\n", pec->dc.dc_sto, pec->dc.rtc_sto);
         }
 

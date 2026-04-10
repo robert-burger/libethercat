@@ -1147,7 +1147,7 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     assert(phw != NULL);
 
     int ret = EC_OK;
-    
+
     ret = ec_index_init(&pec->idx_q);
     
     if (ret == EC_OK) {
@@ -1169,12 +1169,15 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
         pec->dc.have_dc         = 0;
         pec->dc.dc_time         = 0;
         pec->dc.rtc_time        = 0;
+        pec->dc.rtc_sto         = 0;
         pec->dc.act_diff        = 0;
         pec->dc.control.p_part  = 0;
         pec->dc.control.i_part  = 0;
         pec->dc.control.i_part_limit = 100.;
         pec->dc.control.kp      = 0.001;
         pec->dc.control.ki      = 0.00001;
+
+        pec->ec_time_func       = NULL;
 
         pec->tun_fd             = 0;
         pec->tun_ip             = 0;
@@ -2005,8 +2008,8 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
 #endif
 
     osal_mutex_lock(&pec->dc.cdg.lock);
-    
-    if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
+
+    if (!pec->dc.have_dc) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (pec->dc.cdg.p_idx == NULL) {
@@ -2042,31 +2045,23 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
                 p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u) | pec->dc.master_address;
             }
 
-            if (pec->dc.mode == dc_mode_ref_clock) {
-                if (pec->main_cycle_interval > 0) {
-                    pec->dc.rtc_time += (osal_uint64_t)(pec->main_cycle_interval);
-                }   
-            } else {
-                pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+            pec->dc.rtc_time = (int64_t)act_rtc_time;
 
-                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                    // add time to first dc capable slave to rtc time
-                    int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
-                    pec->dc.rtc_time += tx_time_to_dc_master;
-            
-                    (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
-                }
+            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                // add time to first dc capable slave to rtc time
+                int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
+                uint64_t tmp_rtc_time = pec->dc.rtc_time + tx_time_to_dc_master;
+                (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&tmp_rtc_time, sizeof(tmp_rtc_time));
             }
 
             // queue frame and trigger tx
-            hw_enqueue(pec->phw, pec->dc.cdg.p_entry, POOL_HIGH);           
-
-            pec->dc.sent_time_nsec = act_rtc_time;
+            pec->dc.sent_time_nsec = osal_timer_gettime_nsec();
+            hw_enqueue(pec->phw, pec->dc.cdg.p_entry, POOL_HIGH);
         }
     }
-    
+
     osal_mutex_unlock(&pec->dc.cdg.lock);
-      
+
     return ret;
 }
 
@@ -2076,7 +2071,15 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
-    return ec_send_distributed_clocks_sync_intern(pec, osal_timer_gettime_nsec());
+    osal_uint64_t rtc_time = osal_timer_gettime_nsec() - pec->dc.rtc_sto;
+
+    if (pec->dc.mode == dc_mode_ref_clock) {
+        if (pec->main_cycle_interval > 0) {
+            rtc_time = pec->dc.rtc_time + pec->main_cycle_interval;
+        }
+    }
+
+    return ec_send_distributed_clocks_sync_intern(pec, rtc_time);
 }
 
 //! send distributed clock sync datagram

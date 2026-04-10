@@ -137,13 +137,13 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
         abs_timeout += act_cycle_rate;
         (void)wait_time(abs_timeout);
 
-        last_sent = abs_timeout;
+        last_sent = abs_timeout - pec->dc.rtc_sto;
         time_start = osal_trace_point(tx_start);
         
         osal_trace_time(rx_duration, pec->phw->last_rx_duration_ns);
 
         // execute one EtherCAT cycle
-        ec_send_distributed_clocks_sync_with_rtc(pec, abs_timeout);
+        ec_send_distributed_clocks_sync(pec);
         ec_send_process_data(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
@@ -401,7 +401,14 @@ int main(int argc, char **argv) {
     ec_configure_dc(&ec, cycle_rate, dc_mode, ({
                 void anon_cb(void *arg, int num) { 
                     if (dc_mode == dc_mode_ref_clock) {
-                        act_cycle_rate = cycle_rate + ec.dc.timer_correction;
+		    	osal_int64_t correction = ec.dc.timer_correction;
+			if (correction < (osal_int64_t)(-0.05 * cycle_rate)) {
+			   correction = -0.05 * cycle_rate;
+			} else if (correction > (osal_int64_t)(0.05 * cycle_rate)) {
+			   correction = 0.05 * cycle_rate;
+			}
+
+                        act_cycle_rate = cycle_rate + correction; //ec.dc.timer_correction;
 
                         osal_trace_time(dc_diff, ec.dc.act_diff);
                     }
