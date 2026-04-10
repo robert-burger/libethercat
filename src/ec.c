@@ -1944,9 +1944,6 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
             pec->dc.timer_correction = pec->dc.control.p_part + pec->dc.control.i_part;
         } else if (pec->dc.mode == dc_mode_master_clock) {
-            int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
-            pec->dc.act_diff -= tx_time_to_dc_master;
-
             // sending offset compensation value to dc master clock
             pool_entry_t *p_entry_dc_sto;
             idx_entry_t *p_idx_sto;
@@ -2048,10 +2045,10 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
             pec->dc.rtc_time = (int64_t)act_rtc_time;
 
             if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                // add time to first dc capable slave to rtc time
-                int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
-                uint64_t tmp_rtc_time = pec->dc.rtc_time + tx_time_to_dc_master;
-                (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&tmp_rtc_time, sizeof(tmp_rtc_time));
+                (void)memcpy(
+                        (osal_uint8_t *)ec_datagram_payload(p_dg), 
+                        (osal_uint8_t *)&pec->dc.rtc_time, 
+                        sizeof(pec->dc.rtc_time));
             }
 
             // queue frame and trigger tx
