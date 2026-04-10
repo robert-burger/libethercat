@@ -426,7 +426,7 @@ int ec_dc_config(struct ec *pec) {
         } else {
             if (pec->dc.mode == dc_mode_master_as_ref_clock) {
                 // add runtime from EC-Master to first slave on Bus.
-                slv->pdelay += (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
+                slv->pdelay = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_childs) * 0.3;
             }
         }
 
