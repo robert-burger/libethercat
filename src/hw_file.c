@@ -108,7 +108,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     phw_file->common.send_finished = hw_device_file_send_finished;
     phw_file->common.get_tx_buffer = hw_device_file_get_tx_buffer;
     phw_file->common.close = hw_device_file_close;
-    phw_file->rx_timeout_ns = 1000000;
+    phw_file->rx_timeout_ns = 100000000;
     
     int flags = O_RDWR | O_NONBLOCK;
     uint64_t link_timeout_sec = 5, rx_usecs = 0, tx_usecs = 0;
