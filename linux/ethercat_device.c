@@ -272,6 +272,8 @@ static int ethercat_device_init(void) {
 
     debug_pr_info("allocated major nr: %d\n", ecat_chr_major);
 
+    ethercat_tun_init();
+
     return 0;
 }
 
@@ -280,6 +282,8 @@ static int ethercat_device_init(void) {
  * \return 0 on success
  */
 static int ethercat_device_exit(void) {
+    ethercat_tun_exit();
+
     // unregister the allocated region and character device class
     unregister_chrdev_region(ecat_chr_dev, ecat_chr_cnt);
     class_destroy(ecat_chr_class);
@@ -362,6 +366,8 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
 
     (void)ethercat_monitor_create(ecat_dev);
 
+    ethercat_tun_device_create(&ecat_dev->tun_dev, ecat_dev->minor);
+
     return ecat_dev;
 
 error_exit:
@@ -389,6 +395,7 @@ EXPORT_SYMBOL(ethercat_device_create);
 int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     int i = 0;
 
+    ethercat_tun_device_destroy(&ecat_dev->tun_dev);
     ethercat_monitor_destroy(ecat_dev);
 
     ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);

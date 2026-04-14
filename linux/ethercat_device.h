@@ -38,6 +38,8 @@
 #include <linux/etherdevice.h>
 #include <linux/ioctl.h>
 
+#include "ethercat_tun.h"
+
 /* Structure to hold EtherCAT char device
  */
 struct ethercat_device {
@@ -69,6 +71,8 @@ struct ethercat_device {
     bool monitor_enabled;                   //! \brief Monitor device enabled.
     struct net_device *monitor_dev;         //! \brief Monitor device net_dev.
     struct net_device_stats monitor_stats;  //! \brief Monitor device statistics.
+
+    struct tun_dev tun_dev;
 };
 
 //! \brief Create an characted device node for provided network device.
