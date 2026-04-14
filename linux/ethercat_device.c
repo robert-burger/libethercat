@@ -169,7 +169,7 @@ static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
 
     ecat_dev->monitor_enabled = false; 
 
-    snprintf(&monitor_name[0], 64, "%s_monitor", ecat_dev->net_dev->name);
+    snprintf(&monitor_name[0], 64, "ecat_monitor%d", ecat_dev->minor);
     if (!(ecat_dev->monitor_dev = alloc_netdev(sizeof(struct ethercat_device *), 
                     monitor_name, NET_NAME_UNKNOWN, ether_setup))) {
         pr_err("error allocating monitor device\n");

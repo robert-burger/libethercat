@@ -38,7 +38,8 @@ typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
 kallsyms_lookup_name_t fcn_kallsyms_lookup_name;
 
 typedef int (*fcn_devinet_ioctl_t)(struct net *net, unsigned int cmd, void __user *);
-fcn_devinet_ioctl_t fcn_devinet_ioctl;
+int dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *) { return 0; }
+fcn_devinet_ioctl_t fcn_devinet_ioctl = &dummy_fcn_devinet_ioctl;
 #endif
 
 // File Operations
@@ -114,7 +115,7 @@ static int tun_stop(struct net_device *dev)
 
 static netdev_tx_t tun_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
-    struct tun_dev *tun = netdev_priv(dev);
+    struct tun_dev *tun = *((struct tun_dev **)netdev_priv(dev));
 
     // Copy packet and queue to rx_queue
     skb = skb_copy(skb, GFP_ATOMIC);
@@ -166,31 +167,36 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor)
 
     // Initialisiere cdev
     cdev_init(&tun_dev->cdev, &fops);
-    err = cdev_add(&tun_dev->cdev, ethercat_tun_dev_num, 1);
+    tun_dev->cdev.owner = THIS_MODULE;
+    tun_dev->cdev.ops = &fops;
+    err = cdev_add(&tun_dev->cdev, MKDEV(ethercat_tun_dev_num, minor), 1);
     if (err)
         goto err_free;
 
     // Erstelle Device-Datei
-    device_create(ethercat_tun_class, NULL, ethercat_tun_dev_num, NULL, DEVICE_NAME);
-    dev = alloc_netdev(0, tun_dev->name, NET_NAME_UNKNOWN, ether_setup);
+    device_create(ethercat_tun_class, NULL, 
+		    MKDEV(ethercat_tun_dev_num, minor), 
+		    tun_dev, DEVICE_NAME "%d", minor);
+    dev = alloc_netdev(sizeof(struct tun_dev *), tun_dev->name, NET_NAME_UNKNOWN, ether_setup);
     if (!dev)
         return -ENOMEM;
 
     tun_dev->dev = dev;
     dev->netdev_ops = &tun_net_ops;
+    *((struct tun_dev **)netdev_priv(dev)) = tun_dev;
     dev->flags |= IFF_NOARP;
     dev->priv_flags |= IFF_NO_QUEUE;
 
     // MAC-Adresse setzen
-    tun_dev->mac[0] = 0x00;
-    tun_dev->mac[1] = 0x11;
-    tun_dev->mac[2] = 0x22;
-    tun_dev->mac[3] = 0x33;
-    tun_dev->mac[4] = 0x44;
-    tun_dev->mac[5] = 0x55;
+    tun_dev->mac[0] = 0xAE;
+    tun_dev->mac[1] = 0x00;
+    tun_dev->mac[2] = 0x00;
+    tun_dev->mac[3] = 0x00;
+    tun_dev->mac[4] = 0x00;
+    tun_dev->mac[5] = minor;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-    dev_addr_mod(tun_dev->dev, 0, dev->dev_addr, ETH_ALEN);
+    dev_addr_mod(tun_dev->dev, 0, tun_dev->mac, ETH_ALEN);
 #else
     memcpy((void *)dev->dev_addr, tun_dev->mac, ETH_ALEN);
 #endif
@@ -212,7 +218,7 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor)
     strncpy(ifr.ifr_name, dev->name, IFNAMSIZ - 1);
     struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr;
     addr->sin_family = AF_INET;
-    addr->sin_addr.s_addr = htonl(0xC0A86401); // 192.168.100.1
+    addr->sin_addr.s_addr = htonl(0xC0A96401 + (minor << 8)); // 192.168.100.1
     err = fcn_devinet_ioctl(net, SIOCSIFADDR, &ifr);
     if (err) {
         printk(KERN_ERR "EtherCAT-TUN-Device %s: error setting IP address.\n", dev->name);
@@ -266,33 +272,49 @@ void ethercat_tun_device_destroy(struct tun_dev *tun_dev) {
 // EtherCAT-TUN-Device initialization
 int ethercat_tun_init(void)
 {
+    int ret = 0;
+
+    pr_info("Initializing EtherCAT-Tun-Device module.\n");
+
     // reserve new major number
-    if (alloc_chrdev_region(&ethercat_tun_dev_num, 0, 1, DEVICE_NAME) < 0) {
-        printk(KERN_ERR "Fehler bei Device-Nummer\n");
-        return -1;
+    if ((ret = alloc_chrdev_region(&ethercat_tun_dev_num, 0, 10, DEVICE_NAME)) < 0) {
+        pr_err("Error allocating char device region!\n");
     }
 
+    if (ret == 0) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
-    ethercat_tun_class = class_create(DEVICE_NAME);
+        ethercat_tun_class = class_create(DEVICE_NAME);
 #else
-    ethercat_tun_class = class_create(THIS_MODULE, DEVICE_NAME);
+        ethercat_tun_class = class_create(THIS_MODULE, DEVICE_NAME);
 #endif
-    if (IS_ERR(ethercat_tun_class)) {
-        unregister_chrdev_region(ethercat_tun_dev_num, 1);
-        return PTR_ERR(ethercat_tun_class);
+        if (IS_ERR(ethercat_tun_class)) {
+            pr_err("Error during class_create\n");
+            unregister_chrdev_region(ethercat_tun_dev_num, 10);
+            ret = PTR_ERR(ethercat_tun_class);
+        }
     }
 
+    if (ret == 0) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-	register_kprobe(&kp);
-	fcn_kallsyms_lookup_name = (kallsyms_lookup_name_t)kp.addr;
-	unregister_kprobe(&kp);
+        register_kprobe(&kp);
+        fcn_kallsyms_lookup_name = (kallsyms_lookup_name_t)kp.addr;
+        unregister_kprobe(&kp);
 
-    fcn_devinet_ioctl = (fcn_devinet_ioctl_t)fcn_kallsyms_lookup_name("devinet_ioctl");
+        fcn_devinet_ioctl_t fcn_tmp = NULL;
+        
+        if (fcn_kallsyms_lookup_name) { fcn_tmp = (fcn_devinet_ioctl_t)fcn_kallsyms_lookup_name("devinet_ioctl"); }
+        if (fcn_tmp) { 
+            pr_info("Success getting func pointer for \"devinet_ioctl\".\n");
+            fcn_devinet_ioctl = fcn_tmp; 
+        } else {
+            pr_warn("Failed getting func pointer for \"devinet_ioctl\". Setting IP and bringing tun inferface UP not available.\n");
+        }
 #endif
 
-    printk(KERN_INFO "Modul geladen: /dev/%s\n", DEVICE_NAME);
+        pr_info("Done initializing EtherCAT-Tun-Device module.\n");
+    }
 
-    return 0;
+    return ret;
 }
 
 // EtherCAT-TUN-Device cleanup
