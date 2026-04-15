@@ -90,19 +90,22 @@ ssize_t ethercat_tun_chrdev_write(struct file *file, const char __user *buf, siz
 {
     struct tun_dev *tun = file->private_data;
     struct sk_buff *skb;
+    unsigned char *tmp = NULL;
 
     skb = alloc_skb(len, GFP_KERNEL);
     if (!skb)
         return -ENOMEM;
 
-    if (copy_from_user(skb->data, buf, len)) {
+    tmp = skb_put(skb, len);
+    if (copy_from_user(tmp, buf, len)) {
         kfree_skb(skb);
         return -EFAULT;
     }
 
-    skb_put(skb, len);
     skb->dev = tun->dev;
-    skb->protocol = htons(ETH_P_IP);
+    skb->pkt_type = PACKET_LOOPBACK;
+    skb->protocol = eth_type_trans(skb, tun->dev);
+    skb->ip_summed = CHECKSUM_UNNECESSARY;
 
     netif_receive_skb(skb);
 

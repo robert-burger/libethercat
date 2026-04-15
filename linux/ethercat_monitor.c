@@ -113,7 +113,7 @@ int ethercat_monitor_create(struct monitor_dev *monitor_dev, u16 minor, const un
     {
         pr_err("EtherCAT-Monitor-Device %s: error allocating monitor device\n", monitor_name);
         ret = -1;
-    } 
+    }
     else
     {
         unsigned char tmp_mac[ETH_ALEN];

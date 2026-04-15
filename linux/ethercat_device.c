@@ -724,7 +724,7 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
 /*! 
  */
 int  ethercat_init(void) {
-    pr_info("ethercat char dev driver: init\n");
+    pr_info("EtherCAT-Char-Device: initiliazing\n");
 
     /* init hardware driver */
     ethercat_device_init();
@@ -736,7 +736,7 @@ int  ethercat_init(void) {
 /*!
  */
 void  ethercat_exit(void) {
-    pr_info("ethercat char dev driver: exit\n");
+    pr_info("EtherCAT-Char-Device: exiting\n");
 
     ethercat_device_exit();
 }
