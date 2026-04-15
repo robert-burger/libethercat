@@ -33,7 +33,9 @@
 #include <linux/netdevice.h>
 #include <linux/cdev.h>
 #include <linux/skbuff.h>
-
+#include <linux/wait.h>
+#include <linux/poll.h>
+                                //
 #define TUN_DEV_NAME_MAX_LENGTH		16u
 
 // TUN-Device-Structure
@@ -43,6 +45,7 @@ struct tun_dev {
     char name[TUN_DEV_NAME_MAX_LENGTH];
 
     struct sk_buff_head rx_queue;
+    wait_queue_head_t rx_wait;
 };
 
 /**

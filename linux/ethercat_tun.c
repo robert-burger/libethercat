@@ -63,6 +63,7 @@ static ssize_t ethercat_tun_chrdev_read(struct file *file, char __user *buf, siz
 static ssize_t ethercat_tun_chrdev_write(struct file *file, const char __user *buf, size_t len, loff_t *off);
 static int ethercat_tun_chrdev_open(struct inode *inode, struct file *file);
 static int ethercat_tun_chrdev_release(struct inode *inode, struct file *file);
+static unsigned int ethercat_tun_chrdev_poll(struct file *file, poll_table *wait);
 
 // File Operations
 ssize_t ethercat_tun_chrdev_read(struct file *file, char __user *buf, size_t len, loff_t *off)
@@ -112,6 +113,21 @@ ssize_t ethercat_tun_chrdev_write(struct file *file, const char __user *buf, siz
     return len;
 }
 
+unsigned int ethercat_tun_chrdev_poll(struct file *file, poll_table *wait)
+{
+    struct tun_dev *tun = file->private_data;
+    unsigned int mask = 0;
+
+    poll_wait(file, &tun->rx_wait, wait);
+
+    // Check rx_queue for packets
+    if (!skb_queue_empty(&tun->rx_queue)) {
+        mask |= POLLIN | POLLRDNORM;  // data is available to be read.
+    }
+
+    return mask;
+}
+
 int ethercat_tun_chrdev_open(struct inode *inode, struct file *file)
 {
     struct tun_dev *tun = container_of(inode->i_cdev, struct tun_dev, cdev);
@@ -131,6 +147,7 @@ static struct file_operations fops = {
     .write = ethercat_tun_chrdev_write,
     .open = ethercat_tun_chrdev_open,
     .release = ethercat_tun_chrdev_release,
+    .poll = ethercat_tun_chrdev_poll,
 };
 
 int tun_open(struct net_device *dev)
@@ -159,6 +176,7 @@ netdev_tx_t tun_start_xmit(struct sk_buff *skb, struct net_device *dev)
     }
 
     skb_queue_tail(&tun->rx_queue, skb);
+    wake_up_interruptible(&tun->rx_wait);
 
     // Statistics
     dev->stats.tx_packets++;
@@ -209,6 +227,8 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
 		    MKDEV(ethercat_tun_dev_major, minor), 
 		    tun_dev, DEVICE_NAME "%d", minor);
 
+    init_waitqueue_head(&tun_dev->rx_wait);
+    
     pr_info("EtherCAT-Tun-Device %s: characted device successfully created.\n", tun_dev->name);
 
     dev = alloc_netdev(sizeof(struct tun_dev *), tun_dev->name, NET_NAME_UNKNOWN, ether_setup);
