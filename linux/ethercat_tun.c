@@ -74,10 +74,8 @@ ssize_t ethercat_tun_chrdev_read(struct file *file, char __user *buf, size_t len
     skb = skb_dequeue(&tun->rx_queue);
     if (!skb)
         return 0;
-
-    if (len < skb->len)
-        len = skb->len;
-
+    
+    len = min(len, skb->len);
     if (copy_to_user(buf, skb->data, len)) {
         kfree_skb(skb);
         return -EFAULT;
