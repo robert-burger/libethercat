@@ -1,6 +1,6 @@
 #KBUILD_CFLAGS   +=  -g -Wall -O0
 
 obj-m := ethercat_chardev.o
-ethercat_chardev-y := ethercat_device.o ethercat_tun.o
+ethercat_chardev-y := ethercat_device.o ethercat_tun.o ethercat_monitor.o
 
 obj-m += $(DRIVER_PATH)/

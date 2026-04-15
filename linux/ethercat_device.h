@@ -39,6 +39,7 @@
 #include <linux/ioctl.h>
 
 #include "ethercat_tun.h"
+#include "ethercat_monitor.h"
 
 /* Structure to hold EtherCAT char device
  */
@@ -66,12 +67,8 @@ struct ethercat_device {
 
     bool ethercat_polling;                  //! \brief EtherCAT polling mode (no irq's)
     uint64_t rx_timeout_ns;                 //! \brief Timeout in polling mode.
-                                            //
-    // EtherCAT monitor device 
-    bool monitor_enabled;                   //! \brief Monitor device enabled.
-    struct net_device *monitor_dev;         //! \brief Monitor device net_dev.
-    struct net_device_stats monitor_stats;  //! \brief Monitor device statistics.
 
+    struct monitor_dev monitor_dev;
     struct tun_dev tun_dev;
 };
 
@@ -103,6 +100,10 @@ void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data,
  * \param[in]   link        New link state.
  */
 void ethercat_device_set_link(struct ethercat_device *ecat_dev, bool link);
+
+//! \brief Kernel func, which is not exported. Collected via kallsym.
+typedef int (*fcn_devinet_ioctl_t)(struct net *net, unsigned int cmd, void __user *);
+extern fcn_devinet_ioctl_t fcn_devinet_ioctl;
 
 #endif 
 

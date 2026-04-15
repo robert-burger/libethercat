@@ -49,6 +49,7 @@ MODULE_AUTHOR("Robert Burger <robert.burger@dlr.de>");
 MODULE_DESCRIPTION("ethercat char device driver");
 MODULE_LICENSE("GPL");
 
+// forward declarations
 int  ethercat_init(void);
 void ethercat_exit(void);
 
@@ -58,6 +59,7 @@ static unsigned int ethercat_device_poll   (struct file *file, struct poll_table
 static ssize_t      ethercat_device_read   (struct file *filp, char *buff, size_t len, loff_t *off);
 static ssize_t      ethercat_device_write  (struct file *filp, const char *buff, size_t len, loff_t *off);
 static long         ethercat_device_unlocked_ioctl(struct file *file, unsigned int num, unsigned long params);
+static int          dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *);
 
 static struct file_operations ethercat_device_fops = {
     .open           = ethercat_device_open,
@@ -99,151 +101,19 @@ static char debug_buf[DBG_BUF_SIZE];
 #define debug_print_frame(msg, buf, buflen)
 #endif
 
-//================================================================================================
-//                                  monitor device stuff
-//
-// Creates a network interface for monitoring purpose called ecat%d_monitor and registers it to
-// the linux network stack. Ensure that the interface is brought up by something like:
-//
-// $ ip link set up ecat0_monitor
-//
-// Then use the usual tools to log sent and received EtherCAT frames like tcpdump, wireshark, etc....
-//
-// WARNING: This should only be enabled for debugging purpose as it may allocate and free memory!!!
-
-//! Open Callback
-/*
- * Nothing to open here.
- */
-static int ethercat_monitor_open(struct net_device *dev) {
-    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
-    ecat_dev->monitor_enabled = true;
-    return 0;
-}
-
-//! Close Callback
-/*
- * Nothing to close here.
- */
-static int ethercat_monitor_stop(struct net_device *dev) {
-    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
-    ecat_dev->monitor_enabled = false;
-    return 0;
-}
-
-//! TX callback function
-/*
- * Drop all frame someone wants to send to the monitor device from outside.
- */
-static int ethercat_monitor_tx(struct sk_buff *skb, struct net_device *dev) {
-    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
-    dev_kfree_skb(skb);
-    ecat_dev->monitor_stats.tx_dropped++;
-    return 0;
-}
-
-//! Get statistics callback
-static void ethercat_monitor_get_stats64(struct net_device *dev,
-			    struct rtnl_link_stats64 *stats) 
-{
-    struct ethercat_device *ecat_dev = *(struct ethercat_device **)netdev_priv(dev);
-    ecat_dev->net_dev->netdev_ops->ndo_get_stats64(ecat_dev->net_dev, stats);
-}
-
-//! Network device ops.
-static const struct net_device_ops ethercat_monitor_netdev_ops = {
-    .ndo_open = ethercat_monitor_open,
-    .ndo_stop = ethercat_monitor_stop,
-    .ndo_start_xmit = ethercat_monitor_tx,
-    .ndo_get_stats64 = ethercat_monitor_get_stats64,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+#include <linux/kprobes.h>
+static struct kprobe kp = {
+    .symbol_name = "kallsyms_lookup_name"
 };
 
-//! Creates an EtherCAT monitor device
-/*!
- * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
- * \return 0 on success, -1 on error.
- */
-static int ethercat_monitor_create(struct ethercat_device *ecat_dev) {
-    int ret = 0;
-    char monitor_name[64];
-
-    ecat_dev->monitor_enabled = false; 
-
-    snprintf(&monitor_name[0], 64, "ecat_monitor%d", ecat_dev->minor);
-    if (!(ecat_dev->monitor_dev = alloc_netdev(sizeof(struct ethercat_device *), 
-                    monitor_name, NET_NAME_UNKNOWN, ether_setup))) {
-        pr_err("error allocating monitor device\n");
-        ret = -1;
-    } else {
-        ecat_dev->monitor_dev->netdev_ops = &ethercat_monitor_netdev_ops;
-        *((struct ethercat_device **)netdev_priv(ecat_dev->monitor_dev)) = ecat_dev;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-        dev_addr_mod(ecat_dev->monitor_dev, 0, ecat_dev->net_dev->dev_addr, ETH_ALEN);
-#else
-        memcpy((void *)ecat_dev->monitor_dev->dev_addr, ecat_dev->net_dev->dev_addr, ETH_ALEN);
+typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
+kallsyms_lookup_name_t fcn_kallsyms_lookup_name;
 #endif
 
-        if ((ret = register_netdev(ecat_dev->monitor_dev))) {
-            pr_err("error registering monitor net device!\n");
-            ret = -1;
-        } else {
-            netif_carrier_off(ecat_dev->monitor_dev);
-            netif_stop_queue(ecat_dev->monitor_dev);
-        }
-    }
+int dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *) { return 0; }
+fcn_devinet_ioctl_t fcn_devinet_ioctl = &dummy_fcn_devinet_ioctl;
 
-    memset(&ecat_dev->monitor_stats, 0, sizeof(struct net_device_stats));
-
-    return ret;
-}
-
-//! Destroys an EtherCAT monitor device
-/*!
- * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
- */
-static void ethercat_monitor_destroy(struct ethercat_device *ecat_dev) {
-    if (ecat_dev->monitor_dev != NULL) {
-        unregister_netdev(ecat_dev->monitor_dev);
-        free_netdev(ecat_dev->monitor_dev);
-
-        ecat_dev->monitor_dev = NULL;
-    }
-}
-
-//! Send an EtherCAT frame to the monitor device
-/*!
- * \param[in]   ecat_dev    Pointer to EtherCAT device to destruct.
- * \param[in]   data        Pointer to memory containing the beginning of the EtherCAT frame.
- * \param[in]   datalen     Size of EtherCAT frame.
- */
-static void ethercat_monitor_frame(struct ethercat_device *ecat_dev, const uint8_t *data, size_t datalen) {
-    struct sk_buff *skb = NULL;
-    unsigned char *tmp = NULL;
-
-    if (!ecat_dev->monitor_enabled) {
-        return;
-    }
-
-    skb = __netdev_alloc_skb(ecat_dev->monitor_dev, ETH_FRAME_LEN, GFP_ATOMIC | __GFP_NOWARN | __GFP_NORETRY);
-    if (skb == NULL) {
-        ecat_dev->monitor_stats.rx_dropped++;
-        return;
-    }
-
-    tmp = skb_put(skb, datalen);
-    memcpy(tmp, data, datalen);
-
-    ecat_dev->monitor_stats.rx_bytes += datalen;
-    ecat_dev->monitor_stats.rx_packets++;
-
-    skb->dev = ecat_dev->monitor_dev;
-    skb->pkt_type = PACKET_LOOPBACK;
-    skb->protocol = eth_type_trans(skb, ecat_dev->monitor_dev);
-    skb->ip_summed = CHECKSUM_UNNECESSARY;
-
-    netif_receive_skb(skb);
-}
 
 //================================================================================================
 //                                    ethercat device stuff
@@ -272,6 +142,22 @@ static int ethercat_device_init(void) {
 
     debug_pr_info("allocated major nr: %d\n", ecat_chr_major);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        register_kprobe(&kp);
+        fcn_kallsyms_lookup_name = (kallsyms_lookup_name_t)kp.addr;
+        unregister_kprobe(&kp);
+
+        fcn_devinet_ioctl_t fcn_tmp = NULL;
+        
+        if (fcn_kallsyms_lookup_name) { fcn_tmp = (fcn_devinet_ioctl_t)fcn_kallsyms_lookup_name("devinet_ioctl"); }
+        if (fcn_tmp) { 
+            pr_info("EtherCAT-Tun-Device: Success getting func pointer for \"devinet_ioctl\".\n");
+            fcn_devinet_ioctl = fcn_tmp; 
+        } else {
+            pr_warn("EtherCAT-Tun-Device: Failed getting func pointer for \"devinet_ioctl\". Setting IP and bringing tun inferface UP not available.\n");
+        }
+#endif
+
     ethercat_tun_init();
 
     return 0;
@@ -299,7 +185,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     int ret = 0;
     unsigned i = 0;
 
-    debug_pr_info("ethercat: creating EtherCAT character device...\n");
+    pr_info("EtherCAT-Char-Device: creating.\n");
 
     ecat_dev = kmalloc(sizeof(struct ethercat_device), GFP_KERNEL);
     if (!ecat_dev) {
@@ -320,7 +206,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     ecat_dev->cdev.owner  = THIS_MODULE;
     ecat_dev->cdev.ops    = &ethercat_device_fops;
     if ((ret = cdev_add(&ecat_dev->cdev, MKDEV(ecat_chr_major, ecat_dev->minor), 1)) != 0) {
-        pr_err("error %d adding ecat%d", ret, ecat_dev->minor);
+        pr_err("EtherCAT-Char-Devices ecat%d: error %d adding char devices!", ecat_dev->minor, ret);
         goto error_exit;
     } else {
         // create device node in /dev filesystem
@@ -330,7 +216,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     }
 
     snprintf(net_dev->name, IFNAMSIZ, "ecat%d", ecat_dev->minor);
-    debug_pr_info("ethercat: created device file %s.\n", net_dev->name);
+    pr_info("EtherCAT-Char-Device %s: created device file.\n", net_dev->name);
 
     // init wait queue
     init_swait_queue_head(&ecat_dev->ir_queue);
@@ -339,7 +225,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
         struct sk_buff *skb;
         skb = dev_alloc_skb(ETH_FRAME_LEN);
         if (!skb) {
-            pr_err("error allocating device socket buffer!\n");
+            pr_err("EtherCAT-Char-Device %s: error allocating device socket buffer!\n", net_dev->name);
             goto error_exit;
         }
 
@@ -357,16 +243,15 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
 
     for (i = 0; i < EC_RX_RING_SIZE; i++) {
         if (!(ecat_dev->rx_skb[i] = dev_alloc_skb(ETH_FRAME_LEN))) {
-            pr_err("error allocating device socket buffer!\n");
+            pr_err("EtherCAT-Char-Device %s: error allocating device socket buffer!\n", net_dev->name);
             goto error_exit;
         }
     }
 
     ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
 
-    (void)ethercat_monitor_create(ecat_dev);
-
-    ethercat_tun_device_create(&ecat_dev->tun_dev, ecat_dev->minor);
+    (void)ethercat_monitor_create(&ecat_dev->monitor_dev, ecat_dev->minor, net_dev->dev_addr);
+    (void)ethercat_tun_device_create(&ecat_dev->tun_dev, ecat_dev->minor, net_dev->dev_addr);
 
     return ecat_dev;
 
@@ -396,7 +281,7 @@ int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     int i = 0;
 
     ethercat_tun_device_destroy(&ecat_dev->tun_dev);
-    ethercat_monitor_destroy(ecat_dev);
+    ethercat_monitor_destroy(&ecat_dev->monitor_dev);
 
     ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
 
@@ -470,7 +355,7 @@ void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data,
         swake_up_one(&ecat_dev->ir_queue);
     }
 
-    ethercat_monitor_frame(ecat_dev, data, size);
+    ethercat_monitor_frame(&ecat_dev->monitor_dev, data, size);
 }
 
 EXPORT_SYMBOL(ethercat_device_receive);
@@ -677,7 +562,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
                 netdev_tx_t local_ret = 0;
                 debug_print_frame("ethercat char dev driver: sending", skb->data, skb->len);
 
-                ethercat_monitor_frame(ecat_dev, skb->data, len);
+                ethercat_monitor_frame(&ecat_dev->monitor_dev, skb->data, len);
 
                 local_ret = skb->dev->netdev_ops->ndo_start_xmit(skb, skb->dev);
                 if (local_ret == NETDEV_TX_OK) {
