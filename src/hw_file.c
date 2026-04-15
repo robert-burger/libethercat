@@ -112,6 +112,7 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     
     int flags = O_RDWR | O_NONBLOCK;
     uint64_t link_timeout_sec = 5, rx_usecs = 0, tx_usecs = 0;
+    unsigned int monitor = 0;
 
     char *tmp;
     if ((tmp = strchr(devname, ':')) != NULL) {
@@ -143,7 +144,9 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
                     phw_file->polling_mode = OSAL_TRUE;
                 } else if (strcmp(act, "blocking") == 0) {
                     ec_log(10, "HW_OPEN", "using kernel blocking\n");
-		    flags &= ~O_NONBLOCK;
+                    flags &= ~O_NONBLOCK;
+                } else if (strcmp(act, "monitor") == 0) {
+                    monitor = 1;
                 }
             }
 
@@ -203,7 +206,6 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
             phw_file->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
         }
 
-        unsigned int monitor = 0;
         (void)ioctl(phw_file->fd, ETHERCAT_DEVICE_MONITOR_ENABLE, &monitor);
 #endif
 

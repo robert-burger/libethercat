@@ -75,5 +75,13 @@ void ethercat_monitor_destroy(struct monitor_dev *monitor_dev);
  */
 void ethercat_monitor_frame(struct monitor_dev *monitor_dev, const uint8_t *data, size_t datalen);
 
+/**
+ * @brief En- or disable monitor device.
+ *
+ * @param[in]   monitor_dev Pointer to EtherCAT monitor device to destruct.
+ * @param[in]   enable      Set to 0 to disable, otherwise enable.
+ */
+void ethercat_monitor_enable(struct monitor_dev *monitor_dev, unsigned int enable);
+
 #endif // ETHERCAT_MONITOR__H
 

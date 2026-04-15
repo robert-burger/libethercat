@@ -143,19 +143,19 @@ static int ethercat_device_init(void) {
     debug_pr_info("allocated major nr: %d\n", ecat_chr_major);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-        register_kprobe(&kp);
-        fcn_kallsyms_lookup_name = (kallsyms_lookup_name_t)kp.addr;
-        unregister_kprobe(&kp);
+    register_kprobe(&kp);
+    fcn_kallsyms_lookup_name = (kallsyms_lookup_name_t)kp.addr;
+    unregister_kprobe(&kp);
 
-        fcn_devinet_ioctl_t fcn_tmp = NULL;
-        
-        if (fcn_kallsyms_lookup_name) { fcn_tmp = (fcn_devinet_ioctl_t)fcn_kallsyms_lookup_name("devinet_ioctl"); }
-        if (fcn_tmp) { 
-            pr_info("EtherCAT-Tun-Device: Success getting func pointer for \"devinet_ioctl\".\n");
-            fcn_devinet_ioctl = fcn_tmp; 
-        } else {
-            pr_warn("EtherCAT-Tun-Device: Failed getting func pointer for \"devinet_ioctl\". Setting IP and bringing tun inferface UP not available.\n");
-        }
+    fcn_devinet_ioctl_t fcn_tmp = NULL;
+
+    if (fcn_kallsyms_lookup_name) { fcn_tmp = (fcn_devinet_ioctl_t)fcn_kallsyms_lookup_name("devinet_ioctl"); }
+    if (fcn_tmp) { 
+        pr_info("EtherCAT-Tun-Device: Success getting func pointer for \"devinet_ioctl\".\n");
+        fcn_devinet_ioctl = fcn_tmp; 
+    } else {
+        pr_warn("EtherCAT-Tun-Device: Failed getting func pointer for \"devinet_ioctl\". Setting IP and bringing tun inferface UP not available.\n");
+    }
 #endif
 
     ethercat_tun_init();
@@ -622,6 +622,16 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
     ecat_dev = user->ecat_dev;
 
     switch (num) {
+        case ETHERCAT_DEVICE_MONITOR_ENABLE: {
+            unsigned int enable = 0;
+            if (__copy_from_user(&enable, (void *)arg, sizeof(unsigned int))) {
+                ret = -EFAULT;
+            } else {
+                ethercat_monitor_enable(&ecat_dev->monitor_dev, enable);
+            }
+
+            break;
+        }
         case ETHERCAT_DEVICE_SET_POLLING_RX_TIMEOUT: {
             if (__copy_from_user(&ecat_dev->rx_timeout_ns, (void *)arg, sizeof(uint64_t))) {
                 ret = -EFAULT;

@@ -102,7 +102,7 @@ ssize_t ethercat_tun_chrdev_write(struct file *file, const char __user *buf, siz
     }
 
     skb->dev = tun->dev;
-    skb->pkt_type = PACKET_LOOPBACK;
+    skb->pkt_type = PACKET_HOST;
     skb->protocol = eth_type_trans(skb, tun->dev);
     skb->ip_summed = CHECKSUM_UNNECESSARY;
 
@@ -240,7 +240,7 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     tun_dev->dev = dev;
     dev->netdev_ops = &tun_net_ops;
     *((struct tun_dev **)netdev_priv(dev)) = tun_dev;
-    dev->flags |= IFF_NOARP;
+    //dev->flags |= IFF_NOARP;
     dev->priv_flags |= IFF_NO_QUEUE;
 
     unsigned char tmp_mac[ETH_ALEN];

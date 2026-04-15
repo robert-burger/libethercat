@@ -226,3 +226,36 @@ void ethercat_monitor_frame(struct monitor_dev *monitor_dev, const uint8_t *data
     }
 }
 
+/**
+ * @brief En- or disable monitor device.
+ *
+ * @param[in]   monitor_dev Pointer to EtherCAT monitor device to destruct.
+ * @param[in]   enable      Set to 0 to disable, otherwise enable.
+ */
+void ethercat_monitor_enable(struct monitor_dev *monitor_dev, unsigned int enable) {
+    int err = 0;
+    struct ifreq ifr;
+    struct net *net;
+    struct cred *cred;
+
+    // try to grant
+    cred = (struct cred*)current_cred();
+    cap_raise(cred->cap_effective, CAP_NET_ADMIN);
+
+    net = dev_net(monitor_dev->net_dev);
+    memset(&ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, monitor_dev->net_dev->name, IFNAMSIZ - 1);
+    ifr.ifr_flags = enable == 0 ?
+        monitor_dev->net_dev->flags & ~(IFF_UP | IFF_RUNNING) : 
+        monitor_dev->net_dev->flags | IFF_UP;// | IFF_RUNNING;
+    err = fcn_devinet_ioctl(net, SIOCSIFFLAGS, &ifr);
+    if (err) {
+        pr_err("EtherCAT-Monitor-Device %s: error (de)activating interface -> %d.\n", monitor_dev->net_dev->name, err);
+    }
+
+    if (!err) {
+        pr_info("EtherCAT-Monitor-Device %s: successfully (de)activated monitor device.\n", monitor_dev->net_dev->name);
+    }
+
+    cap_lower(cred->cap_effective, CAP_NET_ADMIN);
+}
