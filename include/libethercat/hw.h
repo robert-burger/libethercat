@@ -134,12 +134,12 @@ typedef struct hw_common {
     osal_size_t bytes_last_sent;    //!< \brief Bytes last sent.
     osal_timer_t next_cylce_start;  //!< \brief Next cycle start time.
 
-    hw_device_recv_t recv;                      //!< \biref Function to receive frame from device.
+    hw_device_recv_t recv;                      //!< \brief Function to receive frame from device.
     hw_device_send_t send;                      //!< \brief Function to send frames via device.
     hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
     hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
     hw_device_close_t close;                    //!< \brief Function to close hw layer.
-                                                
+
     osal_uint64_t last_tx_duration_ns;
     osal_uint64_t last_rx_duration_ns;
 } hw_common_t;                 //!< \brief Hardware struct type. 
