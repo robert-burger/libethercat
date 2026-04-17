@@ -1,12 +1,11 @@
 /**
- * \file hw_stm32.h
+ * \file mbx_gateway.c
  *
  * \author Robert Burger <robert.burger@dlr.de>
- * \author Marcel Beausencourt <marcel.beausencourt@dlr.de>
  *
- * \date 26 Nov 2024
+ * \date 11 Apr 2026
  *
- * \brief file/char device hardware access functions
+ * \brief ethercat mailbox gateway functions
  *
  */
 
@@ -38,45 +37,5 @@
  *
  */
 
-#ifndef LIBETHERCAT_HW_STM32_H
-#define LIBETHERCAT_HW_STM32_H
-
-#include "eth.h"
-#include <libethercat/hw.h>
-//#include <stm32_hal_legacy.h>
-//#include <stm32h7xx_hal_def.h>
-
-typedef struct hw_stm32 {
-    struct hw_common common;
-
-    int frames_sent;
-    ETH_TxPacketConfig TxConfig;
-
-    osal_uint8_t send_frame[EC_ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[EC_ETH_FRAME_LEN]; //!< \brief Static receive frame.
-} hw_stm32_t;
-
-// HTONS MACRO -> configured in config.h (libethcat)
-#if 0
-#define HTONS(x) (((x) << 8) | ((x) >> 8))
-#define htons(x) (((x) << 8) | ((x) >> 8))
-#endif
-
-#ifndef htons
-#define htons(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
-#endif
-
-
-//! Opens EtherCAT hw device.
-/*!
- * \param[in]   phw         Pointer to hw handle. 
- * \param[in]   pec     	Pointer to EtherCAT master structure.
- *
- * \return 0 or negative error code
- */
-int hw_device_stm32_open(struct hw_stm32 *phw, struct ec *pec);
-int hw_device_stm32_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t pool_type);
-int hw_device_stm32_recv(struct hw_common *phw);
-
-#endif // LIBETHERCAT_HW_STM32_H
+#include "libethercat/mbx_gateway.h"
 

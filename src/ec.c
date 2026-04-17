@@ -1179,9 +1179,9 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
 
         pec->ec_time_func       = NULL;
 
-        pec->tun_fd             = 0;
-        pec->tun_ip             = 0;
-        pec->tun_running        = 0;
+        pec->veth.fd            = 0;
+        pec->veth.ip            = 0;
+        pec->veth.running       = 0;
 
         (void)ec_cyclic_datagram_init(&pec->cdg_state, 1000000);
         (void)ec_cyclic_datagram_init(&pec->dc.cdg, 1000000);
@@ -1256,8 +1256,10 @@ int ec_close(ec_t *pec) {
     ec_set_state(pec, EC_STATE_INIT);
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
+#if 0
     ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
     ec_eoe_destroy_tun(pec);
+#endif
 #endif
 
     ec_log(10, "MASTER_CLOSE", "destroying pd_groups\n");
@@ -2191,6 +2193,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
 }
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
+#if 0
 //! configures tun device of EtherCAT master, used for EoE slaves.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -2208,6 +2211,7 @@ int ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
     }
     return ret;
 }
+#endif
 #endif
 
 //! \brief Configures distributed clocks settings on EtherCAT master.

@@ -278,7 +278,7 @@ osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file) {
 
     do {
         // using tradional recv function
-        bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
+        bytesrx = read(phw_file->fd, pframe, EC_ETH_FRAME_LEN);
 
         if (bytesrx > 0) {
             ret = hw_process_rx_frame(&phw_file->common, pframe);

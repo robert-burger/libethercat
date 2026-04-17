@@ -160,23 +160,6 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
 int ec_eoe_send_frame(ec_t *pec, osal_uint16_t slave, osal_uint8_t *frame, 
         osal_size_t frame_len);
 
-// setup tun interface
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- *
- * \retval EC_OK                EoE transfer was successfull.
- * \retval EC_ERROR_UNAVAILABLE Setting up tun failed for some reason.
- */
-int ec_eoe_setup_tun(ec_t *pec);
-
-// Destroy tun interface
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- */
-void ec_eoe_destroy_tun(ec_t *pec);
-
 #ifdef __cplusplus
 }
 #endif

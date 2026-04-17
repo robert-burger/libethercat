@@ -138,7 +138,6 @@ static void igb_update_dca(struct igb_q_vector *);
 static void igb_setup_dca(struct igb_adapter *);
 #endif /* CONFIG_IGB_DCA */
 static int igb_poll(struct napi_struct *, int);
-static void igb_clean_tx_irq_task(struct work_struct *work);
 static bool igb_clean_tx_irq(struct igb_q_vector *, int);
 static int igb_clean_rx_irq(struct igb_q_vector *, int);
 static int igb_ioctl(struct net_device *, struct ifreq *, int cmd);
@@ -860,8 +859,6 @@ static void igb_assign_vector(struct igb_q_vector *q_vector, int msix_vector)
 
 	/* configure q_vector to set itr on first interrupt */
 	q_vector->set_itr = 1;
-				
-	INIT_WORK(&q_vector->clean_tx_irq_task, igb_clean_tx_irq_task);
 }
 
 /**
@@ -942,13 +939,9 @@ static int igb_request_msix(struct igb_adapter *adapter)
 	unsigned int num_q_vectors = adapter->num_q_vectors;
 	struct net_device *netdev = adapter->netdev;
 	int i, err = 0, vector = 0, free_vector = 0;
-	unsigned long irq_flags = 0;
-	if (adapter->is_ecat) {
-		irq_flags = IRQF_NO_THREAD;
-	}
 
 	err = request_irq(adapter->msix_entries[vector].vector,
-			  igb_msix_other, irq_flags, netdev->name, adapter);
+			  igb_msix_other, 0, netdev->name, adapter);
 	if (err)
 		goto err_out;
 
@@ -978,7 +971,7 @@ static int igb_request_msix(struct igb_adapter *adapter)
 			sprintf(q_vector->name, "%s-unused", netdev->name);
 
 		err = request_irq(adapter->msix_entries[vector].vector,
-				  igb_msix_ring, irq_flags, q_vector->name,
+				  igb_msix_ring, 0, q_vector->name,
 				  q_vector);
 		if (err)
 			goto err_free;
@@ -1046,8 +1039,6 @@ static void igb_reset_q_vector(struct igb_adapter *adapter, int v_idx)
 
 	if (unlikely(!adapter->is_ecat)) {
 		netif_napi_del(&q_vector->napi);
-	} else {
-		cancel_work_sync(&q_vector->clean_tx_irq_task);
 	}
 }
 
@@ -1431,10 +1422,6 @@ static int igb_request_irq(struct igb_adapter *adapter)
 	struct net_device *netdev = adapter->netdev;
 	struct pci_dev *pdev = adapter->pdev;
 	int err = 0;
-	unsigned long irq_flags = 0;
-	if (adapter->is_ecat) {
-		irq_flags = IRQF_NO_THREAD;
-	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
 		if ((adapter->is_ecat) && (adapter->ethercat_polling == true)) {
@@ -1465,7 +1452,7 @@ static int igb_request_irq(struct igb_adapter *adapter)
 	}
 
 	if (adapter->flags & IGB_FLAG_HAS_MSI) {
-		err = request_irq(pdev->irq, igb_intr_msi, irq_flags,
+		err = request_irq(pdev->irq, igb_intr_msi, 0,
 				  netdev->name, adapter);
 		if (!err)
 			goto request_done;
@@ -1475,11 +1462,7 @@ static int igb_request_irq(struct igb_adapter *adapter)
 		adapter->flags &= ~IGB_FLAG_HAS_MSI;
 	}
 
-	if (!adapter->is_ecat) {
-		irq_flags = IRQF_SHARED;
-	}
-
-	err = request_irq(pdev->irq, igb_intr, irq_flags,
+	err = request_irq(pdev->irq, igb_intr, IRQF_SHARED,
 			  netdev->name, adapter);
 
 	if (err)
@@ -8409,11 +8392,7 @@ static int igb_poll(struct napi_struct *napi, int budget)
 		igb_update_dca(q_vector);
 #endif
 	if (q_vector->tx.ring) {
-		if (likely(q_vector->adapter->is_ecat)) {
-			schedule_work(&q_vector->clean_tx_irq_task);
-		} else {
-			clean_complete = igb_clean_tx_irq(q_vector, budget);
-		}
+		clean_complete = igb_clean_tx_irq(q_vector, budget);
 	}
 
 	if (q_vector->rx.ring) {
@@ -8435,13 +8414,6 @@ static int igb_poll(struct napi_struct *napi, int budget)
 		igb_ring_irq_enable(q_vector);
 
 	return work_done;
-}
-
-static void igb_clean_tx_irq_task(struct work_struct *work) {
-	struct igb_q_vector *q_vector = container_of(work,
-						     struct igb_q_vector,
-						     clean_tx_irq_task);
-	igb_clean_tx_irq(q_vector, 64);
 }
 
 /**
@@ -8495,7 +8467,9 @@ static bool igb_clean_tx_irq(struct igb_q_vector *q_vector, int napi_budget)
 				napi_consume_skb(tx_buffer->skb, napi_budget);
 			else
 				xdp_return_frame(tx_buffer->xdpf);
-		}
+        } else {
+            ethercat_device_sent_finished(adapter->ecat_dev, tx_buffer->skb);
+        }
 
 		/* unmap skb header data */
 		dma_unmap_single(tx_ring->dev,

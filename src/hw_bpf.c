@@ -130,12 +130,12 @@ int hw_device_bpf_open(hw_t *phw, const osal_char_t *devname) {
                 } else {
                     (void)fprintf(stderr, "opening bpf device... %d\n", __LINE__);
                     // request buffer length 
-                    if (ioctl(phw->sockfd, BIOCGBLEN, &ETH_FRAME_LEN) == -1) {
+                    if (ioctl(phw->sockfd, BIOCGBLEN, &EC_ETH_FRAME_LEN) == -1) {
                         ec_log(1, "HW_OPEN", "error on BIOCGBLEN: %s\n", 
                                 strerror(errno));
                         ret = -1;
                     } else {
-                        (void)fprintf(stderr, "opening bpf device... %d, buf_isze is %d\n", __LINE__, ETH_FRAME_LEN);
+                        (void)fprintf(stderr, "opening bpf device... %d, buf_isze is %d\n", __LINE__, EC_ETH_FRAME_LEN);
                         static struct bpf_program my_bpf_program;
                         my_bpf_program.bf_len = sizeof(insns)/sizeof(insns[0]);
                         my_bpf_program.bf_insns = insns;
@@ -205,7 +205,7 @@ int hw_device_bpf_close(struct hw_common *phw) {
  * \return 0 or negative error code
  */
 int hw_device_bpf_recv(hw_t *phw, ec_frame_t *pframe) {
-    osal_ssize_t bytesrx = read(phw->sockfd, pframe, ETH_FRAME_LEN);
+    osal_ssize_t bytesrx = read(phw->sockfd, pframe, EC_ETH_FRAME_LEN);
     int local_errno = errno;
 
     if (bytesrx == -1) {

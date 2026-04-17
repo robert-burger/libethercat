@@ -40,6 +40,7 @@ class MainProject(ConanFile):
         "mbx_support_coe" : [ True, False ],
         "mbx_support_foe" : [ True, False ],
         "mbx_support_soe" : [ True, False ],
+        "mbx_gateway_support" : [ True, False ],
     }
 
     requires = [ "libosal/[>=0.2.0]@common/stable", ]
@@ -70,6 +71,7 @@ class MainProject(ConanFile):
         self.options.mbx_support_coe = True
         self.options.mbx_support_foe = True
         self.options.mbx_support_soe = True
+        self.options.mbx_gateway_support = True
 
         if self.settings.os == "pikeos":
             self.options.hw_device_file = False
@@ -137,6 +139,8 @@ class MainProject(ConanFile):
             args.append("--disable-mbx-support-foe")
         if not self.options.mbx_support_soe:
             args.append("--disable-mbx-support-soe")
+        if not self.options.mbx_gateway_support:
+            args.append("--disable-mbx-gateway-support")
 
         args.append("--with-max-slaves=%d" % (self.options.max_slaves))
         args.append("--with-max-groups=%d" % (self.options.max_groups))

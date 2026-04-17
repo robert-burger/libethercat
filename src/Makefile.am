@@ -18,10 +18,16 @@ include_HEADERS = $(top_srcdir)/include/libethercat/common.h \
 				  $(top_builddir)/include/libethercat/settings.h \
 				  $(top_srcdir)/include/libethercat/slave.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
+				  $(top_srcdir)/include/libethercat/veth.h \
 				  $(top_srcdir)/include/libethercat/mii.h
 
 libethercat_la_SOURCES	= slave.c datagram.c pool.c async_loop.c ec.c \
-						  hw.c mbx.c eeprom.c dc.c idx.c mii.c
+						  hw.c mbx.c eeprom.c dc.c idx.c mii.c veth.c
+
+if LIBETHERCAT_MBX_GATEWAY_SUPPORT
+include_HEADERS += $(top_srcdir)/include/libethercat/mbx_gateway.h
+libethercat_la_SOURCES += mbx_gateway.c
+endif
 
 if LIBETHERCAT_MBX_SUPPORT_EOE
 include_HEADERS += $(top_srcdir)/include/libethercat/eoe.h

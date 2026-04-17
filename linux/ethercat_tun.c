@@ -166,13 +166,6 @@ netdev_tx_t tun_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
     struct tun_dev *tun = *((struct tun_dev **)netdev_priv(dev));
 
-    // Copy packet and queue to rx_queue
-    skb = skb_copy(skb, GFP_ATOMIC);
-    if (!skb) {
-        printk(KERN_ERR "EtherCAT-TUN_Device %s: Out of memory\n", dev->name);
-        return NETDEV_TX_OK; 
-    }
-
     skb_queue_tail(&tun->rx_queue, skb);
     wake_up_interruptible(&tun->rx_wait);
 

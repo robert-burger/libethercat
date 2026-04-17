@@ -3049,7 +3049,9 @@ static bool igc_clean_tx_irq(struct igc_q_vector *q_vector, int napi_budget)
 		case IGC_TX_BUFFER_TYPE_SKB:
 			if (unlikely(!adapter->is_ecat)) {
 				napi_consume_skb(tx_buffer->skb, napi_budget);
-			}
+		    } else {
+                ethercat_device_sent_finished(adapter->ecat_dev, tx_buffer->skb);
+            }
 			igc_unmap_tx_buffer(tx_ring->dev, tx_buffer);
 			break;
 		default:

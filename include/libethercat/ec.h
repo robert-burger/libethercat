@@ -53,6 +53,7 @@
 #include "libethercat/pool.h"
 #include "libethercat/async_loop.h"
 #include "libethercat/eeprom.h"
+#include "libethercat/veth.h"
 
 /** \defgroup ec_group EC Master
  *
@@ -233,12 +234,14 @@ typedef struct ec {
                                      * from the EtherCAT slave mailboxes. This 
                                      * may be e.g. emergency messages...
                                      */
-    
-    int tun_fd;                     //!< tun device file descriptor
-    osal_uint32_t tun_ip;           //!< tun device ip addres
-    osal_task_t tun_tid;            //!< tun device handler thread id.
-    int tun_running;                //!< tun device handler run flag.
-    
+
+ //   int tun_fd;                     //!< tun device file descriptor
+ //   osal_uint32_t tun_ip;           //!< tun device ip addres
+ //   osal_uint8_t tun_mac[6];
+ //   osal_task_t tun_tid;            //!< tun device handler thread id.
+ //   int tun_running;                //!< tun device handler run flag.
+    ec_veth_t veth;
+
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state
     int state_transition_pending;   //!< state transition is currently pending

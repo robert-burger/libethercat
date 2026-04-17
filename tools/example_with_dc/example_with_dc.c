@@ -13,6 +13,7 @@
 #endif
 
 #include <libethercat/ec.h>
+#include <libethercat/veth.h>
 #include <libethercat/error_codes.h>
 
 #include <stdio.h>
@@ -159,7 +160,7 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
 }
 
 static void cb_state(void *arg, ec_t *pec, ec_state_t target_state, osal_bool_t up) {
-    printf("My transition callback\n");
+    ec_log(10, "CB_STATE", "My transition callback\n");
 }
 
 int main(int argc, char **argv) {
@@ -376,14 +377,15 @@ int main(int argc, char **argv) {
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE
     if (eoe != 0) {
-        osal_uint8_t ip[4] = { 1, 100, 168, 192 };
-        ec_configure_tun(&ec, ip);
+        osal_uint8_t master_mac[6] = { 0xaf, 0xfe, 0xde, 0xad, 0xbe, 0xef };
+        osal_uint8_t master_ip[4] = { 172, 25, 0, 2 };
+        ec_veth_open_tun(&ec, "file:/dev/ecat_tun0", master_mac, *(uint32_t *)&master_ip[0]);
 
-        osal_uint8_t mac[6] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
-        osal_uint8_t ip_address[4] = { 2, 100, 168, 192 };
+        osal_uint8_t mac[6] = { 0xaa, 0xaa, 0xcc, 0xdd, 0xee, 0xff };
+        osal_uint8_t ip_address[4] = { 3, 0, 25, 172 };
         osal_uint8_t subnet[4] = { 0, 255, 255, 255 };
-        osal_uint8_t gateway[4] = { 1, 100, 168, 192 };
-        osal_uint8_t dns[4] = { 1, 100, 168, 192 };
+        osal_uint8_t gateway[4] = { 1, 0, 25, 172 };
+        osal_uint8_t dns[4] = { 1, 0, 25, 172 };
 
         // configure slave settings.
         for (int i = 0; i < ec.slave_cnt; ++i) {

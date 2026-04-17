@@ -51,6 +51,8 @@
 #include <drv/sbuf_hdr.h>
 #endif
 
+#define EC_ETH_FRAME_LEN   0x1518
+
 #define container_of(ptr, type, member) ({ \
         __typeof__( ((type *)0)->member ) *__mptr = (void *)(ptr); \
         (type *)( (char *)__mptr - offsetof(type,member) );})
@@ -114,8 +116,6 @@ typedef int (*hw_device_get_tx_buffer_t)(struct hw_common *phw, ec_frame_t **ppf
  * \return 0 or negative error code
  */
 typedef int (*hw_device_close_t)(struct hw_common *phw);
-
-#define ETH_FRAME_LEN   0x1518
 
 //! hardware structure
 typedef struct hw_common {
