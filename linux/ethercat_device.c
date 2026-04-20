@@ -665,9 +665,9 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
             struct ethtool_coalesce ec;
             struct kernel_ethtool_coalesce kernel_coal;
             struct netlink_ext_ack extack;
-            u32 rx_usecs_low;
+            u32 rx_usecs_low = 0u;
 
-            if (__copy_to_user((void *)arg, &rx_usecs_low, sizeof(uint32_t))) {
+            if (__copy_from_user(&rx_usecs_low, (void *)arg, sizeof(uint32_t))) {
                 ret = -EFAULT;
             } else {
                 ecat_dev->net_dev->ethtool_ops->get_coalesce(
@@ -686,9 +686,9 @@ static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, 
             struct ethtool_coalesce ec;
             struct kernel_ethtool_coalesce kernel_coal;
             struct netlink_ext_ack extack;
-            u32 tx_usecs_low;
+            u32 tx_usecs_low = 0u;
 
-            if (__copy_to_user((void *)arg, &tx_usecs_low, sizeof(uint32_t))) {
+            if (__copy_from_user(&tx_usecs_low, (void *)arg, sizeof(uint32_t))) {
                 ret = -EFAULT;
             } else {
                 ecat_dev->net_dev->ethtool_ops->get_coalesce(
