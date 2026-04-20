@@ -83,6 +83,9 @@ enum latency_range {
 	latency_invalid = 255
 };
 
+// forward decl
+static bool igc_clean_tx_irq(struct igc_q_vector *q_vector, int napi_budget);
+
 void igc_reset(struct igc_adapter *adapter)
 {
 	struct net_device *dev = adapter->netdev;
@@ -1243,6 +1246,11 @@ static int __igc_maybe_stop_tx(struct igc_ring *tx_ring, const u16 size)
 
 	if (!adapter->is_ecat) {
 		netif_stop_subqueue(netdev, tx_ring->queue_index);
+	} else {
+		/* try to clean some descs */
+		smp_mb();
+		struct igc_q_vector *q_vector = adapter->q_vector[0];
+		(void)igc_clean_tx_irq(q_vector, 64);
 	}
 
 	/* memory barriier comment */
