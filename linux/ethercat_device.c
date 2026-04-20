@@ -358,16 +358,16 @@ void ethercat_device_sent_finished(struct ethercat_device *ecat_dev, struct sk_b
 EXPORT_SYMBOL(ethercat_device_sent_finished);
 
 static int ethercat_device_netdev_do_ioctl(struct ethercat_device *ecat_dev, struct ifreq *ifr, int cmd) {
-    int retval = -EFAULT;
+    int retval = -ENOTTY;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+    if (ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl != NULL) { 
+        retval = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl(ecat_dev->net_dev, ifr, cmd);
+    } else
+#endif
     if (ecat_dev->net_dev->netdev_ops->ndo_do_ioctl != NULL) {
         retval = ecat_dev->net_dev->netdev_ops->ndo_do_ioctl(ecat_dev->net_dev, ifr, cmd);
     }
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-    else if (ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl != NULL) { 
-        retval = ecat_dev->net_dev->netdev_ops->ndo_eth_ioctl(ecat_dev->net_dev, ifr, cmd);
-    }
-#endif
 
     return retval;
 }
