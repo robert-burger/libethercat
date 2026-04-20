@@ -1479,6 +1479,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
                             local_ret, cmd, adr);
                 }
 
+                pool_remove(&pec->phw->tx_low, p_entry);
                 *wkc = 0u;
                 ret = EC_ERROR_TIMEOUT;
             } else {
