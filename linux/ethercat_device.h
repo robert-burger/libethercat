@@ -52,7 +52,6 @@ struct ethercat_device {
     spinlock_t queue_lock;
     struct sk_buff_head skb_queue_free;     //! \brief Free sk_buff for send or receive.
     struct sk_buff_head rx_queue;           //! \brief sk_buff queeu with received skb's.
-    struct sk_buff_head tx_queue;           //! \brief sk_buff queue with completed tx skb's.
 
     struct net_device *net_dev;             //! \brief Assigned network hardware device.
 

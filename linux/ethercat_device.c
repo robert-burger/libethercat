@@ -49,7 +49,12 @@ MODULE_AUTHOR("Robert Burger <robert.burger@dlr.de>");
 MODULE_DESCRIPTION("ethercat char device driver");
 MODULE_LICENSE("GPL");
 
-#define EC_SKB_BUFFERS 256
+#define ETH_FRAME_LEN_PAGE_SIZE \
+    (((ETH_FRAME_LEN) + (PAGE_SIZE) - 1) / (PAGE_SIZE)) * (PAGE_SIZE)
+
+int ecat_skb_buffers = 256;
+module_param(ecat_skb_buffers, int, 0644);
+MODULE_PARM_DESC(ecat_skb_buffers, "Number of sk_buff allocated during device create for send and receive.");
 
 // forward declarations
 int  ethercat_init(void);
@@ -205,17 +210,17 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     // init skb queues and wait queue
     spin_lock_init(&ecat_dev->queue_lock);
     init_swait_queue_head(&ecat_dev->rx_wait);
-    skb_queue_head_init(&ecat_dev->tx_queue);
     skb_queue_head_init(&ecat_dev->rx_queue);
     skb_queue_head_init(&ecat_dev->skb_queue_free);
 
-    for (i = 0; i < EC_SKB_BUFFERS; i++) {
-        struct sk_buff *skb = dev_alloc_skb(ETH_FRAME_LEN);
+    for (i = 0; i < ecat_skb_buffers; i++) {
+        struct sk_buff *skb = dev_alloc_skb(ETH_FRAME_LEN_PAGE_SIZE);
         if (!skb) {
             pr_err("EtherCAT-Char-Device %s: error allocating device socket buffer!\n", net_dev->name);
             goto error_exit;
         }
 
+        skb->len = 0;
         skb_queue_tail(&ecat_dev->skb_queue_free, skb);
     }
 
@@ -246,10 +251,6 @@ int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
 
     ecat_dev->net_dev->netdev_ops->ndo_stop(ecat_dev->net_dev);
 
-    while (!skb_queue_empty(&ecat_dev->tx_queue)) {
-        dev_kfree_skb(skb_dequeue(&ecat_dev->tx_queue));
-    }
-
     unsigned long flags = 0u;
     spin_lock_irqsave(&ecat_dev->queue_lock, flags);
     while (!skb_queue_empty(&ecat_dev->rx_queue)) {
@@ -262,8 +263,8 @@ int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
 
     // char device cleanup
-    device_destroy(ecat_chr_class, MKDEV(ecat_chr_major, ecat_dev->minor));
     cdev_del(&ecat_dev->cdev);
+    device_destroy(ecat_chr_class, MKDEV(ecat_chr_major, ecat_dev->minor));
 
     kfree(ecat_dev);
 	return 0;
