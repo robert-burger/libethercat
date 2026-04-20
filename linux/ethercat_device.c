@@ -60,7 +60,8 @@ static int          ethercat_device_release(struct inode *inode, struct file *fi
 static ssize_t      ethercat_device_read   (struct file *filp, char *buff, size_t len, loff_t *off);
 static ssize_t      ethercat_device_write  (struct file *filp, const char *buff, size_t len, loff_t *off);
 static long         ethercat_device_unlocked_ioctl(struct file *file, unsigned int num, unsigned long params);
-static int          dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *);
+static int          ethercat_device_netdev_do_ioctl(struct ethercat_device *ecat_dev, struct ifreq *ifr, int cmd);
+static int          dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *arg);
 
 static struct file_operations ethercat_device_fops = {
     .open           = ethercat_device_open,
@@ -101,7 +102,7 @@ typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
 kallsyms_lookup_name_t fcn_kallsyms_lookup_name;
 #endif
 
-int dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *) { return 0; }
+int dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *arg) { return 0; }
 fcn_devinet_ioctl_t fcn_devinet_ioctl = &dummy_fcn_devinet_ioctl;
 
 //================================================================================================
