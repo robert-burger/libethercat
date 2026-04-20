@@ -184,7 +184,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
 
     ecat_dev->net_dev = net_dev;
     ecat_dev->link_state = 0;
-    ecat_dev->minor = atomic_inc_return(&ecat_chr_minor) - 1;
+    ecat_dev->minor = atomic_fetch_inc(&ecat_chr_minor);
 
     cdev_init(&ecat_dev->cdev, &ethercat_device_fops);
     ecat_dev->cdev.owner  = THIS_MODULE;
