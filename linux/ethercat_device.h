@@ -49,6 +49,7 @@ struct ethercat_device {
     struct device *dev;                     //! \brief Linux device node in filesystem.
     unsigned minor;                         //! \brief Assigned device minor number.
     struct swait_queue_head rx_wait;        //! \brief Waitqueue for irq mode.
+    spinlock_t queue_lock;
     struct sk_buff_head skb_queue_free;     //! \brief Free sk_buff for send or receive.
     struct sk_buff_head rx_queue;           //! \brief sk_buff queeu with received skb's.
     struct sk_buff_head tx_queue;           //! \brief sk_buff queue with completed tx skb's.

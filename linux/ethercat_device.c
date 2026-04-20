@@ -210,6 +210,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
     pr_info("EtherCAT-Char-Device %s: created device file.\n", net_dev->name);
 
     // init skb queues and wait queue
+    spin_lock_init(&ecat_dev->queue_lock);
     init_swait_queue_head(&ecat_dev->rx_wait);
     skb_queue_head_init(&ecat_dev->tx_queue);
     skb_queue_head_init(&ecat_dev->rx_queue);
@@ -256,6 +257,8 @@ int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
         dev_kfree_skb(skb_dequeue(&ecat_dev->tx_queue));
     }
 
+    unsigned long flags = 0u;
+    spin_lock_irqsave(&ecat_dev->queue_lock, flags);
     while (!skb_queue_empty(&ecat_dev->rx_queue)) {
         dev_kfree_skb(skb_dequeue(&ecat_dev->rx_queue));
     }
@@ -263,6 +266,7 @@ int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     while (!skb_queue_empty(&ecat_dev->skb_queue_free)) {
         dev_kfree_skb(skb_dequeue(&ecat_dev->skb_queue_free));
     }
+    spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
 
     // char device cleanup
     device_destroy(ecat_chr_class, MKDEV(ecat_chr_major, ecat_dev->minor));
@@ -300,8 +304,24 @@ EXPORT_SYMBOL(ethercat_device_set_link);
 void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data, size_t size) 
 {
     struct sk_buff *skb;
+    unsigned long flags = 0u;
+
+    spin_lock_irqsave(&ecat_dev->queue_lock, flags);
 
     skb = skb_dequeue(&ecat_dev->skb_queue_free); 
+    if (!skb && ecat_dev->ethercat_polling) {
+        // clean up skb previously sent, maybe this gives us buffers back.
+        // unlock spinlock while calling poll_tx
+        spin_unlock_irqrestore(&ecat_dev->queue_lock, flags); 
+
+        (void)ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
+        
+        // relock spinlock and try to get sk_buff
+        flags = 0u;
+        spin_lock_irqsave(&ecat_dev->queue_lock, flags);
+        skb = skb_dequeue(&ecat_dev->skb_queue_free); 
+    }
+        
     if (!skb) {
         pr_warn("EtherCAT-Char-Device %s: out of buffers!\n", ecat_dev->net_dev->name);
     } else {
@@ -316,6 +336,8 @@ void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data,
             swake_up_one(&ecat_dev->rx_wait);
         }
     }
+    
+    spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
 
     ethercat_monitor_frame(&ecat_dev->monitor_dev, data, size);
 }
@@ -328,11 +350,11 @@ EXPORT_SYMBOL(ethercat_device_receive);
  * \param[in]   skb         Pointer to socket buffer to free.
  */
 void ethercat_device_sent_finished(struct ethercat_device *ecat_dev, struct sk_buff *skb) {
-    if (ecat_dev->ethercat_polling) {
-        skb_queue_tail(&ecat_dev->tx_queue, skb);
-    } else {
-        skb_queue_tail(&ecat_dev->skb_queue_free, skb);
-    }
+    unsigned long flags = 0u;
+    spin_lock_irqsave(&ecat_dev->queue_lock, flags);
+    skb->len = 0;
+    skb_queue_tail(&ecat_dev->skb_queue_free, skb);
+    spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
 }
 
 EXPORT_SYMBOL(ethercat_device_sent_finished);
@@ -360,6 +382,7 @@ static int ethercat_device_netdev_do_ioctl(struct ethercat_device *ecat_dev, str
  */
 static int ethercat_device_open(struct inode *inode, struct file *filp) {
     int local_ret = 0;
+    unsigned long flags = 0u;
     struct ethercat_device *ecat_dev;
     ecat_dev = (void *)container_of(inode->i_cdev, struct ethercat_device, cdev);
 
@@ -380,13 +403,24 @@ static int ethercat_device_open(struct inode *inode, struct file *filp) {
         } while (not_cleaned != 0);
     }
     
-    while (!skb_queue_empty(&ecat_dev->tx_queue)) { 
-        skb_queue_tail(&ecat_dev->skb_queue_free, skb_dequeue(&ecat_dev->tx_queue));
-    }
+    spin_lock_irqsave(&ecat_dev->queue_lock, flags);
 
     while (!skb_queue_empty(&ecat_dev->rx_queue)) { 
-        skb_queue_tail(&ecat_dev->skb_queue_free, skb_dequeue(&ecat_dev->rx_queue));
+        struct sk_buff *skb = skb_dequeue(&ecat_dev->rx_queue);
+        skb->len = 0;
+        skb_queue_tail(&ecat_dev->skb_queue_free, skb);
     }
+    
+    spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
+    
+    if (ecat_dev->ethercat_polling) {
+        int not_cleaned = 1;
+        // clean TX frames ...
+        do {
+            not_cleaned = ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
+        } while (not_cleaned != 0);
+    }
+
     ecat_dev->rx_timeout_ns = 1000000;
 
     // set user memory to file structure
@@ -425,27 +459,38 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
     struct sk_buff *skb;
     ssize_t copy_len = 0;
     struct ethercat_device *ecat_dev = (struct ethercat_device *)filp->private_data;
+    unsigned long flags = 0u;
 
     if (!netif_running(ecat_dev->net_dev)) {
         copy_len = -ENETDOWN;
     } else if (!access_ok(buff, len)) {
         copy_len = -EFAULT;
     } else {
-        if ((skb = skb_dequeue(&ecat_dev->rx_queue)) == NULL) {
+        spin_lock_irqsave(&ecat_dev->queue_lock, flags);
+        skb = skb_dequeue(&ecat_dev->rx_queue);
+
+        if (skb == NULL) {
             if (ecat_dev->ethercat_polling) {
-                copy_len = -EAGAIN;
+                copy_len = -ETIMEDOUT;
                 s64 start_ns = ktime_get_ns();
 
                 do {
-                    // controller polling func
+                    // unlock before poll func
+                    spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
+
+                    // controller polling funcs (also cleanup tx buffers)
+                    (void)ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
                     (void)ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_RX);
+                    
+                    // lock again
+                    flags = 0u;
+                    spin_lock_irqsave(&ecat_dev->queue_lock, flags);
 
                     // check indices
                     skb = skb_dequeue(&ecat_dev->rx_queue);
 
                     // check timeout
                     if ((ktime_get_ns() - start_ns) >= ecat_dev->rx_timeout_ns) {
-                        copy_len = -ETIMEDOUT;
                         break;
                     }
 
@@ -454,9 +499,16 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
                     }
                 } while (!skb);
             } else { // interrupt mode
-                if (!swait_event_interruptible_timeout_exclusive(ecat_dev->rx_wait, !skb_queue_empty(&ecat_dev->rx_queue), HZ)) {
-                    copy_len = -EAGAIN;
-                } else {
+                // unlock before poll func
+                spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
+                
+                int wait_ret = swait_event_interruptible_timeout_exclusive(ecat_dev->rx_wait, !skb_queue_empty(&ecat_dev->rx_queue), HZ);
+
+                // lock again
+                flags = 0u;
+                spin_lock_irqsave(&ecat_dev->queue_lock, flags);
+
+                if (wait_ret) {
                     skb = skb_dequeue(&ecat_dev->rx_queue);
                 }
             }
@@ -468,8 +520,13 @@ static ssize_t ethercat_device_read(struct file *filp, char *buff, size_t len, l
                 copy_len = -EFAULT;
             }
 
+            flags = 0u;
+            skb->len = 0;
             skb_queue_tail(&ecat_dev->skb_queue_free, skb);
         }
+        
+
+        spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
     }
 
     return copy_len;
@@ -489,6 +546,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
     struct sk_buff *skb;
     ssize_t ret = 0;
     struct ethercat_device *ecat_dev = (struct ethercat_device *)filp->private_data;
+    unsigned long flags = 0u;
 
     if (!netif_running(ecat_dev->net_dev)) {
         ret = -ENETDOWN;
@@ -497,7 +555,9 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
     } else if (len > ETH_FRAME_LEN) {
         ret = -EINVAL;
     } else {
+        spin_lock_irqsave(&ecat_dev->queue_lock, flags);
         skb = skb_dequeue(&ecat_dev->skb_queue_free);
+        spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
         if (!skb) {
             pr_warn("EtherCAT-Char-Device %s: no more buffer available!\n", ecat_dev->net_dev->name);
             ret = -ENOMEM;
@@ -514,19 +574,24 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
                 local_ret = skb->dev->netdev_ops->ndo_start_xmit(skb, skb->dev);
                 ethercat_monitor_frame(&ecat_dev->monitor_dev, skb->data, len);
                 if (local_ret == NETDEV_TX_OK) {
+                    skb = NULL; // will be returned in 'ethercat_device_sent_finished'
                     ret = len;
-                
-                    if (ecat_dev->ethercat_polling) {
-                        while ((skb = skb_dequeue(&ecat_dev->tx_queue)) == NULL) {
-                            (void)ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
-                        }
-                    }
                 } else {
                     ret = -EBUSY;
                 }
+                
+                if (ecat_dev->ethercat_polling) {
+                    // clean up skb previously sent, this may not clean up the current skb but from older sends.
+                    (void)ethercat_device_netdev_do_ioctl(ecat_dev, NULL, ETHERCAT_DEVICE_NET_DEVICE_DO_POLL_TX);
+                }
             }
 
-            skb_queue_tail(&ecat_dev->skb_queue_free, skb);
+            if (skb) {
+                spin_lock_irqsave(&ecat_dev->queue_lock, flags);
+                skb->len = 0;
+                skb_queue_tail(&ecat_dev->skb_queue_free, skb);
+                spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
+            }
         }
     }
 
@@ -542,7 +607,8 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
  */
 static unsigned int ethercat_device_poll(struct file *filp, struct poll_table_struct *poll_table) {
     struct ethercat_device *ecat_dev;
-    unsigned int mask = 0;
+    unsigned int mask = 0u;
+    unsigned long flags = 0u;
 
     ecat_dev = (struct ethercat_device *)filp->private_data;
 
@@ -555,9 +621,11 @@ static unsigned int ethercat_device_poll(struct file *filp, struct poll_table_st
         mask |= POLLOUT | POLLWRNORM;
     }
 
+    spin_lock_irqsave(&ecat_dev->queue_lock, flags);
     if (!skb_queue_empty(&ecat_dev->rx_queue)) {
         mask |= POLLIN | POLLRDNORM;
     }
+    spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
 
     return mask;
 }
