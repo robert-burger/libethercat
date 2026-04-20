@@ -57,7 +57,6 @@ void ethercat_exit(void);
 
 static int          ethercat_device_open   (struct inode *inode, struct file *file);
 static int          ethercat_device_release(struct inode *inode, struct file *file);
-static unsigned int ethercat_device_poll   (struct file *file, struct poll_table_struct *poll_table);
 static ssize_t      ethercat_device_read   (struct file *filp, char *buff, size_t len, loff_t *off);
 static ssize_t      ethercat_device_write  (struct file *filp, const char *buff, size_t len, loff_t *off);
 static long         ethercat_device_unlocked_ioctl(struct file *file, unsigned int num, unsigned long params);
@@ -66,7 +65,6 @@ static int          dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, v
 static struct file_operations ethercat_device_fops = {
     .open           = ethercat_device_open,
     .release        = ethercat_device_release,
-    .poll           = ethercat_device_poll,
     .read           = ethercat_device_read,
     .write          = ethercat_device_write,
     .unlocked_ioctl = ethercat_device_unlocked_ioctl
@@ -596,38 +594,6 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
     }
 
     return ret;
-}
-
-//! driver poll function.
-/*! Called by poll and select calls from userlevel.
- *
- * @param[in]   filp        Pointer to open file.
- * @param[in]   poll_table  poll_table_struct struct.
- * @return poll mask
- */
-static unsigned int ethercat_device_poll(struct file *filp, struct poll_table_struct *poll_table) {
-    struct ethercat_device *ecat_dev;
-    unsigned int mask = 0u;
-    unsigned long flags = 0u;
-
-    ecat_dev = (struct ethercat_device *)filp->private_data;
-
-    debug_pr_info("ethercat char dev driver: poll called\n");
-
-    //poll_wait(filp, &ecat_dev->rx_wait, poll_table);
-    mask = ecat_dev->poll_mask;
-
-    if (ecat_dev->link_state) {
-        mask |= POLLOUT | POLLWRNORM;
-    }
-
-    spin_lock_irqsave(&ecat_dev->queue_lock, flags);
-    if (!skb_queue_empty(&ecat_dev->rx_queue)) {
-        mask |= POLLIN | POLLRDNORM;
-    }
-    spin_unlock_irqrestore(&ecat_dev->queue_lock, flags);
-
-    return mask;
 }
 
 static long ethercat_device_unlocked_ioctl(struct file *filp, unsigned int num, unsigned long arg) {
