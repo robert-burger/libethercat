@@ -84,13 +84,7 @@ static char debug_buf[DBG_BUF_SIZE];
 #define debug_pr_info(...) pr_info(__VA_ARGS__)
 #define debug_printk(...) printk(__VA_ARGS__)
 #define debug_print_frame(msg, buf, buflen) {    \
-    int debug_print_frame_pos = 0, i;  \
-    char *debug_print_frame_buf = &debug_buf[0]; \
-    for (i = 0; i < buflen; ++i) {    \
-        debug_print_frame_pos += snprintf(debug_print_frame_buf+debug_print_frame_pos, DBG_BUF_SIZE-debug_print_frame_pos, "%02X", buf[i]);  \
-    }   \
-    pr_info(msg ": %s\n", debug_buf);    \
-}
+    print_hex_dump_bytes(msg, DUMP_PREFIX_NONE, buf, buflen);
 #else
 #define debug_pr_info(...)
 #define debug_printk(...)
