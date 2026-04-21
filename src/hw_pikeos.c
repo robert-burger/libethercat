@@ -281,7 +281,7 @@ int hw_device_pikeos_recv(struct hw_common *phw) {
     } else { /* use_sbuf == OSAL_FALSE */
         pframe = (ec_frame_t *)&phw_pikeos->recv_frame[0];
         P4_size_t read_size;
-        P4_e_t localret = vm_read(&phw_pikeos->fd, pframe, ETH_FRAME_LEN, &read_size);
+        P4_e_t localret = vm_read(&phw_pikeos->fd, pframe, EC_ETH_FRAME_LEN, &read_size);
 
         if (localret != P4_E_OK) {
             ret = EC_ERROR_UNAVAILABLE;

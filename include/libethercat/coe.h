@@ -76,6 +76,24 @@ typedef struct ec_coe {
     ec_coe_emergency_message_t emergencies[LEC_MAX_COE_EMERGENCIES];    //!< \brief emergency message ring buffer.
 } ec_coe_t;             //!< \brief CoE type.
 
+//! CoE mailbox header
+typedef struct {
+    osal_uint16_t number   : 9;
+    osal_uint16_t reserved : 3;
+    osal_uint16_t service  : 4;
+} PACKED ec_coe_header_t;
+
+typedef struct {
+    osal_uint8_t size_indicator     : 1;
+    osal_uint8_t transfer_type      : 1;
+    osal_uint8_t data_set_size      : 2;
+    osal_uint8_t complete           : 1;
+    osal_uint8_t command            : 3;
+    osal_uint16_t index;
+    osal_uint8_t  sub_index;
+} PACKED ec_sdo_init_download_header_t;
+
+
 //! CoE mailbox types
 enum {
     EC_COE_EMERGENCY  = 0x01,               //!< \brief emergency message

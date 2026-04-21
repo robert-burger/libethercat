@@ -108,10 +108,11 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
     phw_file->common.send_finished = hw_device_file_send_finished;
     phw_file->common.get_tx_buffer = hw_device_file_get_tx_buffer;
     phw_file->common.close = hw_device_file_close;
+    phw_file->rx_timeout_ns = 100000000;
     
-    int flags = O_RDWR;
-    uint64_t rx_timeout_ns = 1000000;
-    uint64_t link_timeout_sec = 5;
+    int flags = O_RDWR | O_NONBLOCK;
+    uint64_t link_timeout_sec = 5, rx_usecs = 0, tx_usecs = 0;
+    unsigned int monitor = 0;
 
     char *tmp;
     if ((tmp = strchr(devname, ':')) != NULL) {
@@ -129,14 +130,23 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
                 value++; 
 
                 if (strcmp(act, "rx_timeout_nsec") == 0) {
-                    rx_timeout_ns = strtoull(value, NULL, 10);
+                    phw_file->rx_timeout_ns = strtoull(value, NULL, 10);
                 } else if (strcmp(act, "link_timeout_sec") == 0) {
                     link_timeout_sec = strtoull(value, NULL, 10);
+                } else if (strcmp(act, "rx_usecs") == 0) {
+                    rx_usecs = strtoull(value, NULL, 10);
+                } else if (strcmp(act, "tx_usecs") == 0) {
+                    tx_usecs = strtoull(value, NULL, 10);
                 }
             } else {
                 if (strcmp(act, "polling") == 0) {
                     ec_log(10, "HW_OPEN", "switching to polling mode\n");
                     phw_file->polling_mode = OSAL_TRUE;
+                } else if (strcmp(act, "blocking") == 0) {
+                    ec_log(10, "HW_OPEN", "using kernel blocking\n");
+                    flags &= ~O_NONBLOCK;
+                } else if (strcmp(act, "monitor") == 0) {
+                    monitor = 1;
                 }
             }
 
@@ -195,17 +205,21 @@ int hw_device_file_open(struct hw_file *phw_file, struct ec *pec, const osal_cha
         if (ioctl(phw_file->fd, ETHERCAT_DEVICE_GET_POLLING, &pollval) >= 0) {
             phw_file->polling_mode = pollval == 0 ? OSAL_FALSE : OSAL_TRUE;
         }
-        
-        if (phw_file->polling_mode == OSAL_TRUE) {
-            ec_log(10, "HW_OPEN", "set rx polling timeout to %" PRIu64 " ns.\n", rx_timeout_ns);
-            (void)ioctl(phw_file->fd, ETHERCAT_DEVICE_SET_POLLING_RX_TIMEOUT, &rx_timeout_ns);
-        }
 
-        unsigned int monitor = 0;
         (void)ioctl(phw_file->fd, ETHERCAT_DEVICE_MONITOR_ENABLE, &monitor);
 #endif
 
         ec_log(10, "HW_OPEN", "%s polling mode\n", phw_file->polling_mode == OSAL_FALSE ? "not using" : "using");
+    }
+
+    int tmp_ret = 0;
+    ec_log(10, "HW_OPEN", "set rx_usecs to %lu\n", rx_usecs);
+    if ((tmp_ret = ioctl(phw_file->fd, ETHERCAT_DEVICE_SET_RX_USECS, &rx_usecs)) != 0) {
+	ec_log(1, "HW_OPEN", "error on ioctl: %d -> %s\n", tmp_ret, strerror(tmp_ret));
+    }
+    ec_log(10, "HW_OPEN", "set tx_usecs to %lu\n", tx_usecs);
+    if ((tmp_ret =ioctl(phw_file->fd, ETHERCAT_DEVICE_SET_TX_USECS, &tx_usecs)) != 0) {
+	ec_log(1, "HW_OPEN", "error on ioctl: %d -> %s\n", tmp_ret, strerror(tmp_ret));
     }
 
     if (ret == EC_OK) {
@@ -264,7 +278,7 @@ osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file) {
 
     do {
         // using tradional recv function
-        bytesrx = read(phw_file->fd, pframe, ETH_FRAME_LEN);
+        bytesrx = read(phw_file->fd, pframe, EC_ETH_FRAME_LEN);
 
         if (bytesrx > 0) {
             ret = hw_process_rx_frame(&phw_file->common, pframe);
@@ -272,8 +286,10 @@ osal_bool_t hw_device_file_recv_internal(struct hw_file *phw_file) {
             break;
         }
     } while (ret == OSAL_FALSE);
-    
-    phw_file->common.last_rx_duration_ns = osal_timer_gettime_nsec() - rx_start;
+   
+    if ((ret == OSAL_TRUE) && (phw_file->last_pool_type == POOL_HIGH)) {
+        phw_file->common.last_rx_duration_ns = osal_timer_gettime_nsec() - rx_start;
+    }
 
     return ret;
 }
@@ -363,11 +379,10 @@ int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t po
     assert(phw != NULL);
     assert(pframe != NULL);
 
-    (void)pool_type;
-
     int ret = EC_OK;
     ec_t *pec = phw->pec;
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
+    phw_file->last_pool_type = pool_type;
 
     // no more datagrams need to be sent or no more space in frame
     osal_ssize_t bytestx = write(phw_file->fd, pframe, pframe->len);
@@ -398,11 +413,10 @@ int hw_device_file_send(struct hw_common *phw, ec_frame_t *pframe, pooltype_t po
  */
 void hw_device_file_send_finished(struct hw_common *phw) {
     assert(phw != NULL);
-    int retry_cnt = 10;
 
     ec_t *pec = phw->pec;
     struct hw_file *phw_file = container_of(phw, struct hw_file, common);
-    
+
     // in case of polling do receive now
     if (phw_file->polling_mode == OSAL_TRUE) {
         while (phw_file->frames_send > 0) {
@@ -413,21 +427,21 @@ void hw_device_file_send_finished(struct hw_common *phw) {
             phw_file->common.bytes_last_sent = phw_file->common.bytes_sent;
             phw_file->common.bytes_sent = 0;
 
-            if (hw_device_file_recv_internal(phw_file) == OSAL_FALSE) {
-                if (    (pec->master_state != EC_STATE_SAFEOP) &&
-                        (pec->master_state != EC_STATE_OP) &&
-                        (phw_file->frames_send > 0)) {
-
-                    if (--retry_cnt > 0) {
-                        ec_log(100, "HW_RX", "Timeout on receive, retrying (%d) ...\n", retry_cnt);
-                        continue;
-                    }
+            osal_bool_t local_ret = OSAL_FALSE;
+            osal_timer_t timeout;
+            osal_timer_init(&timeout, phw_file->rx_timeout_ns);
+            while (osal_timer_expired(&timeout) != OSAL_ERR_TIMEOUT) {
+                local_ret = hw_device_file_recv_internal(phw_file);
+                if (local_ret == OSAL_TRUE) {
+                    phw_file->frames_send--;
+                    break;
                 }
-
-                break;
             }
 
-            phw_file->frames_send--;
+            if (local_ret == OSAL_FALSE) {
+                ec_log(100, "HW_RX", "Timeout on receive\n");
+                break;
+            }
         }
 
         if (phw_file->frames_send > 0) {

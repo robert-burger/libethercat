@@ -43,6 +43,7 @@
 
 #include <libosal/types.h>
 
+#include "libethercat/settings.h"
 #include "libethercat/common.h"
 #include "libethercat/dc.h"
 #include "libethercat/slave.h"
@@ -53,6 +54,10 @@
 #include "libethercat/pool.h"
 #include "libethercat/async_loop.h"
 #include "libethercat/eeprom.h"
+
+#if LIBETHERCAT_BUILD_POSIX == 1
+#include "libethercat/veth.h"
+#endif
 
 /** \defgroup ec_group EC Master
  *
@@ -233,12 +238,11 @@ typedef struct ec {
                                      * from the EtherCAT slave mailboxes. This 
                                      * may be e.g. emergency messages...
                                      */
-    
-    int tun_fd;                     //!< tun device file descriptor
-    osal_uint32_t tun_ip;           //!< tun device ip addres
-    osal_task_t tun_tid;            //!< tun device handler thread id.
-    int tun_running;                //!< tun device handler run flag.
-    
+
+#if LIBETHERCAT_BUILD_POSIX == 1
+    ec_veth_t veth;
+#endif
+
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state
     int state_transition_pending;   //!< state transition is currently pending
@@ -262,6 +266,8 @@ typedef struct ec {
                                     
     ec_statistics_t stats;
 
+    void *ec_time_func_user;
+    osal_uint64_t (*ec_time_func)(ec_t *pec);
 
     void *ec_log_func_user;
     void (*ec_log_func)(ec_t *pec, int lvl, const osal_char_t *format, ...) __attribute__ ((format (printf, 3, 4)));

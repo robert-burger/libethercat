@@ -49,8 +49,8 @@ typedef struct hw_sock_raw {
 
     int sockfd;                     //!< raw socket file descriptor
     
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    osal_uint8_t send_frame[EC_ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[EC_ETH_FRAME_LEN]; //!< \brief Static receive frame.
 
     // receiver thread settings
     osal_task_t rxthread;           //!< receiver thread handle

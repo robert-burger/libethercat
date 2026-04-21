@@ -266,7 +266,7 @@ int hw_device_sock_raw_recv(struct hw_common *phw) {
     ec_frame_t *pframe = (ec_frame_t *) &phw_sock_raw->recv_frame;
 
     // using tradional recv function
-    osal_ssize_t bytesrx = recv(phw_sock_raw->sockfd, pframe, ETH_FRAME_LEN, 0);
+    osal_ssize_t bytesrx = recv(phw_sock_raw->sockfd, pframe, EC_ETH_FRAME_LEN, 0);
 
     if (bytesrx > 0) {
         hw_process_rx_frame(phw, pframe);

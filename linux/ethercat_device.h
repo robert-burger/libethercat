@@ -38,37 +38,31 @@
 #include <linux/etherdevice.h>
 #include <linux/ioctl.h>
 
-/* Structure to hold EtherCAT char device
+#include "ethercat_tun.h"
+#include "ethercat_monitor.h"
+
+/**
+ * Structure to hold EtherCAT char device
  */
 struct ethercat_device {
     struct cdev cdev;                       //! \brief Linux character device.
     struct device *dev;                     //! \brief Linux device node in filesystem.
     unsigned minor;                         //! \brief Assigned device minor number.
-    struct swait_queue_head ir_queue;       //! \brief Waitqueue for irq mode.
+    struct swait_queue_head rx_wait;        //! \brief Waitqueue for irq mode.
+    spinlock_t queue_lock;
+    struct sk_buff_head skb_queue_free;     //! \brief Free sk_buff for send or receive.
+    struct sk_buff_head rx_queue;           //! \brief sk_buff queeu with received skb's.
 
     struct net_device *net_dev;             //! \brief Assigned network hardware device.
 
-    uint8_t link_state;
-    unsigned int poll_mask;
-
-    // internal ring buffer with socket buffers to be sent on network device.
-#define EC_TX_RING_SIZE 0x100
-    struct sk_buff *tx_skb[EC_TX_RING_SIZE];
-    unsigned int tx_skb_index_next;
-
-    // internal ring buffer with socket buffers containing received EtherCAT frames.
-#define EC_RX_RING_SIZE 0x100
-    struct sk_buff *rx_skb[EC_RX_RING_SIZE];
-    unsigned int rx_skb_index_last_recv;
-    unsigned int rx_skb_index_last_read;
+    uint8_t link_state;                     //! \brief Identifier if we have link.
+    unsigned int poll_mask;                 //! \brief Receive poll mask.
 
     bool ethercat_polling;                  //! \brief EtherCAT polling mode (no irq's)
     uint64_t rx_timeout_ns;                 //! \brief Timeout in polling mode.
 
-    // EtherCAT monitor device 
-    bool monitor_enabled;                   //! \brief Monitor device enabled.
-    struct net_device *monitor_dev;         //! \brief Monitor device net_dev.
-    struct net_device_stats monitor_stats;  //! \brief Monitor device statistics.
+    struct monitor_dev monitor_dev;         //! \brief Monitor device (network device).
+    struct tun_dev tun_dev;                 //! \brief TUN device for virtual network (e.g EoE).
 };
 
 //! \brief Create an characted device node for provided network device.
@@ -77,6 +71,13 @@ struct ethercat_device {
  * \return Pointer to newly created EtherCAT device on success.
  */
 struct ethercat_device *ethercat_device_create(struct net_device *net_dev);
+
+//! \brief Sent finished function called from network device if a frame was sent.
+/*!
+ * \param[in]   ecat_dev    Pointer to EtherCAT device.
+ * \param[in]   skb         Pointer to socket buffer to free.
+ */
+void ethercat_device_sent_finished(struct ethercat_device *ecat_dev, struct sk_buff *skb);
 
 //! \brief Destructs an EtherCAT device.
 /*!
@@ -99,6 +100,10 @@ void ethercat_device_receive(struct ethercat_device *ecat_dev, const void *data,
  * \param[in]   link        New link state.
  */
 void ethercat_device_set_link(struct ethercat_device *ecat_dev, bool link);
+
+//! \brief Kernel func, which is not exported. Collected via kallsym.
+typedef int (*fcn_devinet_ioctl_t)(struct net *net, unsigned int cmd, void __user *arg);
+extern fcn_devinet_ioctl_t fcn_devinet_ioctl;
 
 #endif 
 

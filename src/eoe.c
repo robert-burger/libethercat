@@ -42,6 +42,17 @@
 #include "libethercat/eoe.h"
 #include "libethercat/error_codes.h"
 
+#if LIBETHERCAT_BUILD_POSIX == 1
+#include "libethercat/veth.h"
+#else
+
+typedef struct eth_frame {
+    osal_size_t frame_size;
+    osal_uint8_t frame_data[1518];
+} eth_frame_t;
+
+#endif
+
 #include <assert.h>
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
@@ -51,35 +62,8 @@
 #include <unistd.h>
 #endif
 
-#ifdef LIBETHERCAT_HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-
-#ifdef LIBETHERCAT_HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#ifdef LIBETHERCAT_HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#ifdef LIBETHERCAT_HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#ifdef LIBETHERCAT_HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-
 #ifdef LIBETHERCAT_HAVE_INTTYPES_H
 #include <inttypes.h>
-#endif
-
-#if LIBETHERCAT_BUILD_POSIX
-#include <linux/if.h>
-#include <linux/if_tun.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #endif
 
 #include <errno.h>
@@ -169,11 +153,7 @@ typedef struct {
     ec_eoe_set_ip_parameter_response_header_t   sip_hdr;
 } PACKED ec_eoe_set_ip_parameter_response_t;
 
-typedef struct eth_frame {
-    osal_size_t frame_size;
-    osal_uint8_t frame_data[1518];
-} eth_frame_t;
-
+#ifdef EOE_DEBUG
 static void eoe_debug_print(ec_t *pec, const osal_char_t *ctx, const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
 #define EOE_DEBUG_BUFFER_SIZE   1024
     static osal_char_t eoe_debug_buffer[EOE_DEBUG_BUFFER_SIZE];
@@ -183,8 +163,17 @@ static void eoe_debug_print(ec_t *pec, const osal_char_t *ctx, const osal_char_t
         pos += snprintf(&eoe_debug_buffer[pos], EOE_DEBUG_BUFFER_SIZE-pos, "%02X", frame[i]);
     }
 
-    ec_log(100, ctx, "%s\n", eoe_debug_buffer);
+    ec_log(10, ctx, "%s\n", eoe_debug_buffer);
 }
+#else
+static void eoe_debug_print(ec_t *pec, const osal_char_t *ctx, const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
+    (void)pec;
+    (void)ctx;
+    (void)msg;
+    (void)frame;
+    (void)frame_len;
+};
+#endif
 
 //! initialize EoE structure 
 /*!
@@ -580,15 +569,19 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     frame_offset += frag_len;
 
                     if (read_buf->eoe_hdr.last_fragment != 0u) {
-                        if (pec->tun_fd > 0) {
 #if LIBETHERCAT_BUILD_POSIX == 1
-                            int local_ret = write(pec->tun_fd, eth_frame->frame_data, eth_frame->frame_size);
-			    if (local_ret < 0) {
-				    ec_log(1, "EOE_RECV", "writing failed!\n");
-			    }
-#endif
+                        if (pec->veth.fd > 0) {
+                            int local_ret = ec_veth_send_frame(pec, eth_frame->frame_data, eth_frame->frame_size);
+                            if (local_ret < 0) {
+                                ec_log(1, "EOE_RECV", "writing failed!\n");
+                            }
                             pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                         } else {
+#else   
+                        {
+#endif
+                            eoe_debug_print(pec, "EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
+
                             // put in receive pool, nobody cared so far
                             pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                         }
@@ -605,17 +598,21 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     ec_eoe_wait(pec, slave, &p_entry); 
                 }
             } else {
-                if (pec->tun_fd > 0) {
+#if LIBETHERCAT_BUILD_POSIX == 1
+                if (pec->veth.fd > 0) {
                     eoe_debug_print(pec, "EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
 
-#if LIBETHERCAT_BUILD_POSIX == 1
-                    int local_ret = write(pec->tun_fd, eth_frame->frame_data, frame_offset);
-		    if (local_ret < 0) {
-			    ec_log(1, "EOE_RECV", "writing failed!\n");
-		    }
-#endif
+                    int local_ret = ec_veth_send_frame(pec, eth_frame->frame_data, frame_offset);
+                    if (local_ret < 0) {
+                        ec_log(1, "EOE_RECV", "writing failed!\n");
+                    }
                     pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
+#else
+                {
+#endif
+                    eoe_debug_print(pec, "EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
+
                     // put in receive pool, nobody cared so far.
                     pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                 }
@@ -635,191 +632,6 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     }
 
     return ret;
-}
-
-#if LIBETHERCAT_BUILD_POSIX == 1
-
-//! \brief Handler thread for tap interface
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- */
-static void ec_eoe_tun_handler(ec_t *pec) {
-    assert(pec != NULL);
-
-    eth_frame_t tmp_frame;
-
-    while (pec->tun_running == 1) {
-        int ret;
-        fd_set rd_set;
-
-        FD_ZERO(&rd_set);
-        FD_SET(pec->tun_fd, &rd_set);
-
-        struct timeval tv = {0, 100000};   // sleep for 100 ms
-        ret = select(pec->tun_fd + 1, &rd_set, NULL, NULL, &tv);
-        int local_errno = errno;
-
-        if ((ret < 0) && (local_errno == EINTR)){
-            (void)printf("select returned %d, errno %d\n", ret, errno);
-            continue;
-        }
-
-        if (ret < 0) {
-            perror("select()");
-        } else {
-            if (FD_ISSET(pec->tun_fd, &rd_set) != 0) {            
-                int rd = read(pec->tun_fd, &tmp_frame.frame_data[0], sizeof(tmp_frame.frame_data));
-                if (rd > 0) {
-                    // simple switch here 
-                    eoe_debug_print(pec, "EOE_TUN_HANDLER", "got eth frame", tmp_frame.frame_data, rd);
-
-                    static const osal_uint8_t broadcast_mac[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-                    osal_uint8_t *dst_mac = &tmp_frame.frame_data[0];
-                    int is_broadcast = 0;
-                    if (memcmp(broadcast_mac, dst_mac, 6) == 0) {
-                        is_broadcast = 1;
-                    }
-
-                    for (osal_uint16_t slave = 0; slave < pec->slave_cnt; ++slave) {
-                        ec_slave_ptr(slv, pec, slave);
-                        if (    !slv->eoe.use_eoe || 
-                                (slv->act_state == EC_STATE_INIT)   ||
-                                (slv->act_state == EC_STATE_BOOT)) {
-                            continue;
-                        }
-
-                        if (is_broadcast || (memcmp(slv->eoe.mac, dst_mac, 6) == 0)) {
-                            ec_log(100, "EOE_TUN_HANDLER", "slave %2d: sending eoe frame\n", slave);
-                            (void)ec_eoe_send_frame(pec, slave, tmp_frame.frame_data, rd);
-
-                            if (!is_broadcast) {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-static void *ec_eoe_tun_handler_wrapper(void *arg) {
-    // cppcheck-suppress misra-c2012-11.5
-    ec_t *pec = arg;
-    ec_eoe_tun_handler(pec);
-    return NULL;
-}
-
-#endif
-
-// setup tun interface
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- */
-int ec_eoe_setup_tun(ec_t *pec) {
-    assert(pec != NULL);
-
-    int ret = EC_OK;
-
-#if LIBETHERCAT_BUILD_POSIX == 1
-    int s;
-    struct ifreq ifr;
-    (void)memset(&ifr, 0, sizeof(ifr));
-
-    // open tun device
-    pec->tun_fd = open("/dev/net/tun", O_RDWR);
-    if (pec->tun_fd == -1) {
-        ec_log(1, "EOE_SETUP_TUN", "could not open /dev/net/tun\n");
-        ret = EC_ERROR_UNAVAILABLE;
-    } 
-
-    if (ret == EC_OK) {
-        ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
-
-        if (ioctl(pec->tun_fd, TUNSETIFF, (void *)&ifr) != 0) {
-            ec_log(1, "EOE_SETUP_TUN", "could not request tun/tap device\n");
-            close(pec->tun_fd);
-            pec->tun_fd = 0;
-            ret = EC_ERROR_UNAVAILABLE;
-        } 
-    }
-
-    if (ret == EC_OK) {
-        ec_log(10, "EOE_SETUP_TUN", "using interface %s\n", ifr.ifr_name);
-
-        // Create a socket
-        s = socket(AF_INET, SOCK_DGRAM, 0);
-        if (s < 0) {
-            perror("socket");
-            ret = EC_ERROR_UNAVAILABLE;
-        } 
-    }
-
-    if (ret == EC_OK) {
-        if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) { // Get interface flags
-            perror("cannot get interface flags");
-            ret = EC_ERROR_UNAVAILABLE;
-        } 
-    }
-
-    if (ret == EC_OK) {
-        // Turn on interface
-        ifr.ifr_flags |= IFF_UP;
-        if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0) {
-            (void)fprintf(stderr, "ifup: failed ");
-            perror(ifr.ifr_name);
-            ret = EC_ERROR_UNAVAILABLE;
-        } 
-    }
-
-    if (ret == EC_OK) {
-        // Set interface address
-        struct sockaddr_in  my_addr;
-        bzero((osal_char_t *) &my_addr, sizeof(my_addr));
-        my_addr.sin_family = AF_INET;
-        my_addr.sin_addr.s_addr = htonl(pec->tun_ip);
-        (void)memcpy(&ifr.ifr_addr, &my_addr, sizeof(struct sockaddr));
-
-        if (ioctl(s, SIOCSIFADDR, &ifr) < 0) {
-            (void)fprintf(stderr, "Cannot set IP address. ");
-            perror(ifr.ifr_name);
-            ret = EC_ERROR_UNAVAILABLE;
-        } else {
-            pec->tun_running = 1;
-            osal_task_attr_t attr;
-            attr.policy = OSAL_SCHED_POLICY_FIFO;
-            attr.priority = 5;
-            attr.affinity = 0xFF;
-            (void)strcpy(&attr.task_name[0], "ecat.tun");
-            osal_task_create(&pec->tun_tid, &attr, ec_eoe_tun_handler_wrapper, pec);
-        }
-    }
-#else 
-    (void)pec;
-#endif
-
-    return ret;
-}
-
-// Destroy tun interface
-/*!
- * \param[in] pec           Pointer to ethercat master structure, 
- *                          which you got from \link ec_open \endlink.
- */
-void ec_eoe_destroy_tun(ec_t *pec) {
-    assert(pec != NULL);
-
-    if (pec->tun_running == 1) {
-        pec->tun_running = 0;
-#if LIBETHERCAT_BUILD_POSIX == 1
-        osal_task_join(&pec->tun_tid, NULL);
-
-        close(pec->tun_fd);
-        pec->tun_fd = 0;
-#endif
-    }
 }
 
 #endif /* LIBETHERCAT_MBX_SUPPORT_EOE == 1 */

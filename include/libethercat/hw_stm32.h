@@ -52,8 +52,8 @@ typedef struct hw_stm32 {
     int frames_sent;
     ETH_TxPacketConfig TxConfig;
 
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    osal_uint8_t send_frame[EC_ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[EC_ETH_FRAME_LEN]; //!< \brief Static receive frame.
 } hw_stm32_t;
 
 // HTONS MACRO -> configured in config.h (libethcat)

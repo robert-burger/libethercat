@@ -51,6 +51,8 @@
 #include <drv/sbuf_hdr.h>
 #endif
 
+#define EC_ETH_FRAME_LEN   0x1518
+
 #define container_of(ptr, type, member) ({ \
         __typeof__( ((type *)0)->member ) *__mptr = (void *)(ptr); \
         (type *)( (char *)__mptr - offsetof(type,member) );})
@@ -115,8 +117,6 @@ typedef int (*hw_device_get_tx_buffer_t)(struct hw_common *phw, ec_frame_t **ppf
  */
 typedef int (*hw_device_close_t)(struct hw_common *phw);
 
-#define ETH_FRAME_LEN   0x1518
-
 //! hardware structure
 typedef struct hw_common {
     struct ec *pec;                 //!< Pointer to EtherCAT master structure.
@@ -134,12 +134,12 @@ typedef struct hw_common {
     osal_size_t bytes_last_sent;    //!< \brief Bytes last sent.
     osal_timer_t next_cylce_start;  //!< \brief Next cycle start time.
 
-    hw_device_recv_t recv;                      //!< \biref Function to receive frame from device.
+    hw_device_recv_t recv;                      //!< \brief Function to receive frame from device.
     hw_device_send_t send;                      //!< \brief Function to send frames via device.
     hw_device_send_finished_t send_finished;    //!< \brief Function to be called after frames were sent.
     hw_device_get_tx_buffer_t get_tx_buffer;    //!< \brief Function to retreave next TX buffer.
     hw_device_close_t close;                    //!< \brief Function to close hw layer.
-                                                
+
     osal_uint64_t last_tx_duration_ns;
     osal_uint64_t last_rx_duration_ns;
 } hw_common_t;                 //!< \brief Hardware struct type. 
@@ -184,6 +184,13 @@ int hw_tx_low(struct hw_common *phw);
  * \return 0 or error code
  */
 int hw_tx(struct hw_common *phw);
+
+//! start receiving queued ethercat datagrams in polling modes
+/*!
+ * \param phw hardware handle
+ * \return 0 or error code
+ */
+int hw_rx(struct hw_common *phw);
 
 //! Process a received EtherCAT frame
 /*!

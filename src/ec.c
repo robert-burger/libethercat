@@ -1147,7 +1147,7 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     assert(phw != NULL);
 
     int ret = EC_OK;
-    
+
     ret = ec_index_init(&pec->idx_q);
     
     if (ret == EC_OK) {
@@ -1169,6 +1169,7 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
         pec->dc.have_dc         = 0;
         pec->dc.dc_time         = 0;
         pec->dc.rtc_time        = 0;
+        pec->dc.rtc_sto         = 0;
         pec->dc.act_diff        = 0;
         pec->dc.control.p_part  = 0;
         pec->dc.control.i_part  = 0;
@@ -1176,9 +1177,13 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
         pec->dc.control.kp      = 0.001;
         pec->dc.control.ki      = 0.00001;
 
-        pec->tun_fd             = 0;
-        pec->tun_ip             = 0;
-        pec->tun_running        = 0;
+        pec->ec_time_func       = NULL;
+
+#if LIBETHERCAT_BUILD_POSIX == 1
+        pec->veth.fd            = 0;
+        pec->veth.ip            = 0;
+        pec->veth.running       = 0;
+#endif
 
         (void)ec_cyclic_datagram_init(&pec->cdg_state, 1000000);
         (void)ec_cyclic_datagram_init(&pec->dc.cdg, 1000000);
@@ -1253,8 +1258,10 @@ int ec_close(ec_t *pec) {
     ec_set_state(pec, EC_STATE_INIT);
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
+#if 0
     ec_log(10, "MASTER_CLOSE", "detroying tun device...\n");
     ec_eoe_destroy_tun(pec);
+#endif
 #endif
 
     ec_log(10, "MASTER_CLOSE", "destroying pd_groups\n");
@@ -1392,6 +1399,8 @@ void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, osal_ssize_t o
     }
 }
 
+#include <stdlib.h>
+
 //! syncronous ethercat read/write
 /*!
  * \param pec pointer to ethercat master
@@ -1441,27 +1450,22 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
 
         do {
             osal_timer_t enqueue_timestamp;
+
             // queue frame and trigger tx
-        
-            pec->phw->tx_send[p_entry->p_idx->idx] = NULL;
             hw_enqueue(pec->phw, p_entry, POOL_LOW);
             osal_timer_gettime(&enqueue_timestamp);
 
             // send frame immediately if in sync mode
             if (    (pec->master_state != EC_STATE_SAFEOP) &&
                     (pec->master_state != EC_STATE_OP)) {
-                if (hw_tx_low(pec->phw) != EC_OK) {
-                    ec_log(1, "MASTER_TRANSCEIVE", "hw_tx failed!\n");
-                }
-            } else {
-                osal_timer_t test;
-                // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
-                osal_timer_init(&test, (10 * 8 * pec->phw->mtu_size) * 1.5);  
-                if (osal_timer_cmp(&test, &pec->phw->next_cylce_start, <)) {
-                    if (hw_tx_low(pec->phw) != EC_OK) {
-                        ec_log(1, "MASTER_TRANSCEIVE", "hw_tx_low failed!\n");
-                    } 
-                }
+                if (hw_tx_low(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
+//            } else {
+//                osal_timer_t test;
+//                // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
+//                osal_timer_init(&test, (10 * 8 * pec->phw->mtu_size) * 1.5);  
+//                if (osal_timer_cmp(&test, &pec->phw->next_cylce_start, <)) {
+//                    if (hw_tx_low(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
+//                }
             }
 
             // wait for completion
@@ -1478,6 +1482,7 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
                             local_ret, cmd, adr);
                 }
 
+                pool_remove(&pec->phw->tx_low, p_entry);
                 *wkc = 0u;
                 ret = EC_ERROR_TIMEOUT;
             } else {
@@ -1945,9 +1950,6 @@ static void cb_distributed_clocks(struct ec *pec, pool_entry_t *p_entry, ec_data
 
             pec->dc.timer_correction = pec->dc.control.p_part + pec->dc.control.i_part;
         } else if (pec->dc.mode == dc_mode_master_clock) {
-            int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
-            pec->dc.act_diff -= tx_time_to_dc_master;
-
             // sending offset compensation value to dc master clock
             pool_entry_t *p_entry_dc_sto;
             idx_entry_t *p_idx_sto;
@@ -2009,8 +2011,8 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
 #endif
 
     osal_mutex_lock(&pec->dc.cdg.lock);
-    
-    if (!pec->dc.have_dc || !pec->dc.rtc_sto) {
+
+    if (!pec->dc.have_dc) {
         ret = EC_ERROR_UNAVAILABLE;
     } else {
         if (pec->dc.cdg.p_idx == NULL) {
@@ -2046,31 +2048,23 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
                 p_dg->adr = ((osal_uint32_t)EC_REG_DCSYSTIME << 16u) | pec->dc.master_address;
             }
 
-            if (pec->dc.mode == dc_mode_ref_clock) {
-                if (pec->main_cycle_interval > 0) {
-                    pec->dc.rtc_time += (osal_uint64_t)(pec->main_cycle_interval);
-                }   
-            } else {
-                pec->dc.rtc_time = (int64_t)act_rtc_time - pec->dc.rtc_sto;
+            pec->dc.rtc_time = (int64_t)act_rtc_time;
 
-                if (pec->dc.mode == dc_mode_master_as_ref_clock) {
-                    // add time to first dc capable slave to rtc time
-                    int64_t tx_time_to_dc_master = (pec->dc.packet_duration - pec->slaves[pec->dc.next].dc.t_delay_with_childs) * -0.4;
-                    pec->dc.rtc_time += tx_time_to_dc_master;
-            
-                    (void)memcpy((osal_uint8_t *)ec_datagram_payload(p_dg), (osal_uint8_t *)&pec->dc.rtc_time, sizeof(pec->dc.rtc_time));
-                }
+            if (pec->dc.mode == dc_mode_master_as_ref_clock) {
+                (void)memcpy(
+                        (osal_uint8_t *)ec_datagram_payload(p_dg), 
+                        (osal_uint8_t *)&pec->dc.rtc_time, 
+                        sizeof(pec->dc.rtc_time));
             }
 
             // queue frame and trigger tx
-            hw_enqueue(pec->phw, pec->dc.cdg.p_entry, POOL_HIGH);           
-
-            pec->dc.sent_time_nsec = act_rtc_time;
+            pec->dc.sent_time_nsec = osal_timer_gettime_nsec();
+            hw_enqueue(pec->phw, pec->dc.cdg.p_entry, POOL_HIGH);
         }
     }
-    
+
     osal_mutex_unlock(&pec->dc.cdg.lock);
-      
+
     return ret;
 }
 
@@ -2080,7 +2074,15 @@ int ec_send_distributed_clocks_sync_intern(ec_t *pec, osal_uint64_t act_rtc_time
  * \return 0 on success
  */
 int ec_send_distributed_clocks_sync(ec_t *pec) {
-    return ec_send_distributed_clocks_sync_intern(pec, osal_timer_gettime_nsec());
+    osal_uint64_t rtc_time = osal_timer_gettime_nsec() - pec->dc.rtc_sto;
+
+    if (pec->dc.mode == dc_mode_ref_clock) {
+        if (pec->main_cycle_interval > 0) {
+            rtc_time = pec->dc.rtc_time + pec->main_cycle_interval;
+        }
+    }
+
+    return ec_send_distributed_clocks_sync_intern(pec, rtc_time);
 }
 
 //! send distributed clock sync datagram
@@ -2195,6 +2197,7 @@ int ec_send_brd_ec_state(ec_t *pec) {
 }
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
+#if 0
 //! configures tun device of EtherCAT master, used for EoE slaves.
 /*!
  * \param[in] pec           Pointer to ethercat master structure, 
@@ -2212,6 +2215,7 @@ int ec_configure_tun(ec_t *pec, osal_uint8_t ip_address[4]) {
     }
     return ret;
 }
+#endif
 #endif
 
 //! \brief Configures distributed clocks settings on EtherCAT master.

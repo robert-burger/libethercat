@@ -49,8 +49,8 @@ typedef struct hw_sock_raw_mmaped {
 
     int sockfd;                     //!< raw socket file descriptor
 
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    osal_uint8_t send_frame[EC_ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[EC_ETH_FRAME_LEN]; //!< \brief Static receive frame.
     
     int mmap_packets;               //!< \brief Doing mmap packets.
     osal_char_t *rx_ring;           //!< kernel mmap receive buffers

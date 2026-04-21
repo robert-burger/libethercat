@@ -13,6 +13,7 @@
 #endif
 
 #include <libethercat/ec.h>
+#include <libethercat/veth.h>
 #include <libethercat/error_codes.h>
 
 #include <stdio.h>
@@ -134,32 +135,35 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     ec_log(10, "CYCLIC_TASK", "running endless loop (prio %d), cycle rate is %lu\n", prio, cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
-        abs_timeout += act_cycle_rate;
+        while (abs_timeout < osal_timer_gettime_nsec()) { 
+            abs_timeout += act_cycle_rate; 
+        }
+
         (void)wait_time(abs_timeout);
 
-        last_sent = abs_timeout;
+        last_sent = abs_timeout - pec->dc.rtc_sto;
         time_start = osal_trace_point(tx_start);
         
         osal_trace_time(rx_duration, pec->phw->last_rx_duration_ns);
 
         // execute one EtherCAT cycle
-        ec_send_distributed_clocks_sync_with_rtc(pec, abs_timeout);
+        ec_send_distributed_clocks_sync(pec);
         ec_send_process_data(pec);
 
         // transmit cyclic packets (and also acyclic if there are any)
-        hw_tx_high(pec->phw);
+        if (hw_tx_high(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
 
         osal_trace_time(tx_duration, pec->phw->last_tx_duration_ns);
         bytes_last_sent = ec.phw->bytes_last_sent;
         
-        hw_tx_low(pec->phw);
+        if (hw_tx_low(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
     }
 
     ec_log(100, "CYCLIC_TASK", "exiting!\n");
 }
 
 static void cb_state(void *arg, ec_t *pec, ec_state_t target_state, osal_bool_t up) {
-    printf("My transition callback\n");
+    ec_log(10, "CB_STATE", "My transition callback\n");
 }
 
 int main(int argc, char **argv) {
@@ -376,14 +380,15 @@ int main(int argc, char **argv) {
 
 #if LIBETHERCAT_MBX_SUPPORT_EOE
     if (eoe != 0) {
-        osal_uint8_t ip[4] = { 1, 100, 168, 192 };
-        ec_configure_tun(&ec, ip);
+        osal_uint8_t master_mac[6] = { 0xaf, 0xfe, 0xde, 0xad, 0xbe, 0xef };
+        osal_uint8_t master_ip[4] = { 172, 25, 0, 2 };
+        ec_veth_open_tun(&ec, "file:/dev/ecat_tun0", master_mac, *(uint32_t *)&master_ip[0]);
 
-        osal_uint8_t mac[6] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
-        osal_uint8_t ip_address[4] = { 2, 100, 168, 192 };
+        osal_uint8_t mac[6] = { 0xaa, 0xaa, 0xcc, 0xdd, 0xee, 0xff };
+        osal_uint8_t ip_address[4] = { 3, 0, 25, 172 };
         osal_uint8_t subnet[4] = { 0, 255, 255, 255 };
-        osal_uint8_t gateway[4] = { 1, 100, 168, 192 };
-        osal_uint8_t dns[4] = { 1, 100, 168, 192 };
+        osal_uint8_t gateway[4] = { 1, 0, 25, 172 };
+        osal_uint8_t dns[4] = { 1, 0, 25, 172 };
 
         // configure slave settings.
         for (int i = 0; i < ec.slave_cnt; ++i) {
@@ -401,7 +406,14 @@ int main(int argc, char **argv) {
     ec_configure_dc(&ec, cycle_rate, dc_mode, ({
                 void anon_cb(void *arg, int num) { 
                     if (dc_mode == dc_mode_ref_clock) {
-                        act_cycle_rate = cycle_rate + ec.dc.timer_correction;
+		    	osal_int64_t correction = ec.dc.timer_correction;
+			if (correction < (osal_int64_t)(-0.05 * cycle_rate)) {
+			   correction = -0.05 * cycle_rate;
+			} else if (correction > (osal_int64_t)(0.05 * cycle_rate)) {
+			   correction = 0.05 * cycle_rate;
+			}
+
+                        act_cycle_rate = cycle_rate + correction; //ec.dc.timer_correction;
 
                         osal_trace_time(dc_diff, ec.dc.act_diff);
                     }
@@ -519,6 +531,8 @@ exit:
     osal_task_join(&cyclic_task_hdl, NULL);
     
     ec_close(&ec);
+
+    printf("done\n");
 
 hw_exit:
     osal_trace_free(tx_start);

@@ -391,19 +391,19 @@ static int callback_master_0x8nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
         if ((*len) >= 2) {
             (*(osal_uint16_t *)buf) = pec->slaves[slave].fixed_address;
             (*len) = sizeof(osal_uint16_t);
-        }
+        } else (*len) = 0;
     } else if (sub_index == 2u) {
         if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
             ret = ec_coe_sdo_read(pec, slave, 0x100A, 0, complete, buf, len, abort_code);
-        }
+        } else (*len) = 0;
     } else if (sub_index == 3u) {
         if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
             ret = ec_coe_sdo_read(pec, slave, 0x1008, 0, complete, buf, len, abort_code);
-        }
+        } else (*len) = 0;
     } else if (sub_index == 4u) {
         if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
             ret = ec_coe_sdo_read(pec, slave, 0x1000, 0, complete, buf, len, abort_code);
-        }
+        } else (*len) = 0;
     } else if ((sub_index == 5u) || (sub_index == 6u) || (sub_index == 7u) || (sub_index == 8u)) {
         ret = ec_coe_sdo_read(pec, slave, 0x1018, sub_index - 4u, complete, buf, len, abort_code);
     } else if ((sub_index == 33u) || (sub_index == 34u)) {
@@ -630,14 +630,19 @@ static int callback_master_0xF0nn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
     osal_uint16_t slave = (slave_range * 255u) + (sub_index - 1u);
 
     if ((*len) >= 2) {
-        if (slave < pec->slave_cnt) {
-            (void)memcpy(buf, &pec->slaves[slave].fixed_address, sizeof(osal_uint16_t));
+        if (sub_index == 0) {
+            *(uint16_t*)buf = pec->slave_cnt;
+            *(len) = 1;
         } else {
-            osal_uint16_t value = 0u;
-            (void)memcpy(buf, &value, sizeof(osal_uint16_t));
-        }
+            if (slave < pec->slave_cnt) {
+                (void)memcpy(buf, &pec->slaves[slave].fixed_address, sizeof(osal_uint16_t));
+            } else {
+                osal_uint16_t value = 0u;
+                (void)memcpy(buf, &value, sizeof(osal_uint16_t));
+            }
 
-        (*len) = sizeof(osal_uint16_t);
+            (*len) = sizeof(osal_uint16_t);
+        }
     }
 
     return ret; 
@@ -738,7 +743,11 @@ static int ec_coe_master_get_object_data(ec_coe_object_t *coe_obj, osal_uint8_t 
                         break;
                     }
 
-                    pos += coe_obj->entry_desc[i].bit_length >> 3;
+                    if (i == 0) {
+                        pos += 2; // subindex 0 always stored as uint16
+                    } else {
+                        pos += coe_obj->entry_desc[i].bit_length >> 3;
+                    }
                 }
             }
         }

@@ -132,22 +132,6 @@ const osal_char_t *get_sdo_info_error_string(osal_uint32_t errorcode) {
 }
 
 typedef struct {
-    osal_uint16_t number   : 9;
-    osal_uint16_t reserved : 3;
-    osal_uint16_t service  : 4;
-} PACKED ec_coe_header_t;
-
-typedef struct {
-    osal_uint8_t size_indicator     : 1;
-    osal_uint8_t transfer_type      : 1;
-    osal_uint8_t data_set_size      : 2;
-    osal_uint8_t complete           : 1;
-    osal_uint8_t command            : 3;
-    osal_uint16_t index;
-    osal_uint8_t  sub_index;
-} PACKED ec_sdo_init_download_header_t;
-
-typedef struct {
     osal_uint8_t more_follows       : 1;
     osal_uint8_t seg_data_size      : 3;
     osal_uint8_t toggle             : 1;

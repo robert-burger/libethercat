@@ -12,6 +12,7 @@ include/libethercat/settings.h
 /compile
 /config.h.in
 /configure
+/configure.ac
 /configure.scan
 /depcomp
 /install-sh

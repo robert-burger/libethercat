@@ -48,8 +48,8 @@ typedef struct hw_file {
     
     int fd;                                 //!< \brief file descriptor
 
-    osal_uint8_t send_frame[ETH_FRAME_LEN]; //!< \brief Static send frame.
-    osal_uint8_t recv_frame[ETH_FRAME_LEN]; //!< \brief Static receive frame.
+    osal_uint8_t send_frame[EC_ETH_FRAME_LEN]; //!< \brief Static send frame.
+    osal_uint8_t recv_frame[EC_ETH_FRAME_LEN]; //!< \brief Static receive frame.
     osal_bool_t polling_mode;               //!< \brief Special interrupt-less polling-mode flag.
     
     // receiver thread settings in non-polling mode
@@ -58,6 +58,8 @@ typedef struct hw_file {
                                             
     int frames_send;
 
+    uint64_t rx_timeout_ns;
+    pooltype_t last_pool_type;
 } hw_file_t;
 
 #ifdef __cplusplus

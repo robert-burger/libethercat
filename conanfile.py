@@ -1,6 +1,6 @@
 from conan import ConanFile
 from conan.tools.gnu import Autotools, AutotoolsToolchain
-import re
+import re, os
 
 class MainProject(ConanFile):
     name = "libethercat"
@@ -40,6 +40,7 @@ class MainProject(ConanFile):
         "mbx_support_coe" : [ True, False ],
         "mbx_support_foe" : [ True, False ],
         "mbx_support_soe" : [ True, False ],
+        "mbx_gateway_support" : [ True, False ],
     }
 
     requires = [ "libosal/[>=0.2.0]@common/stable", ]
@@ -70,6 +71,7 @@ class MainProject(ConanFile):
         self.options.mbx_support_coe = True
         self.options.mbx_support_foe = True
         self.options.mbx_support_soe = True
+        self.options.mbx_gateway_support = True
 
         if self.settings.os == "pikeos":
             self.options.hw_device_file = False
@@ -93,9 +95,6 @@ class MainProject(ConanFile):
             })
 
         tc.generate()
-
-    def source(self):
-        pass
 
     def build(self):
         print("os %s, compiler %s, build_type %s, arch %s" % (self.settings.os, self.settings.compiler, self.settings.build_type, self.settings.arch))
@@ -140,6 +139,8 @@ class MainProject(ConanFile):
             args.append("--disable-mbx-support-foe")
         if not self.options.mbx_support_soe:
             args.append("--disable-mbx-support-soe")
+        if not self.options.mbx_gateway_support:
+            args.append("--disable-mbx-gateway-support")
 
         args.append("--with-max-slaves=%d" % (self.options.max_slaves))
         args.append("--with-max-groups=%d" % (self.options.max_groups))
@@ -162,9 +163,20 @@ class MainProject(ConanFile):
 
         args.append("--disable-silent-rules")
 
-        self.run(f'sed "s|PACKAGE_VERSION|{self.version}|" configure.ac.in > configure.ac')
-        autotools.autoreconf()
-        autotools.configure(args=args)
+        configure_ac_in = os.path.join(self.source_folder, "configure.ac.in")
+        if os.path.exists(configure_ac_in):
+            configure_ac = os.path.join(self.source_folder, "configure.ac")
+            self.run(
+                f'sed "s|PACKAGE_VERSION|{self.version}|" configure.ac.in > configure.ac',
+                cwd=self.source_folder
+            )
+            print(f"[INFO] Created configure.ac from configure.ac.in")
+        else:
+            print(f"[WARNING] configure.ac.in not found at {configure_ac_in}")
+
+        autotools = Autotools(self)
+        autotools.autoreconf(args = [ self.source_folder, ])
+        autotools.configure(build_script_folder=self.source_folder, args=args)
         autotools.make()
 
     def package(self):
@@ -176,3 +188,16 @@ class MainProject(ConanFile):
         self.cpp_info.libs = ["ethercat"]
         self.cpp_info.bindirs = ['bin']
         self.cpp_info.resdirs = ['share']
+
+    def layout(self):
+        self.folders.source = "."
+        self.folders.build = "build"
+        self.folders.generators = "conan"
+
+        # In the local folder (when the package is in development, or "editable") the artifacts can be found:
+        self.cpp.source.includedirs = ["include", os.path.join(self.folders.build, "include")]
+        self.cpp.build.libdirs = ["src/.libs"]
+        self.cpp.build.libs = [ "ethercat" ]
+
+        # In the Conan cache, we packaged everything at the default standard directories
+        self.cpp.package.libs = [ "ethercat" ]
