@@ -90,7 +90,7 @@ static char debug_buf[DBG_BUF_SIZE];
 #define debug_pr_info(...) pr_info(__VA_ARGS__)
 #define debug_printk(...) printk(__VA_ARGS__)
 #define debug_print_frame(msg, buf, buflen) {    \
-    print_hex_dump_bytes(msg, DUMP_PREFIX_NONE, buf, buflen);
+    print_hex_dump_bytes(msg, DUMP_PREFIX_NONE, buf, buflen); }
 #else
 #define debug_pr_info(...)
 #define debug_printk(...)
