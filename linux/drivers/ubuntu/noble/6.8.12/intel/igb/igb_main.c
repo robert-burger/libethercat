@@ -8467,9 +8467,9 @@ static bool igb_clean_tx_irq(struct igb_q_vector *q_vector, int napi_budget)
 				napi_consume_skb(tx_buffer->skb, napi_budget);
 			else
 				xdp_return_frame(tx_buffer->xdpf);
-        } else {
-            ethercat_device_sent_finished(adapter->ecat_dev, tx_buffer->skb);
-        }
+		} else {
+			ethercat_device_sent_finished(adapter->ecat_dev, tx_buffer->skb);
+		}
 
 		/* unmap skb header data */
 		dma_unmap_single(tx_ring->dev,
