@@ -241,7 +241,7 @@ void ethercat_monitor_enable(struct monitor_dev *monitor_dev, unsigned int enabl
     strncpy(ifr.ifr_name, monitor_dev->net_dev->name, IFNAMSIZ - 1);
     ifr.ifr_flags = enable == 0 ?
         monitor_dev->net_dev->flags & ~(IFF_UP | IFF_RUNNING) : 
-        monitor_dev->net_dev->flags | IFF_UP;// | IFF_RUNNING;
+        monitor_dev->net_dev->flags | IFF_UP;
     err = fcn_devinet_ioctl(net, SIOCSIFFLAGS, &ifr);
     if (err) {
         pr_err("EtherCAT-Monitor-Device %s: error (de)activating interface -> %d.\n", monitor_dev->net_dev->name, err);

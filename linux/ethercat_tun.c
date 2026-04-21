@@ -209,14 +209,14 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     tun_dev->cdev.ops = &fops;
     err = cdev_add(&tun_dev->cdev, MKDEV(ethercat_tun_dev_major, minor), 1);
     if (err) {
-	    pr_err("EtherCAT-Tun-Device %s: error creating character device!\n", tun_dev->name);
-	    return err;
+        pr_err("EtherCAT-Tun-Device %s: error creating character device!\n", tun_dev->name);
+        return err;
     }//        goto err_free;
 
     // Erstelle Device-Datei
     device_create(ethercat_tun_class, NULL, 
-		    MKDEV(ethercat_tun_dev_major, minor), 
-		    tun_dev, DEVICE_NAME "%d", minor);
+            MKDEV(ethercat_tun_dev_major, minor), 
+            tun_dev, DEVICE_NAME "%d", minor);
 
     init_waitqueue_head(&tun_dev->rx_wait);
     
@@ -224,7 +224,7 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
 
     dev = alloc_netdev(sizeof(struct tun_dev *), tun_dev->name, NET_NAME_UNKNOWN, ether_setup);
     if (!dev) {
-	    pr_err("EtherCAT-Tun-Device %s: error creating net device\n", tun_dev->name);
+        pr_err("EtherCAT-Tun-Device %s: error creating net device\n", tun_dev->name);
         return -ENOMEM;
     }
 
@@ -233,7 +233,6 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     tun_dev->dev = dev;
     dev->netdev_ops = &tun_net_ops;
     *((struct tun_dev **)netdev_priv(dev)) = tun_dev;
-    //dev->flags |= IFF_NOARP;
     dev->priv_flags |= IFF_NO_QUEUE;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
@@ -323,17 +322,17 @@ int ethercat_tun_init(void)
     ethercat_tun_class = class_create(THIS_MODULE, DEVICE_NAME);
 #endif
     if (IS_ERR(ethercat_tun_class)) {
-	    pr_err("EtherCAT-Tun-Device: Error during class_create\n");
-	    ret = PTR_ERR(ethercat_tun_class);
+        pr_err("EtherCAT-Tun-Device: Error during class_create\n");
+        ret = PTR_ERR(ethercat_tun_class);
     }
 
     // reserve new major number
     if (ret == 0) {
-	    if ((ret = alloc_chrdev_region(&ethercat_tun_dev_num, 0, 10, DEVICE_NAME)) < 0) {
-		    pr_err("EtherCAT-Tun-Device: Error allocating char device region!\n");
-    			class_destroy(ethercat_tun_class);
-	    		//unregister_chrdev_region(ethercat_tun_dev_num, 10);
-	    }
+        if ((ret = alloc_chrdev_region(&ethercat_tun_dev_num, 0, 10, DEVICE_NAME)) < 0) {
+            pr_err("EtherCAT-Tun-Device: Error allocating char device region!\n");
+            class_destroy(ethercat_tun_class);
+            //unregister_chrdev_region(ethercat_tun_dev_num, 10);
+        }
     }
 
     ethercat_tun_dev_major = MAJOR(ethercat_tun_dev_num);

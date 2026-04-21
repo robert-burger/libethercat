@@ -267,7 +267,7 @@ int ethercat_device_destroy(struct ethercat_device *ecat_dev) {
     device_destroy(ecat_chr_class, MKDEV(ecat_chr_major, ecat_dev->minor));
 
     kfree(ecat_dev);
-	return 0;
+    return 0;
 }
 
 EXPORT_SYMBOL(ethercat_device_destroy);
