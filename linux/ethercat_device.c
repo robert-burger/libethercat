@@ -226,7 +226,7 @@ struct ethercat_device *ethercat_device_create(struct net_device *net_dev) {
 
     ecat_dev->net_dev->netdev_ops->ndo_open(ecat_dev->net_dev);
 
-    (void)ethercat_monitor_create(&ecat_dev->monitor_dev, ecat_dev->minor, net_dev->dev_addr);
+    (void)ethercat_monitor_create(&ecat_dev->monitor_dev, ecat_dev->minor);
     (void)ethercat_tun_device_create(&ecat_dev->tun_dev, ecat_dev->minor, net_dev->dev_addr);
 
     return ecat_dev;
