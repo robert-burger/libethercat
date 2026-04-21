@@ -214,8 +214,6 @@ void ethercat_monitor_frame(struct monitor_dev *monitor_dev, const uint8_t *data
             skb->ip_summed = CHECKSUM_UNNECESSARY;
 
             if (netif_receive_skb(skb) != NET_RX_SUCCESS) {
-                 // If not consumed, free it
-//                dev_kfree_skb_any(skb);
                 monitor_dev->net_dev_stats.rx_dropped++;
             }
         }
