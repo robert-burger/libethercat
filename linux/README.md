@@ -1,6 +1,20 @@
 # linux network drivers
 The subdirectory 'linux' contains hacked linux network drivers to directly communicate with the nic instead of using raw socket of the network stack. These  drivers are inspired by [IGH's EtherCAT master drivers](https://gitlab.com/etherlab.org/ethercat). Contrary to this here we provide an interface to user-level processes.
 
+These driver generate character devices nodes for attached network interfaces:
+
+```
+/dev/ecatX
+/dev/ecat_tunX
+```
+
+Addinionally there are also two network interface created.
+
+<dl>
+<dt>ecat_monitorX</dt><dd>Used to monitor EtherCAT traffic with tcpdump or wireshark.</dd>
+<dt>ecat_tunX</dt><dd>Network interface device which routes traffic through EoE or Master (Mailbox Gateway).</dd>
+</dl>
+
 ## Build
 
 Change working directory to the linux subdirecty and build the driver for your os/kernel.
@@ -50,6 +64,12 @@ GRUB_CMDLINE_LINUX_DEFAULT="resume=/dev/disk/by-partlabel/swap0 showopts splash=
 ### Rebuild grub config file
 
 Enter
+
+```
+update-grub2
+```
+
+or 
 
 ```
 grub2-mkconfig -o /boot/grub2/grub.cfg
