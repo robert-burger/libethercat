@@ -232,8 +232,7 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
     // send frames
     osal_size_t len;
     do {
-        (void)pool_peek(pool, &p_entry);
-        if (p_entry !=  NULL) {
+        if (pool_get(pool, &p_entry, NULL) == EC_OK) {
             // cppcheck-suppress misra-c2012-11.3
             p_entry_dg = (ec_datagram_t *)p_entry->data;
             
@@ -242,6 +241,7 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
             // This is the signal that we have no pending datagrams
             len = 0u;
         }
+
         // Before copying the datagram into the frame buffer, we must check whether there is enough space.
         // If there is no space left, we have to send the frame.
         // We also have to send the frame if we have no further pending datagrams.
@@ -265,7 +265,7 @@ osal_bool_t hw_tx_pool(struct hw_common *phw, pooltype_t pool_type) {
                 pdg = ec_datagram_first(pframe);
             }
 
-            pool_remove(pool, p_entry);
+//            pool_remove(pool, p_entry);
             if (pdg_prev != NULL) {
                 ec_datagram_mark_next(pdg_prev);
             }

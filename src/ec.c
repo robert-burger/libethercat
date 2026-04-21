@@ -1397,6 +1397,8 @@ void ec_decode_datagram_to_string(ec_datagram_t *p_dg, char *out, osal_ssize_t o
     }
 }
 
+#include <stdlib.h>
+
 //! syncronous ethercat read/write
 /*!
  * \param pec pointer to ethercat master
@@ -1446,9 +1448,8 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
 
         do {
             osal_timer_t enqueue_timestamp;
+
             // queue frame and trigger tx
-        
-            pec->phw->tx_send[p_entry->p_idx->idx] = NULL;
             hw_enqueue(pec->phw, p_entry, POOL_LOW);
             osal_timer_gettime(&enqueue_timestamp);
 
@@ -1456,13 +1457,13 @@ int ec_transceive(ec_t *pec, osal_uint8_t cmd, osal_uint32_t adr,
             if (    (pec->master_state != EC_STATE_SAFEOP) &&
                     (pec->master_state != EC_STATE_OP)) {
                 if (hw_tx_low(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
-            } else {
-                osal_timer_t test;
-                // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
-                osal_timer_init(&test, (10 * 8 * pec->phw->mtu_size) * 1.5);  
-                if (osal_timer_cmp(&test, &pec->phw->next_cylce_start, <)) {
-                    if (hw_tx_low(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
-                }
+//            } else {
+//                osal_timer_t test;
+//                // max mtu frame, 10 [ns] per bit on 100 Mbit/s, 150% threshold
+//                osal_timer_init(&test, (10 * 8 * pec->phw->mtu_size) * 1.5);  
+//                if (osal_timer_cmp(&test, &pec->phw->next_cylce_start, <)) {
+//                    if (hw_tx_low(pec->phw) == OSAL_TRUE) hw_rx(pec->phw);
+//                }
             }
 
             // wait for completion

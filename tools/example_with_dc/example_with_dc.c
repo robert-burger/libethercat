@@ -135,7 +135,10 @@ static osal_void_t* cyclic_task(osal_void_t* param) {
     ec_log(10, "CYCLIC_TASK", "running endless loop (prio %d), cycle rate is %lu\n", prio, cycle_rate);
 
     while (cyclic_task_running == OSAL_TRUE) {
-        abs_timeout += act_cycle_rate;
+        while (abs_timeout < osal_timer_gettime_nsec()) { 
+            abs_timeout += act_cycle_rate; 
+        }
+
         (void)wait_time(abs_timeout);
 
         last_sent = abs_timeout - pec->dc.rtc_sto;
@@ -528,6 +531,8 @@ exit:
     osal_task_join(&cyclic_task_hdl, NULL);
     
     ec_close(&ec);
+
+    printf("done\n");
 
 hw_exit:
     osal_trace_free(tx_start);
