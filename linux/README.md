@@ -62,5 +62,6 @@ Create `/etc/udev/rules.d/991-ecat.rules` with following content:
 ```
 # udev rules for EtherCAT devices:
 SUBSYSTEM=="ecat", KERNEL=="ecat?", MODE="0666"
+SUBSYSTEM=="ecat_tun", KERNEL=="ecat_tun?", MODE="0666"
 ```
 
