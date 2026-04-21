@@ -18,11 +18,10 @@ include_HEADERS = $(top_srcdir)/include/libethercat/common.h \
 				  $(top_builddir)/include/libethercat/settings.h \
 				  $(top_srcdir)/include/libethercat/slave.h \
 				  $(top_srcdir)/include/libethercat/idx.h \
-				  $(top_srcdir)/include/libethercat/veth.h \
 				  $(top_srcdir)/include/libethercat/mii.h
 
 libethercat_la_SOURCES	= slave.c datagram.c pool.c async_loop.c ec.c \
-						  hw.c mbx.c eeprom.c dc.c idx.c mii.c veth.c
+						  hw.c mbx.c eeprom.c dc.c idx.c mii.c
 
 if LIBETHERCAT_MBX_GATEWAY_SUPPORT
 include_HEADERS += $(top_srcdir)/include/libethercat/mbx_gateway.h
@@ -73,6 +72,11 @@ endif
 if LIBETHERCAT_BUILD_PIKEOS
 include_HEADERS += $(top_srcdir)/include/libethercat/hw_pikeos.h
 libethercat_la_SOURCES += hw_pikeos.c
+endif
+
+if LIBETHERCAT_BUILD_POSIX
+include_HEADERS += $(top_srcdir)/include/libethercat/veth.h
+libethercat_la_SOURCES += veth.c
 endif
 
 libethercat_la_CFLAGS	= -std=gnu99 -Wall -Werror -Wno-unused-const-variable -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_builddir)/include @LIBOSAL_CFLAGS@

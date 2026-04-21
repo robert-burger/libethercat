@@ -33,15 +33,34 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <libethercat/config.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <stdlib.h>
+
+#ifdef LIBETHERCAT_HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef LIBETHERCAT_HAVE_NETINET_IP_H
 #include <netinet/ip.h>
+#endif
+
+#ifdef LIBETHERCAT_HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
+#endif
+
+#ifdef LIBETHERCAT_HAVE_NETINET_UDP_H
 #include <netinet/udp.h>
+#endif
+
+#ifdef LIBETHERCAT_HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+
 #include <errno.h>
 
 #include "libethercat/veth.h"
@@ -49,10 +68,6 @@
 #include "libethercat/error_codes.h"
 #include "libethercat/settings.h"
 #include "libethercat/coe.h"
-
-#ifdef HAVE_CONFIG_H
-#include <libethercat/config.h>
-#endif
 
 #ifdef LIBETHERCAT_HAVE_UNISTD_H
 #include <unistd.h>
@@ -70,16 +85,12 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 #include <net/ethernet.h>
-#include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
 
 #include <linux/if.h>
 #include <linux/if_tun.h>
-#include <arpa/inet.h>
 #endif
 
 // forward declarations

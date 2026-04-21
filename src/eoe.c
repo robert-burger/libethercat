@@ -41,7 +41,17 @@
 #include "libethercat/ec.h"
 #include "libethercat/eoe.h"
 #include "libethercat/error_codes.h"
+
+#if LIBETHERCAT_BUILD_POSIX == 1
 #include "libethercat/veth.h"
+#else
+
+typedef struct eth_frame {
+    osal_size_t frame_size;
+    osal_uint8_t frame_data[1518];
+} eth_frame_t;
+
+#endif
 
 #include <assert.h>
 // cppcheck-suppress misra-c2012-21.6
@@ -559,15 +569,19 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     frame_offset += frag_len;
 
                     if (read_buf->eoe_hdr.last_fragment != 0u) {
-                        if (pec->veth.fd > 0) {
 #if LIBETHERCAT_BUILD_POSIX == 1
+                        if (pec->veth.fd > 0) {
                             int local_ret = ec_veth_send_frame(pec, eth_frame->frame_data, eth_frame->frame_size);
                             if (local_ret < 0) {
                                 ec_log(1, "EOE_RECV", "writing failed!\n");
                             }
-#endif
                             pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                         } else {
+#else   
+                        {
+#endif
+                            eoe_debug_print(pec, "EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
+
                             // put in receive pool, nobody cared so far
                             pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                         }
@@ -584,17 +598,21 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                     ec_eoe_wait(pec, slave, &p_entry); 
                 }
             } else {
+#if LIBETHERCAT_BUILD_POSIX == 1
                 if (pec->veth.fd > 0) {
                     eoe_debug_print(pec, "EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
 
-#if LIBETHERCAT_BUILD_POSIX == 1
                     int local_ret = ec_veth_send_frame(pec, eth_frame->frame_data, frame_offset);
                     if (local_ret < 0) {
                         ec_log(1, "EOE_RECV", "writing failed!\n");
                     }
-#endif
                     pool_put(&slv->mbx.eoe.eth_frames_free_pool, p_eth_entry);
                 } else {
+#else
+                {
+#endif
+                    eoe_debug_print(pec, "EOE_RECV", "recv eth frame", eth_frame->frame_data, frame_offset);
+
                     // put in receive pool, nobody cared so far.
                     pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                 }

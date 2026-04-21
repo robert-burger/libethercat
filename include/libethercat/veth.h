@@ -41,15 +41,15 @@
 #ifndef LIBETHERCAT_VETH_H
 #define LIBETHERCAT_VETH_H
 
-#include <net/ethernet.h>
-
 #include "libosal/types.h"
 #include "libosal/task.h"
+
+#define EC_VETH_ETH_ALEN 6
 
 typedef struct ec_veth {
     int fd;                     //!< tun device file descriptor
     osal_uint32_t ip;           //!< tun device ip addres
-    osal_uint8_t mac[6];
+    osal_uint8_t mac[EC_VETH_ETH_ALEN];
     osal_task_t tid;            //!< tun device handler thread id.
     osal_bool_t running;        //!< tun device handler run flag.
 } ec_veth_t;
@@ -75,7 +75,7 @@ struct ec;
 int ec_veth_open_tun(
         struct ec *pec, 
         const char *tun_dev_name, 
-        const uint8_t mac_addr[ETH_ALEN], 
+        const uint8_t mac_addr[EC_VETH_ETH_ALEN], 
         const uint32_t ip_addr);
 
 /**

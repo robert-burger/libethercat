@@ -1179,9 +1179,11 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
 
         pec->ec_time_func       = NULL;
 
+#if LIBETHERCAT_BUILD_POSIX == 1
         pec->veth.fd            = 0;
         pec->veth.ip            = 0;
         pec->veth.running       = 0;
+#endif
 
         (void)ec_cyclic_datagram_init(&pec->cdg_state, 1000000);
         (void)ec_cyclic_datagram_init(&pec->dc.cdg, 1000000);
