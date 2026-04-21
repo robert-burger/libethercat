@@ -151,14 +151,14 @@ static struct file_operations fops = {
 int tun_open(struct net_device *dev)
 {
     netif_start_queue(dev);
-    printk(KERN_INFO "EtherCAT-TUN-Device %s: opened\n", dev->name);
+    pr_info("EtherCAT-TUN-Device %s: opened\n", dev->name);
     return 0;
 }
 
 int tun_stop(struct net_device *dev)
 {
     netif_stop_queue(dev);
-    printk(KERN_INFO "EtherCAT-TUN-Device %s: stopped\n", dev->name);
+    pr_info("EtherCAT-TUN-Device %s: stopped\n", dev->name);
     return 0;
 }
 
@@ -251,7 +251,7 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-    printk(KERN_INFO "EtherCAT-TUN-Device %s created (MAC: %pM)\n", dev->name, dev->dev_addr);
+    pr_info("EtherCAT-TUN-Device %s created (MAC: %pM)\n", dev->name, dev->dev_addr);
 
     // Set interface IP address.
     net = dev_net(dev);
@@ -262,7 +262,7 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     addr->sin_addr.s_addr = htonl(0xAC190001 + (minor << 8)); // 172.25.X.1
     err = fcn_devinet_ioctl(net, SIOCSIFADDR, &ifr);
     if (err) {
-        printk(KERN_ERR "EtherCAT-TUN-Device %s: error setting IP address.\n", dev->name);
+        pr_err("EtherCAT-TUN-Device %s: error setting IP address.\n", dev->name);
         goto err_free;
     }
 
@@ -272,7 +272,7 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     mask->sin_addr.s_addr = htonl(0xFFFFFF00); // 255.255.255.0
     err = fcn_devinet_ioctl(net, SIOCSIFNETMASK, &ifr);
     if (err) {
-        printk(KERN_ERR "EtherCAT-TUN-Device %s: error setting netmask.\n", dev->name);
+        pr_err("EtherCAT-TUN-Device %s: error setting netmask.\n", dev->name);
         goto err_free;
     }
 
@@ -280,11 +280,11 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     ifr.ifr_flags = dev->flags | IFF_UP;
     err = fcn_devinet_ioctl(net, SIOCSIFFLAGS, &ifr);
     if (err) {
-        printk(KERN_ERR "EtherCAT-TUN-Device %s: error activating interface.\n", dev->name);
+        pr_err("EtherCAT-TUN-Device %s: error activating interface.\n", dev->name);
         goto err_free;
     }
 
-    printk(KERN_INFO "EtherCAT-TUN-Device %s: IP-Adresse 192.168.100.1/24 set.\n", dev->name);
+    pr_info("EtherCAT-TUN-Device %s: IP-Adresse 192.168.100.1/24 set.\n", dev->name);
 #endif
 
     return 0;
@@ -355,6 +355,6 @@ void ethercat_tun_exit(void)
     class_destroy(ethercat_tun_class);
     unregister_chrdev_region(ethercat_tun_dev_num, 1);
 
-    printk(KERN_INFO "Modul entladen\n");
+    pr_info("Modul removed\n");
 }
 
