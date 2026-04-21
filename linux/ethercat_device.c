@@ -107,7 +107,7 @@ typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
 kallsyms_lookup_name_t fcn_kallsyms_lookup_name;
 #endif
 
-int dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *arg) { return 0; }
+int dummy_fcn_devinet_ioctl(struct net *net, unsigned int cmd, void __user *arg) { return -ENOTSUPP; }
 fcn_devinet_ioctl_t fcn_devinet_ioctl = &dummy_fcn_devinet_ioctl;
 
 //================================================================================================
@@ -559,7 +559,7 @@ static ssize_t ethercat_device_write(struct file *filp, const char *buff, size_t
             skb->len = len;
             unsigned long bytes_not_copied = __copy_from_user(skb->data, buff, len);
             if (bytes_not_copied != 0) {
-                ret = -EINVAL;
+                ret = -EFAULT;
             } else {
                 netdev_tx_t local_ret = 0;
                 debug_print_frame("ethercat char dev driver: sending", skb->data, skb->len);
