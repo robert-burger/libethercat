@@ -236,14 +236,10 @@ int ethercat_tun_device_create(struct tun_dev *tun_dev, int minor, const unsigne
     //dev->flags |= IFF_NOARP;
     dev->priv_flags |= IFF_NO_QUEUE;
 
-    unsigned char tmp_mac[ETH_ALEN];
-    memcpy(&tmp_mac[0], dev_addr, ETH_ALEN);
-    tmp_mac[0] = 0x0E; // mark as private
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-    dev_addr_mod(tun_dev->dev, 0, tmp_mac, ETH_ALEN);
+    dev_addr_mod(tun_dev->dev, 0, dev_addr, ETH_ALEN);
 #else
-    memcpy((void *)dev->dev_addr, tmp_mac, ETH_ALEN);
+    memcpy((void *)dev->dev_addr, dev_addr, ETH_ALEN);
 #endif
 
     // Initialize netdev and resources

@@ -96,10 +96,9 @@ static const struct net_device_ops ethercat_monitor_netdev_ops = {
  *
  * @param[in]   monitor_dev    Pointer to EtherCAT monitor device to create.
  * @param[in]   minor          Device minor number.
- * @param[in]   dev_addr       Device MAC address (6-Byte!!)
  * @return 0 on success, -1 on error.
  */
-int ethercat_monitor_create(struct monitor_dev *monitor_dev, u16 minor, const unsigned char *dev_addr) {
+int ethercat_monitor_create(struct monitor_dev *monitor_dev, u16 minor) {
     int ret = 0, err = 0;
     char monitor_name[64];
     struct ifreq ifr;
@@ -116,18 +115,11 @@ int ethercat_monitor_create(struct monitor_dev *monitor_dev, u16 minor, const un
     }
     else
     {
-        unsigned char tmp_mac[ETH_ALEN];
-        memcpy(&tmp_mac[0], dev_addr, ETH_ALEN);
-        tmp_mac[0] = 0x0A; // mark as private
-
         monitor_dev->net_dev->netdev_ops = &ethercat_monitor_netdev_ops;
         *((struct monitor_dev **)netdev_priv(monitor_dev->net_dev)) = monitor_dev;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-        dev_addr_mod(monitor_dev->net_dev, 0, tmp_mac, ETH_ALEN);
-#else
-        memcpy((void *)monitor_dev->net_dev->dev_addr, tmp_mac, ETH_ALEN);
-#endif
+        // set random MAC address
+        eth_hw_addr_random(monitor_dev->net_dev);
 
         if ((ret = register_netdev(monitor_dev->net_dev))) {
             pr_err("EtherCAT-Monitor-Device %s: error registering monitor net device!\n", monitor_name);

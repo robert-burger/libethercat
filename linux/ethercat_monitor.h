@@ -54,10 +54,9 @@ struct monitor_dev {
  *
  * @param[in]   monitor_dev    Pointer to EtherCAT monitor device to create.
  * @param[in]   minor          Device minor number.
- * @param[in]   dev_addr       Device MAC address (6-Byte!!)
  * @return 0 on success, -1 on error.
  */
-int ethercat_monitor_create(struct monitor_dev *monitor_dev, u16 minor, const unsigned char *dev_addr);
+int ethercat_monitor_create(struct monitor_dev *monitor_dev, u16 minor);
 
 /** 
  * @brief Destroys an EtherCAT monitor device
