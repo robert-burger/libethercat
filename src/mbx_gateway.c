@@ -45,6 +45,24 @@
 #include "libethercat/mbx.h"
 #include "libethercat/error_codes.h"
 
+//! Initialize MBX Gateway structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ */
+void ec_mbx_gateway_init(struct ec *pec) {
+    (void)pool_open(&pec->mbx_gw_recv_pool, 0, NULL);
+}
+
+//! deinitialize MBX Gateway structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ */
+void ec_mbx_gateway_deinit(struct ec *pec) {
+    (void)pool_close(&pec->mbx_gw_recv_pool);
+}
+
 //! \brief Wait for MBX Gateway message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 

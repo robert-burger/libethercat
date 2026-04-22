@@ -59,6 +59,7 @@
 #include "libethercat/ec.h"
 #include "libethercat/slave.h"
 #include "libethercat/mbx.h"
+#include "libethercat/mbx_gateway.h"
 
 #if LIBETHERCAT_MBX_SUPPORT_COE == 1
 #include "libethercat/coe.h"
@@ -1198,6 +1199,8 @@ int ec_open(ec_t *pec, struct hw_common *phw, int eeprom_log) {
     (void)pool_open(&pec->mbx_message_pool_recv_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_recv_free_entries[0]);
     (void)pool_open(&pec->mbx_message_pool_send_free, LEC_MAX_MBX_ENTRIES, &pec->mbx_mp_send_free_entries[0]);
 
+    ec_mbx_gateway_init(pec);
+
     pec->phw = phw;
     
     if (ret == EC_OK) {
@@ -1284,6 +1287,8 @@ int ec_close(ec_t *pec) {
     (void)hw_close(pec->phw);
     ec_log(10, "MASTER_CLOSE", "freeing frame pool\n");
     (void)pool_close(&pec->pool);
+    
+    ec_mbx_gateway_deinit(pec);
 
     (void)pool_close(&pec->mbx_message_pool_recv_free);
     (void)pool_close(&pec->mbx_message_pool_send_free);

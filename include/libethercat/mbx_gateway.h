@@ -63,6 +63,20 @@ struct echdr {
 extern "C" {
 #endif
 
+//! Initialize MBX Gateway structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ */
+void ec_mbx_gateway_init(struct ec *pec);
+
+//! deinitialize MBX Gateway structure 
+/*!
+ * \param[in] pec           Pointer to ethercat master structure, 
+ *                          which you got from \link ec_open \endlink.
+ */
+void ec_mbx_gateway_deinit(struct ec *pec);
+
 //! \brief Enqueue MBX Gateway message received from slave.
 /*!
  * \param[in] pec       Pointer to ethercat master structure, 

@@ -566,8 +566,6 @@ int ec_veth_open_tun(struct ec *pec, const char *tun_dev_name, const uint8_t mac
         (void)pec;
 #endif
     }
-    
-    (void)pool_open(&pec->veth.recv_pool, 0, NULL);
 
     return ret;
 }
@@ -589,7 +587,5 @@ void ec_veth_close_tun(struct ec *pec) {
         pec->veth.fd = 0;
 #endif
     }
-    
-    (void)pool_close(&pec->veth.recv_pool);
 }
 
