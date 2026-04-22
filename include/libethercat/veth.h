@@ -62,6 +62,10 @@ typedef struct eth_frame {
 // forward declarations
 struct ec;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Open exisiting TUN device like '/dev/ecat_tun0' created by ethercat_chardev.ko!
  *
@@ -102,6 +106,10 @@ void ec_veth_process_frame(struct ec *pec, uint8_t *buf, size_t len);
  * @param[in]   len         Length of Ethernet frame.
  */
 int ec_veth_send_frame(struct ec *pec, uint8_t *buf, size_t len);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // LIBETHERCAT_VETH_H
 
