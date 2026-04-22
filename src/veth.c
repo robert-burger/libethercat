@@ -336,7 +336,7 @@ void ec_veth_process_frame(struct ec *pec, uint8_t *buf, size_t len) {
 
                 if (dst_port == 0x88A4) {
                     struct echdr *echdr = (struct echdr *)((uint8_t *)udp + sizeof(struct udphdr));
-                    if (ec_mbx_gateway_handle(pec, echdr, len) == EC_OK) {t
+                    if (ec_mbx_gateway_handle(pec, echdr, len) == EC_OK) {
                         // setup headers
                         setup_ether_header(eth_hdr, eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHERTYPE_IP);
                         setup_udphdr(udp, dst_port, src_port, ntohs(udp->len));
