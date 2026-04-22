@@ -53,8 +53,6 @@ typedef struct ec_veth {
     osal_uint8_t mac[EC_VETH_ETH_ALEN];
     osal_task_t tid;            //!< tun device handler thread id.
     osal_bool_t running;        //!< tun device handler run flag.
-    
-    pool_t recv_pool;           //!< \brief receive mbx gateway message pool
 } ec_veth_t;
 
 typedef struct eth_frame {

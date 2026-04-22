@@ -242,6 +242,8 @@ typedef struct ec {
 #if LIBETHERCAT_BUILD_POSIX == 1
     ec_veth_t veth;
 #endif
+    
+    pool_t mbx_gw_recv_pool;        //!< \brief receive mbx gateway message pool
 
     int eeprom_log;                 //!< flag whether to log eeprom to stdout
     ec_state_t master_state;        //!< expected EtherCAT master state

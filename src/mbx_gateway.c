@@ -66,7 +66,7 @@ static void ec_mbx_gateway_wait(ec_t *pec, pool_entry_t **pp_entry) {
 
     do {
         osal_timer_init(&timeout, 100000);
-        (void)pool_get(&pec->veth.recv_pool, pp_entry, &timeout);
+        (void)pool_get(&pec->mbx_gw_recv_pool, pp_entry, &timeout);
     } while ((osal_timer_expired(&timeout_loop) == OSAL_OK) && (*pp_entry == NULL));
 }
 
@@ -81,7 +81,7 @@ void ec_mbx_gateway_enqueue(ec_t *pec, pool_entry_t *p_entry) {
     assert(pec != NULL);
     assert(p_entry != NULL);
 
-    pool_put(&pec->veth.recv_pool, p_entry);
+    pool_put(&pec->mbx_gw_recv_pool, p_entry);
 }
 
 //! \brief Handle a mailbox gateway request.
@@ -96,6 +96,7 @@ void ec_mbx_gateway_enqueue(ec_t *pec, pool_entry_t *p_entry) {
  */
 int ec_mbx_gateway_handle(struct ec *pec, struct echdr *echdr, size_t len) {
     struct ec_mbx_header *mbxhdr = (struct ec_mbx_header *)((uint8_t *)echdr + 2);
+    (void)len;
 
     if (mbxhdr->address == 0) {
         // addressed to master
@@ -110,7 +111,7 @@ int ec_mbx_gateway_handle(struct ec *pec, struct echdr *echdr, size_t len) {
                 osal_uint32_t abort_code = 0;
                 int ret = ec_coe_master_sdo_read(pec, sdohdr->index, sdohdr->sub_index, sdohdr->complete,
                         &tmpbuf[0], &tmpbuf_len, &abort_code);
-                if (ret != EC_OK) { printf("ec_coe_master_sdo_read return error: %d\n", ret); }
+                if (ret != EC_OK) { ec_log(1, "MBX_GATEWAY", "ec_coe_master_sdo_read return error: %d\n", ret); }
 
                 coehdr->service = EC_COE_SDORES;
                 sdohdr->command = EC_COE_SDO_UPLOAD_REQ;
@@ -141,7 +142,7 @@ int ec_mbx_gateway_handle(struct ec *pec, struct echdr *echdr, size_t len) {
                 pool_entry_t *p_entry = NULL;
 
                 if (ec_mbx_get_free_send_buffer(pec, slave, &p_entry, NULL) != 0) {
-                    printf("error getting free send buffer\n");
+                    ec_log(1, "MBX_GATEWAY", "error getting free send buffer\n");
                     mbx_ret = EC_ERROR_MAILBOX_OUT_OF_SEND_BUFFERS;
                 } else {
                     int counter;
