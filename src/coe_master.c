@@ -599,7 +599,7 @@ static struct PACKED {
 
 static ec_coe_sdo_desc_t obj_desc_master_0xF02n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, { "Configured Address List Slaves" }, 30 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0xF02n[] = {
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Subindex 0" },            10 },
+    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Subindex 0" },            10 },
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
 };
 
@@ -609,7 +609,7 @@ static ec_coe_sdo_entry_desc_t entry_desc_master_0xF02n[] = {
 
 static ec_coe_sdo_desc_t obj_desc_master_0xF04n = { DEFTYPE_ARRAY_OF_INT, OBJCODE_ARR, 255, { "Detected Address List Slaves" }, 28 }; 
 static ec_coe_sdo_entry_desc_t entry_desc_master_0xF04n[] = {
-    { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Subindex 0" },            10 },
+    { 0, DEFTYPE_UNSIGNED8,    8, ACCESS_READ,      { "Subindex 0" },            10 },
     { 0, DEFTYPE_UNSIGNED16,  16, ACCESS_READ,      { "Slave" },                  5 },
 };
 
