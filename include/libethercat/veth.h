@@ -43,6 +43,7 @@
 
 #include "libosal/types.h"
 #include "libosal/task.h"
+#include "libethercat/pool.h"
 
 #define EC_VETH_ETH_ALEN 6
 
@@ -52,6 +53,8 @@ typedef struct ec_veth {
     osal_uint8_t mac[EC_VETH_ETH_ALEN];
     osal_task_t tid;            //!< tun device handler thread id.
     osal_bool_t running;        //!< tun device handler run flag.
+    
+    pool_t recv_pool;           //!< \brief receive mbx gateway message pool
 } ec_veth_t;
 
 typedef struct eth_frame {
@@ -106,6 +109,15 @@ void ec_veth_process_frame(struct ec *pec, uint8_t *buf, size_t len);
  * @param[in]   len         Length of Ethernet frame.
  */
 int ec_veth_send_frame(struct ec *pec, uint8_t *buf, size_t len);
+
+//! \brief Enqueue CoE message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_mbx_gateway_enqueue(struct ec *pec, pool_entry_t *p_entry);
 
 #ifdef __cplusplus
 };

@@ -398,7 +398,7 @@ int ec_eoe_set_ip_parameter(ec_t *pec, osal_uint16_t slave, osal_uint8_t *mac,
             ec_eoe_set_ip_parameter_response_t *read_buf = (ec_eoe_set_ip_parameter_response_t *)(p_entry->data);
 
             ret = read_buf->sip_hdr.result;
-            ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+            ec_mbx_return_free_recv_buffer(pec, p_entry);
         }
     }
 
@@ -550,7 +550,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
             frame_offset += frag_len;
 
             if (!read_buf->eoe_hdr.last_fragment) {
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
                 p_entry = NULL;
 
                 // proceed with next fragment
@@ -586,13 +586,13 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
                             pool_put(&slv->mbx.eoe.eth_frames_recv_pool, p_eth_entry);
                         }
 
-                        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                        ec_mbx_return_free_recv_buffer(pec, p_entry);
                         p_entry = NULL;
                         p_eth_entry = NULL;
                         break;
                     }
 
-                    ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                    ec_mbx_return_free_recv_buffer(pec, p_entry);
                     p_entry = NULL;
 
                     ec_eoe_wait(pec, slave, &p_entry); 
@@ -628,7 +628,7 @@ int ec_eoe_process_recv(ec_t *pec, osal_uint16_t slave) {
     }
         
     if (p_entry != NULL) {        
-        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, p_entry);
     }
 
     return ret;

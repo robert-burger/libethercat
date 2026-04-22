@@ -41,6 +41,7 @@
 #endif
 
 #include "libethercat/mbx.h"
+#include "libethercat/mbx_gateway.h"
 #include "libethercat/ec.h"
 #include "libethercat/error_codes.h"
 
@@ -489,10 +490,10 @@ void ec_mbx_enqueue_tail(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) 
     ec_slave_ptr(slv, pec, slave);
 
     pool_put(&slv->mbx.message_pool_send_queued, p_entry);
-    
+
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_SEND;
-    
+
     osal_binary_semaphore_post(&slv->mbx.sync_sem);
     osal_mutex_unlock(&pec->slaves[slave].mbx.sync_mutex);
 }
@@ -510,7 +511,7 @@ void ec_mbx_sched_read(ec_t *pec, osal_uint16_t slave) {
     assert(slave < pec->slave_cnt);
 
     ec_slave_ptr(slv, pec, slave);
-    
+
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     slv->mbx.handler_flags |= MBX_HANDLER_FLAGS_RECV;
 
@@ -532,7 +533,7 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
 
     ec_slave_ptr(slv, pec, slave);
     pool_entry_t *p_entry = NULL;
-    
+
     osal_mutex_lock(&pec->slaves[slave].mbx.sync_mutex);
     uint32_t flags = slv->mbx.handler_flags;
     slv->mbx.handler_flags = 0;
@@ -552,55 +553,60 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                 ec_mbx_header_t *hdr = (ec_mbx_header_t *)(p_entry->data);
                 ec_log(200, "MAILBOX_HANDLE", "slave %2d: got one mailbox message: %0X\n", slave, hdr->mbxtype);
 
-                switch (hdr->mbxtype) {
+                if (hdr->address & 0x8000) { // this is a mailbox gateway message
+                    ec_mbx_gateway_enqueue(pec, p_entry);
+                    p_entry = NULL;
+                } else {
+                    switch (hdr->mbxtype) {
 #if LIBETHERCAT_MBX_SUPPORT_COE == 1
-                    case EC_MBX_COE:
-                        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
-                            ec_coe_enqueue(pec, slave, p_entry);
-                            p_entry = NULL;
-                        } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got CoE frame, but slave has no support!\n", slave);
-                        }
-                        break;
+                        case EC_MBX_COE:
+                            if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_COE)) {
+                                ec_coe_enqueue(pec, slave, p_entry);
+                                p_entry = NULL;
+                            } else {
+                                ec_log(1, "MAILBOX_HANDLE", "slave %2d: got CoE frame, but slave has no support!\n", slave);
+                            }
+                            break;
 #endif
 #if LIBETHERCAT_MBX_SUPPORT_SOE == 1
-                    case EC_MBX_SOE:
-                        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {
-                            ec_soe_enqueue(pec, slave, p_entry);
-                            p_entry = NULL;
-                        } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got SoE frame, but slave has no support!\n", slave);
-                        }
-                        break;
+                        case EC_MBX_SOE:
+                            if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_SOE)) {
+                                ec_soe_enqueue(pec, slave, p_entry);
+                                p_entry = NULL;
+                            } else {
+                                ec_log(1, "MAILBOX_HANDLE", "slave %2d: got SoE frame, but slave has no support!\n", slave);
+                            }
+                            break;
 #endif
 #if LIBETHERCAT_MBX_SUPPORT_FOE == 1
-                    case EC_MBX_FOE:
-                        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
-                            ec_foe_enqueue(pec, slave, p_entry);
-                            p_entry = NULL;
-                        } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got FoE frame, but slave has no support!\n", slave);
-                        }
-                        break;
+                        case EC_MBX_FOE:
+                            if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_FOE)) {
+                                ec_foe_enqueue(pec, slave, p_entry);
+                                p_entry = NULL;
+                            } else {
+                                ec_log(1, "MAILBOX_HANDLE", "slave %2d: got FoE frame, but slave has no support!\n", slave);
+                            }
+                            break;
 #endif
 #if LIBETHERCAT_MBX_SUPPORT_EOE == 1
-                    case EC_MBX_EOE:
-                        if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {
-                            ec_eoe_enqueue(pec, slave, p_entry);
-                            p_entry = NULL;
-                        } else {
-                            ec_log(1, "MAILBOX_HANDLE", "slave %2d: got EoE frame, but slave has no support!\n", slave);
-                        }
-                        break;
+                        case EC_MBX_EOE:
+                            if (0u != (slv->eeprom.mbx_supported & EC_EEPROM_MBX_EOE)) {
+                                ec_eoe_enqueue(pec, slave, p_entry);
+                                p_entry = NULL;
+                            } else {
+                                ec_log(1, "MAILBOX_HANDLE", "slave %2d: got EoE frame, but slave has no support!\n", slave);
+                            }
+                            break;
 #endif
-                    default:
-                        break;
+                        default:
+                            break;
+                    }
                 }
             }
 
             if (NULL != p_entry) {
                 // returning to free pool
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
             }
         }
     }
@@ -623,7 +629,7 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
             if (ret != EC_OK) {
                 ec_log(1, "MAILBOX_HANDLE", "slave %2d: error on writing send mailbox -> requeue\n", slave);
                 ec_mbx_enqueue_head(pec, slave, p_entry);
-            } else {                    
+            } else {
                 // all done
                 if (p_entry->user_cb != NULL) {
                     (*p_entry->user_cb)(pec, p_entry, NULL);
@@ -632,7 +638,7 @@ void ec_mbx_do_handle(ec_t *pec, uint16_t slave) {
                     p_entry->user_arg = 0;
                 }
 
-                ec_mbx_return_free_send_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_send_buffer(pec, p_entry);
             }
         }
     } 

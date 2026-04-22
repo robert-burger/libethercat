@@ -281,10 +281,10 @@ int ec_mbx_next_counter(ec_t *pec, int slave, int *seq_counter);
  */
 int ec_mbx_get_free_send_buffer(ec_t *pec, osal_uint16_t slave, pool_entry_t **pp_entry, osal_timer_t *timeout);
 
-#define ec_mbx_return_free_send_buffer(pec, slave, entry) \
+#define ec_mbx_return_free_send_buffer(pec, entry) \
     pool_put(&(pec)->mbx_message_pool_send_free, (entry)) 
 
-#define ec_mbx_return_free_recv_buffer(pec, slave, entry) \
+#define ec_mbx_return_free_recv_buffer(pec, entry) \
     pool_put(&(pec)->mbx_message_pool_recv_free, (entry))
 
 //! \brief Handle slaves mailbox.

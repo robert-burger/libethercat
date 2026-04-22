@@ -209,7 +209,7 @@ void ec_soe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
         
         ec_log(10, "SOE_ENQUEUE", "%s\n", soe_log_buf);
 
-        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, p_entry);
     } else {
         pool_put(&slv->mbx.soe.recv_pool, p_entry);
     }
@@ -294,7 +294,7 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
                 ec_log(5, "SOE_READ", "got unexpected response: opcode %d, incomplete %d, error %d, "
                         "atn %d, elements %d, idn %d\n", read_buf->soe_hdr.op_code, read_buf->soe_hdr.incomplete, read_buf->soe_hdr.error, 
                         read_buf->soe_hdr.atn, read_buf->soe_hdr.elements, read_buf->soe_hdr.idn_fragments_left);
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
                 continue; // TODO handle unexpected answer
             }
 
@@ -321,7 +321,7 @@ int ec_soe_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t 
                 left_len -= (osal_ssize_t)read_len;
             }
 
-            ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+            ec_mbx_return_free_recv_buffer(pec, p_entry);
 
             if (/*(left_len < 0) ||*/ !read_buf->soe_hdr.incomplete) {
                 ret = EC_OK;
@@ -429,7 +429,7 @@ int ec_soe_write(ec_t *pec, osal_uint16_t slave, osal_uint8_t atn, osal_uint16_t
                             read_buf->soe_hdr.atn, read_buf->soe_hdr.elements, read_buf->soe_hdr.idn_fragments_left);
 
                     osal_uint8_t op_code = read_buf->soe_hdr.op_code;
-                    ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                    ec_mbx_return_free_recv_buffer(pec, p_entry);
 
                     // check for correct op_code
                     if (op_code != EC_SOE_WRITE_RES) {

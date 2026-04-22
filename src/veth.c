@@ -68,6 +68,7 @@
 #include "libethercat/error_codes.h"
 #include "libethercat/settings.h"
 #include "libethercat/coe.h"
+#include "libethercat/mbx_gateway.h"
 
 #ifdef LIBETHERCAT_HAVE_UNISTD_H
 #include <unistd.h>
@@ -262,6 +263,18 @@ static void calculate_ip_checksum(struct iphdr *ip) {
     ip->check = sum;
 }
 
+static inline void veth_debug_print(ec_t *pec, const osal_char_t *ctx, const osal_char_t *msg, osal_uint8_t *frame, osal_size_t frame_len) {
+#define EOE_DEBUG_BUFFER_SIZE   1024
+    static osal_char_t eoe_debug_buffer[EOE_DEBUG_BUFFER_SIZE];
+    
+    int pos = snprintf(eoe_debug_buffer, EOE_DEBUG_BUFFER_SIZE, "%s: ", msg);
+    for (osal_uint32_t i = 0; (i < frame_len) && (pos < EOE_DEBUG_BUFFER_SIZE); ++i) {
+        pos += snprintf(&eoe_debug_buffer[pos], EOE_DEBUG_BUFFER_SIZE-pos, "%02X", frame[i]);
+    }
+
+    ec_log(10, ctx, "%s\n", eoe_debug_buffer);
+}
+
 /**
  * @brief Process received Ethernet frame.
  *
@@ -322,63 +335,24 @@ void ec_veth_process_frame(struct ec *pec, uint8_t *buf, size_t len) {
                 uint16_t dst_port = ntohs(udp->uh_dport);
 
                 if (dst_port == 0x88A4) {
-                    uint8_t *echdr = ((uint8_t *)udp + sizeof(struct udphdr));
-                    struct ec_mbx_header *mbxhdr = (struct ec_mbx_header *)((uint8_t *)udp + sizeof(struct udphdr) + 2);
+                    struct echdr *echdr = (struct echdr *)((uint8_t *)udp + sizeof(struct udphdr));
+                    if (ec_mbx_gateway_handle(pec, echdr, len) == EC_OK) {t
+                        // setup headers
+                        setup_ether_header(eth_hdr, eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHERTYPE_IP);
+                        setup_udphdr(udp, dst_port, src_port, ntohs(udp->len));
+                        setup_iphdr(ip, IPPROTO_UDP, htons(ip->tot_len), ip->daddr, ip->saddr);
 
-                    if (mbxhdr->address == 0) {
-                        // addressed to master
-                        if (mbxhdr->mbxtype == EC_MBX_COE) {
-                            ec_coe_header_t *coehdr = (ec_coe_header_t *)((uint8_t *)mbxhdr + sizeof(struct ec_mbx_header));
-                            if (coehdr->service == EC_COE_SDOREQ) {
-                                ec_sdo_init_download_header_t *sdohdr = (ec_sdo_init_download_header_t *)(
-                                    (uint8_t *)coehdr + sizeof(ec_coe_header_t));
+                        ip->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + 2 + echdr->length);
+                        udp->len = htons(sizeof(struct udphdr) + 2 + echdr->length);
 
-                                osal_uint8_t tmpbuf[256];
-                                osal_size_t tmpbuf_len = 256;
-                                osal_uint32_t abort_code = 0;
-                                int ret = ec_coe_master_sdo_read(pec, sdohdr->index, sdohdr->sub_index, sdohdr->complete,
-                                    &tmpbuf[0], &tmpbuf_len, &abort_code);
-                                if (ret != EC_OK) { printf("ec_coe_master_sdo_read return error: %d\n", ret); }
+                        calculate_ip_checksum(ip);
+                        calculate_udp_checksum(ip, udp);
 
-                                coehdr->service = EC_COE_SDORES;
-                                sdohdr->command = EC_COE_SDO_UPLOAD_REQ;
-
-                                // setup headers
-                                setup_ether_header(eth_hdr, eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHERTYPE_IP);
-                                setup_udphdr(udp, dst_port, src_port, ntohs(udp->len));
-                                setup_iphdr(ip, IPPROTO_UDP, htons(ip->tot_len), ip->daddr, ip->saddr);
-
-                                uint8_t *coepayload = ((uint8_t *)sdohdr + sizeof(ec_sdo_init_download_header_t));
-
-                                if (tmpbuf_len <= 4) {
-                                    sdohdr->transfer_type = 1;
-                                    sdohdr->data_set_size = 4 - tmpbuf_len;
-                                } else {
-                                    sdohdr->size_indicator = 1;
-                                    sdohdr->transfer_type = 0;
-                                    sdohdr->data_set_size = 0;
-                                    *(uint32_t *)coepayload = tmpbuf_len;
-                                    coepayload += 4;
-
-                                    ip->tot_len = htons(ntohs(ip->tot_len) + tmpbuf_len);
-                                    udp->len = htons(ntohs(udp->len) + tmpbuf_len);
-                                    mbxhdr->length += tmpbuf_len;
-
-                                    uint16_t echdr_len = (*(uint16_t *)echdr & 0x07FF);
-                                    *(uint16_t *)echdr = (*(uint16_t *)echdr & 0xF100) | (echdr_len + tmpbuf_len);;
-
-                                    len += tmpbuf_len;
-                                }
-
-                                memcpy(coepayload, tmpbuf, tmpbuf_len);
-
-                                calculate_ip_checksum(ip);
-                                calculate_udp_checksum(ip, udp);
-
-                                int wr = ec_veth_send_frame(pec, buf, len);
-                                if (wr != len) printf("tried to send back %lu bytes, got %d through\n", len, wr);
-                            }
-                        } 
+                        size_t send_length = htons(ip->tot_len) + sizeof(struct ethhdr);
+                        int wr = ec_veth_send_frame(pec, buf, send_length);
+                        if (wr != send_length) {
+                            ec_log(1, "VETH", "tried to send back %lu bytes, got %d through\n", send_length, wr);
+                        }
                     }
                 }
             }
@@ -501,7 +475,9 @@ int ec_veth_open_tun(struct ec *pec, const char *tun_dev_name, const uint8_t mac
         if (pec->veth.fd == -1) {
             ec_log(1, "EOE_OPEN_TUN", "could not open %s\n", tun_dev_name);
             ret = EC_ERROR_UNAVAILABLE;
-        } 
+        } else {
+            ec_log(10, "EOE_OPEN_TUN", "tun device %s successfully opened, master ip is %X!\n", tun_dev_name, pec->veth.ip);
+        }
 
         if (ret == EC_OK) {
             pec->veth.running = OSAL_TRUE;
@@ -590,6 +566,8 @@ int ec_veth_open_tun(struct ec *pec, const char *tun_dev_name, const uint8_t mac
         (void)pec;
 #endif
     }
+    
+    (void)pool_open(&pec->veth.recv_pool, 0, NULL);
 
     return ret;
 }
@@ -611,5 +589,7 @@ void ec_veth_close_tun(struct ec *pec) {
         pec->veth.fd = 0;
 #endif
     }
+    
+    (void)pool_close(&pec->veth.recv_pool);
 }
 

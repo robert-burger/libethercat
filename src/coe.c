@@ -324,7 +324,7 @@ void ec_coe_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_entry) {
     } else if ((coe_hdr->service >= 0x01u) && (coe_hdr->service <= 0x08u)) {
         pool_put(&slv->mbx.coe.recv_pool, p_entry);
     } else {
-        ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+        ec_mbx_return_free_recv_buffer(pec, p_entry);
     }
 }
 
@@ -434,7 +434,7 @@ int ec_coe_sdo_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
                 p_entry = NULL;
 
                 if ((ret == EC_OK) || (ret == EC_ERROR_MAILBOX_ABORT)) {
@@ -535,7 +535,7 @@ static int ec_coe_sdo_write_expedited(ec_t *pec, osal_uint16_t slave, osal_uint1
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
                 p_entry = NULL;
 
                 if ((ret == EC_OK) || (ret == EC_ERROR_MAILBOX_ABORT)) {
@@ -644,7 +644,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
                 p_entry = NULL;
 
                 if ((ret == EC_OK) || (ret == EC_ERROR_MAILBOX_ABORT)) {
@@ -722,7 +722,7 @@ static int ec_coe_sdo_write_normal(ec_t *pec, osal_uint16_t slave, osal_uint16_t
                                 ret = EC_ERROR_MAILBOX_READ;
                             }
 
-                            ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                            ec_mbx_return_free_recv_buffer(pec, p_entry);
                             p_entry = NULL;
 
                             if ((ret == EC_OK) || (ret == EC_ERROR_MAILBOX_ABORT)) {
@@ -862,7 +862,7 @@ int ec_coe_odlist_read(ec_t *pec, osal_uint16_t slave, osal_uint8_t *buf, osal_s
                     
                     frag_left = read_buf->sdo_info_hdr.fragments_left;
 
-                    ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                    ec_mbx_return_free_recv_buffer(pec, p_entry);
                     p_entry = NULL;
                 }
             } while (frag_left != 0);
@@ -984,7 +984,7 @@ int ec_coe_sdo_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t index,
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
                 p_entry = NULL;
 
                 if ((ret == EC_OK) || (ret == EC_ERROR_MAILBOX_ABORT)) {
@@ -1114,7 +1114,7 @@ int ec_coe_sdo_entry_desc_read(ec_t *pec, osal_uint16_t slave, osal_uint16_t ind
                     ret = EC_ERROR_MAILBOX_READ;
                 }
 
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                ec_mbx_return_free_recv_buffer(pec, p_entry);
                 p_entry = NULL;
 
                 if ((ret == EC_OK) || (ret == EC_ERROR_MAILBOX_ABORT)) {
@@ -1310,7 +1310,7 @@ void ec_coe_emergency_enqueue(ec_t *pec, osal_uint16_t slave, pool_entry_t *p_en
         (void)osal_mutex_unlock(&slv->mbx.coe.lock);
     }
 
-    ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+    ec_mbx_return_free_recv_buffer(pec, p_entry);
 }
 
 //! Get next CoE emergency message.

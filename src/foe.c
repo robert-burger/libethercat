@@ -345,7 +345,7 @@ int ec_foe_read(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                     }
                 }
 
-                ec_mbx_return_free_recv_buffer(pec, slave, p_entry_recv);
+                ec_mbx_return_free_recv_buffer(pec, p_entry_recv);
             }
         } while (ret == EC_ERROR_MAILBOX_FOE_AGAIN);
 
@@ -429,7 +429,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
             }
 
             // returning ack message
-            ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+            ec_mbx_return_free_recv_buffer(pec, p_entry);
         } else {
             ret = EC_ERROR_MAILBOX_TIMEOUT;
         }
@@ -497,7 +497,7 @@ int ec_foe_write(ec_t *pec, osal_uint16_t slave, osal_uint32_t password,
                         ret = EC_OK;
                     }
 
-                    ec_mbx_return_free_recv_buffer(pec, slave, p_entry);
+                    ec_mbx_return_free_recv_buffer(pec, p_entry);
                 } else {
                     ec_log(10, "FOE_WRITE",
                             "got no ack on foe write request, last_pkt %d, bytes_read %" PRIu64 ", data_len %" PRIu64 "\n", 

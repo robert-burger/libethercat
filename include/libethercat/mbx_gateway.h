@@ -40,6 +40,8 @@
 #ifndef LIBETHERCAT_MBX_GATEWAY_H
 #define LIBETHERCAT_MBX_GATEWAY_H
 
+#include "libosal/types.h"
+
 /** \defgroup mailbox_group Mailbox Gateway
  *
  * This modules contains EtherCAT mailbox gateway functions.
@@ -47,8 +49,46 @@
  * @{
  */
 
+// forward declarations
+struct ec;
+struct pool_entry;
+
+struct echdr {
+    osal_uint16_t length : 11;
+    osal_uint16_t reserved : 1;
+    osal_uint16_t data_type : 4;
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//! \brief Enqueue MBX Gateway message received from slave.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in] p_entry   Pointer to pool entry containing received
+ *                      mailbox message from slave.
+ */
+void ec_mbx_gateway_enqueue(struct ec *pec, struct pool_entry *p_entry);
+
+//! \brief Handle a mailbox gateway request.
+/*!
+ * \param[in] pec       Pointer to ethercat master structure, 
+ *                      which you got from \link ec_open \endlink.
+ * \param[in,out] echdr Pointer to EC-header of mailbox gateway request.
+ *                      Response is returned here.
+ * \param[in] len       Lenght of echdr buffer.
+ *
+ * \return EC_OK on success.
+ */
+int ec_mbx_gateway_handle(struct ec *pec, struct echdr *echdr, size_t len);
+
+#ifdef __cplusplus
+};
+#endif
+
 /** @} */
 
 #endif // LIBETHERCAT_MBX_GATEWAY_H
-
 

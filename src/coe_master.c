@@ -394,7 +394,7 @@ static int callback_master_0x8nnn(ec_t *pec, const ec_coe_object_t *coe_obj, osa
         } else (*len) = 0;
     } else if (sub_index == 2u) {
         if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
-            ret = ec_coe_sdo_read(pec, slave, 0x100A, 0, complete, buf, len, abort_code);
+            ret = ec_coe_sdo_read(pec, slave, 0x1008, 0, complete, buf, len, abort_code);
         } else (*len) = 0;
     } else if (sub_index == 3u) {
         if (pec->slaves[slave].eeprom.mbx_supported != 0u) {
