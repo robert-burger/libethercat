@@ -7,7 +7,7 @@ SOURCEDIR         = ./
 BUILDDIR          = $(SOURCEDIR)/doc
 GH_PAGES_DIR_NAME = gh-pages
 BRANCH_DIR_NAME   = $(subst /,_,$(BRANCH_NAME))
-BUILDCMD          = cissy run -c $(SOURCEDIR) -p doxygen/[~=1.10]@3rdparty/stable doxygen
+BUILDCMD          = cissy run -c $(SOURCEDIR) -p doxygen/[~1.10]@3rdparty/stable doxygen
 DOCS              = "$(GH_PAGES_DIR_NAME)/$(BRANCH_DIR_NAME)"
 
 .PHONY: Makefile.doc gh-pages
