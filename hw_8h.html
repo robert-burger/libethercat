@@ -118,15 +118,15 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:a87e02a59223453d44d8ce6a826ed07c1" id="r_a87e02a59223453d44d8ce6a826ed07c1"><td class="memItemLeft" align="right" valign="top"><a id="a87e02a59223453d44d8ce6a826ed07c1" name="a87e02a59223453d44d8ce6a826ed07c1"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>EC_ETH_FRAME_LEN</b>&#160;&#160;&#160;0x1518</td></tr>
+<tr class="separator:a87e02a59223453d44d8ce6a826ed07c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8c317a42292b61c93aae91e59118a46" id="r_af8c317a42292b61c93aae91e59118a46"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="hw_8h.html#af8c317a42292b61c93aae91e59118a46">container_of</a>(ptr,  type,  member)</td></tr>
 <tr class="separator:af8c317a42292b61c93aae91e59118a46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga761d05e4fcf5ee3f4c9e1f4516924869" id="r_ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="memItemLeft" align="right" valign="top">
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>ETH_P_ECAT</b>&#160;&#160;&#160;((osal_uint16_t)0x88A4u)</td></tr>
 <tr class="memdesc:ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ethertype for EtherCAT. <br /></td></tr>
 <tr class="separator:ga761d05e4fcf5ee3f4c9e1f4516924869"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8151df877b5f1b60ed7e6dbb8fe0ea95" id="r_ga8151df877b5f1b60ed7e6dbb8fe0ea95"><td class="memItemLeft" align="right" valign="top">
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>ETH_FRAME_LEN</b>&#160;&#160;&#160;0x1518</td></tr>
-<tr class="separator:ga8151df877b5f1b60ed7e6dbb8fe0ea95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -177,6 +177,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga317d72c3f8cb8460308f42eec6381383" id="r_ga317d72c3f8cb8460308f42eec6381383"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383">hw_tx</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
 <tr class="memdesc:ga317d72c3f8cb8460308f42eec6381383"><td class="mdescLeft">&#160;</td><td class="mdescRight">start sending queued ethercat datagrams  <br /></td></tr>
 <tr class="separator:ga317d72c3f8cb8460308f42eec6381383"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga566820607c4811c2e23c918b8c107d0e" id="r_ga566820607c4811c2e23c918b8c107d0e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga566820607c4811c2e23c918b8c107d0e">hw_rx</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw)</td></tr>
+<tr class="memdesc:ga566820607c4811c2e23c918b8c107d0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">start receiving queued ethercat datagrams in polling modes  <br /></td></tr>
+<tr class="separator:ga566820607c4811c2e23c918b8c107d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5f105e7445bcefd86799d5709bce377f" id="r_ga5f105e7445bcefd86799d5709bce377f"><td class="memItemLeft" align="right" valign="top">osal_bool_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hardware__group.html#ga5f105e7445bcefd86799d5709bce377f">hw_process_rx_frame</a> (struct <a class="el" href="structhw__common.html">hw_common</a> *phw, <a class="el" href="group__datagram__group.html#gad250ac467f1668e24fc658ad402921b0">ec_frame_t</a> *pframe)</td></tr>
 <tr class="memdesc:ga5f105e7445bcefd86799d5709bce377f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a received EtherCAT frame.  <br /></td></tr>
 <tr class="separator:ga5f105e7445bcefd86799d5709bce377f"><td class="memSeparator" colspan="2">&#160;</td></tr>

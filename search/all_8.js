@@ -29,13 +29,14 @@ var searchData=
   ['hw_5fpikeos_26',['hw_pikeos',['../structhw__pikeos.html',1,'']]],
   ['hw_5fpikeos_2eh_27',['hw_pikeos.h',['../hw__pikeos_8h.html',1,'']]],
   ['hw_5fprocess_5frx_5fframe_28',['hw_process_rx_frame',['../group__hardware__group.html#ga5f105e7445bcefd86799d5709bce377f',1,'hw.h']]],
-  ['hw_5fsock_5fraw_29',['hw_sock_raw',['../structhw__sock__raw.html',1,'']]],
-  ['hw_5fsock_5fraw_2eh_30',['hw_sock_raw.h',['../hw__sock__raw_8h.html',1,'']]],
-  ['hw_5fsock_5fraw_5fmmaped_31',['hw_sock_raw_mmaped',['../structhw__sock__raw__mmaped.html',1,'']]],
-  ['hw_5fsock_5fraw_5fmmaped_2eh_32',['hw_sock_raw_mmaped.h',['../hw__sock__raw__mmaped_8h.html',1,'']]],
-  ['hw_5fstm32_33',['hw_stm32',['../structhw__stm32.html',1,'']]],
-  ['hw_5fstm32_2eh_34',['hw_stm32.h',['../hw__stm32_8h.html',1,'']]],
-  ['hw_5ftx_35',['hw_tx',['../group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383',1,'hw.h']]],
-  ['hw_5ftx_5fhigh_36',['hw_tx_high',['../group__hardware__group.html#ga2772faf983ef30e60474480973b2e842',1,'hw.h']]],
-  ['hw_5ftx_5flow_37',['hw_tx_low',['../group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff',1,'hw.h']]]
+  ['hw_5frx_29',['hw_rx',['../group__hardware__group.html#ga566820607c4811c2e23c918b8c107d0e',1,'hw.h']]],
+  ['hw_5fsock_5fraw_30',['hw_sock_raw',['../structhw__sock__raw.html',1,'']]],
+  ['hw_5fsock_5fraw_2eh_31',['hw_sock_raw.h',['../hw__sock__raw_8h.html',1,'']]],
+  ['hw_5fsock_5fraw_5fmmaped_32',['hw_sock_raw_mmaped',['../structhw__sock__raw__mmaped.html',1,'']]],
+  ['hw_5fsock_5fraw_5fmmaped_2eh_33',['hw_sock_raw_mmaped.h',['../hw__sock__raw__mmaped_8h.html',1,'']]],
+  ['hw_5fstm32_34',['hw_stm32',['../structhw__stm32.html',1,'']]],
+  ['hw_5fstm32_2eh_35',['hw_stm32.h',['../hw__stm32_8h.html',1,'']]],
+  ['hw_5ftx_36',['hw_tx',['../group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383',1,'hw.h']]],
+  ['hw_5ftx_5fhigh_37',['hw_tx_high',['../group__hardware__group.html#ga2772faf983ef30e60474480973b2e842',1,'hw.h']]],
+  ['hw_5ftx_5flow_38',['hw_tx_low',['../group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff',1,'hw.h']]]
 ];

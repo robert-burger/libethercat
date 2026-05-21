@@ -19,9 +19,11 @@ var dir_6ce0b57c15e65b5e5abf78abc9512688 =
     [ "hw_stm32.h", "hw__stm32_8h.html", "hw__stm32_8h" ],
     [ "idx.h", "idx_8h.html", "idx_8h" ],
     [ "mbx.h", "mbx_8h.html", "mbx_8h" ],
+    [ "mbx_gateway.h", "mbx__gateway_8h.html", "mbx__gateway_8h" ],
     [ "mii.h", "mii_8h.html", "mii_8h" ],
     [ "pool.h", "pool_8h.html", "pool_8h" ],
     [ "regs.h", "regs_8h_source.html", null ],
     [ "slave.h", "slave_8h.html", "slave_8h" ],
-    [ "soe.h", "soe_8h.html", "soe_8h" ]
+    [ "soe.h", "soe_8h.html", "soe_8h" ],
+    [ "veth.h", "veth_8h_source.html", null ]
 ];

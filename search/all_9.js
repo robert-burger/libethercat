@@ -15,6 +15,7 @@ var searchData=
   ['init_5f2_5fpreop_12',['INIT_2_PREOP',['../group__slave__group.html#gaa228267c332e8c7d9cf34962e20dd6b7',1,'slave.h']]],
   ['init_5f2_5fsafeop_13',['INIT_2_SAFEOP',['../group__slave__group.html#ga2afa5a7e034071c145c812c1301145d7',1,'slave.h']]],
   ['init_5fcmds_14',['init_cmds',['../structec__slave.html#a1bb077520aa7496d34c58cf4cba02466',1,'ec_slave']]],
-  ['ip_5faddress_15',['ip_address',['../group__eoe__group.html#ga3fa631c6c56836ef1a4ff436c3756688',1,'ec_eoe_slave_config']]],
-  ['irq_16',['irq',['../structec__datagram.html#a718318fdf7491e52fbc9fdfd2fa7b66f',1,'ec_datagram']]]
+  ['ip_15',['ip',['../structec__veth.html#a080d4ebf8893821d3394d109b639d922',1,'ec_veth']]],
+  ['ip_5faddress_16',['ip_address',['../group__eoe__group.html#ga3fa631c6c56836ef1a4ff436c3756688',1,'ec_eoe_slave_config']]],
+  ['irq_17',['irq',['../structec__datagram.html#a718318fdf7491e52fbc9fdfd2fa7b66f',1,'ec_datagram']]]
 ];

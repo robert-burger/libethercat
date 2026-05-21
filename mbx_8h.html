@@ -142,12 +142,12 @@ Macros</h2></td></tr>
 <tr class="memitem:gaa8177823cccf63a1b5c19331a7596912" id="r_gaa8177823cccf63a1b5c19331a7596912"><td class="memItemLeft" align="right" valign="top">
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_get_free_send_buffer_old</b>(pec,  slave,  entry,  timeout,  lock)&#160;&#160;&#160;    <a class="el" href="group__pool__group.html#ga6638d2652f6180a46df0381bd612b3f0">pool_get</a>(&amp;(pec)-&gt;mbx_message_pool_send_free, &amp;(entry), (timeout))</td></tr>
 <tr class="separator:gaa8177823cccf63a1b5c19331a7596912"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8815ce56f2287e78f4b599a2ed63435a" id="r_ga8815ce56f2287e78f4b599a2ed63435a"><td class="memItemLeft" align="right" valign="top">
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_return_free_send_buffer</b>(pec,  slave,  entry)&#160;&#160;&#160;    <a class="el" href="group__pool__group.html#ga834b8a027cb13de7b0232be9bafca716">pool_put</a>(&amp;(pec)-&gt;mbx_message_pool_send_free, (entry))</td></tr>
-<tr class="separator:ga8815ce56f2287e78f4b599a2ed63435a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga104ce18e0d58e8dca0a941a5d696e37e" id="r_ga104ce18e0d58e8dca0a941a5d696e37e"><td class="memItemLeft" align="right" valign="top">
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_return_free_recv_buffer</b>(pec,  slave,  entry)&#160;&#160;&#160;    <a class="el" href="group__pool__group.html#ga834b8a027cb13de7b0232be9bafca716">pool_put</a>(&amp;(pec)-&gt;mbx_message_pool_recv_free, (entry))</td></tr>
-<tr class="separator:ga104ce18e0d58e8dca0a941a5d696e37e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab888d036f97be679fe4916078035dc1e" id="r_gab888d036f97be679fe4916078035dc1e"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_return_free_send_buffer</b>(pec,  entry)&#160;&#160;&#160;    <a class="el" href="group__pool__group.html#ga834b8a027cb13de7b0232be9bafca716">pool_put</a>(&amp;(pec)-&gt;mbx_message_pool_send_free, (entry))</td></tr>
+<tr class="separator:gab888d036f97be679fe4916078035dc1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac2ddd3dcc7e63a369250f2887cc08b57" id="r_gac2ddd3dcc7e63a369250f2887cc08b57"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_return_free_recv_buffer</b>(pec,  entry)&#160;&#160;&#160;    <a class="el" href="group__pool__group.html#ga834b8a027cb13de7b0232be9bafca716">pool_put</a>(&amp;(pec)-&gt;mbx_message_pool_recv_free, (entry))</td></tr>
+<tr class="separator:gac2ddd3dcc7e63a369250f2887cc08b57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -155,11 +155,11 @@ Typedefs</h2></td></tr>
 typedef struct <a class="el" href="structec.html">ec</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_t</b></td></tr>
 <tr class="separator:ga3bb8b6ae2cba98e3d3dd7cfd9602800d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf9c80235c571b32792792f2645a7771a" id="r_gaf9c80235c571b32792792f2645a7771a"><td class="memItemLeft" align="right" valign="top">
-typedef struct PACKED <a class="el" href="structec__mbx__header.html">ec_mbx_header</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_header_t</b></td></tr>
+typedef struct <a class="el" href="structPACKED.html">PACKED</a> <a class="el" href="structec__mbx__header.html">ec_mbx_header</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_header_t</b></td></tr>
 <tr class="memdesc:gaf9c80235c571b32792792f2645a7771a"><td class="mdescLeft">&#160;</td><td class="mdescRight">ethercat mailbox header <br /></td></tr>
 <tr class="separator:gaf9c80235c571b32792792f2645a7771a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabe42733d2552d5612e40d1e2ad157fa7" id="r_gabe42733d2552d5612e40d1e2ad157fa7"><td class="memItemLeft" align="right" valign="top">
-typedef struct PACKED <a class="el" href="structec__mbx__buffer.html">ec_mbx_buffer</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_buffer_t</b></td></tr>
+typedef struct <a class="el" href="structPACKED.html">PACKED</a> <a class="el" href="structec__mbx__buffer.html">ec_mbx_buffer</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ec_mbx_buffer_t</b></td></tr>
 <tr class="memdesc:gabe42733d2552d5612e40d1e2ad157fa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">ethercat mailbox data <br /></td></tr>
 <tr class="separator:gabe42733d2552d5612e40d1e2ad157fa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gadd2bc9eb631c4765ce5c8fbf5101a36c" id="r_gadd2bc9eb631c4765ce5c8fbf5101a36c"><td class="memItemLeft" align="right" valign="top">

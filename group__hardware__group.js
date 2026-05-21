@@ -30,6 +30,7 @@ var group__hardware__group =
     [ "hw_enqueue", "group__hardware__group.html#ga6dc2485f0a0939d961b1f7645667158f", null ],
     [ "hw_open", "group__hardware__group.html#gae894f118c5550dd2385f99c91db3e6e6", null ],
     [ "hw_process_rx_frame", "group__hardware__group.html#ga5f105e7445bcefd86799d5709bce377f", null ],
+    [ "hw_rx", "group__hardware__group.html#ga566820607c4811c2e23c918b8c107d0e", null ],
     [ "hw_tx", "group__hardware__group.html#ga317d72c3f8cb8460308f42eec6381383", null ],
     [ "hw_tx_high", "group__hardware__group.html#ga2772faf983ef30e60474480973b2e842", null ],
     [ "hw_tx_low", "group__hardware__group.html#ga3f23caf928bb7736403250c3a710bcff", null ]

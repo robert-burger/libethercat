@@ -38,7 +38,10 @@ var annotated_dup =
     [ "ec_soe", "structec__soe.html", "structec__soe" ],
     [ "ec_soe_idn_attribute", "structec__soe__idn__attribute.html", "structec__soe__idn__attribute" ],
     [ "ec_statistics", "structec__statistics.html", null ],
+    [ "ec_veth", "structec__veth.html", "structec__veth" ],
+    [ "echdr", "structechdr.html", null ],
     [ "eeprom_info", "structeeprom__info.html", "structeeprom__info" ],
+    [ "eth_frame", "structeth__frame.html", null ],
     [ "hw_common", "structhw__common.html", "structhw__common" ],
     [ "hw_file", "structhw__file.html", "structhw__file" ],
     [ "hw_pikeos", "structhw__pikeos.html", "structhw__pikeos" ],
@@ -47,6 +50,7 @@ var annotated_dup =
     [ "hw_stm32", "structhw__stm32.html", "structhw__stm32" ],
     [ "idx_entry", "structidx__entry.html", "structidx__entry" ],
     [ "idx_queue", "structidx__queue.html", "structidx__queue" ],
+    [ "PACKED", "structPACKED.html", null ],
     [ "pool", "structpool.html", "structpool" ],
     [ "pool_entry", "structpool__entry.html", "structpool__entry" ],
     [ "worker_arg", "structworker__arg.html", "structworker__arg" ]

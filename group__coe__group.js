@@ -12,6 +12,7 @@ var group__coe__group =
       [ "lock", "structec__coe.html#a4e5da0bbbbfcba2a44f2ecf99f8e5dd8", null ],
       [ "recv_pool", "structec__coe.html#a4c417fdabc12fa0b4f2f5ad5d01cb49d", null ]
     ] ],
+    [ "PACKED", "structPACKED.html", null ],
     [ "ec_coe_sdo_desc", "structec__coe__sdo__desc.html", [
       [ "data_type", "structec__coe__sdo__desc.html#a6356caae203580fdcdb0b897eb5c5b17", null ],
       [ "max_subindices", "structec__coe__sdo__desc.html#a0b94a7e693dd140ab41a5b6476986f95", null ],

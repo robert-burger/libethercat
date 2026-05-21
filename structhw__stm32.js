@@ -1,5 +1,5 @@
 var structhw__stm32 =
 [
-    [ "recv_frame", "structhw__stm32.html#a92c4fae0b18bc5932d87b74516a02887", null ],
-    [ "send_frame", "structhw__stm32.html#ae39f199a2d306607b001a8f80deb6b65", null ]
+    [ "recv_frame", "structhw__stm32.html#aea0237661d2901c198243b93d661ace1", null ],
+    [ "send_frame", "structhw__stm32.html#aaca664fe8e2c0be3b5461735548606fe", null ]
 ];

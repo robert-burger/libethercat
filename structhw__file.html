@@ -106,14 +106,14 @@ struct <a class="el" href="structhw__common.html">hw_common</a>&#160;</td><td cl
 int&#160;</td><td class="memItemRight" valign="bottom"><b>fd</b></td></tr>
 <tr class="memdesc:a0dc72f6dd96c4cc7e4bb017c780dcdb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">file descriptor <br /></td></tr>
 <tr class="separator:a0dc72f6dd96c4cc7e4bb017c780dcdb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7aa60c22fc8b9cbce3f22d34d4a3da60" id="r_a7aa60c22fc8b9cbce3f22d34d4a3da60"><td class="memItemLeft" align="right" valign="top"><a id="a7aa60c22fc8b9cbce3f22d34d4a3da60" name="a7aa60c22fc8b9cbce3f22d34d4a3da60"></a>
-osal_uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>send_frame</b> [ETH_FRAME_LEN]</td></tr>
-<tr class="memdesc:a7aa60c22fc8b9cbce3f22d34d4a3da60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static send frame. <br /></td></tr>
-<tr class="separator:a7aa60c22fc8b9cbce3f22d34d4a3da60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a822ce5d2f216b92c14adba797b404d6a" id="r_a822ce5d2f216b92c14adba797b404d6a"><td class="memItemLeft" align="right" valign="top"><a id="a822ce5d2f216b92c14adba797b404d6a" name="a822ce5d2f216b92c14adba797b404d6a"></a>
-osal_uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>recv_frame</b> [ETH_FRAME_LEN]</td></tr>
-<tr class="memdesc:a822ce5d2f216b92c14adba797b404d6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static receive frame. <br /></td></tr>
-<tr class="separator:a822ce5d2f216b92c14adba797b404d6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b8acd210803b6ec2441fca97685eed5" id="r_a0b8acd210803b6ec2441fca97685eed5"><td class="memItemLeft" align="right" valign="top"><a id="a0b8acd210803b6ec2441fca97685eed5" name="a0b8acd210803b6ec2441fca97685eed5"></a>
+osal_uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>send_frame</b> [EC_ETH_FRAME_LEN]</td></tr>
+<tr class="memdesc:a0b8acd210803b6ec2441fca97685eed5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static send frame. <br /></td></tr>
+<tr class="separator:a0b8acd210803b6ec2441fca97685eed5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4a3777db9c3589fae48126b3a062a03" id="r_aa4a3777db9c3589fae48126b3a062a03"><td class="memItemLeft" align="right" valign="top"><a id="aa4a3777db9c3589fae48126b3a062a03" name="aa4a3777db9c3589fae48126b3a062a03"></a>
+osal_uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>recv_frame</b> [EC_ETH_FRAME_LEN]</td></tr>
+<tr class="memdesc:aa4a3777db9c3589fae48126b3a062a03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static receive frame. <br /></td></tr>
+<tr class="separator:aa4a3777db9c3589fae48126b3a062a03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab66f841b0dc690708d49cc5118ed9321" id="r_ab66f841b0dc690708d49cc5118ed9321"><td class="memItemLeft" align="right" valign="top"><a id="ab66f841b0dc690708d49cc5118ed9321" name="ab66f841b0dc690708d49cc5118ed9321"></a>
 osal_bool_t&#160;</td><td class="memItemRight" valign="bottom"><b>polling_mode</b></td></tr>
 <tr class="memdesc:ab66f841b0dc690708d49cc5118ed9321"><td class="mdescLeft">&#160;</td><td class="mdescRight">Special interrupt-less polling-mode flag. <br /></td></tr>
@@ -129,6 +129,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>rxthreadrunning</b></t
 <tr class="memitem:af68958e80edfc9fbc8be527b8e76b1c5" id="r_af68958e80edfc9fbc8be527b8e76b1c5"><td class="memItemLeft" align="right" valign="top"><a id="af68958e80edfc9fbc8be527b8e76b1c5" name="af68958e80edfc9fbc8be527b8e76b1c5"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>frames_send</b></td></tr>
 <tr class="separator:af68958e80edfc9fbc8be527b8e76b1c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac459ae5b1a67b1130d0fa1afeccba69a" id="r_ac459ae5b1a67b1130d0fa1afeccba69a"><td class="memItemLeft" align="right" valign="top"><a id="ac459ae5b1a67b1130d0fa1afeccba69a" name="ac459ae5b1a67b1130d0fa1afeccba69a"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>rx_timeout_ns</b></td></tr>
+<tr class="separator:ac459ae5b1a67b1130d0fa1afeccba69a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeeea5a452dfc0ffb3aece5fcb4c84834" id="r_aeeea5a452dfc0ffb3aece5fcb4c84834"><td class="memItemLeft" align="right" valign="top"><a id="aeeea5a452dfc0ffb3aece5fcb4c84834" name="aeeea5a452dfc0ffb3aece5fcb4c84834"></a>
+<a class="el" href="group__hardware__group.html#gaa211bde91362d8546c64c3424689e603">pooltype_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>last_pool_type</b></td></tr>
+<tr class="separator:aeeea5a452dfc0ffb3aece5fcb4c84834"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/libethercat/<a class="el" href="hw__file_8h_source.html">hw_file.h</a></li>

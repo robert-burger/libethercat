@@ -5,6 +5,7 @@ var searchData=
   ['idx_5fq_2',['idx_q',['../structec.html#a8de902dd15e6d78550f94931c2266977',1,'ec']]],
   ['img_5fidx_3',['img_idx',['../structec__eeprom__cat__general.html#a55a1021e4af8b14e52bd6d55d7f31286',1,'ec_eeprom_cat_general']]],
   ['init_5fcmds_4',['init_cmds',['../structec__slave.html#a1bb077520aa7496d34c58cf4cba02466',1,'ec_slave']]],
-  ['ip_5faddress_5',['ip_address',['../group__eoe__group.html#ga3fa631c6c56836ef1a4ff436c3756688',1,'ec_eoe_slave_config']]],
-  ['irq_6',['irq',['../structec__datagram.html#a718318fdf7491e52fbc9fdfd2fa7b66f',1,'ec_datagram']]]
+  ['ip_5',['ip',['../structec__veth.html#a080d4ebf8893821d3394d109b639d922',1,'ec_veth']]],
+  ['ip_5faddress_6',['ip_address',['../group__eoe__group.html#ga3fa631c6c56836ef1a4ff436c3756688',1,'ec_eoe_slave_config']]],
+  ['irq_7',['irq',['../structec__datagram.html#a718318fdf7491e52fbc9fdfd2fa7b66f',1,'ec_datagram']]]
 ];

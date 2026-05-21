@@ -9,6 +9,7 @@ var structec =
     [ "idx_q", "structec.html#a8de902dd15e6d78550f94931c2266977", null ],
     [ "main_cycle_interval", "structec.html#a9369057b9d52db712bac3b11d1746631", null ],
     [ "master_state", "structec.html#a336517d3ced9fcad4f5e289803793348", null ],
+    [ "mbx_gw_recv_pool", "structec.html#ab6f0338f0329a5108383de50d783b374", null ],
     [ "mbx_message_pool_recv_free", "structec.html#a0db80a75cd0c248dbc8378176fa81cb7", null ],
     [ "mbx_message_pool_send_free", "structec.html#aa2fbf45e5094a75e81c381dae6309287", null ],
     [ "mbx_mp_recv_free_entries", "structec.html#a999a20774b03dd14adf6ff6401ff0e9a", null ],
@@ -21,10 +22,6 @@ var structec =
     [ "slaves", "structec.html#abfc45793844751f76d7bf295be1029bc", null ],
     [ "state_transition_pending", "structec.html#a662647bc92e6b4e4c2c5d4fa26ebd0ec", null ],
     [ "threaded_startup", "structec.html#a8d866b2722ef9afe607e52e2ca2611e3", null ],
-    [ "tun_fd", "structec.html#a26c74ff58cae637056984756f8ef4f7d", null ],
-    [ "tun_ip", "structec.html#a2be3518205eb969a6333479ffcb9a0f2", null ],
-    [ "tun_running", "structec.html#a351114c32c62cd6ffcc801c16b84e7a4", null ],
-    [ "tun_tid", "structec.html#a75841e22bc0c8dafc91d71ea19ac2c43", null ],
     [ "user_cb_state_transition", "structec.html#ae24477dfda8a6533a4f617c63b70cb48", null ],
     [ "user_cb_state_transition_arg", "structec.html#aa3cb6afb663e5c924e231fcfffcfc737", null ]
 ];

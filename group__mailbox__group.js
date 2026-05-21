@@ -25,6 +25,7 @@ var group__mailbox__group =
       [ "sync_mutex", "structec__mbx.html#a3f0dae6b4fce4e3cedfc011e88ad0e4b", null ],
       [ "sync_sem", "structec__mbx.html#ab5834cc5e73fc1a18aac5490c261ff1b", null ]
     ] ],
+    [ "echdr", "structechdr.html", null ],
     [ "MAILBOX_READ", "group__mailbox__group.html#gab3701e45bedecc90679b187cb3b4dc2d", null ],
     [ "MAILBOX_WRITE", "group__mailbox__group.html#ga2d2ba94383fb6049b4a0a98c4eb4da54", null ],
     [ "ec_mbx_buffer_t", "group__mailbox__group.html#gabe42733d2552d5612e40d1e2ad157fa7", null ],
@@ -42,6 +43,10 @@ var group__mailbox__group =
     [ "ec_mbx_do_handle", "group__mailbox__group.html#gad373707f6afbeb4a664cd055420f1f72", null ],
     [ "ec_mbx_enqueue_head", "group__mailbox__group.html#gac1e44e8426b32008782df44185b805b3", null ],
     [ "ec_mbx_enqueue_tail", "group__mailbox__group.html#gaf24963ed01110d10da53f33abaf80fc7", null ],
+    [ "ec_mbx_gateway_deinit", "group__mailbox__group.html#ga84545d3cc829e60d07b9ef2dc3c78fd9", null ],
+    [ "ec_mbx_gateway_enqueue", "group__mailbox__group.html#ga3e2fc93c01657be534567d987d15b182", null ],
+    [ "ec_mbx_gateway_handle", "group__mailbox__group.html#ga975c8e1cbb75c4a05dbb711aab63c882", null ],
+    [ "ec_mbx_gateway_init", "group__mailbox__group.html#gac52866b6b715f61f0692ea85a3b896e7", null ],
     [ "ec_mbx_get_free_send_buffer", "group__mailbox__group.html#gacac494640051492bea8a86b55ed46a82", null ],
     [ "ec_mbx_init", "group__mailbox__group.html#gad0aef8f5b2ebba089fd2baeb8fd1bc52", null ],
     [ "ec_mbx_next_counter", "group__mailbox__group.html#ga2426027ecde6a81073bdde7cffac12ec", null ],

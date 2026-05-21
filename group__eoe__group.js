@@ -16,12 +16,10 @@ var group__eoe__group =
       [ "recv_pool", "group__eoe__group.html#ga4302c574e6b786223f4d8ffb6b52f7ae", null ]
     ] ],
     [ "ec_eoe_deinit", "group__eoe__group.html#gad7e2f9746d9f9ed787a0eda4fc66d869", null ],
-    [ "ec_eoe_destroy_tun", "group__eoe__group.html#ga5cc2b21e402e7cbde9e215b0a2983f52", null ],
     [ "ec_eoe_enqueue", "group__eoe__group.html#gabf08cb23d2225d054cb8a74bee44defd", null ],
     [ "ec_eoe_init", "group__eoe__group.html#gaa3411a8061770f1a247099694c9aec08", null ],
     [ "ec_eoe_send_frame", "group__eoe__group.html#gaa980853db142db68135ef4d62b9ba5e9", null ],
     [ "ec_eoe_set_ip_parameter", "group__eoe__group.html#gac2565cfb1da4727ce6de035bd0884bc2", null ],
-    [ "ec_eoe_setup_tun", "group__eoe__group.html#ga32418f2dcf1279668c16543039e40250", null ],
     [ "ec_eoe_slave_config::dns", "group__eoe__group.html#ga608d2f9f67b5c0fed7d7804e4c312c8c", null ],
     [ "ec_eoe_slave_config::dns_name", "group__eoe__group.html#gae5e41d8b4299641f0c2e3ebe1df79c7a", null ],
     [ "ec_eoe::eth_frames_free_pool", "group__eoe__group.html#gabe65f70df3152e78d9c8d01da1e47be2", null ],
