@@ -1,3 +1,61 @@
+libethercat (0.8.0) unstable; urgency=low
+  *  Implemented mailbox gateway
+  *  fix: subindex_0 datatype of 0xf020 0xf040 changed to 8-bit
+  *  fix: exporting c symbols of veth
+  *  fix: remove old ec_configure_tun func
+  *  update: readme linux driver
+  *  chore: fix print format
+  *  fix: calling monitor_device_create without dev_addr
+  *  fix: using pr_info, pr_err instead of printk
+  *  fix: using eth MAC directly for tun device, monitor uses random one
+  *  fix: pool_remove on timeout in hw_transceive
+  *  fix: calling clean_tx_irq when no descs are available for send
+  *  change: removed tx_queue, add module parameter allocating PAGE_SIZE sk_buffs
+  *  fix: using atomic_fetch_inc
+  *  fix: specify arguments
+  *  change: using print_hex_dump_bytes
+  *  fix: netdev ioctl order
+  *  fix: setting rx-usecs, tx-usecs
+  *  change: removed poll func
+  *  add: spin lock for sk buff queues
+  *  add: en-/disabling monitor device from hw_file
+  *  fix: read length of tun device
+  *  add: poll for tun device
+  *  change: split ethercat_device files
+  *  improvements in kernel driver
+  *  add: ethercat tun device
+  *  fix: increases initial rx_timeout_ns in hw_file, can be set with interface option
+  *  fix: first slave pdelay
+  *  fix: add runtime to first slave if master_as_ref_clock
+  *  add: optional time_func
+  *  change: conan out of source tree build
+  *  chore: initial packet_duration assignment
+  *  add: configure.ac to gitignore
+  *  change: readded kernel blocking and rx_timeout_ns
+  *  cleanup: ethercat_device code
+  *  update: ubuntu/noble link detection
+  *  fix: char dev minor as atomic
+  *  fix: ubuntu/noble removed global ethercat_polling
+  *  add: driver can set rx_usecs, tx_usecs
+  *  fix: abort when frame rx timeout
+  *  change: split hw_rx and hw_tx
+  *  fix: linux kernel driver cleanup
+  *  fix: ubuntu/noble igc: set poll budget to 64
+  *  chore: indent fix
+  *  change: ecat_monitorX devices initially DOWN
+  *  fix: ubuntu/noble igc: interrupt mode
+  *  fix: header install rule when building out of source tree
+  *  breaking-chane: rx_timeout_ns now does userspace polling
+  *  fix: ubuntu/noble igc: crash when calling netdev_xxx func in is_ecat mode
+  *  update: synced ubuntu noble igc driver with kernel source
+  *  fix: INIT_WORK of igb_clean_tx_irq_task
+  *  fix: monitor dev now can monitor in hard-irq-context
+  *  change: moving igb_clean_tx_irq to a work_queue, cannot be done in hard-irq-handler.
+  *  Replace ETHERCAT_DEVICE_NET_DEVICE_DO_POLL
+  *  Copy igb and igc from opensuse/15.6/6.4.0
+  *  Add igb and igc from Linux 6.4.16
+  *  fix: don't check wkc too early or while doing state transitions
+
 libethercat (0.7.7) unstable; urgency=low
 
   * change: some logging moved to verbose, print slave name on startup if available
