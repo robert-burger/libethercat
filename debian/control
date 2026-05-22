@@ -1,5 +1,4 @@
 Source: libethercat
-Section: unknown
 Priority: optional
 Maintainer: Robert Burger <robert.burger@dlr.de>
 Build-Depends: libosal-dev, debhelper-compat (= 13), autotools-dev
