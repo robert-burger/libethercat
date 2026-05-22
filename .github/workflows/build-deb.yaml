@@ -1,37 +1,13 @@
 name: Build and Publish Debian Package
 
 on:
-  push:
-    branches:
-      - '**'
-    tags:
-      - '**'
-  pull_request:
-    branches:
-      - '**'
+  workflow_call:
 
 jobs:
-  create_release:
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          body: Automated release for tag ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-
   build-deb:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       DEB_BUILD_OPTIONS: "compress=gzip nocheck"
       PKGNAME: "libethercat"
@@ -70,7 +46,7 @@ jobs:
           apt-get install -y libosal-dev
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -98,11 +74,16 @@ jobs:
           else
             if [[ ! $GITHUB_REF =~ ^refs/tags/ ]]; then
               # Not a tag, so add ~pre<x>
-              FULL_VERSION="${VERSION}~${PRE_VERSION}-1~${CODENAME}-pre"
+              FULL_VERSION="${VERSION}~${PRE_VERSION}~${CODENAME}-pre"
               dch -b --newversion "${FULL_VERSION}" --distribution "${CODENAME}-pre" "Pre-release for ${CODENAME}-pre"
             else
-              FULL_VERSION="${VERSION}-1~${CODENAME}"
-              dch --newversion "${FULL_VERSION}" --distribution "${CODENAME}" "Pre-release for ${CODENAME}"
+              FULL_VERSION="${VERSION}~${CODENAME}"
+              if echo "${GITHUB_REF_NAME}" | grep -q "\-rev"; then
+                REVISION=$(echo "${GITHUB_REF_NAME}" | sed -n 's/.*-rev\([0-9]*\)$/\1/p')
+                echo "Revision found: $REVISION"
+                FULL_VERSION="${VERSION}-${REVISION}~${CODENAME}"
+              fi
+              dch -b --newversion "${FULL_VERSION}" --distribution "${CODENAME}" "Pre-release for ${CODENAME}"
             fi
           fi
 
@@ -129,15 +110,17 @@ jobs:
           if [[ "$DISTRO" == "ubuntu-24.04" || "$DISTRO" == "ubuntu-22.04" ]]; then
             OLD_EXT=".ddeb"
             NEW_EXT=".deb"
+            CHANGES_FILE="${PKGNAME}_${SANITIZED_IMAGE}_amd64.changes"
 
             OLD_FILE="${PKGNAME}-dbgsym_${SANITIZED_IMAGE}_amd64${OLD_EXT}"
             NEW_FILE="${PKGNAME}-dbgsym_${SANITIZED_IMAGE}_amd64${NEW_EXT}"
-            CHANGES_FILE="${PKGNAME}_${SANITIZED_IMAGE}_amd64.changes"
 
             mv "../$OLD_FILE" "../$NEW_FILE"
             sed -i "s/${OLD_FILE}/${NEW_FILE}/g" "../$CHANGES_FILE"
           fi
           
+          ls -l ../
+
           DBG_FILE="../${PKGNAME}-dbgsym_${SANITIZED_IMAGE}_amd64.deb"
           DEV_FILE="../${PKGNAME}-dev_${SANITIZED_IMAGE}_amd64.deb"
           DEB_FILE="../${PKGNAME}_${SANITIZED_IMAGE}_amd64.deb"
@@ -163,10 +146,10 @@ jobs:
       - name: Collect .deb artifact
         run: |
           mkdir -p artifacts/
-          rsync -av --exclude=${PKGNAME} ../ artifacts/
+          rsync -av --include="*.deb" --include="*.changes" --include="*.buildinfo" --include="*.dsc" --include="*.tar.gz" --exclude="*" ../ artifacts/
 
       - name: Upload .deb package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.PKGNAME }}-artifacts-${{ steps.sanitize.outputs.sanitized_image }}
           path: artifacts/

@@ -1,0 +1,14 @@
+name: Trigger On Master
+on:
+  push:
+    branches:
+      - master
+
+permissions: 
+  contents: write
+
+jobs:
+  run-shared:
+    uses: ./.github/workflows/build-deb.yaml
+    secrets: inherit
+
