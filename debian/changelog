@@ -56,6 +56,8 @@ libethercat (0.8.0) unstable; urgency=low
   *  Add igb and igc from Linux 6.4.16
   *  fix: don't check wkc too early or while doing state transitions
 
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 30 Jan 2026 08:22:13 +0100
+
 libethercat (0.7.7) unstable; urgency=low
 
   * change: some logging moved to verbose, print slave name on startup if available
