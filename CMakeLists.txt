@@ -155,7 +155,7 @@ if(${MBX_SUPPORT_EOE})
     list(APPEND SRC_ETHERCAT src/eoe.c)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libethercat/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/settings.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/libethercat/settings.h)
 
 # LIBS
